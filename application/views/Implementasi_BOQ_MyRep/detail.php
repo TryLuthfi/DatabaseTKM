@@ -1261,7 +1261,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
     .impl-history-summary {
         display: grid;
-        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: .75rem;
         padding: .75rem 1rem;
         border-bottom: 1px solid #e2e8f0;
@@ -2007,10 +2007,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                         <button type="button" class="btn btn-primary js-history-scope-toggle" data-scope="CLUSTER">Cluster</button>
                                         <button type="button" class="btn btn-outline-primary js-history-scope-toggle" data-scope="SUBFEEDER">Subfeeder</button>
                                     </div>
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" class="custom-control-input" id="history_filter_nonzero">
-                                        <label class="custom-control-label" for="history_filter_nonzero">Hanya tampilkan item yang ada progress</label>
-                                    </div>
+                                    <a
+                                        href="<?= base_url('Implementasi_BOQ_MyRep/previewProgressReportPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0) . '?scope=CLUSTER') ?>"
+                                        target="_blank"
+                                        class="btn btn-outline-dark btn-sm"
+                                        id="history_progress_report_link"
+                                        data-base-url="<?= htmlspecialchars(base_url('Implementasi_BOQ_MyRep/previewProgressReportPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)), ENT_QUOTES) ?>">
+                                        <i class="fas fa-print mr-1"></i>Print Report
+                                    </a>
                                 </div>
                                 <div class="impl-history-summary">
                                     <div class="impl-history-summary__card">
@@ -2028,6 +2032,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     <div class="impl-history-summary__card">
                                         <div class="impl-history-summary__label">Selisih</div>
                                         <div class="impl-history-summary__value" id="history_total_gap">-</div>
+                                    </div>
+                                    <div class="impl-history-summary__card">
+                                        <div class="impl-history-summary__label">Persentase</div>
+                                        <div class="impl-history-summary__value" id="history_total_percent">-</div>
                                     </div>
                                 </div>
 
@@ -4588,14 +4596,29 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return Math.round(num).toLocaleString('id-ID');
         }
 
+        function formatPercent(plan, achiev) {
+            var planNum = parseFloat(plan || 0);
+            var achievNum = parseFloat(achiev || 0);
+            if (!isFinite(planNum) || planNum <= 0 || !isFinite(achievNum)) {
+                return '-';
+            }
+
+            var percent = (achievNum / planNum) * 100;
+            return percent.toLocaleString('id-ID', {
+                minimumFractionDigits: percent % 1 === 0 ? 0 : 1,
+                maximumFractionDigits: 1
+            }) + '%';
+        }
+
         var scopeButtons = Array.prototype.slice.call(document.querySelectorAll('.js-history-scope-toggle'));
         var scopeTitles = Array.prototype.slice.call(document.querySelectorAll('.js-history-scope-title'));
         var scopeTables = Array.prototype.slice.call(document.querySelectorAll('.js-history-scope-table'));
-        var filterInput = document.getElementById('history_filter_nonzero');
         var scopeLabel = document.getElementById('history_scope_label');
         var totalPlanNode = document.getElementById('history_total_plan');
         var totalAchievNode = document.getElementById('history_total_achiev');
         var totalGapNode = document.getElementById('history_total_gap');
+        var totalPercentNode = document.getElementById('history_total_percent');
+        var progressReportLink = document.getElementById('history_progress_report_link');
         var activeScope = 'CLUSTER';
 
         if (!scopeButtons.length || !scopeTables.length) {
@@ -4609,74 +4632,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 }
             }
             return null;
-        }
-
-        function applyProgressFilter(scope) {
-            var tableWrap = getScopeTable(scope);
-            if (!tableWrap) {
-                return;
-            }
-
-            var table = tableWrap.querySelector('table');
-            if (!table) {
-                return;
-            }
-
-            var showOnlyProgress = !!(filterInput && filterInput.checked);
-            var itemTypes = {};
-            table.querySelectorAll('td[data-role="achiev"]').forEach(function (cell) {
-                var itemType = cell.getAttribute('data-item-type');
-                if (!itemType) {
-                    return;
-                }
-                if (!itemTypes[itemType]) {
-                    itemTypes[itemType] = { hasProgress: false };
-                }
-                var text = (cell.textContent || '').replace(/\./g, '').replace(',', '.').trim();
-                var value = parseFloat(text || '0');
-                if (isFinite(value) && value > 0) {
-                    itemTypes[itemType].hasProgress = true;
-                }
-            });
-
-            Object.keys(itemTypes).forEach(function (itemType) {
-                var hide = showOnlyProgress && !itemTypes[itemType].hasProgress;
-                var selector = '[data-item-type="' + itemType.replace(/"/g, '\\"') + '"]';
-                table.querySelectorAll(selector).forEach(function (cell) {
-                    if (hide) {
-                        cell.classList.add('d-none');
-                    } else {
-                        cell.classList.remove('d-none');
-                    }
-                });
-                var groupSelector = '[data-item-group="' + itemType.replace(/"/g, '\\"') + '"]';
-                table.querySelectorAll(groupSelector).forEach(function (cell) {
-                    cell.classList.toggle('d-none', hide);
-                });
-            });
-
-            table.querySelectorAll('tbody tr').forEach(function (row, rowIndex) {
-                if (rowIndex === 0) {
-                    row.classList.remove('d-none');
-                    return;
-                }
-                if (!showOnlyProgress) {
-                    row.classList.remove('d-none');
-                    return;
-                }
-                var hasProgress = false;
-                row.querySelectorAll('td[data-role="achiev"]').forEach(function (cell) {
-                    if (cell.classList.contains('d-none')) {
-                        return;
-                    }
-                    var text = (cell.textContent || '').replace(/\./g, '').replace(',', '.').trim();
-                    var value = parseFloat(text || '0');
-                    if (isFinite(value) && value > 0) {
-                        hasProgress = true;
-                    }
-                });
-                row.classList.toggle('d-none', !hasProgress);
-            });
         }
 
         function syncSummary(scope) {
@@ -4701,6 +4656,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (totalGapNode) {
                 totalGapNode.textContent = formatIdNumber(gap);
             }
+            if (totalPercentNode) {
+                totalPercentNode.textContent = formatPercent(totalPlan, totalAchiev);
+            }
         }
 
         function setScope(scope) {
@@ -4721,7 +4679,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 tableWrap.classList.toggle('d-none', tableWrap.getAttribute('data-scope-table') !== activeScope);
             });
 
-            applyProgressFilter(activeScope);
+            if (progressReportLink) {
+                var reportBaseUrl = progressReportLink.getAttribute('data-base-url') || progressReportLink.getAttribute('href') || '';
+                progressReportLink.setAttribute('href', reportBaseUrl + '?scope=' + encodeURIComponent(activeScope));
+            }
+
             syncSummary(activeScope);
         }
 
@@ -4730,12 +4692,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 setScope(button.getAttribute('data-scope') || 'CLUSTER');
             });
         });
-
-        if (filterInput) {
-            filterInput.addEventListener('change', function () {
-                applyProgressFilter(activeScope);
-            });
-        }
 
         setScope('CLUSTER');
     })();

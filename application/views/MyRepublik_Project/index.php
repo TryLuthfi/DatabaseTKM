@@ -152,6 +152,7 @@ if (!function_exists('myrepClusterDetailUrl')) {
 <?php
 $summaryRows = $clusterStageSummaryRows ?? [];
 $deleteClusterRows = $deleteClusterRows ?? [];
+$renderClusterRows = !empty($renderClusterRows);
 $summaryFooter = null;
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 if (!empty($summaryRows)) {
@@ -215,27 +216,27 @@ if (!empty($summaryRows)) {
                     <div class="myrep-overview">
                         <div class="myrep-overview__box">
                             <div class="myrep-overview__label">Total Cluster</div>
-                            <div class="myrep-overview__value"><?= (int) ($overview['total_cluster'] ?? 0) ?></div>
+                            <div class="myrep-overview__value" data-myrep-overview="total_cluster"><?= (int) ($overview['total_cluster'] ?? 0) ?></div>
                         </div>
                         <div class="myrep-overview__box">
                             <div class="myrep-overview__label">Total Homepass</div>
-                            <div class="myrep-overview__value"><?= myrepDashNumber((float) ($overview['total_hp'] ?? 0)) ?></div>
+                            <div class="myrep-overview__value" data-myrep-overview="total_hp"><?= myrepDashNumber((float) ($overview['total_hp'] ?? 0)) ?></div>
                         </div>
                         <div class="myrep-overview__box">
                             <div class="myrep-overview__label">Total PO</div>
-                            <div class="myrep-overview__value"><?= myrepDashNumber((float) ($overview['total_po'] ?? 0)) ?></div>
+                            <div class="myrep-overview__value" data-myrep-overview="total_po"><?= myrepDashNumber((float) ($overview['total_po'] ?? 0)) ?></div>
                         </div>
                         <div class="myrep-overview__box">
                             <div class="myrep-overview__label">Released</div>
-                            <div class="myrep-overview__value"><?= (int) ($overview['total_released'] ?? 0) ?></div>
+                            <div class="myrep-overview__value" data-myrep-overview="total_released"><?= (int) ($overview['total_released'] ?? 0) ?></div>
                         </div>
                         <div class="myrep-overview__box">
                             <div class="myrep-overview__label">RFS</div>
-                            <div class="myrep-overview__value"><?= (int) ($overview['total_rfs'] ?? 0) ?></div>
+                            <div class="myrep-overview__value" data-myrep-overview="total_rfs"><?= (int) ($overview['total_rfs'] ?? 0) ?></div>
                         </div>
                         <div class="myrep-overview__box">
                             <div class="myrep-overview__label">ATP</div>
-                            <div class="myrep-overview__value"><?= (int) ($overview['total_atp'] ?? 0) ?></div>
+                            <div class="myrep-overview__value" data-myrep-overview="total_atp"><?= (int) ($overview['total_atp'] ?? 0) ?></div>
                         </div>
                     </div>
                 </div>
@@ -284,7 +285,7 @@ if (!empty($summaryRows)) {
                         <h3 class="card-title">Status List Project</h3>
                     </div>
                     <div class="card-body">
-                        <div class="myrep-status-grid">
+                        <div class="myrep-status-grid" id="myrep-status-card-grid">
                             <?php foreach ($statusCards as $card): ?>
                                 <div class="myrep-status-card">
                                     <div class="myrep-status-card__status"><?= htmlspecialchars((string) ($card['status'] ?? '-')) ?></div>
@@ -294,6 +295,9 @@ if (!empty($summaryRows)) {
                                     <div class="myrep-status-card__sub"><?= (int) ($card['cluster_count'] ?? 0) ?> cluster</div>
                                 </div>
                             <?php endforeach; ?>
+                            <?php if (empty($statusCards)): ?>
+                                <div class="text-muted small" id="myrep-status-card-loading">Memuat status...</div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -319,7 +323,7 @@ if (!empty($summaryRows)) {
                                         <th>TOTAL</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="myrep-city-stage-summary-body">
                                     <?php foreach ($summaryRows as $summaryRow): ?>
                                         <tr>
                                             <td class="text-left"><?= htmlspecialchars((string) ($summaryRow['city_name'] ?? '-')) ?></td>
@@ -335,11 +339,10 @@ if (!empty($summaryRows)) {
                                         </tr>
                                     <?php endforeach; ?>
                                     <?php if (empty($clusterStageSummaryRows)): ?>
-                                        <tr><td colspan="10" class="text-center text-muted">Belum ada data rekap cluster.</td></tr>
+                                        <tr><td colspan="10" class="text-center text-muted">Memuat rekap cluster...</td></tr>
                                     <?php endif; ?>
                                 </tbody>
-                                <?php if (!empty($summaryFooter)): ?>
-                                    <tfoot>
+                                <tfoot id="myrep-city-stage-summary-foot" class="<?= empty($summaryFooter) ? 'd-none' : '' ?>">
                                         <tr class="font-weight-bold">
                                             <th class="text-left">TOTAL</th>
                                             <th><?= myrepDashNumber((float) ($summaryFooter['bak'] ?? 0)) ?></th>
@@ -352,8 +355,7 @@ if (!empty($summaryRows)) {
                                             <th><?= myrepDashNumber((float) ($summaryFooter['dokument'] ?? 0)) ?></th>
                                             <th><?= myrepDashNumber((float) ($summaryFooter['total'] ?? 0)) ?></th>
                                         </tr>
-                                    </tfoot>
-                                <?php endif; ?>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -387,6 +389,7 @@ if (!empty($summaryRows)) {
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <?php if ($renderClusterRows): ?>
                                     <?php foreach ($clusterRows as $index => $row): ?>
                                         <?php $detailUrl = myrepClusterDetailUrl($row); ?>
                                         <tr>
@@ -427,8 +430,11 @@ if (!empty($summaryRows)) {
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <?php endif; ?>
                                     <?php if (empty($clusterRows)): ?>
-                                        <tr><td colspan="10" class="text-center text-muted">Belum ada data cluster MyRep.</td></tr>
+                                        <?php if ($renderClusterRows): ?>
+                                            <tr><td colspan="10" class="text-center text-muted">Belum ada data cluster MyRep.</td></tr>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -545,6 +551,139 @@ if (!empty($summaryRows)) {
 <script>
     (function initMyrepClusterTable() {
         var importedValidRows = [];
+        var myrepMetricMode = <?= json_encode($metricMode) ?>;
+        var myrepSelectedCity = <?= json_encode($selectedCity) ?>;
+        var myrepSelectedStatus = <?= json_encode($selectedStatus) ?>;
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatNumber(value) {
+            var number = Number(value || 0);
+            return number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        }
+
+        function updateOverview(overview) {
+            overview = overview || {};
+            $('[data-myrep-overview="total_cluster"]').text(Number(overview.total_cluster || 0));
+            $('[data-myrep-overview="total_hp"]').text(formatNumber(overview.total_hp || 0));
+            $('[data-myrep-overview="total_po"]').text(formatNumber(overview.total_po || 0));
+            $('[data-myrep-overview="total_released"]').text(Number(overview.total_released || 0));
+            $('[data-myrep-overview="total_rfs"]').text(Number(overview.total_rfs || 0));
+            $('[data-myrep-overview="total_atp"]').text(Number(overview.total_atp || 0));
+        }
+
+        function renderStatusCards(cards) {
+            var $grid = $('#myrep-status-card-grid');
+            var html = '';
+            (cards || []).forEach(function (card) {
+                var metric = formatNumber(card.metric_total || 0);
+                if (myrepMetricMode !== 'PO') {
+                    metric += ' HP';
+                }
+                html += '<div class="myrep-status-card">'
+                    + '<div class="myrep-status-card__status">' + escapeHtml(card.status || '-') + '</div>'
+                    + '<div class="myrep-status-card__value">' + metric + '</div>'
+                    + '<div class="myrep-status-card__sub">' + Number(card.cluster_count || 0) + ' cluster</div>'
+                    + '</div>';
+            });
+            $grid.html(html || '<div class="text-muted small">Belum ada data status.</div>');
+        }
+
+        function renderStageSummary(rows) {
+            var tableSelector = '#table_myrep_city_stage_summary';
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable(tableSelector)) {
+                $(tableSelector).DataTable().clear().destroy();
+            }
+
+            var bodyRows = (rows || []).slice();
+            var footer = null;
+            if (bodyRows.length && String(bodyRows[bodyRows.length - 1].city_name || '').toUpperCase() === 'TOTAL') {
+                footer = bodyRows.pop();
+            }
+
+            var bodyHtml = '';
+            bodyRows.forEach(function (row) {
+                bodyHtml += '<tr>'
+                    + '<td class="text-left">' + escapeHtml(row.city_name || '-') + '</td>'
+                    + '<td>' + formatNumber(row.bak || 0) + '</td>'
+                    + '<td>' + formatNumber(row.valsal || 0) + '</td>'
+                    + '<td>' + formatNumber(row.batch || 0) + '</td>'
+                    + '<td>' + formatNumber(row.drm || 0) + '</td>'
+                    + '<td>' + formatNumber(row.implementasi || 0) + '</td>'
+                    + '<td>' + formatNumber(row.rfs || 0) + '</td>'
+                    + '<td>' + formatNumber(row.atp || 0) + '</td>'
+                    + '<td>' + formatNumber(row.dokument || 0) + '</td>'
+                    + '<td>' + formatNumber(row.total || 0) + '</td>'
+                    + '</tr>';
+            });
+            $('#myrep-city-stage-summary-body').html(bodyHtml || '<tr><td colspan="10" class="text-center text-muted">Belum ada data rekap cluster.</td></tr>');
+
+            if (footer) {
+                $('#myrep-city-stage-summary-foot')
+                    .removeClass('d-none')
+                    .html('<tr class="font-weight-bold">'
+                        + '<th class="text-left">TOTAL</th>'
+                        + '<th>' + formatNumber(footer.bak || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.valsal || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.batch || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.drm || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.implementasi || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.rfs || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.atp || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.dokument || 0) + '</th>'
+                        + '<th>' + formatNumber(footer.total || 0) + '</th>'
+                        + '</tr>');
+            } else {
+                $('#myrep-city-stage-summary-foot').addClass('d-none').empty();
+            }
+
+            if ($.fn.DataTable && bodyRows.length) {
+                $(tableSelector).DataTable({
+                    order: [[0, 'asc']],
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                    responsive: false,
+                    autoWidth: false
+                });
+            }
+        }
+
+        function loadDashboardData() {
+            if (!window.jQuery) {
+                window.setTimeout(loadDashboardData, 200);
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("MyRepublik_Project/dashboardData") ?>',
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    city: myrepSelectedCity,
+                    status: myrepSelectedStatus,
+                    metric: myrepMetricMode
+                }
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    renderStatusCards([]);
+                    renderStageSummary([]);
+                    return;
+                }
+                updateOverview(response.overview || {});
+                renderStatusCards(response.statusCards || []);
+                renderStageSummary(response.clusterStageSummaryRows || []);
+            }).fail(function () {
+                renderStatusCards([]);
+                renderStageSummary([]);
+            });
+        }
 
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
@@ -619,23 +758,28 @@ if (!empty($summaryRows)) {
             }
 
             var $ = window.jQuery;
-            if (!$.fn.DataTable.isDataTable('#table_myrep_cluster_list')) {
+            if ($('#table_myrep_cluster_list').length && !$.fn.DataTable.isDataTable('#table_myrep_cluster_list')) {
                 $('#table_myrep_cluster_list').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: '<?= base_url("MyRepublik_Project/clusterTableData") ?>',
+                        method: 'POST',
+                        data: function (payload) {
+                            payload.city = myrepSelectedCity;
+                            payload.status = myrepSelectedStatus;
+                            payload.metric = myrepMetricMode;
+                        }
+                    },
                     order: [[2, 'asc'], [1, 'asc']],
                     pageLength: 10,
                     lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                     responsive: false,
-                    autoWidth: false
-                });
-            }
-
-            if (!$.fn.DataTable.isDataTable('#table_myrep_city_stage_summary')) {
-                $('#table_myrep_city_stage_summary').DataTable({
-                    order: [[0, 'asc']],
-                    pageLength: 10,
-                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                    responsive: false,
-                    autoWidth: false
+                    autoWidth: false,
+                    columnDefs: [
+                        { orderable: false, targets: [0, 7, 9] },
+                        { className: 'text-right', targets: [5, 6] }
+                    ]
                 });
             }
 
@@ -756,5 +900,6 @@ if (!empty($summaryRows)) {
         });
 
         bootDataTable(0);
+        loadDashboardData();
     })();
 </script>

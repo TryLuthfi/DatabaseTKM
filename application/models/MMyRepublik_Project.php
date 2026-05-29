@@ -140,6 +140,81 @@ class MMyRepublik_Project extends CI_Model
         return $rows;
     }
 
+    public function getClusterRowsPage($selectedCity = '', $selectedStatus = '', $metricMode = 'HP', $start = 0, $length = 10, $search = '', array $order = [])
+    {
+        $rows = $this->getClusterRows($selectedCity, $selectedStatus, $metricMode);
+        $recordsTotal = count($rows);
+
+        $search = strtoupper(trim((string) $search));
+        if ($search !== '') {
+            $rows = array_values(array_filter($rows, static function ($row) use ($search) {
+                $haystack = strtoupper(implode(' ', [
+                    $row['cluster_name'] ?? '',
+                    $row['cluster_code'] ?? '',
+                    $row['city_name'] ?? '',
+                    $row['regional_name'] ?? '',
+                    $row['status_current_display'] ?? $row['status_current'] ?? '',
+                    $row['team_name'] ?? '',
+                    $row['rpm'] ?? '',
+                    $row['spv'] ?? '',
+                ]));
+
+                return strpos($haystack, $search) !== false;
+            }));
+        }
+
+        $recordsFiltered = count($rows);
+        $this->sortClusterRowsForDataTable($rows, $order);
+
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => array_slice($rows, $start, $length),
+        ];
+    }
+
+    private function sortClusterRowsForDataTable(array &$rows, array $order = [])
+    {
+        $column = isset($order['column']) ? (int) $order['column'] : 2;
+        $dir = strtolower(trim((string) ($order['dir'] ?? 'asc'))) === 'desc' ? -1 : 1;
+        $columnMap = [
+            1 => 'cluster_name',
+            2 => 'city_name',
+            3 => 'regional_name',
+            4 => 'status_current_display',
+            5 => 'metric_value',
+            6 => 'po_count',
+            8 => 'drm_date',
+        ];
+        $key = $columnMap[$column] ?? 'city_name';
+
+        usort($rows, static function ($a, $b) use ($key, $dir) {
+            $aValue = $a[$key] ?? ($key === 'status_current_display' ? ($a['status_current'] ?? '') : '');
+            $bValue = $b[$key] ?? ($key === 'status_current_display' ? ($b['status_current'] ?? '') : '');
+
+            if (is_numeric($aValue) && is_numeric($bValue)) {
+                $compare = (float) $aValue <=> (float) $bValue;
+            } else {
+                $compare = strcmp(strtoupper(trim((string) $aValue)), strtoupper(trim((string) $bValue)));
+            }
+
+            if ($compare === 0) {
+                $compare = strcmp(
+                    strtoupper(trim((string) ($a['cluster_name'] ?? ''))),
+                    strtoupper(trim((string) ($b['cluster_name'] ?? '')))
+                );
+            }
+
+            return $compare * $dir;
+        });
+    }
+
     public function getStatusCards($rows, $metricMode = 'HP')
     {
         $cards = [];

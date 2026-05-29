@@ -59,21 +59,208 @@ class MyRepublik_Project extends CI_Controller
         $data['isReady'] = $this->MMyRepublik_Project->tablesReady();
         $data['cityOptions'] = $this->MMyRepublik_Project->getCityOptions();
         $data['statusOptions'] = $this->MMyRepublik_Project->getStatusOptions();
-        $data['clusterRows'] = $data['isReady']
-            ? $this->MMyRepublik_Project->getClusterRows($selectedCity, $selectedStatus, $metricMode)
-            : [];
+        $data['clusterRows'] = [];
         $data['deleteClusterRows'] = ($data['isReady'] && (string) $this->session->userdata('nama_level') === 'Super Admin')
             ? $this->MMyRepublik_Project->getClusterRows('', '', $metricMode)
             : [];
-        $data['clusterStageSummaryRows'] = $this->buildClusterStageSummaryRows($data['clusterRows']);
-        $data['overview'] = $this->MMyRepublik_Project->getOverview($data['clusterRows']);
-        $data['statusCards'] = $this->MMyRepublik_Project->getStatusCards($data['clusterRows'], $metricMode);
+        $data['clusterStageSummaryRows'] = [];
+        $data['overview'] = $this->emptyOverview();
+        $data['statusCards'] = [];
+        $data['renderClusterRows'] = false;
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('MyRepublik_Project/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function dashboardData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.', [
+                'overview' => $this->emptyOverview(),
+                'statusCards' => [],
+                'clusterStageSummaryRows' => [],
+            ]);
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $metricMode = strtoupper(trim((string) $this->input->post('metric')));
+        if (!in_array($metricMode, ['HP', 'PO'], true)) {
+            $metricMode = 'HP';
+        }
+
+        try {
+            $rows = $this->MMyRepublik_Project->tablesReady()
+                ? $this->MMyRepublik_Project->getClusterRows($selectedCity, $selectedStatus, $metricMode)
+                : [];
+
+            $this->jsonResponse(true, 'Dashboard berhasil dimuat.', [
+                'overview' => $this->MMyRepublik_Project->getOverview($rows),
+                'statusCards' => $this->MMyRepublik_Project->getStatusCards($rows, $metricMode),
+                'clusterStageSummaryRows' => $this->buildClusterStageSummaryRows($rows),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'MyRepublik dashboardData failed: ' . $e->getMessage());
+            $this->jsonResponse(false, 'Dashboard gagal dimuat.', [
+                'overview' => $this->emptyOverview(),
+                'statusCards' => [],
+                'clusterStageSummaryRows' => [],
+            ]);
+        }
+    }
+
+    public function clusterTableData()
+    {
+        if (empty($this->session->userdata('id_user')) || !$this->MMyRepublik_Project->tablesReady()) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $metricMode = strtoupper(trim((string) $this->input->post('metric')));
+        if (!in_array($metricMode, ['HP', 'PO'], true)) {
+            $metricMode = 'HP';
+        }
+
+        $searchPayload = $this->input->post('search');
+        $searchValue = is_array($searchPayload) ? (string) ($searchPayload['value'] ?? '') : '';
+        $orderPayload = $this->input->post('order');
+        $order = [];
+        if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+            $order = [
+                'column' => $orderPayload[0]['column'] ?? null,
+                'dir' => $orderPayload[0]['dir'] ?? 'asc',
+            ];
+        }
+
+        $start = max(0, (int) $this->input->post('start'));
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        try {
+            $page = $this->MMyRepublik_Project->getClusterRowsPage(
+                $selectedCity,
+                $selectedStatus,
+                $metricMode,
+                $start,
+                $length,
+                $searchValue,
+                $order
+            );
+
+            $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+            $data = [];
+            $no = $start + 1;
+            foreach (($page['rows'] ?? []) as $row) {
+                $data[] = $this->buildClusterTableRow($row, $no++, $metricMode, $isSuperAdmin);
+            }
+
+            $this->jsonDataTableResponse((int) ($page['recordsTotal'] ?? 0), (int) ($page['recordsFiltered'] ?? 0), $data);
+        } catch (\Throwable $e) {
+            log_message('error', 'MyRepublik clusterTableData failed: ' . $e->getMessage());
+            $this->jsonDataTableResponse(0, 0, []);
+        }
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data)
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'draw' => (int) $this->input->post('draw'),
+                'recordsTotal' => (int) $recordsTotal,
+                'recordsFiltered' => (int) $recordsFiltered,
+                'data' => $data,
+            ]));
+    }
+
+    private function buildClusterTableRow(array $row, $no, $metricMode, $isSuperAdmin)
+    {
+        $detailUrl = $this->clusterDetailUrl($row);
+        $clusterName = (string) ($row['cluster_name'] ?? '-');
+        $clusterHtml = '<strong>';
+        if ($detailUrl !== '#') {
+            $clusterHtml .= '<a href="' . $this->attr($detailUrl) . '" class="text-primary">' . $this->html($clusterName) . '</a>';
+        } else {
+            $clusterHtml .= $this->html($clusterName);
+        }
+        $clusterHtml .= '</strong><div class="small text-muted">' . $this->html($row['team_name'] ?? '-') . '</div>';
+
+        $metricValue = (float) ($row['metric_value'] ?? 0);
+        $metricHtml = $this->formatNumber($metricValue) . (strtoupper((string) $metricMode) === 'PO' ? '' : ' HP');
+
+        $actionHtml = $detailUrl !== '#'
+            ? '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-primary">Detail</a>'
+            : '<span class="text-muted">-</span>';
+
+        if ($isSuperAdmin && (int) ($row['id_myrep_cluster'] ?? 0) > 0) {
+            $actionHtml .= '<form method="post" action="' . base_url('MyRepublik_Project/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini? Seluruh flow MyRep dari BAK sampai Checklist Dokument akan ikut terhapus.\');">'
+                . '<input type="hidden" name="cluster_id" value="' . (int) $row['id_myrep_cluster'] . '">'
+                . '<button type="submit" class="btn btn-sm btn-danger">Hapus Cluster</button>'
+                . '</form>';
+        }
+
+        return [
+            (int) $no,
+            $clusterHtml,
+            $this->html($row['city_name'] ?? '-'),
+            $this->html($row['regional_name'] ?? '-'),
+            '<span class="badge badge-info">' . $this->html($row['status_current_display'] ?? $row['status_current'] ?? '-') . '</span>',
+            $metricHtml,
+            (int) ($row['po_count'] ?? 0),
+            $this->html($row['rpm'] ?? '-') . ' / ' . $this->html($row['spv'] ?? '-'),
+            !empty($row['drm_date']) ? $this->html($row['drm_date']) : '-',
+            $actionHtml,
+        ];
+    }
+
+    private function clusterDetailUrl(array $row)
+    {
+        $myrepClusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+        if ($myrepClusterId > 0) {
+            return base_url('MyRepublik_Project/detail/' . $myrepClusterId);
+        }
+
+        $legacyClusterId = (int) ($row['legacy_rfs_cluster_id'] ?? $row['rfs_cluster_id'] ?? 0);
+        if ($legacyClusterId > 0) {
+            return base_url('MyRepublik_Project/detailLegacy/' . $legacyClusterId);
+        }
+
+        return '#';
+    }
+
+    private function emptyOverview()
+    {
+        return [
+            'total_cluster' => 0,
+            'total_hp' => 0,
+            'total_po' => 0,
+            'total_released' => 0,
+            'total_rfs' => 0,
+            'total_atp' => 0,
+        ];
+    }
+
+    private function formatNumber($value)
+    {
+        return number_format((float) $value, 0, ',', '.');
+    }
+
+    private function html($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function attr($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     }
 
     public function detail($clusterId = 0)
@@ -2028,6 +2215,7 @@ class MyRepublik_Project extends CI_Controller
         $today = date('Y-m-d');
         $isHoReviewDone = in_array($cutoffStatus, ['EMR', 'CLOSED', 'NRO'], true);
         $isAstriDone = $cutoffStatus === 'CLOSED';
+        $isEmrAstriReview = $cutoffStatus === 'EMR';
         $isNroProjectOpname = $cutoffStatus === 'NRO'
             && strtoupper(trim((string) $docName)) === 'PROJECT OPNAME';
         $statusFile = $isHoReviewDone ? 'APPROVED' : 'UPLOADED';
@@ -2046,6 +2234,11 @@ class MyRepublik_Project extends CI_Controller
             $astriSubmittedDate = $today;
             $astriUpdatedAt = $now;
             $astriRemark = 'Imported cutoff NRO - Project Opname waiting Waspang.';
+        } elseif ($isEmrAstriReview) {
+            $astriStatus = 'ON REVIEW';
+            $astriSubmittedDate = $today;
+            $astriUpdatedAt = $now;
+            $astriRemark = 'Imported cutoff ASTRI on review.';
         }
 
         $payload = [

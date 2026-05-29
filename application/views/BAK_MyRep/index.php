@@ -589,7 +589,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="4" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th colspan="4" class="text-right">TOTAL HP HALAMAN</th>
                                                     <th class="text-right">0</th>
                                                     <th colspan="8"></th>
                                                 </tr>
@@ -624,7 +624,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="4" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th colspan="4" class="text-right">TOTAL HP HALAMAN</th>
                                                     <th class="text-right">0</th>
                                                     <th colspan="8"></th>
                                                 </tr>
@@ -659,7 +659,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="4" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th colspan="4" class="text-right">TOTAL HP HALAMAN</th>
                                                     <th class="text-right">0</th>
                                                     <th colspan="8"></th>
                                                 </tr>
@@ -2444,72 +2444,89 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         }
 
         $(function () {
-            var bakTables = [];
+            var bakTables = {};
             var bakFilterCity = <?= json_encode($selectedCity) ?>;
             var bakFilterStatus = <?= json_encode($selectedStatus) ?>;
+            var bakTableConfigs = {
+                '#table_bak_on_process': { selector: '#table_bak_on_process', tab: 'on_process' },
+                '#table_bak_ny_valsal': { selector: '#table_bak_ny_valsal', tab: 'ny_valsal' },
+                '#table_bak_all': { selector: '#table_bak_all', tab: 'all' }
+            };
+
+            function initBakMonitorTable(selector) {
+                if (!$.fn.DataTable || !bakTableConfigs[selector]) {
+                    return null;
+                }
+
+                if (bakTables[selector]) {
+                    return bakTables[selector];
+                }
+
+                var config = bakTableConfigs[selector];
+                bakTables[selector] = $(selector).DataTable({
+                    responsive: false,
+                    scrollX: true,
+                    scrollCollapse: true,
+                    autoWidth: false,
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: "<?= base_url('BAK_MyRep/tableData') ?>",
+                        type: 'POST',
+                        data: function (payload) {
+                            payload.city = bakFilterCity;
+                            payload.status = bakFilterStatus;
+                            payload.tab = config.tab;
+                        }
+                    },
+                    order: [[1, 'asc']],
+                    columnDefs: [
+                        { targets: [0, 6, 9, 10, 12], orderable: false },
+                        { targets: [4], className: 'text-right' }
+                    ],
+                    footerCallback: function (row, data, start, end, display) {
+                        var api = this.api();
+                        var parseNumber = function (value) {
+                            if (typeof value === 'string') {
+                                value = value.replace(/<[^>]*>/g, '');
+                                value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                            }
+                            var parsed = parseFloat(value);
+                            return isNaN(parsed) ? 0 : parsed;
+                        };
+
+                        var totalHp = api
+                            .column(4, { search: 'applied' })
+                            .data()
+                            .reduce(function (sum, val) {
+                                return sum + parseNumber(val);
+                            }, 0);
+
+                        $(api.column(4).footer()).html(
+                            totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                        );
+                    },
+                    language: {
+                        emptyTable: 'Belum ada data untuk tab ini.'
+                    }
+                });
+
+                return bakTables[selector];
+            }
 
             handleBakFlashAlerts();
 
             if ($.fn.DataTable) {
-                [
-                    { selector: '#table_bak_on_process', tab: 'on_process' },
-                    { selector: '#table_bak_ny_valsal', tab: 'ny_valsal' },
-                    { selector: '#table_bak_all', tab: 'all' }
-                ].forEach(function (config) {
-                    var selector = config.selector;
-                    bakTables.push($(selector).DataTable({
-                        responsive: false,
-                        scrollX: true,
-                        scrollCollapse: true,
-                        autoWidth: false,
-                        processing: true,
-                        serverSide: true,
-                        ajax: {
-                            url: "<?= base_url('BAK_MyRep/tableData') ?>",
-                            type: 'POST',
-                            data: function (payload) {
-                                payload.city = bakFilterCity;
-                                payload.status = bakFilterStatus;
-                                payload.tab = config.tab;
-                            }
-                        },
-                        order: [[1, 'asc']],
-                        columnDefs: [
-                            { targets: [0, 6, 9, 10, 12], orderable: false },
-                            { targets: [4], className: 'text-right' }
-                        ],
-                        footerCallback: function (row, data, start, end, display) {
-                            var api = this.api();
-                            var parseNumber = function (value) {
-                                if (typeof value === 'string') {
-                                    value = value.replace(/<[^>]*>/g, '');
-                                    value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
-                                }
-                                var parsed = parseFloat(value);
-                                return isNaN(parsed) ? 0 : parsed;
-                            };
-
-                            var totalHp = api
-                                .column(4, { search: 'applied' })
-                                .data()
-                                .reduce(function (sum, val) {
-                                    return sum + parseNumber(val);
-                                }, 0);
-
-                            $(api.column(4).footer()).html(
-                                totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 })
-                            );
-                        },
-                        language: {
-                            emptyTable: 'Belum ada data untuk tab ini.'
-                        }
-                    }));
-                });
+                initBakMonitorTable('#table_bak_on_process');
 
                 $('a[data-toggle="tab"][href^="#bak-"]').on('shown.bs.tab', function () {
-                    bakTables.forEach(function (table) {
+                    var tableSelector = $(this).attr('href') === '#bak-ny-valsal-pane'
+                        ? '#table_bak_ny_valsal'
+                        : ($(this).attr('href') === '#bak-all-pane' ? '#table_bak_all' : '#table_bak_on_process');
+                    var table = initBakMonitorTable(tableSelector);
+                    if (table) {
                         table.columns.adjust().draw(false);
-                    });
+                    }
                 });
             }
 

@@ -342,6 +342,75 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $this->load->view('Templates/99_JS');
     }
 
+    public function printProgressReportPdf($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $report = $this->buildProgressReportData((int) $clusterId, (string) $this->input->get('scope'));
+        if (empty($report['cluster'])) {
+            $this->session->set_flashdata('error', 'Data implementasi cluster tidak ditemukan.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        if (!class_exists('TCPDF')) {
+            $tcpdfPath = $this->resolveTcpdfPath();
+            if ($tcpdfPath === '') {
+                redirect('Implementasi_BOQ_MyRep/previewProgressReportPdf/' . (int) $clusterId . '?scope=' . rawurlencode((string) $report['scope']));
+                return;
+            }
+
+            require_once $tcpdfPath;
+        }
+
+        $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('DatabaseTKM');
+        $pdf->SetAuthor('DatabaseTKM');
+        $pdf->SetTitle('Progress Report ' . (string) $report['scope'] . ' - ' . (string) ($report['cluster']['cluster_name'] ?? 'Cluster'));
+        $pdf->SetSubject('Progress report invoice implementasi BOQ MyRep');
+        $pdf->SetPrintHeader(false);
+        $pdf->SetPrintFooter(false);
+        $pdf->SetMargins(8, 8, 8);
+        $pdf->SetAutoPageBreak(true, 8);
+        $pdf->SetFont('helvetica', '', 7);
+        $pdf->AddPage();
+
+        $this->renderProgressReportPdf($pdf, $report);
+
+        $fileName = $this->buildProgressReportFileName($report) . '.pdf';
+        $pdf->Output($fileName, 'I');
+    }
+
+    public function previewProgressReportPdf($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $report = $this->buildProgressReportData((int) $clusterId, (string) $this->input->get('scope'));
+        if (empty($report['cluster'])) {
+            $this->session->set_flashdata('error', 'Data implementasi cluster tidak ditemukan.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $data['printFileName'] = $this->buildProgressReportFileName($report);
+        $data['title'] = $data['printFileName'];
+        $data['report'] = $report;
+        $data['cluster'] = $report['cluster'];
+        $data['pdfUrl'] = base_url('Implementasi_BOQ_MyRep/printProgressReportPdf/' . (int) $clusterId . '?scope=' . rawurlencode((string) $report['scope']));
+        $data['tcpdfAvailable'] = class_exists('TCPDF') || $this->resolveTcpdfPath() !== '';
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Implementasi_BOQ_MyRep/preview_progress_report_pdf', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
     private function buildDailyProgressPrintGroups($clusterId)
     {
         $dailyActivities = $this->MImplementasi_BOQ_MyRep->getDailyActivities((int) $clusterId);
@@ -410,6 +479,243 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         return $orderedGroups;
+    }
+
+    private function buildProgressReportData($clusterId, $scope)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return [];
+        }
+
+        $scope = strtoupper(trim((string) $scope)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $cluster = $this->MImplementasi_BOQ_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            return [];
+        }
+        $cluster['nama_olt'] = $this->resolveClusterOltName($clusterId, $cluster);
+
+        $compareRows = $this->MImplementasi_BOQ_MyRep->getBaselineCompareRows($clusterId);
+        $historyMap = $this->MImplementasi_BOQ_MyRep->getProgressHistoryMap($clusterId);
+        $dailyActivities = $this->MImplementasi_BOQ_MyRep->activityTablesReady()
+            ? $this->MImplementasi_BOQ_MyRep->getDailyActivities($clusterId)
+            : [];
+
+        $itemTypes = [];
+        $planByType = [];
+        foreach ((array) $compareRows as $row) {
+            $itemType = strtoupper(trim((string) ($row['item_type'] ?? 'LAINNYA')));
+            if ($itemType === '') {
+                $itemType = 'LAINNYA';
+            }
+            if (!isset($planByType[$itemType])) {
+                $planByType[$itemType] = 0.0;
+                $itemTypes[] = $itemType;
+            }
+
+            $planByType[$itemType] += (float) ($scope === 'SUBFEEDER' ? ($row['qty_subfeeder'] ?? 0) : ($row['qty_cluster'] ?? 0));
+        }
+
+        $dateRows = [];
+        $dailyActivityGroups = [];
+        foreach ((array) $dailyActivities as $activity) {
+            $activityDate = trim((string) ($activity['activity_date'] ?? ''));
+            if ($activityDate === '') {
+                continue;
+            }
+
+            $activityScope = strtoupper(trim((string) ($activity['scope_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            if ($activityScope !== $scope) {
+                continue;
+            }
+
+            if (!isset($dateRows[$activityDate])) {
+                $dateRows[$activityDate] = [
+                    'progress_date' => $activityDate,
+                    'remark' => [],
+                    'achieve' => [],
+                    'daily_progress_remarks' => [],
+                ];
+            }
+
+            $activityCode = strtoupper(trim((string) ($activity['activity_code'] ?? '')));
+            $dailyRemark = trim((string) ($activity['activity_detail'] ?? ''));
+            if ($dailyRemark === '' || $dailyRemark === '-') {
+                $dailyRemark = trim((string) ($activity['activity_name'] ?? ''));
+            }
+            if ($dailyRemark === '' || $dailyRemark === '-') {
+                $dailyRemark = str_replace('_', ' ', $activityCode);
+            }
+
+            if ($dailyRemark !== '') {
+                $dateRows[$activityDate]['daily_progress_remarks'][] = strtoupper($dailyRemark);
+            }
+
+            if (!isset($dailyActivityGroups[$activityDate])) {
+                $dailyActivityGroups[$activityDate] = [
+                    'date' => $activityDate,
+                    'rows' => [],
+                ];
+            }
+            $dailyActivityGroups[$activityDate]['rows'][] = [
+                'id_daily_activity' => (int) ($activity['id_daily_activity'] ?? 0),
+                'activity_name' => trim((string) ($activity['activity_name'] ?? '')) !== '' ? (string) $activity['activity_name'] : '-',
+                'activity_detail' => trim((string) ($activity['activity_detail'] ?? '')) !== '' ? (string) $activity['activity_detail'] : '-',
+                'boq_type' => trim((string) ($activity['boq_type'] ?? '')) !== '' ? (string) $activity['boq_type'] : '-',
+                'qty_activity' => (float) ($activity['qty_activity'] ?? 0),
+                'unit_activity' => (string) ($activity['unit_activity'] ?? ''),
+                'team_count' => (int) ($activity['team_count'] ?? 0),
+                'worker_count' => (int) ($activity['worker_count'] ?? 0),
+                'photo_count' => count((array) ($activity['photos'] ?? [])),
+                'pic' => trim((string) ($activity['nama_user'] ?? '')) !== '' ? (string) $activity['nama_user'] : '-',
+                'remark_activity' => trim((string) ($activity['remark_activity'] ?? '')) !== '' ? (string) $activity['remark_activity'] : '-',
+            ];
+        }
+
+        foreach ((array) $compareRows as $row) {
+            $itemType = strtoupper(trim((string) ($row['item_type'] ?? 'LAINNYA')));
+            if ($itemType === '') {
+                $itemType = 'LAINNYA';
+            }
+
+            $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
+            foreach ((array) ($historyMap[$baselineItemId] ?? []) as $entry) {
+                $entryScope = $this->detectProgressReportScope($entry['scope_type'] ?? '', $entry['remark_progress'] ?? '');
+                if ($entryScope !== $scope) {
+                    continue;
+                }
+
+                $progressDate = trim((string) ($entry['progress_date'] ?? ''));
+                if ($progressDate === '') {
+                    continue;
+                }
+
+                if (!isset($dateRows[$progressDate])) {
+                    $dateRows[$progressDate] = [
+                        'progress_date' => $progressDate,
+                        'remark' => [],
+                        'achieve' => [],
+                        'daily_progress_remarks' => [],
+                    ];
+                }
+                if (!isset($dateRows[$progressDate]['achieve'][$itemType])) {
+                    $dateRows[$progressDate]['achieve'][$itemType] = 0.0;
+                }
+                $dateRows[$progressDate]['achieve'][$itemType] += (float) ($entry['qty_progress'] ?? 0);
+
+                $remarkValue = trim((string) ($entry['remark_progress'] ?? ''));
+                if ($remarkValue !== '') {
+                    $dateRows[$progressDate]['remark'][] = $remarkValue;
+                }
+            }
+        }
+
+        ksort($dateRows);
+        ksort($dailyActivityGroups);
+        foreach ($dailyActivityGroups as &$dailyGroup) {
+            usort($dailyGroup['rows'], static function ($a, $b) {
+                return (int) ($a['id_daily_activity'] ?? 0) <=> (int) ($b['id_daily_activity'] ?? 0);
+            });
+        }
+        unset($dailyGroup);
+
+        $initialDate = !empty($cluster['drm_date'])
+            ? (string) $cluster['drm_date']
+            : (!empty($cluster['boq_approved_at']) ? substr((string) $cluster['boq_approved_at'], 0, 10) : '-');
+        $historyRows = [];
+        if (!empty($itemTypes)) {
+            $historyRows[] = [
+                'progress_date' => $initialDate,
+                'remark' => 'BOQ Awal',
+                'achieve' => array_fill_keys($itemTypes, 0),
+            ];
+        }
+
+        $finalAchieve = array_fill_keys($itemTypes, 0.0);
+        foreach ($dateRows as $dateRow) {
+            foreach ($itemTypes as $itemType) {
+                $finalAchieve[$itemType] += (float) ($dateRow['achieve'][$itemType] ?? 0);
+            }
+
+            $remarkPool = array_values(array_filter(array_unique((array) ($dateRow['remark'] ?? [])), static function ($value) {
+                return trim((string) $value) !== '';
+            }));
+            $manualRemarkPool = array_values(array_filter($remarkPool, static function ($value) {
+                $upper = strtoupper(trim((string) $value));
+                return strpos($upper, '[AUTO]') !== 0
+                    && strpos($upper, '[DAILY]') !== 0
+                    && strpos($upper, 'UPLOAD FOTO COMPLY -') !== 0;
+            }));
+            $dailyRemarkPool = array_values(array_filter(array_unique((array) ($dateRow['daily_progress_remarks'] ?? [])), static function ($value) {
+                return trim((string) $value) !== '';
+            }));
+            $finalRemark = !empty($dailyRemarkPool)
+                ? implode(' | ', $dailyRemarkPool)
+                : (!empty($manualRemarkPool)
+                    ? implode(' | ', $manualRemarkPool)
+                    : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian'));
+            $historyRows[] = [
+                'progress_date' => (string) ($dateRow['progress_date'] ?? '-'),
+                'remark' => $finalRemark,
+                'achieve' => (array) ($dateRow['achieve'] ?? []),
+            ];
+        }
+
+        $totalPlan = array_sum($planByType);
+        $totalAchieve = array_sum($finalAchieve);
+
+        return [
+            'cluster' => $cluster,
+            'scope' => $scope,
+            'itemTypes' => $itemTypes,
+            'planByType' => $planByType,
+            'historyRows' => $historyRows,
+            'finalAchieve' => $finalAchieve,
+            'totalPlan' => $totalPlan,
+            'totalAchieve' => $totalAchieve,
+            'totalGap' => $totalPlan - $totalAchieve,
+            'percent' => $totalPlan > 0 ? ($totalAchieve / $totalPlan) * 100 : 0,
+            'hasPlan' => abs($totalPlan) > 0.00001,
+            'dailyActivityGroups' => $dailyActivityGroups,
+        ];
+    }
+
+    private function detectProgressReportScope($scopeValue, $remarkValue = '')
+    {
+        $scope = strtoupper(trim((string) $scopeValue));
+        if ($scope === 'CLUSTER' || $scope === 'SUBFEEDER') {
+            return $scope;
+        }
+
+        $remark = strtoupper(trim((string) $remarkValue));
+        if (strpos($remark, 'SUBFEEDER') !== false) {
+            return 'SUBFEEDER';
+        }
+        if (strpos($remark, 'CLUSTER') !== false) {
+            return 'CLUSTER';
+        }
+
+        return 'CLUSTER';
+    }
+
+    private function buildProgressReportFileName(array $report)
+    {
+        $cluster = (array) ($report['cluster'] ?? []);
+        $scope = ucfirst(strtolower((string) ($report['scope'] ?? 'CLUSTER')));
+        $clusterName = trim((string) ($cluster['cluster_name'] ?? 'Cluster'));
+        $teamName = trim((string) ($cluster['spv'] ?? ''));
+        if ($teamName === '') {
+            $teamName = trim((string) ($cluster['team_name'] ?? ''));
+        }
+        if ($teamName === '') {
+            $teamName = '-';
+        }
+
+        $fileName = 'Progress ' . $scope . ' ' . $clusterName . ' - ' . $teamName . ' - PT. TKM';
+        $fileName = preg_replace('/[\\\\\/:*?"<>|]+/', '-', $fileName);
+        $fileName = preg_replace('/\s+/', ' ', $fileName);
+
+        return trim((string) $fileName);
     }
 
     private function formatPrintDate($date)
@@ -1241,6 +1547,213 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
     }
 
+    private function renderProgressReportPdf($pdf, array $report)
+    {
+        $cluster = (array) ($report['cluster'] ?? []);
+        $scope = (string) ($report['scope'] ?? 'CLUSTER');
+        $itemTypes = (array) ($report['itemTypes'] ?? []);
+        $planByType = (array) ($report['planByType'] ?? []);
+        $historyRows = (array) ($report['historyRows'] ?? []);
+        $finalAchieve = (array) ($report['finalAchieve'] ?? []);
+        $clusterName = trim((string) ($cluster['cluster_name'] ?? '-'));
+        $spv = trim((string) ($cluster['spv'] ?? '-'));
+        $percent = (float) ($report['percent'] ?? 0);
+        $tkmLogo = $this->resolvePdfLogoFile([
+            'assets/dist/img/solid logo tkm landscape transparent.png',
+            'assets/dist/img/logotkmsolid.png',
+        ]);
+        $webLogo = $this->resolvePdfLogoFile([
+            'assets/dist/img/logoweb.png',
+        ]);
+
+        $html = '<style>
+            table { border-collapse: collapse; }
+            .letterhead td { border-bottom:2px solid #111827; padding:4px 6px 8px; vertical-align:middle; }
+            .brand { font-size:18px; font-weight:bold; text-align:center; color:#0f172a; }
+            .meta td { border:1px solid #111827; padding:4px 6px; font-size:8px; }
+            .title { font-size:14px; font-weight:bold; text-align:center; }
+            .subtitle { font-size:8px; color:#374151; text-align:center; }
+            .summary td { border:1px solid #111827; padding:4px 6px; font-size:8px; }
+            .tracker th { border:1px solid #111827; background-color:#1f2937; color:#ffffff; font-weight:bold; text-align:center; font-size:6.2px; padding:3px; }
+            .tracker td { border:1px solid #111827; font-size:6.2px; padding:3px; text-align:center; }
+            .tracker .left { text-align:left; }
+            .tracker .total { background-color:#f3f4f6; font-weight:bold; }
+            .section-title { font-size:10px; font-weight:bold; margin-top:8px; }
+            .daily th { border:1px solid #111827; background-color:#1f2937; color:#ffffff; font-weight:bold; text-align:center; font-size:6.4px; padding:3px; }
+            .daily td { border:1px solid #111827; font-size:6.4px; padding:3px; text-align:center; }
+            .daily .left { text-align:left; }
+        </style>';
+
+        $leftLogo = $tkmLogo !== ''
+            ? '<img src="' . html_escape($tkmLogo) . '" height="28">'
+            : '';
+        $rightLogo = $webLogo !== ''
+            ? '<img src="' . html_escape($webLogo) . '" height="28">'
+            : '';
+
+        $html .= '<table class="letterhead" width="100%">
+            <tr>
+                <td width="25%">' . $leftLogo . '</td>
+                <td width="50%" class="brand">DatabaseTKM</td>
+                <td width="25%" align="right">' . $rightLogo . '</td>
+            </tr>
+        </table><br>';
+
+        $html .= '<table class="meta" width="100%">
+            <tr>
+                <td width="22%"><strong>Progress Report</strong></td>
+                <td width="28%">' . html_escape($scope) . '</td>
+                <td width="18%"><strong>Tanggal Print</strong></td>
+                <td width="32%">' . html_escape(date('d/m/Y H:i')) . '</td>
+            </tr>
+            <tr>
+                <td><strong>Cluster</strong></td>
+                <td>' . html_escape($clusterName) . '</td>
+                <td><strong>Team</strong></td>
+                <td>' . html_escape($spv !== '' ? $spv : '-') . '</td>
+            </tr>
+            <tr>
+                <td><strong>Regional / Kota</strong></td>
+                <td>' . html_escape((string) ($cluster['regional_name'] ?? '-') . ' / ' . (string) ($cluster['city_name'] ?? '-')) . '</td>
+                <td><strong>OLT</strong></td>
+                <td>' . html_escape((string) ($cluster['nama_olt'] ?? '-')) . '</td>
+            </tr>
+        </table>';
+
+        $html .= '<br><div class="title">HISTORY PROGRESS ' . html_escape($scope) . '</div>';
+        $html .= '<div class="subtitle">Dokumen bukti progress untuk penagihan invoice</div><br>';
+
+        $html .= '<table class="summary" width="100%">
+            <tr>
+                <td width="25%"><strong>Total Plan</strong><br>' . $this->formatProgressReportNumber((float) ($report['totalPlan'] ?? 0)) . '</td>
+                <td width="25%"><strong>Total Achievement</strong><br>' . $this->formatProgressReportNumber((float) ($report['totalAchieve'] ?? 0)) . '</td>
+                <td width="25%"><strong>Selisih</strong><br>' . $this->formatProgressReportNumber((float) ($report['totalGap'] ?? 0)) . '</td>
+                <td width="25%"><strong>Persentase</strong><br>' . $this->formatProgressReportPercent($percent) . '</td>
+            </tr>
+        </table><br>';
+
+        if (empty($report['hasPlan'])) {
+            $html .= '<table class="summary" width="100%"><tr><td>BOQ Tracker ' . html_escape($scope) . ' belum memiliki plan.</td></tr></table>';
+        } else {
+            $html .= '<table class="tracker" width="100%"><thead><tr>';
+            $html .= '<th rowspan="2" width="4%">No</th><th rowspan="2" width="6%">HP DRM</th>';
+            $dynamicWidth = count($itemTypes) > 0 ? (62 / max(count($itemTypes), 1)) : 10;
+            foreach ($itemTypes as $itemType) {
+                $html .= '<th colspan="2" width="' . (float) $dynamicWidth . '%">' . html_escape($itemType) . '</th>';
+            }
+            $html .= '<th rowspan="2" width="10%">Tanggal</th><th rowspan="2" width="18%">Keterangan</th></tr><tr>';
+            foreach ($itemTypes as $itemType) {
+                $html .= '<th>PLAN</th><th>ACHIEV</th>';
+            }
+            $html .= '</tr></thead><tbody>';
+
+            foreach ($historyRows as $index => $row) {
+                $html .= '<tr>';
+                $html .= '<td>' . ((int) $index + 1) . '</td>';
+                $html .= '<td>' . ($index === 0 ? $this->formatProgressReportNumber((float) ($cluster['homepass_drm'] ?? 0)) : '-') . '</td>';
+                foreach ($itemTypes as $itemType) {
+                    $html .= '<td>' . ($index === 0 ? $this->formatProgressReportNumber((float) ($planByType[$itemType] ?? 0)) : '-') . '</td>';
+                    $html .= '<td>' . $this->formatProgressReportNumber((float) ($row['achieve'][$itemType] ?? 0), true) . '</td>';
+                }
+                $html .= '<td>' . html_escape((string) ($row['progress_date'] ?? '-')) . '</td>';
+                $html .= '<td class="left">' . html_escape((string) ($row['remark'] ?? '-')) . '</td>';
+                $html .= '</tr>';
+            }
+
+            $html .= '<tr class="total"><td colspan="2">Total</td>';
+            foreach ($itemTypes as $itemType) {
+                $html .= '<td>' . $this->formatProgressReportNumber((float) ($planByType[$itemType] ?? 0)) . '</td>';
+                $html .= '<td>' . $this->formatProgressReportNumber((float) ($finalAchieve[$itemType] ?? 0), true) . '</td>';
+            }
+            $html .= '<td colspan="2"></td></tr>';
+
+            $html .= '<tr class="total"><td colspan="2">Selisih</td>';
+            foreach ($itemTypes as $itemType) {
+                $html .= '<td colspan="2">' . $this->formatProgressReportNumber((float) (($planByType[$itemType] ?? 0) - ($finalAchieve[$itemType] ?? 0)), true) . '</td>';
+            }
+            $html .= '<td colspan="2"></td></tr>';
+            $html .= '</tbody></table>';
+        }
+
+        $html .= $this->buildProgressReportDailyActivityHtml((array) ($report['dailyActivityGroups'] ?? []));
+
+        $pdf->writeHTML($html, true, false, true, false, '');
+    }
+
+    private function buildProgressReportDailyActivityHtml(array $dailyActivityGroups)
+    {
+        $html = '<br><div class="section-title">Breakdown Daily Progress Aktivitas</div>';
+        if (empty($dailyActivityGroups)) {
+            return $html . '<table class="summary" width="100%"><tr><td>Belum ada daily progress aktivitas untuk scope ini.</td></tr></table>';
+        }
+
+        $html .= '<table class="daily" width="100%"><thead><tr>
+            <th width="4%">No</th>
+            <th width="10%">Tanggal</th>
+            <th width="9%">Team/Orang</th>
+            <th width="14%">Aktivitas</th>
+            <th width="13%">Detail</th>
+            <th width="6%">Qty</th>
+            <th width="7%">Jenis</th>
+            <th width="9%">Tipe</th>
+            <th width="7%">Foto</th>
+            <th width="11%">PIC</th>
+            <th width="10%">Remark</th>
+        </tr></thead><tbody>';
+
+        $rowNo = 1;
+        foreach ($dailyActivityGroups as $group) {
+            $rows = array_values((array) ($group['rows'] ?? []));
+            $rowspan = max(count($rows), 1);
+            foreach ($rows as $index => $row) {
+                $html .= '<tr>';
+                $html .= '<td>' . $rowNo . '</td>';
+                if ($index === 0) {
+                    $html .= '<td rowspan="' . (int) $rowspan . '">' . html_escape((string) ($group['date'] ?? '-')) . '</td>';
+                }
+                $html .= '<td>' . (int) ($row['team_count'] ?? 0) . ' / ' . (int) ($row['worker_count'] ?? 0) . '</td>';
+                $html .= '<td class="left">' . html_escape((string) ($row['activity_name'] ?? '-')) . '</td>';
+                $html .= '<td class="left">' . html_escape((string) ($row['activity_detail'] ?? '-')) . '</td>';
+                $html .= '<td>' . $this->formatProgressReportQty((float) ($row['qty_activity'] ?? 0)) . '</td>';
+                $html .= '<td>' . html_escape((string) ($row['unit_activity'] ?? '')) . '</td>';
+                $html .= '<td>' . html_escape((string) ($row['boq_type'] ?? '-')) . '</td>';
+                $html .= '<td>' . (int) ($row['photo_count'] ?? 0) . '</td>';
+                $html .= '<td class="left">' . html_escape((string) ($row['pic'] ?? '-')) . '</td>';
+                $html .= '<td class="left">' . html_escape((string) ($row['remark_activity'] ?? '-')) . '</td>';
+                $html .= '</tr>';
+                $rowNo++;
+            }
+        }
+
+        return $html . '</tbody></table>';
+    }
+
+    private function formatProgressReportNumber($value, $zeroAsDash = false)
+    {
+        $number = (float) $value;
+        if ($zeroAsDash && abs($number) < 0.00001) {
+            return '-';
+        }
+
+        return number_format($number, 0, ',', '.');
+    }
+
+    private function formatProgressReportPercent($value)
+    {
+        $number = (float) $value;
+        if (abs($number) < 0.00001) {
+            return '0%';
+        }
+
+        return rtrim(rtrim(number_format($number, 1, ',', '.'), '0'), ',') . '%';
+    }
+
+    private function formatProgressReportQty($value)
+    {
+        $number = (float) $value;
+        return rtrim(rtrim(number_format($number, 2, ',', '.'), '0'), ',');
+    }
+
     private function appendPrintPhotoItemToRemark($remark, array $photo)
     {
         $remark = trim((string) $remark);
@@ -1332,6 +1845,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
     private function resolveTcpdfPath()
     {
         $candidatePaths = [
+            'C:/xampp/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
             'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
             dirname(FCPATH) . '/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
             FCPATH . '../phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
@@ -1352,6 +1866,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         $scanDirectories = [
+            'C:/xampp/phpMyAdmin/vendor/tecnickcom/tcpdf',
             'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf',
             dirname(FCPATH) . '/phpMyAdmin/vendor/tecnickcom/tcpdf',
             FCPATH . '../phpMyAdmin/vendor/tecnickcom/tcpdf',
