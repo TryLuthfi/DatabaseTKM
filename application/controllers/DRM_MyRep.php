@@ -1079,7 +1079,7 @@ class DRM_MyRep extends CI_Controller
                     $sheetParseCandidates[] = [
                         'name' => (string) $worksheet->getTitle(),
                         'state' => (string) $worksheet->getSheetState(),
-                        'rows' => $worksheet->toArray(null, true, true, true),
+                        'rows' => $this->worksheetToArraySafe($worksheet),
                     ];
                 }
             }
@@ -1326,6 +1326,42 @@ class DRM_MyRep extends CI_Controller
         }
 
         return ['items' => $items, 'warnings' => $warnings, 'debug' => (array) ($bestResult['debug'] ?? [])];
+    }
+
+    private function worksheetToArraySafe(PHPExcel_Worksheet $worksheet)
+    {
+        $rows = [];
+        $highestRow = (int) $worksheet->getHighestRow();
+        $highestColumn = (string) $worksheet->getHighestColumn();
+        $highestColumnIndex = PHPExcel_Cell::columnIndexFromString($highestColumn);
+
+        for ($row = 1; $row <= $highestRow; $row++) {
+            $rowData = [];
+            for ($colIndex = 0; $colIndex < $highestColumnIndex; $colIndex++) {
+                $column = PHPExcel_Cell::stringFromColumnIndex($colIndex);
+                $cell = $worksheet->getCell($column . $row);
+                if ($cell === null) {
+                    $rowData[$column] = '';
+                    continue;
+                }
+
+                $value = $cell->getValue();
+                if (is_string($value) && strlen($value) > 0 && $value[0] === '=') {
+                    $cachedValue = $cell->getOldCalculatedValue();
+                    if ($cachedValue !== null && $cachedValue !== '') {
+                        $value = $cachedValue;
+                    } else {
+                        // Jangan paksa evaluasi formula di server agar parsing tidak gagal total.
+                        $value = '';
+                    }
+                }
+
+                $rowData[$column] = $value;
+            }
+            $rows[$row] = $rowData;
+        }
+
+        return $rows;
     }
 
     private function normalizeBoqItemName($value)
