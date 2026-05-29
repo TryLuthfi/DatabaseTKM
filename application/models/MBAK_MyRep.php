@@ -1308,6 +1308,90 @@ class MBAK_MyRep extends CI_Model
         return $this->currentUserAllowedCitySet;
     }
 
+    public function getBakTableDataDebugContext()
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        $context = [
+            'database' => '',
+            'tables_ready' => $this->bakTablesReady(),
+            'document_tables_ready' => $this->bakDocumentTablesReady(),
+            'user_id' => $userId,
+            'id_level' => (int) $this->session->userdata('id_level'),
+            'level' => (string) $this->session->userdata('nama_level'),
+            'restrict_city' => $this->shouldRestrictCityByUser(),
+            'allowed_city_count' => null,
+            'nik' => '',
+            'sitac_ho_type' => null,
+            'sitac_rows_for_nik' => null,
+            'role_rows_for_nik' => null,
+        ];
+
+        try {
+            $dbRow = (array) $this->db->query('SELECT DATABASE() AS db_name')->row_array();
+            $context['database'] = (string) ($dbRow['db_name'] ?? '');
+        } catch (\Throwable $e) {
+            $context['database'] = 'unavailable: ' . $e->getMessage();
+        }
+
+        if ($this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            try {
+                $columnRow = (array) $this->db
+                    ->query("SHOW COLUMNS FROM tb_myrep_pic_mapping_city LIKE 'sitac_ho'")
+                    ->row_array();
+                $context['sitac_ho_type'] = (string) ($columnRow['Type'] ?? '');
+            } catch (\Throwable $e) {
+                $context['sitac_ho_type'] = 'unavailable: ' . $e->getMessage();
+            }
+        }
+
+        if ($userId > 0 && $this->db->table_exists('tb_master_user_new')) {
+            $user = (array) $this->db
+                ->select('nik')
+                ->from('tb_master_user_new')
+                ->where('id', $userId)
+                ->limit(1)
+                ->get()
+                ->row_array();
+            $context['nik'] = trim((string) ($user['nik'] ?? ''));
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        $context['allowed_city_count'] = count($allowedCitySet);
+
+        if ($context['nik'] !== '' && $this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            if ($this->db->field_exists('sitac_ho', 'tb_myrep_pic_mapping_city')) {
+                $sql = 'SELECT COUNT(1) AS total_rows FROM tb_myrep_pic_mapping_city WHERE '
+                    . myrep_pic_column_contains_sql($this->db, '`sitac_ho`', $context['nik']);
+                $row = (array) $this->db->query($sql)->row_array();
+                $context['sitac_rows_for_nik'] = (int) ($row['total_rows'] ?? 0);
+            }
+
+            $existingRoleColumns = [];
+            foreach ($this->cityPicRoleColumns as $columnName) {
+                if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                    $existingRoleColumns[] = $columnName;
+                }
+            }
+
+            if (!empty($existingRoleColumns)) {
+                $whereParts = [];
+                foreach ($existingRoleColumns as $columnName) {
+                    $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $context['nik']);
+                }
+
+                $sql = 'SELECT COUNT(DISTINCT city_name) AS total_rows FROM tb_myrep_pic_mapping_city WHERE ';
+                if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+                    $sql .= 'is_active = 1 AND ';
+                }
+                $sql .= '(' . implode(' OR ', $whereParts) . ')';
+                $row = (array) $this->db->query($sql)->row_array();
+                $context['role_rows_for_nik'] = (int) ($row['total_rows'] ?? 0);
+            }
+        }
+
+        return $context;
+    }
+
     private function shouldRestrictCityByUser()
     {
         $userId = (int) $this->session->userdata('id_user');

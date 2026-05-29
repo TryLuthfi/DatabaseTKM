@@ -68,13 +68,19 @@ class BAK_MyRep extends CI_Controller
 
     public function tableData()
     {
+        $debugEnabled = $this->isTableDataDebugEnabled();
         if (empty($this->session->userdata('id_user'))) {
-            $this->jsonDataTableResponse(0, 0, []);
+            $extra = $debugEnabled ? ['_debug' => ['reason' => 'no_session']] : [];
+            $this->jsonDataTableResponse(0, 0, [], $extra);
             return;
         }
 
         if (!$this->MBAK_MyRep->bakTablesReady()) {
-            $this->jsonDataTableResponse(0, 0, []);
+            $extra = $debugEnabled ? ['_debug' => [
+                'reason' => 'bak_tables_not_ready',
+                'context' => $this->MBAK_MyRep->getBakTableDataDebugContext(),
+            ]] : [];
+            $this->jsonDataTableResponse(0, 0, [], $extra);
             return;
         }
 
@@ -139,23 +145,60 @@ class BAK_MyRep extends CI_Controller
                 $data[] = $this->buildBakTableRow($row, $no++, $docReady, $documentDefinitions, $documentMap, $clusterReviewPicMap, $permissions);
             }
 
-            $this->jsonDataTableResponse((int) ($page['recordsTotal'] ?? 0), (int) ($page['recordsFiltered'] ?? 0), $data);
+            $extra = [];
+            if ($debugEnabled) {
+                $extra['_debug'] = [
+                    'reason' => 'ok',
+                    'request' => [
+                        'city' => $selectedCity,
+                        'status' => $selectedStatus,
+                        'tab' => $tab,
+                        'approval_status' => $approvalStatus,
+                        'start' => $start,
+                        'length' => $length,
+                        'search' => $searchValue,
+                    ],
+                    'page' => [
+                        'recordsTotal' => (int) ($page['recordsTotal'] ?? 0),
+                        'recordsFiltered' => (int) ($page['recordsFiltered'] ?? 0),
+                        'rows' => count($rows),
+                    ],
+                    'context' => $this->MBAK_MyRep->getBakTableDataDebugContext(),
+                ];
+            }
+
+            $this->jsonDataTableResponse((int) ($page['recordsTotal'] ?? 0), (int) ($page['recordsFiltered'] ?? 0), $data, $extra);
         } catch (\Throwable $e) {
             log_message('error', 'BAK tableData failed: ' . $e->getMessage());
-            $this->jsonDataTableResponse(0, 0, []);
+            $extra = $debugEnabled ? ['_debug' => [
+                'reason' => 'exception',
+                'message' => $e->getMessage(),
+                'context' => $this->MBAK_MyRep->getBakTableDataDebugContext(),
+            ]] : [];
+            $this->jsonDataTableResponse(0, 0, [], $extra);
         }
     }
 
-    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data)
+    private function isTableDataDebugEnabled()
     {
+        return (string) $this->input->post('debug') === '1' || (string) $this->input->get('debug') === '1';
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data, array $extra = [])
+    {
+        $payload = [
+            'draw' => (int) $this->input->post('draw'),
+            'recordsTotal' => (int) $recordsTotal,
+            'recordsFiltered' => (int) $recordsFiltered,
+            'data' => $data,
+        ];
+        if (!empty($extra)) {
+            $payload = array_merge($payload, $extra);
+        }
+
         $this->output
             ->set_content_type('application/json')
-            ->set_output(json_encode([
-                'draw' => (int) $this->input->post('draw'),
-                'recordsTotal' => (int) $recordsTotal,
-                'recordsFiltered' => (int) $recordsFiltered,
-                'data' => $data,
-            ]));
+            ->set_output(json_encode($payload));
     }
 
     private function buildBakTableRow(array $row, $no, $docReady, array $documentDefinitions, array $documentMap, array $clusterReviewPicMap, array $permissions)
