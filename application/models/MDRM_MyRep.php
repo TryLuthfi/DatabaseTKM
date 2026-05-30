@@ -666,12 +666,7 @@ class MDRM_MyRep extends CI_Model
         $subfeederHeader = $this->getDrmBoqHeader($clusterId, 'SUBFEEDER');
         $subfeederApproved = !empty($subfeederHeader['id_drm_boq']) && strtoupper(trim((string) ($subfeederHeader['review_status'] ?? ''))) === 'APPROVED';
         if (!$subfeederApproved && $this->drmBoqTablesReady()) {
-            $this->db
-                ->where('id_myrep_cluster', $clusterId)
-                ->where('status_baseline', 'ACTIVE')
-                ->update('tb_myrep_boq_baseline', [
-                    'status_baseline' => 'REPLACED',
-                ]);
+            $this->replaceActiveBaselines($clusterId, 'CLUSTER');
         }
 
         $this->db->trans_complete();
@@ -1352,12 +1347,7 @@ class MDRM_MyRep extends CI_Model
         }
 
         // Replace previous active baseline(s) before creating the new combined baseline.
-        $this->db
-            ->where('id_myrep_cluster', (int) $clusterId)
-            ->where('status_baseline', 'ACTIVE')
-            ->update('tb_myrep_boq_baseline', [
-                'status_baseline' => 'REPLACED',
-            ]);
+        $this->replaceActiveBaselines($clusterId, 'CLUSTER');
 
         $baselinePayload = [
             'id_myrep_cluster' => (int) $clusterId,
@@ -1433,6 +1423,49 @@ class MDRM_MyRep extends CI_Model
     {
         $requirement = $this->getScopeRequirement((int) $clusterId, $scopeType);
         return strtoupper(trim((string) ($requirement['requirement_status'] ?? 'REQUIRED'))) === 'NOT_REQUIRED_APPROVED';
+    }
+
+    private function replaceActiveBaselines($clusterId, $scopeType = 'CLUSTER')
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        if ($this->baselineLegacyUniqueIndexExists()) {
+            $this->db
+                ->where('id_myrep_cluster', $clusterId)
+                ->where('status_baseline', 'REPLACED');
+            if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+                $this->db->where('scope_type', $scopeType);
+            }
+            $this->db->delete('tb_myrep_boq_baseline');
+        }
+
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('status_baseline', 'ACTIVE');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('scope_type', $scopeType);
+        }
+        $this->db->update('tb_myrep_boq_baseline', [
+            'status_baseline' => 'REPLACED',
+        ]);
+    }
+
+    private function baselineLegacyUniqueIndexExists()
+    {
+        if (!$this->db->table_exists('tb_myrep_boq_baseline')) {
+            return false;
+        }
+
+        $query = $this->db->query("SHOW INDEX FROM `tb_myrep_boq_baseline` WHERE `Key_name` = 'uniq_myrep_boq_baseline_cluster_scope' AND `Non_unique` = 0");
+        return $query && $query->num_rows() > 0;
     }
 
     public function rejectDrmBoq($clusterId, $userId, $remark, $scopeType = 'CLUSTER')

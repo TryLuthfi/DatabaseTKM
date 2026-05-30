@@ -154,6 +154,9 @@ class DRM_MyRep extends CI_Controller
         $subfeederRequirement = $data['scopeRequirementReady']
             ? $this->MDRM_MyRep->getScopeRequirement($clusterId, 'SUBFEEDER')
             : ['requirement_status' => 'REQUIRED'];
+        $subfeederRequirementStatus = strtoupper(trim((string) ($subfeederRequirement['requirement_status'] ?? 'REQUIRED')));
+        $subfeederBoqVisible = $data['subfeederReady']
+            && !in_array($subfeederRequirementStatus, ['NOT_REQUIRED_PENDING', 'NOT_REQUIRED_APPROVED'], true);
         $data['drmScopes'] = [
             'CLUSTER' => [
                 'key' => 'CLUSTER',
@@ -172,11 +175,11 @@ class DRM_MyRep extends CI_Controller
                 'label' => 'Doc Subfeeder',
                 'requirement' => $subfeederRequirement,
                 'documentRows' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId, 'SUBFEEDER') : [],
-                'boqHeader' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'SUBFEEDER') : [],
-                'boqItems' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'SUBFEEDER') : [],
-                'boqBaselineHeader' => $data['subfeederReady'] ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId, 'SUBFEEDER') : [],
-                'boqBaselineItems' => $data['subfeederReady'] ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId, 'SUBFEEDER') : [],
-                'apdBoqFile' => $data['subfeederReady'] ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, 'SUBFEEDER') : [],
+                'boqHeader' => $subfeederBoqVisible ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'SUBFEEDER') : [],
+                'boqItems' => $subfeederBoqVisible ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'SUBFEEDER') : [],
+                'boqBaselineHeader' => $subfeederBoqVisible ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId, 'SUBFEEDER') : [],
+                'boqBaselineItems' => $subfeederBoqVisible ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId, 'SUBFEEDER') : [],
+                'apdBoqFile' => $subfeederBoqVisible ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, 'SUBFEEDER') : [],
                 'isReady' => $data['subfeederReady'],
             ],
         ];
