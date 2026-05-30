@@ -220,7 +220,7 @@ class MDRM_MyRep extends CI_Model
             $row['doc_rejected'] = $summary['rejected'];
             $row['drm_cluster_status'] = $boqStatusMap[$clusterId]['CLUSTER'] ?? '';
             $row['drm_subfeeder_status'] = $boqStatusMap[$clusterId]['SUBFEEDER'] ?? '';
-            if (($row['drm_subfeeder_status'] ?? '') === '' && !empty($scopeRequirementStatusMap[$clusterId]['SUBFEEDER'])) {
+            if (!empty($scopeRequirementStatusMap[$clusterId]['SUBFEEDER'])) {
                 $row['drm_subfeeder_status'] = $scopeRequirementStatusMap[$clusterId]['SUBFEEDER'];
             }
             $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
