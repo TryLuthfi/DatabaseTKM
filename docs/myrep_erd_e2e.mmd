@@ -1,0 +1,494 @@
+%% MyRepublik E2E ERD - runtime tables
+%% Render with https://mermaid.live or any Markdown viewer with Mermaid enabled.
+%% Total runtime tables represented: 52.
+
+erDiagram
+  tb_level ||--o{ tb_master_user_new : level
+  tb_master_user_new ||--o{ tb_master_user_child : menu_access
+  tb_master_user_new ||--o{ tb_user_page_permission : page_override
+  tb_master_user_new ||--o{ tb_myrep_user_permission : myrep_override
+  tb_master_user_new ||--o{ tb_myrep_notification_route : fixed_target
+  tb_master_user_new ||..o{ tb_myrep_pic_mapping_city : "nik in role columns"
+
+  md_provinsi_indonesia ||--o{ md_kokab_indonesia : province
+  md_kokab_indonesia ||--o{ md_kec_indonesia : regency
+  md_kec_indonesia ||--o{ md_dusun_indonesia : district
+  md_kokab_indonesia ||..o{ tb_myrep_cluster : regency_id
+  md_kec_indonesia ||..o{ tb_myrep_cluster : district_id
+  md_dusun_indonesia ||..o{ tb_myrep_cluster : village_id
+
+  tb_rfs_myrep_monthly_target ||--o{ tb_rfs_myrep_cluster : target
+  tb_rfs_myrep_monthly_target ||--o{ tb_myrep_cluster : target
+  tb_rfs_myrep_monthly_target ||--o{ tb_rfs_myrep_mainfeeder : target
+  tb_rfs_myrep_cluster ||--o{ tb_myrep_cluster : source_rfs
+  tb_rfs_myrep_cluster ||--o{ tb_rfs_myrep_cluster_plan : plans
+  tb_rfs_myrep_cluster ||--o{ tb_rfs_myrep_claim : claims
+  tb_rfs_myrep_cluster ||--o{ tb_rfs_myrep_atp_file : atp_files
+
+  md_rfs_myrep_doc_group ||--o{ md_rfs_myrep_doc_item : items
+  tb_rfs_myrep_cluster ||--o{ tb_rfs_myrep_doc_package : doc_packages
+  md_rfs_myrep_doc_group ||--o{ tb_rfs_myrep_doc_package : group
+  tb_rfs_myrep_doc_package ||--o{ tb_rfs_myrep_doc_file : files
+  md_rfs_myrep_doc_item ||--o{ tb_rfs_myrep_doc_file : item
+  tb_rfs_myrep_doc_file ||--o{ tb_rfs_myrep_doc_file_log : logs
+  tb_rfs_myrep_doc_package ||--o{ tb_rfs_myrep_doc_file_log : package_logs
+  md_rfs_myrep_doc_item ||--o{ tb_rfs_myrep_doc_file_log : item_logs
+
+  tb_rfs_myrep_mainfeeder ||--o{ tb_rfs_myrep_mainfeeder_doc_package : doc_packages
+  md_rfs_myrep_mainfeeder_doc_group ||--o{ md_rfs_myrep_mainfeeder_doc_item : items
+  md_rfs_myrep_mainfeeder_doc_group ||--o{ tb_rfs_myrep_mainfeeder_doc_package : group
+  tb_rfs_myrep_mainfeeder_doc_package ||--o{ tb_rfs_myrep_mainfeeder_doc_file : files
+  md_rfs_myrep_mainfeeder_doc_item ||--o{ tb_rfs_myrep_mainfeeder_doc_file : item
+  tb_rfs_myrep_mainfeeder_doc_file ||--o{ tb_rfs_myrep_mainfeeder_doc_file_log : logs
+  tb_rfs_myrep_mainfeeder_doc_package ||--o{ tb_rfs_myrep_mainfeeder_doc_file_log : package_logs
+  md_rfs_myrep_mainfeeder_doc_item ||--o{ tb_rfs_myrep_mainfeeder_doc_file_log : item_logs
+
+  tb_myrep_cluster ||--|| tb_myrep_bak : bak
+  tb_myrep_cluster ||--|| tb_myrep_valsal : valsal
+  tb_myrep_cluster ||--o{ tb_myrep_batch_approval : batch_approval
+  tb_myrep_batch_approval ||--o{ tb_myrep_batch_approval_pic : pics
+  tb_myrep_cluster ||--|| tb_myrep_drm : drm
+  tb_myrep_cluster ||--o{ tb_myrep_scope_requirement : scope_rules
+  tb_myrep_scope_requirement ||--o{ tb_myrep_scope_requirement_log : logs
+  tb_myrep_cluster ||--o{ tb_myrep_scope_requirement_log : scope_logs
+
+  md_myrep_flow_doc_group ||--o{ md_myrep_flow_doc_item : items
+  tb_myrep_cluster ||--o{ tb_myrep_flow_doc_package : doc_packages
+  md_myrep_flow_doc_group ||--o{ tb_myrep_flow_doc_package : group
+  tb_myrep_flow_doc_package ||--o{ tb_myrep_flow_doc_file : files
+  md_myrep_flow_doc_item ||--o{ tb_myrep_flow_doc_file : item
+  tb_myrep_flow_doc_file ||--o{ tb_myrep_flow_doc_file_log : logs
+  tb_myrep_flow_doc_package ||--o{ tb_myrep_flow_doc_file_log : package_logs
+  md_myrep_flow_doc_item ||--o{ tb_myrep_flow_doc_file_log : item_logs
+
+  tb_myrep_cluster ||--o{ tb_myrep_drm_boq : drm_boq
+  tb_myrep_drm ||--o{ tb_myrep_drm_boq : drm_header
+  tb_myrep_flow_doc_file ||--o{ tb_myrep_drm_boq : source_boq_file
+  tb_myrep_drm_boq ||--o{ tb_myrep_drm_boq_item : items
+  md_myrep_boq_item ||--o{ tb_myrep_drm_boq_item : master_item
+  tb_myrep_cluster ||--o{ tb_myrep_boq_baseline : baseline
+  tb_myrep_drm_boq ||--o{ tb_myrep_boq_baseline : approved_source
+  tb_myrep_boq_baseline ||--o{ tb_myrep_boq_baseline_item : items
+  md_myrep_boq_item ||--o{ tb_myrep_boq_baseline_item : master_item
+  tb_myrep_cluster ||--o{ tb_myrep_boq_progress_item : progress
+  tb_myrep_boq_baseline ||--o{ tb_myrep_boq_progress_item : baseline
+  tb_myrep_boq_baseline_item ||--o{ tb_myrep_boq_progress_item : baseline_item
+  tb_myrep_boq_progress_item ||--o{ tb_myrep_boq_progress_photo : photos
+
+  tb_myrep_cluster ||--o{ tb_myrep_impl_daily_activity : daily_activity
+  tb_myrep_impl_daily_activity ||--o{ tb_myrep_impl_daily_activity_photo : photos
+
+  tb_myrep_cluster ||--o{ tb_myrep_po_header : po
+  tb_myrep_po_header ||--o{ tb_myrep_po_header : amendments
+  tb_myrep_po_header ||--o{ tb_myrep_po_termin : terms
+
+  tb_level {
+    int id_level PK
+    varchar nama_level
+  }
+
+  tb_master_user_new {
+    bigint id PK
+    varchar nik UK
+    int id_level FK
+    varchar nama_karyawan
+    varchar username_user
+    varchar status_user
+  }
+
+  tb_master_user_child {
+    int id_master_user_child PK
+    int id_master_user FK
+    varchar validation_user
+  }
+
+  tb_user_page_permission {
+    bigint id_permission PK
+    int id_user FK
+    varchar module_key
+    varchar page_key
+    varchar action_key
+    boolean is_allowed
+  }
+
+  tb_myrep_role_permission {
+    bigint id_permission PK
+    varchar page_key
+    varchar action_key
+    varchar role_key
+    boolean is_allowed
+  }
+
+  tb_myrep_user_permission {
+    bigint id_user_permission PK
+    bigint id_user FK
+    varchar page_key
+    varchar action_key
+    boolean is_allowed
+  }
+
+  tb_myrep_pic_mapping_city {
+    bigint id PK
+    varchar regional_name
+    varchar province_name
+    varchar city_name
+    varchar rpm_area
+    varchar sm_area
+    varchar spv_area
+    varchar admin_area
+    varchar snd_ho
+    varchar atp_ho
+    varchar rfs_ho
+    varchar sitac_ho
+    varchar dc_ho
+    varchar qa_ho
+  }
+
+  tb_myrep_notification_route {
+    int id_route PK
+    varchar module_name
+    varchar event_name
+    varchar target_type
+    int target_user_id FK
+    varchar target_role
+  }
+
+  md_provinsi_indonesia {
+    char id PK
+    varchar name
+  }
+
+  md_kokab_indonesia {
+    char id PK
+    char province_id FK
+    varchar name
+  }
+
+  md_kec_indonesia {
+    char id PK
+    char regency_id FK
+    varchar name
+  }
+
+  md_dusun_indonesia {
+    char id PK
+    char district_id FK
+    varchar name
+  }
+
+  tb_rfs_myrep_monthly_target {
+    int id_target PK
+    smallint year_num
+    tinyint month_num
+    varchar city_name
+    decimal target_myrep
+    decimal realization_myrep
+  }
+
+  tb_rfs_myrep_cluster {
+    int id_cluster PK
+    int id_target FK
+    varchar cluster_name
+    int homepass
+    varchar status_rfs
+    varchar status_atp
+  }
+
+  tb_rfs_myrep_cluster_plan {
+    int id_plan PK
+    int cluster_id FK
+    smallint year_num
+    tinyint month_num
+    decimal optimistic_target
+  }
+
+  tb_rfs_myrep_claim {
+    int id_claim PK
+    int cluster_id FK
+    date claim_date
+    decimal claim_qty
+    varchar status_claim
+  }
+
+  tb_rfs_myrep_atp_file {
+    bigint id_atp_file PK
+    int cluster_id FK
+    varchar doc_type
+    varchar file_path
+  }
+
+  md_rfs_myrep_doc_group {
+    int id_doc_group PK
+    varchar scope_type
+    varchar sow_type
+    varchar group_label
+  }
+
+  md_rfs_myrep_doc_item {
+    int id_doc_item PK
+    int id_doc_group FK
+    varchar doc_name
+    boolean is_required
+  }
+
+  tb_rfs_myrep_doc_package {
+    bigint id_doc_package PK
+    int cluster_id FK
+    int id_doc_group FK
+    varchar status_package
+  }
+
+  tb_rfs_myrep_doc_file {
+    bigint id_doc_file PK
+    bigint id_doc_package FK
+    int id_doc_item FK
+    varchar file_path
+    varchar status_file
+    varchar astri_status
+  }
+
+  tb_rfs_myrep_doc_file_log {
+    bigint id_doc_file_log PK
+    bigint id_doc_file FK
+    bigint id_doc_package FK
+    int id_doc_item FK
+    varchar action_type
+  }
+
+  tb_rfs_myrep_mainfeeder {
+    bigint id_mainfeeder PK
+    int id_target FK
+    varchar mainfeeder_name
+    decimal length_meter
+    date atp_date
+  }
+
+  md_rfs_myrep_mainfeeder_doc_group {
+    int id_doc_group_mainfeeder PK
+    varchar sow_type
+    varchar group_label
+  }
+
+  md_rfs_myrep_mainfeeder_doc_item {
+    int id_doc_item_mainfeeder PK
+    int id_doc_group_mainfeeder FK
+    varchar doc_name
+    boolean is_required
+  }
+
+  tb_rfs_myrep_mainfeeder_doc_package {
+    bigint id_doc_package_mainfeeder PK
+    bigint id_mainfeeder FK
+    int id_doc_group_mainfeeder FK
+    varchar status_package
+  }
+
+  tb_rfs_myrep_mainfeeder_doc_file {
+    bigint id_doc_file_mainfeeder PK
+    bigint id_doc_package_mainfeeder FK
+    int id_doc_item_mainfeeder FK
+    varchar file_path
+    varchar status_file
+    varchar astri_status
+  }
+
+  tb_rfs_myrep_mainfeeder_doc_file_log {
+    bigint id_doc_file_log_mainfeeder PK
+    bigint id_doc_file_mainfeeder FK
+    bigint id_doc_package_mainfeeder FK
+    int id_doc_item_mainfeeder FK
+    varchar action_type
+  }
+
+  tb_myrep_cluster {
+    int id_myrep_cluster PK
+    int rfs_cluster_id FK
+    int id_target FK
+    varchar cluster_name
+    varchar cluster_code
+    varchar city_name
+    varchar status_current
+  }
+
+  tb_myrep_bak {
+    int id_bak PK
+    int id_myrep_cluster FK
+    date ba_open_date
+    date bak_date
+    varchar status_bak
+  }
+
+  tb_myrep_valsal {
+    int id_valsal PK
+    int id_myrep_cluster FK
+    date valsal_date
+    varchar status_valsal
+  }
+
+  tb_myrep_batch_approval {
+    int id_batch_approval PK
+    int id_myrep_cluster FK
+    date submission_date
+    decimal nominal_pengajuan_area
+    varchar staging_status
+  }
+
+  tb_myrep_batch_approval_pic {
+    int id_batch_pic PK
+    int id_batch_approval FK
+    tinyint pic_no
+    varchar pic_name
+  }
+
+  tb_myrep_drm {
+    int id_drm PK
+    int id_myrep_cluster FK
+    date drm_date
+    varchar status_drm
+    varchar nama_olt
+  }
+
+  md_myrep_flow_doc_group {
+    int id_doc_group PK
+    varchar flow_type
+    varchar group_label
+  }
+
+  md_myrep_flow_doc_item {
+    int id_doc_item PK
+    int id_doc_group FK
+    varchar doc_name
+    boolean is_required
+  }
+
+  tb_myrep_flow_doc_package {
+    int id_doc_package PK
+    int id_myrep_cluster FK
+    varchar flow_type
+    int id_doc_group FK
+    varchar status_package
+  }
+
+  tb_myrep_flow_doc_file {
+    int id_doc_file PK
+    int id_doc_package FK
+    int id_doc_item FK
+    varchar file_path
+    varchar status_file
+  }
+
+  tb_myrep_flow_doc_file_log {
+    int id_doc_file_log PK
+    int id_doc_file FK
+    int id_doc_package FK
+    int id_doc_item FK
+    varchar action_type
+  }
+
+  md_myrep_boq_item {
+    int id_boq_item PK
+    varchar item_name
+    varchar item_type
+    varchar item_satuan
+    int default_photo_qty
+  }
+
+  tb_myrep_drm_boq {
+    int id_drm_boq PK
+    int id_myrep_cluster FK
+    varchar scope_type
+    int id_drm FK
+    int source_doc_file_id FK
+    varchar review_status
+  }
+
+  tb_myrep_drm_boq_item {
+    int id_drm_boq_item PK
+    int id_drm_boq FK
+    int id_boq_item FK
+    decimal qty_boq
+    int target_foto_required
+  }
+
+  tb_myrep_boq_baseline {
+    int id_boq_baseline PK
+    int id_myrep_cluster FK
+    varchar scope_type
+    int id_drm_boq FK
+    varchar status_baseline
+  }
+
+  tb_myrep_boq_baseline_item {
+    int id_boq_baseline_item PK
+    int id_boq_baseline FK
+    int id_boq_item FK
+    decimal qty_boq
+    int target_foto_required
+  }
+
+  tb_myrep_boq_progress_item {
+    int id_progress_item PK
+    int id_myrep_cluster FK
+    int id_boq_baseline FK
+    int id_boq_baseline_item FK
+    date progress_date
+    decimal qty_progress
+  }
+
+  tb_myrep_boq_progress_photo {
+    int id_progress_photo PK
+    int id_progress_item FK
+    varchar file_path
+    varchar photo_category
+    varchar status_photo
+  }
+
+  tb_myrep_impl_daily_activity {
+    int id_daily_activity PK
+    int id_myrep_cluster FK
+    date activity_date
+    varchar activity_code
+    varchar scope_type
+    decimal qty_activity
+  }
+
+  tb_myrep_impl_daily_activity_photo {
+    int id_activity_photo PK
+    int id_daily_activity FK
+    varchar file_path
+    varchar caption
+  }
+
+  tb_myrep_scope_requirement {
+    int id_scope_requirement PK
+    int id_myrep_cluster FK
+    varchar scope_type
+    varchar requirement_status
+  }
+
+  tb_myrep_scope_requirement_log {
+    int id_scope_requirement_log PK
+    int id_scope_requirement FK
+    int id_myrep_cluster FK
+    varchar action_type
+    varchar status_after
+  }
+
+  tb_myrep_po_header {
+    int id_po_header PK
+    int id_myrep_cluster FK
+    int parent_po_header_id FK
+    varchar po_type
+    varchar po_number
+    decimal po_value
+    varchar status_po
+  }
+
+  tb_myrep_po_termin {
+    int id_po_termin PK
+    int id_po_header FK
+    int termin_no
+    decimal termin_percent
+    decimal termin_value
+    varchar status_termin
+  }
