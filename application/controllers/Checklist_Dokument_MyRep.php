@@ -306,6 +306,59 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
+        $exportRows = $this->getChecklistItemExportRowsFromRequest();
+        $this->outputChecklistItemXmlWorkbook($exportRows, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xls');
+    }
+
+    public function exportItemRefreshData()
+    {
+        if (!$this->isChecklistRefreshAuthorized()) {
+            $this->output
+                ->set_status_header(401)
+                ->set_content_type('text/plain')
+                ->set_output('Unauthorized');
+            return;
+        }
+
+        $sheet = strtolower(trim((string) $this->input->get('sheet')));
+        $sheet = $sheet === 'pivot' ? 'pivot' : 'data';
+        $exportRows = $this->getChecklistItemExportRowsFromRequest();
+
+        if ($sheet === 'pivot') {
+            $csvRows = $this->buildChecklistItemPivotCsvRows($exportRows);
+            $filename = 'monitoring_item_dokumen_pivot_' . date('Y-m-d') . '.csv';
+        } else {
+            $csvRows = $this->buildChecklistItemDataCsvRows($exportRows);
+            $filename = 'monitoring_item_dokumen_data_' . date('Y-m-d') . '.csv';
+        }
+
+        $this->outputChecklistCsvRows($csvRows, $filename);
+    }
+
+    public function refreshitemdata()
+    {
+        return $this->exportItemRefreshData();
+    }
+
+    private function isChecklistRefreshAuthorized()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            return true;
+        }
+
+        $expectedKey = trim((string) $this->config->item('checklist_doc_refresh_key'));
+        $providedKey = trim((string) $this->input->get('refresh_key'));
+        if ($expectedKey === '' || $providedKey === '') {
+            return false;
+        }
+
+        return function_exists('hash_equals')
+            ? hash_equals($expectedKey, $providedKey)
+            : $expectedKey === $providedKey;
+    }
+
+    private function getChecklistItemExportRowsFromRequest()
+    {
         $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
         $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
@@ -379,7 +432,126 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $exportRows[] = $row;
         }
 
-        $this->outputChecklistItemXmlWorkbook($exportRows, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xls');
+        return $exportRows;
+    }
+
+    private function buildChecklistItemDataCsvRows(array $rows)
+    {
+        $csvRows = [[
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'SOW',
+            'Dokumen',
+            'Verification By',
+            'Status Internal',
+            'Remark Internal',
+            'Status Astri',
+            'Remark Astri',
+            'Uploaded At',
+            'Reviewed At',
+            'Approved At',
+            'Submit Astri',
+        ]];
+
+        $no = 1;
+        foreach ($rows as $row) {
+            $csvRows[] = [
+                $no++,
+                (string) ($row['regional_name'] ?? '-'),
+                (string) ($row['city_name'] ?? '-'),
+                (string) ($row['cluster_name'] ?? '-'),
+                (string) ($row['scope_type'] ?? '-'),
+                (string) ($row['sow_type'] ?? '-'),
+                (string) ($row['doc_name'] ?? '-'),
+                (string) ($row['verification_by'] ?? '-'),
+                $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')),
+                (string) ($row['remark'] ?? '-'),
+                $this->statusLabel((string) ($row['astri_status'] ?? 'NY')),
+                (string) ($row['astri_remark'] ?? '-'),
+                $this->formatDateDisplay($row['uploaded_at'] ?? null),
+                $this->formatDateDisplay($row['reviewed_at'] ?? null),
+                $this->formatDateDisplay($row['approved_at'] ?? null),
+                $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
+            ];
+        }
+
+        return $csvRows;
+    }
+
+    private function buildChecklistItemPivotCsvRows(array $rows)
+    {
+        $pivot = $this->buildChecklistItemPivotData($rows);
+        $headers = ['Regional', 'Kota', 'Cluster', 'Scope'];
+        foreach ($pivot['statusesBySow'] as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $headers[] = $sow . ' - ' . $status;
+            }
+        }
+        $headers[] = 'Grand Total';
+
+        $csvRows = [$headers];
+        foreach ($pivot['rows'] as $pivotRow) {
+            $rowTotal = 0;
+            $csvRow = [
+                $pivotRow['regional'],
+                $pivotRow['city'],
+                $pivotRow['cluster'],
+                $pivotRow['scope'],
+            ];
+
+            foreach ($pivot['statusesBySow'] as $sow => $statuses) {
+                foreach ($statuses as $status) {
+                    $value = (int) ($pivotRow['counts'][$sow][$status] ?? 0);
+                    $rowTotal += $value;
+                    $csvRow[] = $value > 0 ? $value : '';
+                }
+            }
+            $csvRow[] = $rowTotal;
+            $csvRows[] = $csvRow;
+        }
+
+        $totalRow = ['Grand Total', '', '', ''];
+        $grandTotal = 0;
+        foreach ($pivot['statusesBySow'] as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $value = (int) ($pivot['totals'][$sow][$status] ?? 0);
+                $grandTotal += $value;
+                $totalRow[] = $value;
+            }
+        }
+        $totalRow[] = $grandTotal;
+        $csvRows[] = $totalRow;
+
+        return $csvRows;
+    }
+
+    private function outputChecklistCsvRows(array $rows, $filename)
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+        foreach ($rows as $row) {
+            fputcsv($output, $row);
+        }
+        fclose($output);
+        exit;
     }
 
     private function outputChecklistItemXmlWorkbook(array $rows, $filename)
