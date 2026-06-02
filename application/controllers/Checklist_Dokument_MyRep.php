@@ -1,8 +1,11 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class Checklist_Dokument_MyRep extends CI_Controller
 {
+    private $cityPicMappingCache = [];
+
     public function __construct()
     {
         parent::__construct();
@@ -987,7 +990,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 30720,
+                'max_size' => 102400,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -1210,7 +1213,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => '*',
-                'max_size' => 30720,
+                'max_size' => 102400,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -1299,7 +1302,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => '*',
-                'max_size' => 30720,
+                'max_size' => 102400,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -1792,7 +1795,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'CLUSTER',
             (int) ($document['item_id'] ?? 0),
             (string) ($cluster['ho_pic_name'] ?? ''),
-            (string) ($cluster['ho_pic_telegram_user_id'] ?? '')
+            (string) ($cluster['ho_pic_telegram_user_id'] ?? ''),
+            (array) $cluster
         );
 
         $message = $this->buildChecklistTelegramMessage('CLUSTER', [
@@ -1804,6 +1808,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'detail_url' => base_url('Checklist_Dokument_MyRep/detail/' . (int) $clusterId),
             'pic_name' => (string) ($reviewer['name'] ?? ''),
             'pic_telegram_user_id' => (string) ($reviewer['telegram_user_id'] ?? ''),
+            'pic_mentions' => (string) ($reviewer['mention_html'] ?? ''),
             'notification_title' => (string) ($document['notification_title'] ?? 'NEW DOCUMENT'),
         ], $document);
 
@@ -1821,7 +1826,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'MAINFEEDER',
             (int) ($document['item_id'] ?? 0),
             (string) ($mainfeeder['ho_pic_name'] ?? ''),
-            (string) ($mainfeeder['ho_pic_telegram_user_id'] ?? '')
+            (string) ($mainfeeder['ho_pic_telegram_user_id'] ?? ''),
+            (array) $mainfeeder
         );
 
         $message = $this->buildChecklistTelegramMessage('MAINFEEDER', [
@@ -1833,6 +1839,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'detail_url' => base_url('Checklist_Dokument_MyRep/detailMainfeeder/' . (int) $mainfeederId),
             'pic_name' => (string) ($reviewer['name'] ?? ''),
             'pic_telegram_user_id' => (string) ($reviewer['telegram_user_id'] ?? ''),
+            'pic_mentions' => (string) ($reviewer['mention_html'] ?? ''),
             'notification_title' => (string) ($document['notification_title'] ?? 'NEW DOCUMENT'),
         ], $document);
 
@@ -1854,7 +1861,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $categoryLabel = trim((string) ($entity['category'] ?? '-'));
         $detailUrl = trim((string) ($entity['detail_url'] ?? ''));
         $picName = trim((string) ($entity['pic_name'] ?? ''));
-        $picMention = $this->buildTelegramPicMention($picName, (string) ($entity['pic_telegram_user_id'] ?? ''));
+        $picMention = trim((string) ($entity['pic_mentions'] ?? ''));
+        if ($picMention === '') {
+            $picMention = $this->buildTelegramPicMention($picName, (string) ($entity['pic_telegram_user_id'] ?? ''));
+        }
         $notificationTitle = trim((string) ($entity['notification_title'] ?? 'NEW DOCUMENT'));
         $moduleLabel = trim((string) ($entity['module_label'] ?? 'Checklist Dokument'));
         $displayDocLabel = $this->shouldUseModuleOnlyLabel($notificationTitle) ? $moduleLabel : $docName;
@@ -2013,11 +2023,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         return trim((string) ($row['sow_type'] ?? $row['group_label'] ?? 'MAINFEEDER'));
     }
 
-    private function resolveNotificationReviewer($type, $itemId, $fallbackName, $fallbackTelegramUserId)
+    private function resolveNotificationReviewer($type, $itemId, $fallbackName, $fallbackTelegramUserId, array $locationContext = [])
     {
         $reviewer = [
             'name' => $fallbackName !== '' ? $fallbackName : 'PIC HO',
             'telegram_user_id' => $fallbackTelegramUserId,
+            'mention_html' => '',
         ];
 
         if ($itemId <= 0) {
@@ -2038,11 +2049,72 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ->get()
             ->row_array();
 
-        $verificationTeam = strtoupper(trim((string) ($row['verification_team'] ?? '')));
+        $verificationTeam = $this->normalizeVerificationTeam((string) ($row['verification_team'] ?? ''));
+        if ($verificationTeam === '') {
+            return $reviewer;
+        }
+
+        $mappedReviewer = $this->resolveMappedReviewerByVerificationTeam($verificationTeam, $locationContext);
+        if (!empty($mappedReviewer)) {
+            return $mappedReviewer;
+        }
+
         if ($verificationTeam !== 'SITAC') {
             return $reviewer;
         }
 
+        return $this->resolveSitacReviewer($reviewer);
+    }
+
+    private function normalizeVerificationTeam($verificationTeam)
+    {
+        $verificationTeam = strtoupper(str_replace('_', ' ', trim((string) $verificationTeam)));
+        return preg_replace('/\s+/', ' ', $verificationTeam);
+    }
+
+    private function resolveMappedReviewerByVerificationTeam($verificationTeam, array $locationContext = [])
+    {
+        $roleColumnMap = [
+            'RPM' => 'rpm_area',
+            'SM' => 'sm_area',
+            'SPV' => 'spv_area',
+            'SND' => 'snd_area',
+            'ADMIN' => 'admin_area',
+            'SND HO' => 'snd_ho',
+            'RFS HO' => 'rfs_ho',
+            'SITAC HO' => 'sitac_ho',
+            'DC HO' => 'dc_ho',
+        ];
+
+        if (!isset($roleColumnMap[$verificationTeam])) {
+            return [];
+        }
+
+        $cityPicMapping = $this->getNotificationCityPicMapping($locationContext);
+        $nikList = myrep_pic_nik_list($cityPicMapping[$roleColumnMap[$verificationTeam]] ?? '');
+        if (empty($nikList)) {
+            return [];
+        }
+
+        $users = [];
+        foreach ($nikList as $nik) {
+            $mappedUser = $this->getNotificationUserByNik($nik);
+            if (!empty($mappedUser['name'])) {
+                $users[] = $mappedUser;
+                continue;
+            }
+
+            $users[] = [
+                'name' => (string) $nik,
+                'telegram_user_id' => '',
+            ];
+        }
+
+        return $this->combineNotificationReviewers($users);
+    }
+
+    private function resolveSitacReviewer(array $fallbackReviewer)
+    {
         $sitacUser = $this->db
             ->select('nama_karyawan AS nama_user, telegram_user_id')
             ->from('tb_master_user_new')
@@ -2051,13 +2123,114 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ->row_array();
 
         if (!empty($sitacUser['nama_user'])) {
-            $reviewer['name'] = (string) $sitacUser['nama_user'];
+            $fallbackReviewer['name'] = (string) $sitacUser['nama_user'];
         }
         if (!empty($sitacUser['telegram_user_id'])) {
-            $reviewer['telegram_user_id'] = (string) $sitacUser['telegram_user_id'];
+            $fallbackReviewer['telegram_user_id'] = (string) $sitacUser['telegram_user_id'];
+        }
+        $fallbackReviewer['mention_html'] = $this->buildTelegramPicMention(
+            (string) ($fallbackReviewer['name'] ?? 'PIC HO'),
+            (string) ($fallbackReviewer['telegram_user_id'] ?? '')
+        );
+
+        return $fallbackReviewer;
+    }
+
+    private function getNotificationCityPicMapping(array $locationContext = [])
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
         }
 
-        return $reviewer;
+        $city = strtoupper(trim((string) ($locationContext['city_name'] ?? '')));
+        $province = strtoupper(trim((string) ($locationContext['province_name'] ?? '')));
+        $regional = strtoupper(trim((string) ($locationContext['regional_name'] ?? '')));
+        if ($city === '') {
+            return [];
+        }
+
+        $cacheKey = $regional . '|' . $province . '|' . $city;
+        if (isset($this->cityPicMappingCache[$cacheKey])) {
+            return $this->cityPicMappingCache[$cacheKey];
+        }
+
+        $this->db->from('tb_myrep_pic_mapping_city');
+        $this->db->where('UPPER(city_name)', $city);
+        if ($province !== '') {
+            $this->db->where('UPPER(province_name)', $province);
+        }
+        if ($regional !== '') {
+            $this->db->where('UPPER(regional_name)', $regional);
+        }
+
+        $row = $this->db->limit(1)->get()->row_array();
+        if (empty($row)) {
+            $row = $this->db
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $city)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $this->cityPicMappingCache[$cacheKey] = !empty($row) ? $row : [];
+        return $this->cityPicMappingCache[$cacheKey];
+    }
+
+    private function getNotificationUserByNik($nik)
+    {
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return [];
+        }
+
+        $row = $this->db
+            ->select('nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return [
+            'name' => (string) ($row['nama_user'] ?? ''),
+            'telegram_user_id' => (string) ($row['telegram_user_id'] ?? ''),
+        ];
+    }
+
+    private function combineNotificationReviewers(array $users)
+    {
+        $names = [];
+        $mentions = [];
+        $firstTelegramUserId = '';
+
+        foreach ($users as $user) {
+            $name = trim((string) ($user['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $telegramUserId = trim((string) ($user['telegram_user_id'] ?? ''));
+            $names[] = $name;
+            $mentions[] = $this->buildTelegramPicMention($name, $telegramUserId);
+            if ($firstTelegramUserId === '' && $telegramUserId !== '') {
+                $firstTelegramUserId = $telegramUserId;
+            }
+        }
+
+        if (empty($names)) {
+            return [];
+        }
+
+        return [
+            'name' => implode(', ', $names),
+            'telegram_user_id' => $firstTelegramUserId,
+            'mention_html' => implode(', ', $mentions),
+        ];
     }
 
     private function buildTelegramPicMention($picName, $telegramUserId)

@@ -289,7 +289,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
                     <div class="form-group">
                         <label>File</label>
                         <input type="file" name="file" id="mf-upload-file-input" class="form-control" required>
-                        <small class="form-text text-muted">Maksimal dokumen 30 MB.</small>
+                        <small class="form-text text-muted">Maksimal dokumen 100 MB.</small>
                     </div>
                     <div class="form-group">
                         <div class="custom-control custom-checkbox">

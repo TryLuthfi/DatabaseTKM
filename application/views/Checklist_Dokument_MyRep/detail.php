@@ -1393,7 +1393,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                     <div class="upload-dropzone-file" id="upload-file-name">Belum ada file dipilih</div>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">Format yang didukung: PDF, Word, Excel, JPG, JPEG, PNG. Maksimal dokumen 30 MB.</small>
+                            <small class="form-text text-muted">Format yang didukung: PDF, Word, Excel, JPG, JPEG, PNG. Maksimal dokumen 100 MB.</small>
                         </div>
                     </div>
                     <div class="upload-progress-panel" id="upload-progress-panel">
