@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Database Project TKM</title>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+    <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- icheck bootstrap -->
+    <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="<?= base_url('assets') ?>/dist/css/adminlte.min.css">
+    <!-- Google Font: Source Sans Pro -->
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <style>
+        .login-logo img {
+            width: 260px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .password-toggle.input-group-text {
+            width: 40px;
+            justify-content: center;
+            color: #6c757d;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .password-toggle.input-group-text:focus {
+            box-shadow: none;
+            outline: 0;
+        }
+    </style>
+</head>
+
+<body class="hold-transition login-page" style="background: linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.41)), url('<?= base_url("assets/img/IMG_1247.JPG") ?>') no-repeat center center fixed; background-size: cover;">
+    <div class="login-box">
+        <div class="login-logo">
+            <a href="<?= site_url('Auth') ?>">
+                <img src="<?= base_url('assets/dist/img/zeyn-logo.png') ?>" alt="ZEYN Logo">
+            </a>
+        </div>
+        <!-- /.login-logo -->
+        <div class="card">
+            <?php if ($this->session->flashdata('error_log') == 'salah'): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Gagal</strong> Password yang anda masukkan salah
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            <?php if ($this->session->flashdata('error_log') == 'tidak_ada'): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Gagal</strong> Akun anda tidak ditemukan
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            <?php if ($this->session->flashdata('reset_password_success')): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Sukses</strong> <?= htmlspecialchars((string) $this->session->flashdata('reset_password_success'), ENT_QUOTES) ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            <div class="card-body login-card-body">
+                <p class="login-box-msg">Silahkan masuk</p>
+
+                <form action="<?= site_url('Auth') ?>" method="post">
+                    <span class="text text-danger"><?= form_error('username') ?></span>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Username" name="username">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-user"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text text-danger"><?= form_error('pass') ?></span>
+                    <div class="input-group mb-3">
+                        <input id="login_password" type="password" class="form-control" placeholder="Password" name="pass">
+                        <div class="input-group-append">
+                            <button type="button" class="input-group-text password-toggle js-toggle-password" data-target="#login_password" aria-label="Tampilkan password">
+                                <i class="fas fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="<?= base_url('assets') ?>/dist/js/adminlte.min.js"></script>
+<script>
+    (function () {
+        var buttons = document.querySelectorAll('.js-toggle-password');
+        buttons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var target = document.querySelector(button.getAttribute('data-target'));
+                var icon = button.querySelector('i');
+                if (!target || !icon) {
+                    return;
+                }
+
+                var visible = target.getAttribute('type') === 'text';
+                target.setAttribute('type', visible ? 'password' : 'text');
+                icon.classList.toggle('fa-eye', !visible);
+                icon.classList.toggle('fa-eye-slash', visible);
+                button.setAttribute('aria-label', visible ? 'Tampilkan password' : 'Sembunyikan password');
+            });
+        });
+    })();
+</script>
+
+</html>
