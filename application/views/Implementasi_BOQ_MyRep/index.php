@@ -111,7 +111,13 @@ $renderImplTableRows = static function (array $rows) {
         <tr>
             <td><?= $index + 1 ?></td>
             <td>
-                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php if (!empty($row['id_myrep_cluster'])): ?>
+                    <a href="<?= base_url('Implementasi_BOQ_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="font-weight-bold">
+                        <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                    </a>
+                <?php else: ?>
+                    <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php endif; ?>
                 <?php if (!empty($row['cluster_code'])): ?>
                     <div class="text-muted small"><?= htmlspecialchars((string) $row['cluster_code']) ?></div>
                 <?php endif; ?>
