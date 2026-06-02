@@ -1849,7 +1849,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
     private function buildChecklistTelegramMessage($type, array $entity, array $document)
     {
         $uploadedBy = trim((string) $this->session->userdata('nama_user'));
-        $uploadedRole = trim((string) $this->session->userdata('nama_jabatan'));
         $docName = trim((string) ($document['doc_name'] ?? '-'));
         $fileName = trim((string) ($document['file_name'] ?? ''));
         $remark = trim((string) ($document['remark'] ?? ''));
@@ -1868,27 +1867,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $notificationTitle = trim((string) ($entity['notification_title'] ?? 'NEW DOCUMENT'));
         $moduleLabel = trim((string) ($entity['module_label'] ?? 'Checklist Dokument'));
         $displayDocLabel = $this->shouldUseModuleOnlyLabel($notificationTitle) ? $moduleLabel : $docName;
-        $senderPhone = $this->resolveCurrentUserPhone();
-        $senderParts = [];
-
-        if ($uploadedBy !== '') {
-            $senderParts[] = $this->escapeTelegramText($uploadedBy);
-        } else {
-            $senderParts[] = 'System';
-        }
-
-        $metaParts = [];
-        if ($uploadedRole !== '') {
-            $metaParts[] = $this->escapeTelegramText($uploadedRole);
-        }
-        if ($senderPhone !== '') {
-            $metaParts[] = $this->escapeTelegramText($senderPhone);
-        }
-
-        $senderLabel = implode('', [
-            $senderParts[0],
-            !empty($metaParts) ? ' (' . implode(' | ', $metaParts) . ')' : '',
-        ]);
+        $senderLabel = $uploadedBy !== '' ? $this->escapeTelegramText($uploadedBy) : 'System';
 
         $lines = [
             '✅ <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
@@ -2243,16 +2222,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return '<a href="tg://user?id=' . rawurlencode($telegramUserId) . '">' . $safeName . '</a>';
-    }
-
-    private function resolveCurrentUserPhone()
-    {
-        $phone = trim((string) $this->session->userdata('phone'));
-        if ($phone !== '') {
-            return $phone;
-        }
-
-        return 'No HP belum diset';
     }
 
     private function formatTelegramDate($dateTime)
