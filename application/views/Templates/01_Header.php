@@ -7,8 +7,8 @@
   <meta http-equiv="x-ua-compatible" content="ie=edge">
 
   <title><?= $title ?></title>
-  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
-  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
+  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

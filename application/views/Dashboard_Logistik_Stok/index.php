@@ -80,8 +80,8 @@ $total_stok_dashboard = [];
 
 ?>
 
-<link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
-<link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
+<link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>">
+<link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>">
 
 
 
