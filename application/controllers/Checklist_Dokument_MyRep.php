@@ -379,6 +379,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $exportRows[] = $row;
         }
 
+        $this->suppressPhpExcelCompatibilityWarnings();
         $excel = $this->createPHPExcelObject();
         $this->populateChecklistItemDataSheet($excel->getActiveSheet(), $exportRows);
 
@@ -396,6 +397,21 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return new PHPExcel();
+    }
+
+    private function suppressPhpExcelCompatibilityWarnings()
+    {
+        $compatibilityMask = E_WARNING;
+        if (defined('E_DEPRECATED')) {
+            $compatibilityMask |= E_DEPRECATED;
+        }
+        if (defined('E_USER_DEPRECATED')) {
+            $compatibilityMask |= E_USER_DEPRECATED;
+        }
+
+        if ($compatibilityMask > 0) {
+            error_reporting(error_reporting() & ~$compatibilityMask);
+        }
     }
 
     private function outputChecklistItemWorkbook($excel, $filename)
