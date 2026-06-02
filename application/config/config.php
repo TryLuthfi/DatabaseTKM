@@ -537,4 +537,6 @@ $config['rewrite_short_tags'] = FALSE;
 */
 $config['proxy_ips'] = '';
 
+$config['checklist_doc_refresh_key'] = 'EMR-TKM-PH5E5E4EA8504C9-';
+
 date_default_timezone_set('Asia/Jakarta');

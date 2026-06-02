@@ -213,6 +213,11 @@ $mainfeederProgressPercent = checklist_doc_percent(
                                                 <td>
                                                     <?php if (!empty($item['file_path'])): ?>
                                                         <a href="<?= base_url('Checklist_Dokument_MyRep/previewMainfeederDocument/' . (int) $item['id_doc_file_mainfeeder']) ?>" target="_blank"><?= $item['file_name'] ?></a>
+                                                        <div class="mt-1">
+                                                            <a href="<?= base_url('Checklist_Dokument_MyRep/downloadMainfeederDocument/' . (int) $item['id_doc_file_mainfeeder']) ?>" class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-download"></i> Download
+                                                            </a>
+                                                        </div>
                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                         <span class="text-muted">Tanpa file</span>
                                                     <?php else: ?>
@@ -289,7 +294,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
                     <div class="form-group">
                         <label>File</label>
                         <input type="file" name="file" id="mf-upload-file-input" class="form-control" required>
-                        <small class="form-text text-muted">Maksimal dokumen 30 MB.</small>
+                        <small class="form-text text-muted">Maksimal dokumen 100 MB.</small>
                     </div>
                     <div class="form-group">
                         <div class="custom-control custom-checkbox">

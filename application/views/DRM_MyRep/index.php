@@ -97,6 +97,10 @@ $buildDrmStatusSummary = static function (array $rows) {
             $summary['approvedCount']++;
         }
 
+        if (in_array('TIDAK DIBUTUHKAN', $statusSet, true) || in_array('NOT REQUIRED', $statusSet, true)) {
+            $summary['approvedCount']++;
+        }
+
         if (in_array('REJECTED', $statusSet, true)) {
             $summary['rejectedCount']++;
         }
@@ -122,6 +126,8 @@ if (!function_exists('drmBadgeClass')) {
             case 'DONE':
             case 'COMPLETE':
             case 'APPROVED':
+            case 'TIDAK DIBUTUHKAN':
+            case 'NOT REQUIRED':
             case 'DRM':
             case 'RFS':
             case 'ATP':

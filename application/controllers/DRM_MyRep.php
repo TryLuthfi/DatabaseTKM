@@ -149,11 +149,19 @@ class DRM_MyRep extends CI_Controller
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
         $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
         $data['subfeederReady'] = $this->MDRM_MyRep->drmSubfeederReady();
+        $data['scopeRequirementReady'] = $this->MDRM_MyRep->drmScopeRequirementTablesReady();
         $data['canApprove'] = $this->isApprover();
+        $subfeederRequirement = $data['scopeRequirementReady']
+            ? $this->MDRM_MyRep->getScopeRequirement($clusterId, 'SUBFEEDER')
+            : ['requirement_status' => 'REQUIRED'];
+        $subfeederRequirementStatus = strtoupper(trim((string) ($subfeederRequirement['requirement_status'] ?? 'REQUIRED')));
+        $subfeederBoqVisible = $data['subfeederReady']
+            && !in_array($subfeederRequirementStatus, ['NOT_REQUIRED_PENDING', 'NOT_REQUIRED_APPROVED'], true);
         $data['drmScopes'] = [
             'CLUSTER' => [
                 'key' => 'CLUSTER',
                 'label' => 'Doc Cluster',
+                'requirement' => ['requirement_status' => 'REQUIRED'],
                 'documentRows' => $data['docReady'] ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId, 'CLUSTER') : [],
                 'boqHeader' => $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'CLUSTER') : [],
                 'boqItems' => $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'CLUSTER') : [],
@@ -165,12 +173,13 @@ class DRM_MyRep extends CI_Controller
             'SUBFEEDER' => [
                 'key' => 'SUBFEEDER',
                 'label' => 'Doc Subfeeder',
+                'requirement' => $subfeederRequirement,
                 'documentRows' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId, 'SUBFEEDER') : [],
-                'boqHeader' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'SUBFEEDER') : [],
-                'boqItems' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'SUBFEEDER') : [],
-                'boqBaselineHeader' => $data['subfeederReady'] ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId, 'SUBFEEDER') : [],
-                'boqBaselineItems' => $data['subfeederReady'] ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId, 'SUBFEEDER') : [],
-                'apdBoqFile' => $data['subfeederReady'] ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, 'SUBFEEDER') : [],
+                'boqHeader' => $subfeederBoqVisible ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'SUBFEEDER') : [],
+                'boqItems' => $subfeederBoqVisible ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'SUBFEEDER') : [],
+                'boqBaselineHeader' => $subfeederBoqVisible ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId, 'SUBFEEDER') : [],
+                'boqBaselineItems' => $subfeederBoqVisible ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId, 'SUBFEEDER') : [],
+                'apdBoqFile' => $subfeederBoqVisible ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, 'SUBFEEDER') : [],
                 'isReady' => $data['subfeederReady'],
             ],
         ];
@@ -364,6 +373,11 @@ class DRM_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        if ($scopeType === 'SUBFEEDER' && $this->isSubfeederNotRequiredWorkflowLocked($clusterId)) {
+            $this->session->set_flashdata('error', 'Dokumen Subfeeder sedang/telah diajukan tidak dibutuhkan. Aktifkan kembali Subfeeder dulu jika dokumen diperlukan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
         $docItemId = (int) $this->input->post('id_doc_item');
         $detail = $this->MDRM_MyRep->getDrmDocumentDetail($clusterId, $docItemId, $scopeType);
         if ($clusterId <= 0 || $docItemId <= 0 || empty($detail)) {
@@ -451,6 +465,11 @@ class DRM_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        if ($scopeType === 'SUBFEEDER' && $this->isSubfeederNotRequiredWorkflowLocked($clusterId)) {
+            $this->session->set_flashdata('error', 'Dokumen Subfeeder sedang/telah diajukan tidak dibutuhkan. Aktifkan kembali Subfeeder dulu jika dokumen diperlukan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
         $docItemIds = (array) $this->input->post('bulk_doc_item_ids');
         if ($clusterId <= 0 || empty($docItemIds)) {
             $this->session->set_flashdata('error', 'Data bulk upload DRM tidak lengkap.');
@@ -786,6 +805,111 @@ class DRM_MyRep extends CI_Controller
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
+    public function requestSubfeederNotRequired()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $remark = trim((string) $this->input->post('remark'));
+        if (!$this->MDRM_MyRep->drmScopeRequirementTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel requirement scope belum tersedia. Jalankan patch database Subfeeder Not Required dulu.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+        if ($remark === '') {
+            $this->session->set_flashdata('error', 'Alasan Subfeeder tidak dibutuhkan wajib diisi.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->requestScopeNotRequired(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            $remark,
+            'SUBFEEDER'
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Pengajuan Subfeeder tidak dibutuhkan berhasil dikirim ke review HO.' : 'Gagal mengajukan Subfeeder tidak dibutuhkan.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function reviewSubfeederNotRequired()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses review Subfeeder tidak dibutuhkan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+        if (!$this->MDRM_MyRep->drmScopeRequirementTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel requirement scope belum tersedia.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $action = strtolower(trim((string) $this->input->post('action_type')));
+        $approved = $action === 'approve';
+        if (!$approved && $action !== 'reject') {
+            $this->session->set_flashdata('error', 'Aksi review Subfeeder tidak valid.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $remark = trim((string) $this->input->post('remark'));
+        if (!$approved && $remark === '') {
+            $this->session->set_flashdata('error', 'Alasan reject Subfeeder tidak dibutuhkan wajib diisi.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->reviewScopeNotRequired(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            $approved,
+            $remark,
+            'SUBFEEDER'
+        );
+
+        $message = $approved
+            ? 'Subfeeder tidak dibutuhkan berhasil di-approve. Baseline akan terbentuk dari BOQ Cluster jika sudah approved.'
+            : 'Pengajuan Subfeeder tidak dibutuhkan berhasil di-reject.';
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? $message : 'Gagal review Subfeeder tidak dibutuhkan.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function reopenSubfeederRequirement()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses aktifkan kembali Subfeeder.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->reopenScopeRequirement(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            trim((string) $this->input->post('remark')),
+            'SUBFEEDER'
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Subfeeder berhasil diaktifkan kembali. Upload dan approve BOQ Subfeeder untuk membentuk baseline baru.' : 'Gagal mengaktifkan kembali Subfeeder.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
     public function previewDocument($fileId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -834,6 +958,11 @@ class DRM_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        if ($scopeType === 'SUBFEEDER' && $this->isSubfeederNotRequiredWorkflowLocked($clusterId)) {
+            $this->session->set_flashdata('error', 'BOQ Subfeeder sedang/telah diajukan tidak dibutuhkan. Aktifkan kembali Subfeeder dulu jika BOQ diperlukan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
         if (!$this->MDRM_MyRep->drmBoqTablesReady()) {
             $this->session->set_flashdata('error', 'Tabel BOQ DRM belum tersedia.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -880,6 +1009,11 @@ class DRM_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        if ($scopeType === 'SUBFEEDER' && $this->isSubfeederNotRequiredWorkflowLocked($clusterId)) {
+            $this->session->set_flashdata('error', 'BOQ Subfeeder sedang/telah diajukan tidak dibutuhkan. Aktifkan kembali Subfeeder dulu jika BOQ diperlukan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
         if (!$this->MDRM_MyRep->drmDocumentTablesReady() || !$this->MDRM_MyRep->drmBoqTablesReady()) {
             $this->session->set_flashdata('error', 'Tabel dokumen atau BOQ DRM belum tersedia.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -1577,7 +1711,7 @@ class DRM_MyRep extends CI_Controller
             $scopeType
         );
 
-        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve. Baseline implementasi akan terbentuk otomatis setelah BOQ CLUSTER dan SUBFEEDER sama-sama approved.' : 'Gagal approve BOQ DRM.');
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve. Baseline implementasi terbentuk saat BOQ Cluster approved dan BOQ Subfeeder approved atau Subfeeder sudah approved tidak dibutuhkan.' : 'Gagal approve BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
@@ -2088,6 +2222,16 @@ class DRM_MyRep extends CI_Controller
     {
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function isSubfeederNotRequiredWorkflowLocked($clusterId)
+    {
+        if (!$this->MDRM_MyRep->drmScopeRequirementTablesReady()) {
+            return false;
+        }
+
+        $requirement = $this->MDRM_MyRep->getScopeRequirement((int) $clusterId, 'SUBFEEDER');
+        return in_array(strtoupper(trim((string) ($requirement['requirement_status'] ?? 'REQUIRED'))), ['NOT_REQUIRED_PENDING', 'NOT_REQUIRED_APPROVED'], true);
     }
 
     private function sendDrmNotification($eventName, array $cluster, $documentLabel, $moduleLabel = 'DRM')

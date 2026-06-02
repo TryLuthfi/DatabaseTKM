@@ -1,0 +1,200 @@
+%% MyRepublik E2E Flowchart
+%% Render with https://mermaid.live or any Markdown viewer with Mermaid enabled.
+
+flowchart TD
+  START_NODE(["Start"])
+  FINISH_NODE(["End"])
+
+  subgraph SA["SuperAdmin Setup"]
+    SA1["SuperAdmin_UserAccess<br/>Set module MyRepublik per user"]
+    SA2["SuperAdmin_MyRep_CityMapping<br/>Map kota ke PIC role"]
+    SA3["SuperAdmin_MyRep_Config<br/>Set role permission dan notification route"]
+    SA4["Access tables<br/>tb_master_user_child<br/>tb_user_page_permission<br/>tb_myrep_role_permission<br/>tb_myrep_user_permission"]
+    SA5["City and route tables<br/>tb_myrep_pic_mapping_city<br/>tb_myrep_notification_route"]
+
+    SA1 --> SA4
+    SA3 --> SA4
+    SA2 --> SA5
+    SA3 --> SA5
+  end
+
+  subgraph AUTH["Runtime Access Control"]
+    A1["User login"]
+    A2{"Has MyRepublik module?"}
+    A3{"Has page/action permission?"}
+    A4{"City is in user's mapped scope?"}
+    A_DENY["No access"]
+  end
+
+  subgraph BASE["Project Intake and Master Data"]
+    B1["Monitoring_RFS_MyRep<br/>Create monthly target"]
+    B2["Create RFS cluster plan or import cutoff"]
+    B3["Create or sync tb_myrep_cluster"]
+    B4["Main entities<br/>tb_rfs_myrep_monthly_target<br/>tb_rfs_myrep_cluster<br/>tb_myrep_cluster"]
+  end
+
+  subgraph BAK["BAK Flow"]
+    BK1["BAK_MyRep<br/>Create BA Open / BAK data"]
+    BK2["Upload required BAK documents"]
+    BK3{"BAK docs approved?"}
+    BK4["Set status_bak APPROVED/DONE"]
+    BK5["Reject and request revision"]
+    BK6["Tables<br/>tb_myrep_bak<br/>tb_myrep_flow_doc_package<br/>tb_myrep_flow_doc_file<br/>tb_myrep_flow_doc_file_log"]
+  end
+
+  subgraph VALSAL["VALSAL Flow"]
+    V1["VALSAL_MyRep<br/>Create validation sales data"]
+    V2["Upload SND/VALSAL documents"]
+    V3{"VALSAL docs approved?"}
+    V4["Set status_valsal APPROVED/DONE"]
+    V5["Reject and request revision"]
+    V6["Tables<br/>tb_myrep_valsal<br/>tb_myrep_flow_doc_*"]
+  end
+
+  subgraph BATCH["Batch Approval and Donation"]
+    BA1["Batch_Approval_MyRep<br/>Submit donation batch"]
+    BA2["Input recipient, bank, nominal, PIC"]
+    BA3["Approval HO / MyRep / Finance"]
+    BA4{"Released by Finance?"}
+    BA5["Upload transfer proof"]
+    BA6["Post Donasi documents"]
+    BA7{"Post Donasi approved?"}
+    BA8["Set DONE BATCH APPROVAL"]
+    BA9["Reject and request revision"]
+    BA10["Tables<br/>tb_myrep_batch_approval<br/>tb_myrep_batch_approval_pic<br/>tb_myrep_flow_doc_*"]
+  end
+
+  subgraph DRM["DRM and BOQ Baseline"]
+    D1["DRM_MyRep<br/>Create DRM data"]
+    D2["Upload DRM Cluster documents"]
+    D3{"Subfeeder required?"}
+    D4["Upload DRM Subfeeder documents"]
+    D5["Request subfeeder not required"]
+    D6{"Not required approved?"}
+    D7["Review BOQ file"]
+    D8{"BOQ approved?"}
+    D9["Create ACTIVE BOQ baseline"]
+    D10["Reject and request BOQ/document revision"]
+    D11["Tables<br/>tb_myrep_drm<br/>tb_myrep_scope_requirement<br/>tb_myrep_drm_boq<br/>tb_myrep_drm_boq_item<br/>tb_myrep_boq_baseline<br/>tb_myrep_boq_baseline_item"]
+  end
+
+  subgraph IMPL["Implementation BOQ"]
+    I1["Implementasi_BOQ_MyRep<br/>Record daily activity"]
+    I2["Upload daily activity photos"]
+    I3["Input BOQ progress item"]
+    I4["Upload comply photos"]
+    I5{"Daily / comply approved?"}
+    I6["Progress accepted"]
+    I7["Reject photo/progress and revise"]
+    I8["Tables<br/>tb_myrep_impl_daily_activity<br/>tb_myrep_impl_daily_activity_photo<br/>tb_myrep_boq_progress_item<br/>tb_myrep_boq_progress_photo"]
+  end
+
+  subgraph RFS["RFS, Checklist, ATP"]
+    R1["Monitoring_RFS_MyRep<br/>Submit RFS claim"]
+    R2{"RPM/HO claim approved?"}
+    R3["Checklist_Dokument_MyRep<br/>Create cluster document package"]
+    R4["Upload CW ATP / FULL OPM / RFS docs"]
+    R5{"Checklist docs complete and approved?"}
+    R6["ATP_MyRep<br/>Upload punchlist / rectification files"]
+    R7{"ATP done?"}
+    R8["Set cluster DONE"]
+    R9["Reject and request revision"]
+    R10["Tables<br/>tb_rfs_myrep_claim<br/>md_rfs_myrep_doc_group/item<br/>tb_rfs_myrep_doc_package/file/log<br/>tb_rfs_myrep_atp_file"]
+  end
+
+  subgraph MAINFEEDER["Mainfeeder Checklist"]
+    MF1["Checklist_Dokument_MyRep<br/>Create mainfeeder"]
+    MF2["Upload mainfeeder documents"]
+    MF3{"Mainfeeder docs approved?"}
+    MF4["Mainfeeder package DONE"]
+    MF5["Reject and request revision"]
+    MF6["Tables<br/>tb_rfs_myrep_mainfeeder<br/>md_rfs_myrep_mainfeeder_doc_group/item<br/>tb_rfs_myrep_mainfeeder_doc_package/file/log"]
+  end
+
+  subgraph PO["PO Monitoring"]
+    P1["PO_MyRep<br/>Create/import PO header"]
+    P2["Create PO termin plan"]
+    P3["Update invoice/billing status"]
+    P4{"All terms closed?"}
+    P5["PO closed"]
+    P6["Tables<br/>tb_myrep_po_header<br/>tb_myrep_po_termin"]
+  end
+
+  START_NODE --> SA1
+  SA4 --> A1
+  SA5 --> A1
+  A1 --> A2
+  A2 -- "No" --> A_DENY
+  A2 -- "Yes" --> A3
+  A3 -- "No" --> A_DENY
+  A3 -- "Yes" --> A4
+  A4 -- "No" --> A_DENY
+  A4 -- "Yes" --> B1
+
+  B1 --> B2 --> B3 --> B4 --> BK1
+
+  BK1 --> BK2 --> BK3
+  BK2 --> BK6
+  BK3 -- "No" --> BK5 --> BK2
+  BK3 -- "Yes" --> BK4 --> V1
+
+  V1 --> V2 --> V3
+  V2 --> V6
+  V3 -- "No" --> V5 --> V2
+  V3 -- "Yes" --> V4 --> BA1
+
+  BA1 --> BA2 --> BA3 --> BA4
+  BA2 --> BA10
+  BA4 -- "No" --> BA9 --> BA2
+  BA4 -- "Yes" --> BA5 --> BA6 --> BA7
+  BA7 -- "No" --> BA9 --> BA6
+  BA7 -- "Yes" --> BA8 --> D1
+
+  D1 --> D2 --> D3
+  D2 --> D11
+  D3 -- "Yes" --> D4 --> D7
+  D3 -- "No" --> D5 --> D6
+  D6 -- "No" --> D4
+  D6 -- "Yes" --> D7
+  D7 --> D8
+  D8 -- "No" --> D10 --> D2
+  D8 -- "Yes" --> D9 --> I1
+
+  I1 --> I2 --> I3 --> I4 --> I5
+  I2 --> I8
+  I5 -- "No" --> I7 --> I1
+  I5 -- "Yes" --> I6 --> R1
+
+  R1 --> R2
+  R2 -- "No" --> R9 --> R1
+  R2 -- "Yes" --> R3 --> R4 --> R5
+  R4 --> R10
+  R5 -- "No" --> R9 --> R4
+  R5 -- "Yes" --> R6 --> R7
+  R7 -- "No" --> R9 --> R6
+  R7 -- "Yes" --> R8 --> P1
+
+  B1 -. "optional" .-> MF1
+  MF1 --> MF2 --> MF3
+  MF2 --> MF6
+  MF3 -- "No" --> MF5 --> MF2
+  MF3 -- "Yes" --> MF4
+
+  P1 --> P2 --> P3 --> P4
+  P2 --> P6
+  P4 -- "No" --> P3
+  P4 -- "Yes" --> P5 --> FINISH_NODE
+
+  A_DENY --> FINISH_NODE
+
+  classDef setup fill:#eef6ff,stroke:#4f86c6,color:#111
+  classDef process fill:#f7fff0,stroke:#6c9f45,color:#111
+  classDef decision fill:#fff7e6,stroke:#d58a00,color:#111
+  classDef deny fill:#ffecec,stroke:#c43c3c,color:#111
+  classDef data fill:#f3f0ff,stroke:#7b61c9,color:#111
+
+  class SA1,SA2,SA3,A1 setup
+  class B1,B2,B3,BK1,BK2,BK4,BK5,V1,V2,V4,V5,BA1,BA2,BA3,BA5,BA6,BA8,BA9,D1,D2,D4,D5,D7,D9,D10,I1,I2,I3,I4,I6,I7,R1,R3,R4,R6,R8,R9,MF1,MF2,MF4,MF5,P1,P2,P3,P5 process
+  class A2,A3,A4,BK3,V3,BA4,BA7,D3,D6,D8,I5,R2,R5,R7,MF3,P4 decision
+  class A_DENY deny
+  class SA4,SA5,B4,BK6,V6,BA10,D11,I8,R10,MF6,P6 data

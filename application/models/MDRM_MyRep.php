@@ -66,6 +66,12 @@ class MDRM_MyRep extends CI_Model
             && $this->db->field_exists('scope_type', 'tb_myrep_boq_baseline');
     }
 
+    public function drmScopeRequirementTablesReady()
+    {
+        return $this->db->table_exists('tb_myrep_scope_requirement')
+            && $this->db->table_exists('tb_myrep_scope_requirement_log');
+    }
+
     public function getCityOptions()
     {
         if (!$this->drmTablesReady()) {
@@ -204,6 +210,7 @@ class MDRM_MyRep extends CI_Model
 
         $docSummaryMap = $this->getDocumentSummaryMap(array_column($rows, 'id_myrep_cluster'));
         $boqStatusMap = $this->getDrmBoqStatusMap(array_column($rows, 'id_myrep_cluster'));
+        $scopeRequirementStatusMap = $this->getScopeRequirementStatusMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
             $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $summary = $docSummaryMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0, 'rejected' => 0];
@@ -213,6 +220,9 @@ class MDRM_MyRep extends CI_Model
             $row['doc_rejected'] = $summary['rejected'];
             $row['drm_cluster_status'] = $boqStatusMap[$clusterId]['CLUSTER'] ?? '';
             $row['drm_subfeeder_status'] = $boqStatusMap[$clusterId]['SUBFEEDER'] ?? '';
+            if (!empty($scopeRequirementStatusMap[$clusterId]['SUBFEEDER'])) {
+                $row['drm_subfeeder_status'] = $scopeRequirementStatusMap[$clusterId]['SUBFEEDER'];
+            }
             $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
         }
         unset($row);
@@ -486,6 +496,199 @@ class MDRM_MyRep extends CI_Model
             ->order_by('m.sort_no', 'ASC')
             ->get()
             ->result_array();
+    }
+
+    public function getScopeRequirement($clusterId, $scopeType = 'SUBFEEDER')
+    {
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $default = [
+            'id_scope_requirement' => 0,
+            'id_myrep_cluster' => (int) $clusterId,
+            'scope_type' => $scopeType,
+            'requirement_status' => 'REQUIRED',
+            'request_remark' => null,
+            'review_remark' => null,
+            'requested_by' => null,
+            'requested_at' => null,
+            'reviewed_by' => null,
+            'reviewed_at' => null,
+            'reopened_by' => null,
+            'reopened_at' => null,
+            'reopen_remark' => null,
+        ];
+
+        if (!$this->drmScopeRequirementTablesReady()) {
+            return $default;
+        }
+
+        $row = $this->db
+            ->from('tb_myrep_scope_requirement')
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->where('scope_type', $scopeType)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return $default;
+        }
+
+        $row['requirement_status'] = strtoupper(trim((string) ($row['requirement_status'] ?? 'REQUIRED')));
+        return array_merge($default, $row);
+    }
+
+    public function requestScopeNotRequired($clusterId, $userId, $remark, $scopeType = 'SUBFEEDER')
+    {
+        if (!$this->drmScopeRequirementTablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $remark = trim((string) $remark);
+        if ($clusterId <= 0 || $scopeType !== 'SUBFEEDER' || $remark === '') {
+            return false;
+        }
+
+        $existing = $this->getScopeRequirement($clusterId, $scopeType);
+        $status = strtoupper(trim((string) ($existing['requirement_status'] ?? 'REQUIRED')));
+        if ($status === 'NOT_REQUIRED_PENDING' || $status === 'NOT_REQUIRED_APPROVED') {
+            return false;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $payload = [
+            'id_myrep_cluster' => $clusterId,
+            'scope_type' => $scopeType,
+            'requirement_status' => 'NOT_REQUIRED_PENDING',
+            'request_remark' => $remark,
+            'review_remark' => null,
+            'requested_by' => $userId,
+            'requested_at' => $now,
+            'reviewed_by' => null,
+            'reviewed_at' => null,
+            'reopened_by' => null,
+            'reopened_at' => null,
+            'reopen_remark' => null,
+            'updated_by' => $userId,
+        ];
+
+        $this->db->trans_start();
+        if (!empty($existing['id_scope_requirement'])) {
+            $this->db
+                ->where('id_scope_requirement', (int) $existing['id_scope_requirement'])
+                ->update('tb_myrep_scope_requirement', $payload);
+            $requirementId = (int) $existing['id_scope_requirement'];
+        } else {
+            $payload['created_by'] = $userId;
+            $this->db->insert('tb_myrep_scope_requirement', $payload);
+            $requirementId = (int) $this->db->insert_id();
+        }
+
+        $this->createScopeRequirementLog($requirementId, $clusterId, $scopeType, 'REQUEST_NOT_REQUIRED', 'NOT_REQUIRED_PENDING', $remark, $userId);
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    public function reviewScopeNotRequired($clusterId, $userId, $approved, $remark = '', $scopeType = 'SUBFEEDER')
+    {
+        if (!$this->drmScopeRequirementTablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        if ($clusterId <= 0 || $scopeType !== 'SUBFEEDER') {
+            return false;
+        }
+
+        $existing = $this->getScopeRequirement($clusterId, $scopeType);
+        if (empty($existing['id_scope_requirement']) || strtoupper((string) ($existing['requirement_status'] ?? '')) !== 'NOT_REQUIRED_PENDING') {
+            return false;
+        }
+
+        $newStatus = $approved ? 'NOT_REQUIRED_APPROVED' : 'NOT_REQUIRED_REJECTED';
+        $actionType = $approved ? 'APPROVE_NOT_REQUIRED' : 'REJECT_NOT_REQUIRED';
+        $now = date('Y-m-d H:i:s');
+
+        $this->db->trans_start();
+        $this->db
+            ->where('id_scope_requirement', (int) $existing['id_scope_requirement'])
+            ->update('tb_myrep_scope_requirement', [
+                'requirement_status' => $newStatus,
+                'review_remark' => trim((string) $remark) !== '' ? trim((string) $remark) : null,
+                'reviewed_by' => $userId,
+                'reviewed_at' => $now,
+                'updated_by' => $userId,
+            ]);
+
+        $this->createScopeRequirementLog((int) $existing['id_scope_requirement'], $clusterId, $scopeType, $actionType, $newStatus, trim((string) $remark), $userId);
+        if ($approved) {
+            $this->rebuildCombinedBaselineIfReady($clusterId, $now, $userId);
+        }
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    public function reopenScopeRequirement($clusterId, $userId, $remark = '', $scopeType = 'SUBFEEDER')
+    {
+        if (!$this->drmScopeRequirementTablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        if ($clusterId <= 0 || $scopeType !== 'SUBFEEDER') {
+            return false;
+        }
+
+        $existing = $this->getScopeRequirement($clusterId, $scopeType);
+        if (empty($existing['id_scope_requirement']) || strtoupper((string) ($existing['requirement_status'] ?? '')) !== 'NOT_REQUIRED_APPROVED') {
+            return false;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $this->db->trans_start();
+        $this->db
+            ->where('id_scope_requirement', (int) $existing['id_scope_requirement'])
+            ->update('tb_myrep_scope_requirement', [
+                'requirement_status' => 'REQUIRED',
+                'reopened_by' => $userId,
+                'reopened_at' => $now,
+                'reopen_remark' => trim((string) $remark) !== '' ? trim((string) $remark) : null,
+                'updated_by' => $userId,
+            ]);
+
+        $this->createScopeRequirementLog((int) $existing['id_scope_requirement'], $clusterId, $scopeType, 'REOPEN_REQUIRED', 'REQUIRED', trim((string) $remark), $userId);
+
+        $subfeederHeader = $this->getDrmBoqHeader($clusterId, 'SUBFEEDER');
+        $subfeederApproved = !empty($subfeederHeader['id_drm_boq']) && strtoupper(trim((string) ($subfeederHeader['review_status'] ?? ''))) === 'APPROVED';
+        if (!$subfeederApproved && $this->drmBoqTablesReady()) {
+            $this->replaceActiveBaselines($clusterId, 'CLUSTER');
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    private function createScopeRequirementLog($requirementId, $clusterId, $scopeType, $actionType, $statusAfter, $remark, $userId)
+    {
+        if (!$this->db->table_exists('tb_myrep_scope_requirement_log')) {
+            return;
+        }
+
+        $this->db->insert('tb_myrep_scope_requirement_log', [
+            'id_scope_requirement' => (int) $requirementId,
+            'id_myrep_cluster' => (int) $clusterId,
+            'scope_type' => $this->normalizeDrmScopeType($scopeType),
+            'action_type' => (string) $actionType,
+            'status_after' => (string) $statusAfter,
+            'remark' => trim((string) $remark) !== '' ? trim((string) $remark) : null,
+            'action_by' => (int) $userId,
+            'action_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     public function getApdBoqDocumentFile($clusterId, $scopeType = 'CLUSTER')
@@ -1128,7 +1331,13 @@ class MDRM_MyRep extends CI_Model
         $clusterItems = $this->getDrmBoqItems($clusterId, 'CLUSTER');
         $subfeederStatus = strtoupper(trim((string) ($subfeederHeader['review_status'] ?? '')));
         $subfeederItems = [];
-        if (!empty($subfeederHeader['id_drm_boq']) && $subfeederStatus === 'APPROVED') {
+        $subfeederApproved = !empty($subfeederHeader['id_drm_boq']) && $subfeederStatus === 'APPROVED';
+        $subfeederNotRequired = $this->isScopeNotRequiredApproved($clusterId, 'SUBFEEDER');
+        if ($this->drmScopeRequirementTablesReady() && !$subfeederApproved && !$subfeederNotRequired) {
+            return;
+        }
+
+        if ($subfeederApproved) {
             $subfeederItems = $this->getDrmBoqItems($clusterId, 'SUBFEEDER');
         }
 
@@ -1138,12 +1347,7 @@ class MDRM_MyRep extends CI_Model
         }
 
         // Replace previous active baseline(s) before creating the new combined baseline.
-        $this->db
-            ->where('id_myrep_cluster', (int) $clusterId)
-            ->where('status_baseline', 'ACTIVE')
-            ->update('tb_myrep_boq_baseline', [
-                'status_baseline' => 'REPLACED',
-            ]);
+        $this->replaceActiveBaselines($clusterId, 'CLUSTER');
 
         $baselinePayload = [
             'id_myrep_cluster' => (int) $clusterId,
@@ -1213,6 +1417,55 @@ class MDRM_MyRep extends CI_Model
         return array_values(array_filter($map, static function ($item) {
             return (float) ($item['qty_boq'] ?? 0) > 0;
         }));
+    }
+
+    private function isScopeNotRequiredApproved($clusterId, $scopeType = 'SUBFEEDER')
+    {
+        $requirement = $this->getScopeRequirement((int) $clusterId, $scopeType);
+        return strtoupper(trim((string) ($requirement['requirement_status'] ?? 'REQUIRED'))) === 'NOT_REQUIRED_APPROVED';
+    }
+
+    private function replaceActiveBaselines($clusterId, $scopeType = 'CLUSTER')
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        if ($this->baselineLegacyUniqueIndexExists()) {
+            $this->db
+                ->where('id_myrep_cluster', $clusterId)
+                ->where('status_baseline', 'REPLACED');
+            if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+                $this->db->where('scope_type', $scopeType);
+            }
+            $this->db->delete('tb_myrep_boq_baseline');
+        }
+
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('status_baseline', 'ACTIVE');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('scope_type', $scopeType);
+        }
+        $this->db->update('tb_myrep_boq_baseline', [
+            'status_baseline' => 'REPLACED',
+        ]);
+    }
+
+    private function baselineLegacyUniqueIndexExists()
+    {
+        if (!$this->db->table_exists('tb_myrep_boq_baseline')) {
+            return false;
+        }
+
+        $query = $this->db->query("SHOW INDEX FROM `tb_myrep_boq_baseline` WHERE `Key_name` = 'uniq_myrep_boq_baseline_cluster_scope' AND `Non_unique` = 0");
+        return $query && $query->num_rows() > 0;
     }
 
     public function rejectDrmBoq($clusterId, $userId, $remark, $scopeType = 'CLUSTER')
@@ -1389,6 +1642,41 @@ class MDRM_MyRep extends CI_Model
             }
 
             $map[$clusterId][$scopeType] = strtoupper(trim((string) ($row['review_status'] ?? '')));
+        }
+
+        return $map;
+    }
+
+    private function getScopeRequirementStatusMap($clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds) || !$this->drmScopeRequirementTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('id_myrep_cluster, scope_type, requirement_status')
+            ->from('tb_myrep_scope_requirement')
+            ->where_in('id_myrep_cluster', $clusterIds)
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $scopeType = strtoupper(trim((string) ($row['scope_type'] ?? '')));
+            $status = strtoupper(trim((string) ($row['requirement_status'] ?? '')));
+            if ($clusterId <= 0 || $scopeType !== 'SUBFEEDER') {
+                continue;
+            }
+
+            if ($status === 'NOT_REQUIRED_APPROVED') {
+                $map[$clusterId][$scopeType] = 'TIDAK DIBUTUHKAN';
+            } elseif ($status === 'NOT_REQUIRED_PENDING') {
+                $map[$clusterId][$scopeType] = 'WAITING HO';
+            } elseif ($status === 'NOT_REQUIRED_REJECTED') {
+                $map[$clusterId][$scopeType] = 'REJECTED';
+            }
         }
 
         return $map;

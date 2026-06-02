@@ -1,8 +1,11 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class Checklist_Dokument_MyRep extends CI_Controller
 {
+    private $cityPicMappingCache = [];
+
     public function __construct()
     {
         parent::__construct();
@@ -303,6 +306,59 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
+        $exportRows = $this->getChecklistItemExportRowsFromRequest();
+        $this->outputChecklistItemXmlWorkbook($exportRows, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xls');
+    }
+
+    public function exportItemRefreshData()
+    {
+        if (!$this->isChecklistRefreshAuthorized()) {
+            $this->output
+                ->set_status_header(401)
+                ->set_content_type('text/plain')
+                ->set_output('Unauthorized');
+            return;
+        }
+
+        $sheet = strtolower(trim((string) $this->input->get('sheet')));
+        $sheet = $sheet === 'pivot' ? 'pivot' : 'data';
+        $exportRows = $this->getChecklistItemExportRowsFromRequest();
+
+        if ($sheet === 'pivot') {
+            $csvRows = $this->buildChecklistItemPivotCsvRows($exportRows);
+            $filename = 'monitoring_item_dokumen_pivot_' . date('Y-m-d') . '.csv';
+        } else {
+            $csvRows = $this->buildChecklistItemDataCsvRows($exportRows);
+            $filename = 'monitoring_item_dokumen_data_' . date('Y-m-d') . '.csv';
+        }
+
+        $this->outputChecklistCsvRows($csvRows, $filename);
+    }
+
+    public function refreshitemdata()
+    {
+        return $this->exportItemRefreshData();
+    }
+
+    private function isChecklistRefreshAuthorized()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            return true;
+        }
+
+        $expectedKey = trim((string) $this->config->item('checklist_doc_refresh_key'));
+        $providedKey = trim((string) $this->input->get('refresh_key'));
+        if ($expectedKey === '' || $providedKey === '') {
+            return false;
+        }
+
+        return function_exists('hash_equals')
+            ? hash_equals($expectedKey, $providedKey)
+            : $expectedKey === $providedKey;
+    }
+
+    private function getChecklistItemExportRowsFromRequest()
+    {
         $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
         $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
@@ -376,36 +432,649 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $exportRows[] = $row;
         }
 
-        header('Content-Type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="monitoring_item_dokumen_' . date('Y-m-d') . '.xls"');
+        return $exportRows;
+    }
+
+    private function buildChecklistItemDataCsvRows(array $rows)
+    {
+        $csvRows = [[
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'SOW',
+            'Dokumen',
+            'Verification By',
+            'Status Internal',
+            'Remark Internal',
+            'Status Astri',
+            'Remark Astri',
+            'Uploaded At',
+            'Reviewed At',
+            'Approved At',
+            'Submit Astri',
+        ]];
+
+        $no = 1;
+        foreach ($rows as $row) {
+            $csvRows[] = [
+                $no++,
+                (string) ($row['regional_name'] ?? '-'),
+                (string) ($row['city_name'] ?? '-'),
+                (string) ($row['cluster_name'] ?? '-'),
+                (string) ($row['scope_type'] ?? '-'),
+                (string) ($row['sow_type'] ?? '-'),
+                (string) ($row['doc_name'] ?? '-'),
+                (string) ($row['verification_by'] ?? '-'),
+                $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')),
+                (string) ($row['remark'] ?? '-'),
+                $this->statusLabel((string) ($row['astri_status'] ?? 'NY')),
+                (string) ($row['astri_remark'] ?? '-'),
+                $this->formatDateDisplay($row['uploaded_at'] ?? null),
+                $this->formatDateDisplay($row['reviewed_at'] ?? null),
+                $this->formatDateDisplay($row['approved_at'] ?? null),
+                $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
+            ];
+        }
+
+        return $csvRows;
+    }
+
+    private function buildChecklistItemPivotCsvRows(array $rows)
+    {
+        $pivot = $this->buildChecklistItemPivotData($rows);
+        $headers = ['Regional', 'Kota', 'Cluster', 'Scope'];
+        foreach ($pivot['statusesBySow'] as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $headers[] = $sow . ' - ' . $status;
+            }
+        }
+        $headers[] = 'Grand Total';
+
+        $csvRows = [$headers];
+        foreach ($pivot['rows'] as $pivotRow) {
+            $rowTotal = 0;
+            $csvRow = [
+                $pivotRow['regional'],
+                $pivotRow['city'],
+                $pivotRow['cluster'],
+                $pivotRow['scope'],
+            ];
+
+            foreach ($pivot['statusesBySow'] as $sow => $statuses) {
+                foreach ($statuses as $status) {
+                    $value = (int) ($pivotRow['counts'][$sow][$status] ?? 0);
+                    $rowTotal += $value;
+                    $csvRow[] = $value > 0 ? $value : '';
+                }
+            }
+            $csvRow[] = $rowTotal;
+            $csvRows[] = $csvRow;
+        }
+
+        $totalRow = ['Grand Total', '', '', ''];
+        $grandTotal = 0;
+        foreach ($pivot['statusesBySow'] as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $value = (int) ($pivot['totals'][$sow][$status] ?? 0);
+                $grandTotal += $value;
+                $totalRow[] = $value;
+            }
+        }
+        $totalRow[] = $grandTotal;
+        $csvRows[] = $totalRow;
+
+        return $csvRows;
+    }
+
+    private function outputChecklistCsvRows(array $rows, $filename)
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
         header('Pragma: no-cache');
         header('Expires: 0');
 
-        echo "<table border='1'>";
-        echo "<tr><th>No</th><th>Regional</th><th>Kota</th><th>Cluster</th><th>Scope</th><th>SOW</th><th>Dokumen</th><th>Verification By</th><th>Status Internal</th><th>Remark Internal</th><th>Status Astri</th><th>Remark Astri</th><th>Uploaded At</th><th>Reviewed At</th><th>Approved At</th><th>Submit Astri</th></tr>";
-        $no = 1;
-        foreach ($exportRows as $row) {
-            echo '<tr>';
-            echo '<td>' . $no++ . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['scope_type'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['sow_type'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['doc_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['verification_by'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['remark'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->statusLabel((string) ($row['astri_status'] ?? 'NY')), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['astri_remark'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['uploaded_at'] ?? null), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['reviewed_at'] ?? null), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['approved_at'] ?? null), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['astri_submitted_date'] ?? null), ENT_QUOTES) . '</td>';
-            echo '</tr>';
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+        foreach ($rows as $row) {
+            fputcsv($output, $row);
         }
-        echo '</table>';
+        fclose($output);
         exit;
+    }
+
+    private function outputChecklistItemXmlWorkbook(array $rows, $filename)
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+        echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
+        echo 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
+        echo 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
+        echo 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
+        echo 'xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+        echo $this->checklistXmlStyles();
+        echo $this->buildChecklistItemDataWorksheetXml($rows);
+        echo $this->buildChecklistItemPivotWorksheetXml($rows);
+        echo '</Workbook>';
+        exit;
+    }
+
+    private function buildChecklistItemDataWorksheetXml(array $rows)
+    {
+        $headers = [
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'SOW',
+            'Dokumen',
+            'Verification By',
+            'Status Internal',
+            'Remark Internal',
+            'Status Astri',
+            'Remark Astri',
+            'Uploaded At',
+            'Reviewed At',
+            'Approved At',
+            'Submit Astri',
+        ];
+
+        $xml = '<Worksheet ss:Name="Data Item"><Table>' . "\n";
+        $widths = [45, 110, 130, 220, 80, 90, 220, 140, 120, 220, 110, 220, 90, 90, 90, 90];
+        foreach ($widths as $width) {
+            $xml .= '<Column ss:Width="' . (int) $width . '"/>' . "\n";
+        }
+
+        $xml .= '<Row>';
+        foreach ($headers as $header) {
+            $xml .= $this->checklistXmlCell($header, 'String', 'Header');
+        }
+        $xml .= '</Row>' . "\n";
+
+        $no = 1;
+        foreach ($rows as $row) {
+            $values = [
+                ['value' => $no++, 'type' => 'Number'],
+                ['value' => (string) ($row['regional_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['city_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['cluster_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['scope_type'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['sow_type'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['doc_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['verification_by'] ?? '-'), 'type' => 'String'],
+                ['value' => $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')), 'type' => 'String'],
+                ['value' => (string) ($row['remark'] ?? '-'), 'type' => 'String'],
+                ['value' => $this->statusLabel((string) ($row['astri_status'] ?? 'NY')), 'type' => 'String'],
+                ['value' => (string) ($row['astri_remark'] ?? '-'), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['uploaded_at'] ?? null), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['reviewed_at'] ?? null), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['approved_at'] ?? null), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['astri_submitted_date'] ?? null), 'type' => 'String'],
+            ];
+
+            $xml .= '<Row>';
+            foreach ($values as $cell) {
+                $xml .= $this->checklistXmlCell($cell['value'], $cell['type'], 'Border');
+            }
+            $xml .= '</Row>' . "\n";
+        }
+
+        $xml .= '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">';
+        $xml .= '<FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane>';
+        $xml .= '</WorksheetOptions></Worksheet>' . "\n";
+
+        return $xml;
+    }
+
+    private function buildChecklistItemPivotWorksheetXml(array $rows)
+    {
+        $pivot = $this->buildChecklistItemPivotData($rows);
+        $statusesBySow = $pivot['statusesBySow'];
+        $grandTotalColIndex = 5;
+        foreach ($statusesBySow as $statuses) {
+            $grandTotalColIndex += count($statuses);
+        }
+
+        $xml = '<Worksheet ss:Name="Pivot Status"><Table>' . "\n";
+        foreach ([110, 130, 220, 80] as $width) {
+            $xml .= '<Column ss:Width="' . (int) $width . '"/>' . "\n";
+        }
+        for ($col = 5; $col <= $grandTotalColIndex; $col++) {
+            $xml .= '<Column ss:Width="95"/>' . "\n";
+        }
+
+        $xml .= '<Row>';
+        $xml .= $this->checklistXmlCell('Regional', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= $this->checklistXmlCell('Kota', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= $this->checklistXmlCell('Cluster', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= $this->checklistXmlCell('Scope', 'String', 'Header', ['ss:MergeDown' => 1]);
+        foreach ($statusesBySow as $sow => $statuses) {
+            $attrs = [];
+            if (count($statuses) > 1) {
+                $attrs['ss:MergeAcross'] = count($statuses) - 1;
+            }
+            $xml .= $this->checklistXmlCell($sow, 'String', 'Header', $attrs);
+        }
+        $xml .= $this->checklistXmlCell('Grand Total', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= '</Row>' . "\n";
+
+        $xml .= '<Row>';
+        $isFirstStatusHeader = true;
+        foreach ($statusesBySow as $statuses) {
+            foreach ($statuses as $status) {
+                $attrs = $isFirstStatusHeader ? ['ss:Index' => 5] : [];
+                $xml .= $this->checklistXmlCell($status, 'String', 'Header', $attrs);
+                $isFirstStatusHeader = false;
+            }
+        }
+        $xml .= '</Row>' . "\n";
+
+        foreach ($pivot['rows'] as $pivotRow) {
+            $rowTotal = 0;
+            $xml .= '<Row>';
+            $xml .= $this->checklistXmlCell($pivotRow['regional'], 'String', 'Border');
+            $xml .= $this->checklistXmlCell($pivotRow['city'], 'String', 'Border');
+            $xml .= $this->checklistXmlCell($pivotRow['cluster'], 'String', 'Border');
+            $xml .= $this->checklistXmlCell($pivotRow['scope'], 'String', 'Border');
+            foreach ($statusesBySow as $sow => $statuses) {
+                foreach ($statuses as $status) {
+                    $value = (int) ($pivotRow['counts'][$sow][$status] ?? 0);
+                    $rowTotal += $value;
+                    $xml .= $this->checklistXmlCell($value > 0 ? $value : '', $value > 0 ? 'Number' : 'String', 'Number');
+                }
+            }
+            $xml .= $this->checklistXmlCell($rowTotal, 'Number', 'Number');
+            $xml .= '</Row>' . "\n";
+        }
+
+        $grandTotal = 0;
+        $xml .= '<Row>';
+        $xml .= $this->checklistXmlCell('Grand Total', 'String', 'Total', ['ss:MergeAcross' => 3]);
+        foreach ($statusesBySow as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $value = (int) ($pivot['totals'][$sow][$status] ?? 0);
+                $grandTotal += $value;
+                $xml .= $this->checklistXmlCell($value, 'Number', 'TotalNumber');
+            }
+        }
+        $xml .= $this->checklistXmlCell($grandTotal, 'Number', 'TotalNumber');
+        $xml .= '</Row>' . "\n";
+
+        $xml .= '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">';
+        $xml .= '<FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><SplitVertical>4</SplitVertical><LeftColumnRightPane>4</LeftColumnRightPane>';
+        $xml .= '</WorksheetOptions></Worksheet>' . "\n";
+
+        return $xml;
+    }
+
+    private function checklistXmlStyles()
+    {
+        return '<Styles>'
+            . '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>'
+            . '<Style ss:ID="Border"><Alignment ss:Vertical="Center" ss:WrapText="1"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="Number"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Font ss:Bold="1"/><Interior ss:Color="#D9E2F3" ss:Pattern="Solid"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="Total"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1"/><Interior ss:Color="#E2E8F4" ss:Pattern="Solid"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="TotalNumber"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Font ss:Bold="1"/><Interior ss:Color="#E2E8F4" ss:Pattern="Solid"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '</Styles>' . "\n";
+    }
+
+    private function checklistXmlCell($value, $type = 'String', $styleId = 'Border', array $attrs = [])
+    {
+        $attrs = array_merge(['ss:StyleID' => $styleId], $attrs);
+        $attrString = '';
+        foreach ($attrs as $name => $attrValue) {
+            $attrString .= ' ' . $name . '="' . $this->checklistXmlEscape($attrValue) . '"';
+        }
+
+        if ($value === '' || $value === null) {
+            return '<Cell' . $attrString . '/>';
+        }
+
+        return '<Cell' . $attrString . '><Data ss:Type="' . $this->checklistXmlEscape($type) . '">'
+            . $this->checklistXmlEscape($value)
+            . '</Data></Cell>';
+    }
+
+    private function checklistXmlEscape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_XML1, 'UTF-8');
+    }
+
+    private function createPHPExcelObject()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+
+        return new PHPExcel();
+    }
+
+    private function suppressPhpExcelCompatibilityWarnings()
+    {
+        $compatibilityMask = E_WARNING;
+        if (defined('E_DEPRECATED')) {
+            $compatibilityMask |= E_DEPRECATED;
+        }
+        if (defined('E_USER_DEPRECATED')) {
+            $compatibilityMask |= E_USER_DEPRECATED;
+        }
+
+        if ($compatibilityMask > 0) {
+            error_reporting(error_reporting() & ~$compatibilityMask);
+        }
+    }
+
+    private function outputChecklistItemWorkbook($excel, $filename)
+    {
+        if (!class_exists('PHPExcel_IOFactory')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel/IOFactory.php';
+        }
+
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
+        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function populateChecklistItemDataSheet($sheet, array $rows)
+    {
+        $sheet->setTitle('Data Item');
+        $headers = [
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'SOW',
+            'Dokumen',
+            'Verification By',
+            'Status Internal',
+            'Remark Internal',
+            'Status Astri',
+            'Remark Astri',
+            'Uploaded At',
+            'Reviewed At',
+            'Approved At',
+            'Submit Astri',
+        ];
+
+        foreach ($headers as $index => $header) {
+            $sheet->setCellValueByColumnAndRow($index, 1, $header);
+        }
+
+        $rowNo = 2;
+        $no = 1;
+        foreach ($rows as $row) {
+            $values = [
+                $no++,
+                (string) ($row['regional_name'] ?? '-'),
+                (string) ($row['city_name'] ?? '-'),
+                (string) ($row['cluster_name'] ?? '-'),
+                (string) ($row['scope_type'] ?? '-'),
+                (string) ($row['sow_type'] ?? '-'),
+                (string) ($row['doc_name'] ?? '-'),
+                (string) ($row['verification_by'] ?? '-'),
+                $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')),
+                (string) ($row['remark'] ?? '-'),
+                $this->statusLabel((string) ($row['astri_status'] ?? 'NY')),
+                (string) ($row['astri_remark'] ?? '-'),
+                $this->formatDateDisplay($row['uploaded_at'] ?? null),
+                $this->formatDateDisplay($row['reviewed_at'] ?? null),
+                $this->formatDateDisplay($row['approved_at'] ?? null),
+                $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
+            ];
+
+            foreach ($values as $index => $value) {
+                $sheet->setCellValueByColumnAndRow($index, $rowNo, $value);
+            }
+            $rowNo++;
+        }
+
+        $lastColumn = PHPExcel_Cell::stringFromColumnIndex(count($headers) - 1);
+        $sheet->getStyle('A1:' . $lastColumn . '1')->applyFromArray($this->checklistExcelHeaderStyle());
+        $sheet->getStyle('A1:' . $lastColumn . max(1, $rowNo - 1))->applyFromArray($this->checklistExcelBorderStyle());
+        $sheet->setAutoFilter('A1:' . $lastColumn . max(1, $rowNo - 1));
+        $sheet->freezePane('A2');
+
+        for ($col = 0; $col < count($headers); $col++) {
+            $sheet->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($col))->setAutoSize(true);
+        }
+    }
+
+    private function populateChecklistItemPivotSheet($sheet, array $rows)
+    {
+        $sheet->setTitle('Pivot Status');
+        $pivot = $this->buildChecklistItemPivotData($rows);
+        $statusesBySow = $pivot['statusesBySow'];
+
+        $sheet->mergeCells('A1:A2');
+        $sheet->mergeCells('B1:B2');
+        $sheet->mergeCells('C1:C2');
+        $sheet->mergeCells('D1:D2');
+        $sheet->setCellValue('A1', 'Regional');
+        $sheet->setCellValue('B1', 'Kota');
+        $sheet->setCellValue('C1', 'Cluster');
+        $sheet->setCellValue('D1', 'Scope');
+
+        $col = 4;
+        foreach ($statusesBySow as $sow => $statuses) {
+            $startCol = $col;
+            foreach ($statuses as $status) {
+                $sheet->setCellValueByColumnAndRow($col, 2, $status);
+                $col++;
+            }
+            $endCol = $col - 1;
+            $sheet->mergeCellsByColumnAndRow($startCol, 1, $endCol, 1);
+            $sheet->setCellValueByColumnAndRow($startCol, 1, $sow);
+        }
+
+        $grandTotalCol = $col;
+        $sheet->mergeCellsByColumnAndRow($grandTotalCol, 1, $grandTotalCol, 2);
+        $sheet->setCellValueByColumnAndRow($grandTotalCol, 1, 'Grand Total');
+
+        $rowNo = 3;
+        foreach ($pivot['rows'] as $pivotRow) {
+            $sheet->setCellValueByColumnAndRow(0, $rowNo, $pivotRow['regional']);
+            $sheet->setCellValueByColumnAndRow(1, $rowNo, $pivotRow['city']);
+            $sheet->setCellValueByColumnAndRow(2, $rowNo, $pivotRow['cluster']);
+            $sheet->setCellValueByColumnAndRow(3, $rowNo, $pivotRow['scope']);
+
+            $rowTotal = 0;
+            $col = 4;
+            foreach ($statusesBySow as $sow => $statuses) {
+                foreach ($statuses as $status) {
+                    $value = (int) ($pivotRow['counts'][$sow][$status] ?? 0);
+                    if ($value > 0) {
+                        $sheet->setCellValueByColumnAndRow($col, $rowNo, $value);
+                    }
+                    $rowTotal += $value;
+                    $col++;
+                }
+            }
+            $sheet->setCellValueByColumnAndRow($grandTotalCol, $rowNo, $rowTotal);
+            $rowNo++;
+        }
+
+        $sheet->mergeCellsByColumnAndRow(0, $rowNo, 3, $rowNo);
+        $sheet->setCellValueByColumnAndRow(0, $rowNo, 'Grand Total');
+        $col = 4;
+        $grandTotal = 0;
+        foreach ($statusesBySow as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $value = (int) ($pivot['totals'][$sow][$status] ?? 0);
+                $sheet->setCellValueByColumnAndRow($col, $rowNo, $value);
+                $grandTotal += $value;
+                $col++;
+            }
+        }
+        $sheet->setCellValueByColumnAndRow($grandTotalCol, $rowNo, $grandTotal);
+
+        $lastColumn = PHPExcel_Cell::stringFromColumnIndex($grandTotalCol);
+        $lastRow = max(2, $rowNo);
+        $sheet->getStyle('A1:' . $lastColumn . '2')->applyFromArray($this->checklistExcelHeaderStyle());
+        $sheet->getStyle('A1:' . $lastColumn . $lastRow)->applyFromArray($this->checklistExcelBorderStyle());
+        $sheet->getStyle('A' . $lastRow . ':' . $lastColumn . $lastRow)->applyFromArray($this->checklistExcelTotalStyle());
+        $sheet->getStyle('A1:' . $lastColumn . $lastRow)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('E3:' . $lastColumn . $lastRow)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_RIGHT);
+        $sheet->freezePane('E3');
+
+        for ($dimensionCol = 0; $dimensionCol <= $grandTotalCol; $dimensionCol++) {
+            $sheet->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($dimensionCol))->setAutoSize(true);
+        }
+    }
+
+    private function buildChecklistItemPivotData(array $rows)
+    {
+        $preferredSowOrder = ['CW ATP', 'FULL OPM', 'RFS'];
+        $preferredStatusOrder = ['APPROVED', 'NOT UPLOADED', 'ON REVIEW', 'REJECTED'];
+        $pivotRows = [];
+        $statusesBySow = [];
+        $totals = [];
+
+        foreach ($rows as $row) {
+            $regional = trim((string) ($row['regional_name'] ?? '-'));
+            $city = trim((string) ($row['city_name'] ?? '-'));
+            $cluster = trim((string) ($row['cluster_name'] ?? '-'));
+            $scope = trim((string) ($row['scope_type'] ?? '-'));
+            $sow = strtoupper(trim((string) ($row['sow_type'] ?? '-')));
+            $sow = $sow !== '' ? $sow : '-';
+            $status = $this->normalizeUiStatusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
+            $key = implode("\t", [$regional, $city, $cluster, $scope]);
+
+            if (!isset($pivotRows[$key])) {
+                $pivotRows[$key] = [
+                    'regional' => $regional !== '' ? $regional : '-',
+                    'city' => $city !== '' ? $city : '-',
+                    'cluster' => $cluster !== '' ? $cluster : '-',
+                    'scope' => $scope !== '' ? $scope : '-',
+                    'counts' => [],
+                ];
+            }
+
+            if (!isset($statusesBySow[$sow])) {
+                $statusesBySow[$sow] = [];
+            }
+            $statusesBySow[$sow][$status] = true;
+            $pivotRows[$key]['counts'][$sow][$status] = (int) ($pivotRows[$key]['counts'][$sow][$status] ?? 0) + 1;
+            $totals[$sow][$status] = (int) ($totals[$sow][$status] ?? 0) + 1;
+        }
+
+        if (empty($statusesBySow)) {
+            $statusesBySow['-'] = ['NOT UPLOADED' => true];
+        }
+
+        uksort($statusesBySow, static function ($left, $right) use ($preferredSowOrder) {
+            $leftPos = array_search($left, $preferredSowOrder, true);
+            $rightPos = array_search($right, $preferredSowOrder, true);
+            $leftPos = $leftPos === false ? 999 : $leftPos;
+            $rightPos = $rightPos === false ? 999 : $rightPos;
+            return $leftPos === $rightPos ? strcmp($left, $right) : ($leftPos - $rightPos);
+        });
+
+        foreach ($statusesBySow as $sow => $statusMap) {
+            $statuses = array_keys($statusMap);
+            usort($statuses, static function ($left, $right) use ($preferredStatusOrder) {
+                $leftPos = array_search($left, $preferredStatusOrder, true);
+                $rightPos = array_search($right, $preferredStatusOrder, true);
+                $leftPos = $leftPos === false ? 999 : $leftPos;
+                $rightPos = $rightPos === false ? 999 : $rightPos;
+                return $leftPos === $rightPos ? strcmp($left, $right) : ($leftPos - $rightPos);
+            });
+            $statusesBySow[$sow] = $statuses;
+        }
+
+        return [
+            'rows' => array_values($pivotRows),
+            'statusesBySow' => $statusesBySow,
+            'totals' => $totals,
+        ];
+    }
+
+    private function checklistExcelHeaderStyle()
+    {
+        return [
+            'font' => ['bold' => true],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'D9E2F3'],
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+    }
+
+    private function checklistExcelTotalStyle()
+    {
+        return [
+            'font' => ['bold' => true],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'E2E8F4'],
+            ],
+        ];
+    }
+
+    private function checklistExcelBorderStyle()
+    {
+        return [
+            'borders' => [
+                'allborders' => [
+                    'style' => PHPExcel_Style_Border::BORDER_THIN,
+                    'color' => ['rgb' => '000000'],
+                ],
+            ],
+        ];
     }
 
     private function buildClusterTableRow(array $cluster, $no, $canHapus)
@@ -987,7 +1656,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 30720,
+                'max_size' => 102400,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -1144,6 +1813,17 @@ class Checklist_Dokument_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadMainfeederDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getMainfeederFileById((int) $fileId);
+        $this->downloadStoredChecklistFile($file);
+    }
+
     public function saveTimeline()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -1210,7 +1890,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => '*',
-                'max_size' => 30720,
+                'max_size' => 102400,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -1299,7 +1979,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => '*',
-                'max_size' => 30720,
+                'max_size' => 102400,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -1529,6 +2209,43 @@ class Checklist_Dokument_MyRep extends CI_Controller
         header('Content-Type: ' . $mimeType);
         header('Content-Length: ' . filesize($fullPath));
         header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
+    public function downloadDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getFileById((int) $fileId);
+        $this->downloadStoredChecklistFile($file);
+    }
+
+    private function downloadStoredChecklistFile(array $file)
+    {
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $downloadName = trim((string) ($file['file_name'] ?? ''));
+        if ($downloadName === '') {
+            $downloadName = basename($fullPath);
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . basename($downloadName) . '"');
         header('X-Content-Type-Options: nosniff');
         readfile($fullPath);
         exit;
@@ -1792,7 +2509,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'CLUSTER',
             (int) ($document['item_id'] ?? 0),
             (string) ($cluster['ho_pic_name'] ?? ''),
-            (string) ($cluster['ho_pic_telegram_user_id'] ?? '')
+            (string) ($cluster['ho_pic_telegram_user_id'] ?? ''),
+            (array) $cluster
         );
 
         $message = $this->buildChecklistTelegramMessage('CLUSTER', [
@@ -1804,6 +2522,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'detail_url' => base_url('Checklist_Dokument_MyRep/detail/' . (int) $clusterId),
             'pic_name' => (string) ($reviewer['name'] ?? ''),
             'pic_telegram_user_id' => (string) ($reviewer['telegram_user_id'] ?? ''),
+            'pic_mentions' => (string) ($reviewer['mention_html'] ?? ''),
             'notification_title' => (string) ($document['notification_title'] ?? 'NEW DOCUMENT'),
         ], $document);
 
@@ -1821,7 +2540,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'MAINFEEDER',
             (int) ($document['item_id'] ?? 0),
             (string) ($mainfeeder['ho_pic_name'] ?? ''),
-            (string) ($mainfeeder['ho_pic_telegram_user_id'] ?? '')
+            (string) ($mainfeeder['ho_pic_telegram_user_id'] ?? ''),
+            (array) $mainfeeder
         );
 
         $message = $this->buildChecklistTelegramMessage('MAINFEEDER', [
@@ -1833,6 +2553,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'detail_url' => base_url('Checklist_Dokument_MyRep/detailMainfeeder/' . (int) $mainfeederId),
             'pic_name' => (string) ($reviewer['name'] ?? ''),
             'pic_telegram_user_id' => (string) ($reviewer['telegram_user_id'] ?? ''),
+            'pic_mentions' => (string) ($reviewer['mention_html'] ?? ''),
             'notification_title' => (string) ($document['notification_title'] ?? 'NEW DOCUMENT'),
         ], $document);
 
@@ -1842,7 +2563,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
     private function buildChecklistTelegramMessage($type, array $entity, array $document)
     {
         $uploadedBy = trim((string) $this->session->userdata('nama_user'));
-        $uploadedRole = trim((string) $this->session->userdata('nama_jabatan'));
         $docName = trim((string) ($document['doc_name'] ?? '-'));
         $fileName = trim((string) ($document['file_name'] ?? ''));
         $remark = trim((string) ($document['remark'] ?? ''));
@@ -1854,31 +2574,14 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $categoryLabel = trim((string) ($entity['category'] ?? '-'));
         $detailUrl = trim((string) ($entity['detail_url'] ?? ''));
         $picName = trim((string) ($entity['pic_name'] ?? ''));
-        $picMention = $this->buildTelegramPicMention($picName, (string) ($entity['pic_telegram_user_id'] ?? ''));
+        $picMention = trim((string) ($entity['pic_mentions'] ?? ''));
+        if ($picMention === '') {
+            $picMention = $this->buildTelegramPicMention($picName, (string) ($entity['pic_telegram_user_id'] ?? ''));
+        }
         $notificationTitle = trim((string) ($entity['notification_title'] ?? 'NEW DOCUMENT'));
         $moduleLabel = trim((string) ($entity['module_label'] ?? 'Checklist Dokument'));
         $displayDocLabel = $this->shouldUseModuleOnlyLabel($notificationTitle) ? $moduleLabel : $docName;
-        $senderPhone = $this->resolveCurrentUserPhone();
-        $senderParts = [];
-
-        if ($uploadedBy !== '') {
-            $senderParts[] = $this->escapeTelegramText($uploadedBy);
-        } else {
-            $senderParts[] = 'System';
-        }
-
-        $metaParts = [];
-        if ($uploadedRole !== '') {
-            $metaParts[] = $this->escapeTelegramText($uploadedRole);
-        }
-        if ($senderPhone !== '') {
-            $metaParts[] = $this->escapeTelegramText($senderPhone);
-        }
-
-        $senderLabel = implode('', [
-            $senderParts[0],
-            !empty($metaParts) ? ' (' . implode(' | ', $metaParts) . ')' : '',
-        ]);
+        $senderLabel = $uploadedBy !== '' ? $this->escapeTelegramText($uploadedBy) : 'System';
 
         $lines = [
             '✅ <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
@@ -2013,11 +2716,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         return trim((string) ($row['sow_type'] ?? $row['group_label'] ?? 'MAINFEEDER'));
     }
 
-    private function resolveNotificationReviewer($type, $itemId, $fallbackName, $fallbackTelegramUserId)
+    private function resolveNotificationReviewer($type, $itemId, $fallbackName, $fallbackTelegramUserId, array $locationContext = [])
     {
         $reviewer = [
             'name' => $fallbackName !== '' ? $fallbackName : 'PIC HO',
             'telegram_user_id' => $fallbackTelegramUserId,
+            'mention_html' => '',
         ];
 
         if ($itemId <= 0) {
@@ -2038,11 +2742,72 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ->get()
             ->row_array();
 
-        $verificationTeam = strtoupper(trim((string) ($row['verification_team'] ?? '')));
+        $verificationTeam = $this->normalizeVerificationTeam((string) ($row['verification_team'] ?? ''));
+        if ($verificationTeam === '') {
+            return $reviewer;
+        }
+
+        $mappedReviewer = $this->resolveMappedReviewerByVerificationTeam($verificationTeam, $locationContext);
+        if (!empty($mappedReviewer)) {
+            return $mappedReviewer;
+        }
+
         if ($verificationTeam !== 'SITAC') {
             return $reviewer;
         }
 
+        return $this->resolveSitacReviewer($reviewer);
+    }
+
+    private function normalizeVerificationTeam($verificationTeam)
+    {
+        $verificationTeam = strtoupper(str_replace('_', ' ', trim((string) $verificationTeam)));
+        return preg_replace('/\s+/', ' ', $verificationTeam);
+    }
+
+    private function resolveMappedReviewerByVerificationTeam($verificationTeam, array $locationContext = [])
+    {
+        $roleColumnMap = [
+            'RPM' => 'rpm_area',
+            'SM' => 'sm_area',
+            'SPV' => 'spv_area',
+            'SND' => 'snd_area',
+            'ADMIN' => 'admin_area',
+            'SND HO' => 'snd_ho',
+            'RFS HO' => 'rfs_ho',
+            'SITAC HO' => 'sitac_ho',
+            'DC HO' => 'dc_ho',
+        ];
+
+        if (!isset($roleColumnMap[$verificationTeam])) {
+            return [];
+        }
+
+        $cityPicMapping = $this->getNotificationCityPicMapping($locationContext);
+        $nikList = myrep_pic_nik_list($cityPicMapping[$roleColumnMap[$verificationTeam]] ?? '');
+        if (empty($nikList)) {
+            return [];
+        }
+
+        $users = [];
+        foreach ($nikList as $nik) {
+            $mappedUser = $this->getNotificationUserByNik($nik);
+            if (!empty($mappedUser['name'])) {
+                $users[] = $mappedUser;
+                continue;
+            }
+
+            $users[] = [
+                'name' => (string) $nik,
+                'telegram_user_id' => '',
+            ];
+        }
+
+        return $this->combineNotificationReviewers($users);
+    }
+
+    private function resolveSitacReviewer(array $fallbackReviewer)
+    {
         $sitacUser = $this->db
             ->select('nama_karyawan AS nama_user, telegram_user_id')
             ->from('tb_master_user_new')
@@ -2051,13 +2816,114 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ->row_array();
 
         if (!empty($sitacUser['nama_user'])) {
-            $reviewer['name'] = (string) $sitacUser['nama_user'];
+            $fallbackReviewer['name'] = (string) $sitacUser['nama_user'];
         }
         if (!empty($sitacUser['telegram_user_id'])) {
-            $reviewer['telegram_user_id'] = (string) $sitacUser['telegram_user_id'];
+            $fallbackReviewer['telegram_user_id'] = (string) $sitacUser['telegram_user_id'];
+        }
+        $fallbackReviewer['mention_html'] = $this->buildTelegramPicMention(
+            (string) ($fallbackReviewer['name'] ?? 'PIC HO'),
+            (string) ($fallbackReviewer['telegram_user_id'] ?? '')
+        );
+
+        return $fallbackReviewer;
+    }
+
+    private function getNotificationCityPicMapping(array $locationContext = [])
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
         }
 
-        return $reviewer;
+        $city = strtoupper(trim((string) ($locationContext['city_name'] ?? '')));
+        $province = strtoupper(trim((string) ($locationContext['province_name'] ?? '')));
+        $regional = strtoupper(trim((string) ($locationContext['regional_name'] ?? '')));
+        if ($city === '') {
+            return [];
+        }
+
+        $cacheKey = $regional . '|' . $province . '|' . $city;
+        if (isset($this->cityPicMappingCache[$cacheKey])) {
+            return $this->cityPicMappingCache[$cacheKey];
+        }
+
+        $this->db->from('tb_myrep_pic_mapping_city');
+        $this->db->where('UPPER(city_name)', $city);
+        if ($province !== '') {
+            $this->db->where('UPPER(province_name)', $province);
+        }
+        if ($regional !== '') {
+            $this->db->where('UPPER(regional_name)', $regional);
+        }
+
+        $row = $this->db->limit(1)->get()->row_array();
+        if (empty($row)) {
+            $row = $this->db
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $city)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $this->cityPicMappingCache[$cacheKey] = !empty($row) ? $row : [];
+        return $this->cityPicMappingCache[$cacheKey];
+    }
+
+    private function getNotificationUserByNik($nik)
+    {
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return [];
+        }
+
+        $row = $this->db
+            ->select('nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return [
+            'name' => (string) ($row['nama_user'] ?? ''),
+            'telegram_user_id' => (string) ($row['telegram_user_id'] ?? ''),
+        ];
+    }
+
+    private function combineNotificationReviewers(array $users)
+    {
+        $names = [];
+        $mentions = [];
+        $firstTelegramUserId = '';
+
+        foreach ($users as $user) {
+            $name = trim((string) ($user['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $telegramUserId = trim((string) ($user['telegram_user_id'] ?? ''));
+            $names[] = $name;
+            $mentions[] = $this->buildTelegramPicMention($name, $telegramUserId);
+            if ($firstTelegramUserId === '' && $telegramUserId !== '') {
+                $firstTelegramUserId = $telegramUserId;
+            }
+        }
+
+        if (empty($names)) {
+            return [];
+        }
+
+        return [
+            'name' => implode(', ', $names),
+            'telegram_user_id' => $firstTelegramUserId,
+            'mention_html' => implode(', ', $mentions),
+        ];
     }
 
     private function buildTelegramPicMention($picName, $telegramUserId)
@@ -2070,16 +2936,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return '<a href="tg://user?id=' . rawurlencode($telegramUserId) . '">' . $safeName . '</a>';
-    }
-
-    private function resolveCurrentUserPhone()
-    {
-        $phone = trim((string) $this->session->userdata('phone'));
-        if ($phone !== '') {
-            return $phone;
-        }
-
-        return 'No HP belum diset';
     }
 
     private function formatTelegramDate($dateTime)

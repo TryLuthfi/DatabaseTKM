@@ -47,6 +47,38 @@ if (!function_exists('drmScopeText')) {
         return strtoupper(trim((string) $scopeKey)) === 'SUBFEEDER' ? 'Subfeeder' : 'Cluster';
     }
 }
+
+if (!function_exists('drmScopeRequirementLabel')) {
+    function drmScopeRequirementLabel($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'NOT_REQUIRED_PENDING':
+                return 'Tidak Dibutuhkan - Menunggu Approval';
+            case 'NOT_REQUIRED_APPROVED':
+                return 'Tidak Dibutuhkan - Approved';
+            case 'NOT_REQUIRED_REJECTED':
+                return 'Tidak Dibutuhkan - Rejected';
+            default:
+                return 'Dibutuhkan';
+        }
+    }
+}
+
+if (!function_exists('drmScopeRequirementBadgeClass')) {
+    function drmScopeRequirementBadgeClass($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'NOT_REQUIRED_PENDING':
+                return 'warning';
+            case 'NOT_REQUIRED_APPROVED':
+                return 'success';
+            case 'NOT_REQUIRED_REJECTED':
+                return 'danger';
+            default:
+                return 'primary';
+        }
+    }
+}
 ?>
 
 <div class="content-wrapper">
@@ -536,9 +568,16 @@ if (!function_exists('drmScopeText')) {
                     <ul class="nav nav-tabs drm-scope-tabs px-3 pt-2 border-bottom-0" role="tablist">
                         <?php $tabIndex = 0; ?>
                         <?php foreach ($drmScopes as $scopeKey => $scope): ?>
+                            <?php
+                            $scopeRequirement = (array) ($scope['requirement'] ?? []);
+                            $scopeRequirementStatus = strtoupper(trim((string) ($scopeRequirement['requirement_status'] ?? 'REQUIRED')));
+                            ?>
                             <li class="nav-item">
                                 <a class="nav-link <?= $tabIndex === 0 ? 'active' : '' ?>" data-toggle="tab" href="#tab-drm-<?= strtolower($scopeKey) ?>" role="tab">
                                     <?= htmlspecialchars((string) ($scope['label'] ?? drmScopeText($scopeKey))) ?>
+                                    <?php if ($scopeKey === 'SUBFEEDER' && $scopeRequirementStatus !== 'REQUIRED'): ?>
+                                        <span class="badge badge-<?= drmScopeRequirementBadgeClass($scopeRequirementStatus) ?> ml-1"><?= htmlspecialchars(drmScopeRequirementLabel($scopeRequirementStatus)) ?></span>
+                                    <?php endif; ?>
                                 </a>
                             </li>
                             <?php $tabIndex++; ?>
@@ -551,6 +590,12 @@ if (!function_exists('drmScopeText')) {
                         <?php foreach ($drmScopes as $scopeKey => $scope): ?>
                             <?php
                             $scopeLabel = (string) ($scope['label'] ?? drmScopeText($scopeKey));
+                            $scopeRequirement = (array) ($scope['requirement'] ?? []);
+                            $scopeRequirementStatus = strtoupper(trim((string) ($scopeRequirement['requirement_status'] ?? 'REQUIRED')));
+                            $isSubfeederScope = $scopeKey === 'SUBFEEDER';
+                            $isSubfeederNotRequiredPending = $isSubfeederScope && $scopeRequirementStatus === 'NOT_REQUIRED_PENDING';
+                            $isSubfeederNotRequiredApproved = $isSubfeederScope && $scopeRequirementStatus === 'NOT_REQUIRED_APPROVED';
+                            $isSubfeederWorkflowLocked = $isSubfeederNotRequiredPending || $isSubfeederNotRequiredApproved;
                             $documentRows = (array) ($scope['documentRows'] ?? []);
                             $boqHeader = (array) ($scope['boqHeader'] ?? []);
                             $boqItems = (array) ($scope['boqItems'] ?? []);
@@ -569,11 +614,11 @@ if (!function_exists('drmScopeText')) {
                                 $docRawStatus = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
                                 $isApdBoqDoc = $docNameUpper === 'APD BOQ';
 
-                                if (!$isApdBoqDoc && (in_array($docStatus, ['BELUM UPLOAD'], true) || $docRawStatus === 'REJECTED')) {
+                                if (!$isSubfeederWorkflowLocked && !$isApdBoqDoc && (in_array($docStatus, ['BELUM UPLOAD'], true) || $docRawStatus === 'REJECTED')) {
                                     $bulkUploadableRows[] = $docRow;
                                 }
 
-                                if (!$isApdBoqDoc && !empty($docRow['id_doc_file']) && in_array($docRawStatus, ['UPLOADED', 'REJECTED'], true)) {
+                                if (!$isSubfeederWorkflowLocked && !$isApdBoqDoc && !empty($docRow['id_doc_file']) && in_array($docRawStatus, ['UPLOADED', 'REJECTED'], true)) {
                                     $reviewableRows[] = $docRow;
                                 }
 
@@ -593,6 +638,43 @@ if (!function_exists('drmScopeText')) {
                                             <h3 class="card-title mb-0">Dokumen <?= htmlspecialchars($scopeLabel) ?></h3>
                                         </div>
                                         <div class="card-body">
+                                            <?php if ($isSubfeederScope && !empty($scopeRequirementReady)): ?>
+                                                <div class="alert alert-<?= drmScopeRequirementBadgeClass($scopeRequirementStatus) ?> mb-3">
+                                                    <div>
+                                                        <div>
+                                                            <strong>Status Subfeeder:</strong>
+                                                            <?= htmlspecialchars(drmScopeRequirementLabel($scopeRequirementStatus)) ?>
+                                                            <?php if (!empty($scopeRequirement['request_remark'])): ?>
+                                                                <div class="small mt-1">Alasan request: <?= nl2br(htmlspecialchars((string) $scopeRequirement['request_remark'])) ?></div>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($scopeRequirement['review_remark'])): ?>
+                                                                <div class="small mt-1">Catatan review: <?= nl2br(htmlspecialchars((string) $scopeRequirement['review_remark'])) ?></div>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($scopeRequirement['reopen_remark'])): ?>
+                                                                <div class="small mt-1">Catatan aktif kembali: <?= nl2br(htmlspecialchars((string) $scopeRequirement['reopen_remark'])) ?></div>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <?php if ($canApprove && $canApprovalAction && $isSubfeederNotRequiredPending): ?>
+                                                    <div class="text-center mb-3">
+                                                        <button type="button" class="btn btn-success mr-2" data-toggle="modal" data-target="#modal-subfeeder-not-required-approve">
+                                                            Approve Tidak Dibutuhkan
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#modal-subfeeder-not-required-reject">
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <?php if ($canApprove && $canApprovalAction && $isSubfeederNotRequiredApproved): ?>
+                                                    <div class="text-center mb-3">
+                                                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-subfeeder-reopen">
+                                                            Aktifkan Kembali Subfeeder
+                                                        </button>
+                                                    </div>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                            <?php if (!$isSubfeederWorkflowLocked): ?>
                                             <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem;">
                                                 <div class="small text-muted">
                                                     Bulk upload & approve all tidak mencakup <strong>APD BOQ</strong> dan <strong>Manual BOQ</strong>.
@@ -637,7 +719,7 @@ if (!function_exists('drmScopeText')) {
                                                             <?php
                                                             $docStatus = drmDocumentLabel($row);
                                                             $docRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
-                                                            $docCanUpload = $docStatus === 'BELUM UPLOAD' || $docRawStatus === 'REJECTED';
+                                                            $docCanUpload = !$isSubfeederWorkflowLocked && ($docStatus === 'BELUM UPLOAD' || $docRawStatus === 'REJECTED');
                                                             ?>
                                                             <tr>
                                                                 <td><strong><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></strong></td>
@@ -662,7 +744,7 @@ if (!function_exists('drmScopeText')) {
                                                                 </td>
                                                                 <td style="min-width:320px;">
                                                                     <?php if (($row['doc_name'] ?? '') === 'APD BOQ' && $boqReady): ?>
-                                                                        <?php if ($canTambah && !$isBoqLocked): ?>
+                                                                        <?php if ($canTambah && !$isBoqLocked && !$isSubfeederWorkflowLocked): ?>
                                                                             <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-apd-boq-package-<?= strtolower($scopeKey) ?>">Kelola APD BOQ & BOQ Manual</button>
                                                                         <?php else: ?>
                                                                             <span class="text-success small font-weight-bold">BOQ sudah approved</span>
@@ -735,6 +817,14 @@ if (!function_exists('drmScopeText')) {
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            <?php if ($isSubfeederScope && !empty($scopeRequirementReady) && !$isSubfeederWorkflowLocked): ?>
+                                                <div class="mt-3 text-center">
+                                                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#modal-subfeeder-not-required">
+                                                        Ajukan Subfeeder Tidak Dibutuhkan
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 <?php endif; ?>
@@ -746,6 +836,104 @@ if (!function_exists('drmScopeText')) {
             </div>
         </div>
     </section>
+</div>
+
+<div class="modal fade" id="modal-subfeeder-not-required" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/requestSubfeederNotRequired') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Ajukan Subfeeder Tidak Dibutuhkan</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>Remarks</label>
+                        <textarea name="remark" rows="4" class="form-control" required placeholder="Alasan pengajuan, contoh: cluster tidak memiliki jalur subfeeder"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Ajukan Subfeeder tidak dibutuhkan ke HO?');">Ajukan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-subfeeder-reopen" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/reopenSubfeederRequirement') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Aktifkan Kembali Subfeeder</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>Remarks</label>
+                        <textarea name="remark" rows="4" class="form-control" placeholder="Catatan perubahan, contoh: desain berubah dan subfeeder dibutuhkan kembali"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Aktifkan kembali Subfeeder? Baseline cluster-only aktif akan diganti sampai BOQ Subfeeder approved.');">Aktifkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-subfeeder-not-required-approve" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/reviewSubfeederNotRequired') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <input type="hidden" name="action_type" value="approve">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Approve Subfeeder Tidak Dibutuhkan</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>Remarks</label>
+                        <textarea name="remark" rows="4" class="form-control" placeholder="Catatan approve HO"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Approve Subfeeder tidak dibutuhkan?');">Approve</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-subfeeder-not-required-reject" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/reviewSubfeederNotRequired') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <input type="hidden" name="action_type" value="reject">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Reject Subfeeder Tidak Dibutuhkan</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>Remarks</label>
+                        <textarea name="remark" rows="4" class="form-control" required placeholder="Alasan reject"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Reject pengajuan Subfeeder tidak dibutuhkan?');">Reject</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <?php if ($canEdit): ?>
