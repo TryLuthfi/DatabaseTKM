@@ -386,7 +386,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->populateChecklistItemPivotSheet($pivotSheet, $exportRows);
 
         $excel->setActiveSheetIndex(0);
-        $this->outputChecklistItemWorkbook($excel, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xlsx');
+        $this->outputChecklistItemWorkbook($excel, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xls');
     }
 
     private function createPHPExcelObject()
@@ -410,13 +410,13 @@ class Checklist_Dokument_MyRep extends CI_Controller
             }
         }
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
         header('Pragma: no-cache');
         header('Expires: 0');
 
-        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
         $writer->save('php://output');
         exit;
     }
