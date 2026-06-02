@@ -1147,6 +1147,17 @@ class Checklist_Dokument_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadMainfeederDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getMainfeederFileById((int) $fileId);
+        $this->downloadStoredChecklistFile($file);
+    }
+
     public function saveTimeline()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -1532,6 +1543,43 @@ class Checklist_Dokument_MyRep extends CI_Controller
         header('Content-Type: ' . $mimeType);
         header('Content-Length: ' . filesize($fullPath));
         header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
+    public function downloadDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getFileById((int) $fileId);
+        $this->downloadStoredChecklistFile($file);
+    }
+
+    private function downloadStoredChecklistFile(array $file)
+    {
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $downloadName = trim((string) ($file['file_name'] ?? ''));
+        if ($downloadName === '') {
+            $downloadName = basename($fullPath);
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . basename($downloadName) . '"');
         header('X-Content-Type-Options: nosniff');
         readfile($fullPath);
         exit;

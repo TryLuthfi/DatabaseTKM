@@ -763,10 +763,22 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <a href="<?= base_url($item['file_path']) ?>" target="_blank">
                                                                             <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
                                                                         </a>
+                                                                        <div class="mt-1">
+                                                                            <a href="<?= base_url('Checklist_Dokument_MyRep/downloadDocument/' . (int) $item['id_doc_file']) ?>" class="btn btn-sm btn-outline-primary">
+                                                                                <i class="fas fa-download"></i> Download
+                                                                            </a>
+                                                                        </div>
                                                                     <?php elseif (!empty($item['linked_source_file_id']) && !empty($item['linked_source_preview_path'])): ?>
                                                                         <a href="<?= base_url($item['linked_source_preview_path']) ?>" target="_blank">
                                                                             <?= !empty($item['linked_source_file_name']) ? $item['linked_source_file_name'] : ('LINKED FILE #' . (int) $item['linked_source_file_id']) ?>
                                                                         </a>
+                                                                        <?php if (!empty($item['linked_source_file_path'])): ?>
+                                                                            <div class="mt-1">
+                                                                                <a href="<?= base_url($item['linked_source_file_path']) ?>" class="btn btn-sm btn-outline-primary" download>
+                                                                                    <i class="fas fa-download"></i> Download
+                                                                                </a>
+                                                                            </div>
+                                                                        <?php endif; ?>
                                                                         <div class="doc-flag-chip">Linked: <?= htmlspecialchars((string) ($item['linked_source_flow_type'] ?? '-')) ?></div>
                                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                                         <span class="text-muted">Tanpa file</span>
@@ -1077,6 +1089,11 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <a href="<?= base_url($item['file_path']) ?>" target="_blank">
                                                                             <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
                                                                         </a>
+                                                                        <div class="mt-1">
+                                                                            <a href="<?= base_url('Checklist_Dokument_MyRep/downloadDocument/' . (int) $item['id_doc_file']) ?>" class="btn btn-sm btn-outline-primary">
+                                                                                <i class="fas fa-download"></i> Download
+                                                                            </a>
+                                                                        </div>
                                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                                         <span class="text-muted">Tanpa file</span>
                                                                         <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
