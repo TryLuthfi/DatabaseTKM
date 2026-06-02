@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Verifikasi Email - Database Project TKM</title>
-    <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
-    <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
+    <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo-full.png?v=2') ?>">
+    <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo-full.png?v=2') ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">

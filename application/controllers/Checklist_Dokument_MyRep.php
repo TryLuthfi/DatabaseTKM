@@ -321,13 +321,15 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $sheet = strtolower(trim((string) $this->input->get('sheet')));
-        $sheet = $sheet === 'pivot' ? 'pivot' : 'data';
-        $exportRows = $this->getChecklistItemExportRowsFromRequest();
-
-        if ($sheet === 'pivot') {
+        if ($sheet === 'cluster' || $sheet === 'all_cluster' || $sheet === 'all-cluster') {
+            $csvRows = $this->buildChecklistClusterCsvRows($this->getChecklistClusterExportRowsFromRequest());
+            $filename = 'monitoring_all_cluster_' . date('Y-m-d') . '.csv';
+        } elseif ($sheet === 'pivot') {
+            $exportRows = $this->getChecklistItemExportRowsFromRequest();
             $csvRows = $this->buildChecklistItemPivotCsvRows($exportRows);
             $filename = 'monitoring_item_dokumen_pivot_' . date('Y-m-d') . '.csv';
         } else {
+            $exportRows = $this->getChecklistItemExportRowsFromRequest();
             $csvRows = $this->buildChecklistItemDataCsvRows($exportRows);
             $filename = 'monitoring_item_dokumen_data_' . date('Y-m-d') . '.csv';
         }
@@ -433,6 +435,149 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return $exportRows;
+    }
+
+    private function getChecklistClusterExportRowsFromRequest()
+    {
+        $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
+        $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
+        $searchValue = strtoupper(trim((string) $this->input->get('search')));
+
+        $clusterRows = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
+        if ($searchValue === '') {
+            return $clusterRows;
+        }
+
+        $filteredRows = [];
+        foreach ($clusterRows as $row) {
+            $haystack = strtoupper(implode(' ', [
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['homepass'] ?? ''),
+                (string) ($row['tanggal_rfs'] ?? ''),
+                (string) ($row['status_rfs'] ?? ''),
+                (string) ($row['status_current'] ?? ''),
+            ]));
+
+            if (strpos($haystack, $searchValue) !== false) {
+                $filteredRows[] = $row;
+            }
+        }
+
+        return $filteredRows;
+    }
+
+    private function buildChecklistClusterCsvRows(array $rows)
+    {
+        $csvRows = [[
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Homepass',
+            'Tanggal RFS',
+            'Status RFS',
+            'Status Current',
+            'Plan ATP',
+            'Realisasi ATP',
+            'Aging ATP',
+            'Plan Dokument',
+            'Realisasi Dokument',
+            'Aging Dokument',
+            'CW ATP Uploaded',
+            'CW ATP Required',
+            'CW ATP Approved',
+            'CW ATP On Review',
+            'CW ATP Rejected',
+            'CW ATP Not Uploaded',
+            'FULL OPM Uploaded',
+            'FULL OPM Required',
+            'FULL OPM Approved',
+            'FULL OPM On Review',
+            'FULL OPM Rejected',
+            'FULL OPM Not Uploaded',
+            'RFS Uploaded',
+            'RFS Required',
+            'RFS Approved',
+            'RFS On Review',
+            'RFS Rejected',
+            'RFS Not Uploaded',
+            'Submit Astri',
+            'Approved Astri',
+            'ASTRI CW ATP Submitted',
+            'ASTRI CW ATP Approved',
+            'ASTRI CW ATP On Review',
+            'ASTRI CW ATP Rejected',
+            'ASTRI CW ATP NY',
+            'ASTRI FULL OPM Submitted',
+            'ASTRI FULL OPM Approved',
+            'ASTRI FULL OPM On Review',
+            'ASTRI FULL OPM Rejected',
+            'ASTRI FULL OPM NY',
+            'ASTRI RFS Submitted',
+            'ASTRI RFS Approved',
+            'ASTRI RFS On Review',
+            'ASTRI RFS Rejected',
+            'ASTRI RFS NY',
+        ]];
+
+        $no = 1;
+        foreach ($rows as $row) {
+            $csvRows[] = [
+                $no++,
+                (string) ($row['regional_name'] ?? '-'),
+                (string) ($row['city_name'] ?? '-'),
+                (string) ($row['cluster_name'] ?? '-'),
+                (int) ($row['homepass'] ?? 0),
+                $this->formatDateDisplay($row['tanggal_rfs'] ?? null),
+                (string) ($row['status_rfs'] ?? '-'),
+                (string) ($row['status_current'] ?? '-'),
+                $this->formatDateDisplay($row['plan_atp_date'] ?? null),
+                $this->formatDateDisplay($row['actual_atp_date'] ?? null),
+                $row['aging_atp_days'] === null ? '-' : (int) $row['aging_atp_days'],
+                $this->formatDateDisplay($row['plan_submit_doc_date'] ?? null),
+                $this->formatDateDisplay($row['actual_submit_doc_date'] ?? null),
+                $row['aging_doc_days'] === null ? '-' : (int) $row['aging_doc_days'],
+                (int) ($row['doc_cw_atp_uploaded'] ?? 0),
+                (int) ($row['doc_cw_atp_required'] ?? 0),
+                (int) ($row['doc_cw_atp_approved'] ?? 0),
+                (int) ($row['doc_cw_atp_on_review'] ?? 0),
+                (int) ($row['doc_cw_atp_rejected'] ?? 0),
+                (int) ($row['doc_cw_atp_ny'] ?? 0),
+                (int) ($row['doc_full_opm_uploaded'] ?? 0),
+                (int) ($row['doc_full_opm_required'] ?? 0),
+                (int) ($row['doc_full_opm_approved'] ?? 0),
+                (int) ($row['doc_full_opm_on_review'] ?? 0),
+                (int) ($row['doc_full_opm_rejected'] ?? 0),
+                (int) ($row['doc_full_opm_ny'] ?? 0),
+                (int) ($row['doc_rfs_uploaded'] ?? 0),
+                (int) ($row['doc_rfs_required'] ?? 0),
+                (int) ($row['doc_rfs_approved'] ?? 0),
+                (int) ($row['doc_rfs_on_review'] ?? 0),
+                (int) ($row['doc_rfs_rejected'] ?? 0),
+                (int) ($row['doc_rfs_ny'] ?? 0),
+                $this->formatDateDisplay($row['submit_astri_date'] ?? null),
+                $this->formatDateDisplay($row['approved_astri_date'] ?? null),
+                (int) ($row['astri_doc_cw_atp_submitted'] ?? 0),
+                (int) ($row['astri_doc_cw_atp_approved'] ?? 0),
+                (int) ($row['astri_doc_cw_atp_on_review'] ?? 0),
+                (int) ($row['astri_doc_cw_atp_rejected'] ?? 0),
+                (int) ($row['astri_doc_cw_atp_ny'] ?? 0),
+                (int) ($row['astri_doc_full_opm_submitted'] ?? 0),
+                (int) ($row['astri_doc_full_opm_approved'] ?? 0),
+                (int) ($row['astri_doc_full_opm_on_review'] ?? 0),
+                (int) ($row['astri_doc_full_opm_rejected'] ?? 0),
+                (int) ($row['astri_doc_full_opm_ny'] ?? 0),
+                (int) ($row['astri_doc_rfs_submitted'] ?? 0),
+                (int) ($row['astri_doc_rfs_approved'] ?? 0),
+                (int) ($row['astri_doc_rfs_on_review'] ?? 0),
+                (int) ($row['astri_doc_rfs_rejected'] ?? 0),
+                (int) ($row['astri_doc_rfs_ny'] ?? 0),
+            ];
+        }
+
+        return $csvRows;
     }
 
     private function buildChecklistItemDataCsvRows(array $rows)
