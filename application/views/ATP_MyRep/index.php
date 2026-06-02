@@ -107,6 +107,71 @@ $summaryCards = [
         'icon' => 'fas fa-check-circle',
     ],
 ];
+
+$atpFlowDefinitions = [
+    'ny_atp' => ['Waiting Email', 'Waiting Jadwal ATP', 'Waiting ATP', 'PROSES ATP', 'Waiting Status ATP'],
+    'punclist' => ['ATP PUNCLIST'],
+    'done' => ['ATP DONE'],
+];
+$atpFlowLabels = [
+    'ny_atp' => 'NY ATP',
+    'punclist' => 'PUNCLIST',
+    'done' => 'DONE',
+];
+$atpStatusDefinitions = [
+    'waiting_email' => 'Waiting Email',
+    'waiting_jadwal' => 'Waiting Jadwal ATP',
+    'waiting_atp' => 'Waiting ATP',
+    'on_proses' => 'PROSES ATP',
+];
+$atpStatusLabels = [
+    'waiting_email' => 'Waiting Email',
+    'waiting_jadwal' => 'Waiting Jadwal',
+    'waiting_atp' => 'Waiting ATP',
+    'on_proses' => 'On Proses',
+];
+$atpFlowSummaryByTab = [];
+$atpStatusSummaryByTab = [];
+foreach ($atpFlowDefinitions as $flowKey => $flowStages) {
+    $atpFlowSummaryByTab[$flowKey] = ['count' => 0];
+    $atpStatusSummaryByTab[$flowKey] = [
+        'waitingEmailCount' => 0,
+        'waitingJadwalCount' => 0,
+        'waitingAtpCount' => 0,
+        'onProsesCount' => 0,
+    ];
+}
+
+foreach ($clusterList as $cluster) {
+    $stage = trim((string) ($cluster['stage_atp'] ?? ''));
+    foreach ($atpFlowDefinitions as $flowKey => $flowStages) {
+        if (!in_array($stage, $flowStages, true)) {
+            continue;
+        }
+
+        $atpFlowSummaryByTab[$flowKey]['count']++;
+        if ($stage === 'Waiting Email') {
+            $atpStatusSummaryByTab[$flowKey]['waitingEmailCount']++;
+        } elseif ($stage === 'Waiting Jadwal ATP') {
+            $atpStatusSummaryByTab[$flowKey]['waitingJadwalCount']++;
+        } elseif ($stage === 'Waiting ATP') {
+            $atpStatusSummaryByTab[$flowKey]['waitingAtpCount']++;
+        } elseif ($stage === 'PROSES ATP') {
+            $atpStatusSummaryByTab[$flowKey]['onProsesCount']++;
+        }
+    }
+}
+$defaultAtpFlowTab = 'ny_atp';
+if ($selectedStage === 'ATP PUNCLIST') {
+    $defaultAtpFlowTab = 'punclist';
+} elseif ($selectedStage === 'ATP DONE') {
+    $defaultAtpFlowTab = 'done';
+}
+$atpActiveStatusSummary = $atpStatusSummaryByTab[$defaultAtpFlowTab] ?? $atpStatusSummaryByTab['ny_atp'];
+$atpWaitingEmailCount = (int) ($atpActiveStatusSummary['waitingEmailCount'] ?? 0);
+$atpWaitingJadwalCount = (int) ($atpActiveStatusSummary['waitingJadwalCount'] ?? 0);
+$atpWaitingAtpCount = (int) ($atpActiveStatusSummary['waitingAtpCount'] ?? 0);
+$atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
 ?>
 
 <div class="content-wrapper">
@@ -238,6 +303,45 @@ $summaryCards = [
                     </div>
                 </div>
                 <div class="card-body">
+                    <div class="atp-tab-stack">
+                        <div class="atp-tab-section">
+                            <div class="atp-tab-section__label">Flow</div>
+                            <ul class="nav nav-tabs atp-monitor-tabs" id="atp-monitor-tab" role="tablist">
+                                <?php foreach ($atpFlowLabels as $flowKey => $flowLabel): ?>
+                                    <li class="nav-item">
+                                        <button
+                                            type="button"
+                                            class="nav-link js-atp-flow-filter <?= $flowKey === $defaultAtpFlowTab ? 'active' : '' ?>"
+                                            data-atp-flow="<?= htmlspecialchars($flowKey, ENT_QUOTES) ?>">
+                                            <?= htmlspecialchars($flowLabel) ?>
+                                            <span class="atp-monitor-tabs__count"><?= number_format((int) ($atpFlowSummaryByTab[$flowKey]['count'] ?? 0), 0, ',', '.') ?></span>
+                                        </button>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <div class="atp-status-filter-row">
+                            <div class="atp-tab-section__label">Filter Status</div>
+                            <div class="atp-status-pillbar" aria-label="Filter status ATP">
+                                <button type="button" class="atp-status-pill js-atp-status-filter" data-atp-status="waiting_email">
+                                    <span>Waiting Email</span>
+                                    <span class="atp-status-pill__count" data-atp-status-count="waitingEmailCount"><?= number_format($atpWaitingEmailCount, 0, ',', '.') ?></span>
+                                </button>
+                                <button type="button" class="atp-status-pill js-atp-status-filter" data-atp-status="waiting_jadwal">
+                                    <span>Waiting Jadwal</span>
+                                    <span class="atp-status-pill__count" data-atp-status-count="waitingJadwalCount"><?= number_format($atpWaitingJadwalCount, 0, ',', '.') ?></span>
+                                </button>
+                                <button type="button" class="atp-status-pill js-atp-status-filter" data-atp-status="waiting_atp">
+                                    <span>Waiting ATP</span>
+                                    <span class="atp-status-pill__count" data-atp-status-count="waitingAtpCount"><?= number_format($atpWaitingAtpCount, 0, ',', '.') ?></span>
+                                </button>
+                                <button type="button" class="atp-status-pill js-atp-status-filter" data-atp-status="on_proses">
+                                    <span>On Proses</span>
+                                    <span class="atp-status-pill__count" data-atp-status-count="onProsesCount"><?= number_format($atpOnProsesCount, 0, ',', '.') ?></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table id="table-atp-myrep" class="table table-bordered table-hover atp-monitor-table">
                             <thead>
@@ -272,7 +376,7 @@ $summaryCards = [
                                                 <?= htmlspecialchars((string) (!empty($cluster['status_atp']) ? $cluster['status_atp'] : 'BELUM DISET')) ?>
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-search="<?= htmlspecialchars((string) ($cluster['stage_atp'] ?? ''), ENT_QUOTES) ?>">
                                             <span class="badge badge-<?= atpMyrepBadgeClass($cluster['stage_atp'] ?? '') ?>">
                                                 <?= htmlspecialchars((string) ($cluster['stage_atp'] ?? '-')) ?>
                                             </span>
@@ -524,6 +628,137 @@ $summaryCards = [
         margin-bottom: 16px;
     }
 
+    .atp-tab-stack {
+        display: grid;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .atp-tab-section {
+        display: grid;
+        gap: .4rem;
+    }
+
+    .atp-tab-section__label {
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #6b7f90;
+    }
+
+    .atp-monitor-tabs {
+        border-bottom: 0;
+        gap: .75rem;
+        margin-bottom: 0;
+    }
+
+    .atp-monitor-tabs .nav-link {
+        border: 1px solid #d9e6f2;
+        border-radius: 999px;
+        color: #45627b;
+        font-weight: 700;
+        padding: .65rem 1rem;
+        background: #f7fbff;
+    }
+
+    .atp-monitor-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #0f172a, #1d4ed8);
+        border-color: transparent;
+        box-shadow: 0 12px 28px rgba(29, 78, 216, 0.18);
+    }
+
+    .atp-monitor-tabs__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 20px;
+        margin-left: .45rem;
+        padding: 0 .45rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .24);
+        font-size: .72rem;
+        font-weight: 900;
+    }
+
+    .atp-monitor-tabs .nav-link:not(.active) .atp-monitor-tabs__count {
+        background: #e2edf7;
+        color: #2d6287;
+    }
+
+    .atp-status-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .65rem .85rem;
+        padding: .7rem .85rem;
+        border: 1px solid #e3edf6;
+        border-radius: 12px;
+        background: #f8fbfe;
+    }
+
+    .atp-status-filter-row .atp-tab-section__label {
+        margin-right: .15rem;
+        color: #51697e;
+    }
+
+    .atp-status-pillbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .atp-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        min-height: 32px;
+        border: 1px solid #d7e3ee;
+        border-radius: 999px;
+        padding: .38rem .68rem;
+        background: #fff;
+        color: #2f5f84;
+        font-size: .76rem;
+        font-weight: 800;
+        box-shadow: none;
+        transition: all .16s ease;
+    }
+
+    .atp-status-pill:hover,
+    .atp-status-pill:focus {
+        border-color: #9bc8eb;
+        background: #fafdff;
+        outline: none;
+    }
+
+    .atp-status-pill.is-active {
+        color: #fff;
+        background: #2277a8;
+        border-color: #2277a8;
+        box-shadow: 0 8px 18px rgba(34, 119, 168, 0.18);
+    }
+
+    .atp-status-pill__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 18px;
+        padding: 0 .4rem;
+        border-radius: 999px;
+        background: #eef4fa;
+        color: #315f84;
+        font-size: .68rem;
+        font-weight: 900;
+    }
+
+    .atp-status-pill.is-active .atp-status-pill__count {
+        background: rgba(255, 255, 255, .24);
+        color: #fff;
+    }
+
     .atp-monitor-table thead th {
         background: #0f172a;
         color: #f8fafc;
@@ -655,12 +890,34 @@ $summaryCards = [
         .budget-modal__footer .btn {
             width: 100%;
         }
+
+        .atp-status-filter-row {
+            align-items: stretch;
+        }
+
+        .atp-status-filter-row .atp-tab-section__label {
+            width: 100%;
+        }
+
+        .atp-status-pillbar,
+        .atp-status-pill {
+            width: 100%;
+        }
+
+        .atp-status-pill {
+            justify-content: space-between;
+        }
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        $('#table-atp-myrep').DataTable({
+        var atpFlowDefinitions = <?= json_encode($atpFlowDefinitions, JSON_UNESCAPED_UNICODE) ?>;
+        var atpStatusDefinitions = <?= json_encode($atpStatusDefinitions, JSON_UNESCAPED_UNICODE) ?>;
+        var atpStatusSummaryByTab = <?= json_encode($atpStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
+        var atpActiveFlow = <?= json_encode($defaultAtpFlowTab) ?>;
+        var atpStatusFilter = '';
+        var atpTable = $('#table-atp-myrep').DataTable({
             responsive: true,
             autoWidth: false,
             order: [],
@@ -687,6 +944,64 @@ $summaryCards = [
                 );
             }
         });
+
+        function escapeAtpRegex(value) {
+            return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function updateAtpStatusCounts(flowKey) {
+            var summary = atpStatusSummaryByTab[flowKey] || {};
+            $('[data-atp-status-count]').each(function () {
+                var key = String($(this).data('atp-status-count') || '');
+                var value = Number(summary[key] || 0);
+                $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+            });
+        }
+
+        function applyAtpMonitorFilters() {
+            var stages = [];
+            if (atpStatusFilter && atpStatusDefinitions[atpStatusFilter]) {
+                stages = [atpStatusDefinitions[atpStatusFilter]];
+            } else {
+                stages = atpFlowDefinitions[atpActiveFlow] || [];
+            }
+
+            var regex = stages.length
+                ? '^(' + stages.map(escapeAtpRegex).join('|') + ')$'
+                : '';
+            atpTable.column(9).search(regex, true, false).draw();
+        }
+
+        function syncAtpFlowButtons() {
+            $('.js-atp-flow-filter').each(function () {
+                $(this).toggleClass('active', String($(this).data('atp-flow') || '') === atpActiveFlow);
+            });
+        }
+
+        function syncAtpStatusButtons() {
+            $('.js-atp-status-filter').each(function () {
+                $(this).toggleClass('is-active', String($(this).data('atp-status') || '') === atpStatusFilter);
+            });
+        }
+
+        $('.js-atp-flow-filter').on('click', function () {
+            atpActiveFlow = String($(this).data('atp-flow') || 'ny_atp');
+            atpStatusFilter = '';
+            syncAtpFlowButtons();
+            syncAtpStatusButtons();
+            updateAtpStatusCounts(atpActiveFlow);
+            applyAtpMonitorFilters();
+        });
+
+        $('.js-atp-status-filter').on('click', function () {
+            var nextStatus = String($(this).data('atp-status') || '');
+            atpStatusFilter = atpStatusFilter === nextStatus ? '' : nextStatus;
+            syncAtpStatusButtons();
+            applyAtpMonitorFilters();
+        });
+
+        updateAtpStatusCounts(atpActiveFlow);
+        applyAtpMonitorFilters();
 
         function normalizeDateValue(value) {
             value = String(value || '').trim();

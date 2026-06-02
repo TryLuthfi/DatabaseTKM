@@ -265,7 +265,19 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
         <tr>
             <td><?= $index + 1 ?></td>
             <td>
-                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php if ($docReady): ?>
+                    <button
+                        type="button"
+                        class="btn btn-link p-0 border-0 align-baseline font-weight-bold js-bak-doc-detail"
+                        data-toggle="modal"
+                        data-target="#modal-bak-doc-detail"
+                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-documents='<?= htmlspecialchars(json_encode(array_values($clusterDocs)), ENT_QUOTES) ?>'>
+                        <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                    </button>
+                <?php else: ?>
+                    <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php endif; ?>
                 <?php if (!empty($row['cluster_code'])): ?>
                     <div class="text-muted small"><?= htmlspecialchars((string) $row['cluster_code']) ?></div>
                 <?php endif; ?>

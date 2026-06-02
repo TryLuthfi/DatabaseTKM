@@ -168,7 +168,13 @@ $renderDrmTableRows = static function (array $rows) {
         <tr>
             <td><?= $index + 1 ?></td>
             <td>
-                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php if (!empty($row['id_myrep_cluster'])): ?>
+                    <a href="<?= base_url('DRM_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="font-weight-bold">
+                        <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                    </a>
+                <?php else: ?>
+                    <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php endif; ?>
                 <div class="text-muted small"><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></div>
             </td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>

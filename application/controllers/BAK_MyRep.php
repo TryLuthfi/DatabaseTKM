@@ -232,7 +232,15 @@ class BAK_MyRep extends CI_Controller
         $slaInfo = $this->bakSlaInfo($row);
         $clusterName = (string) ($row['cluster_name'] ?? '-');
         $clusterCode = trim((string) ($row['cluster_code'] ?? ''));
-        $clusterHtml = '<strong>' . $this->html($clusterName) . '</strong>';
+        if ($docReady) {
+            $clusterHtml = '<button type="button" class="btn btn-link p-0 border-0 align-baseline font-weight-bold js-bak-doc-detail" data-toggle="modal" data-target="#modal-bak-doc-detail"'
+                . ' data-cluster_name="' . $this->attr($clusterName) . '"'
+                . ' data-documents="' . $this->attr(json_encode(array_values($clusterDocs))) . '">'
+                . $this->html($clusterName)
+                . '</button>';
+        } else {
+            $clusterHtml = '<strong>' . $this->html($clusterName) . '</strong>';
+        }
         if ($clusterCode !== '') {
             $clusterHtml .= '<div class="text-muted small">' . $this->html($clusterCode) . '</div>';
         }

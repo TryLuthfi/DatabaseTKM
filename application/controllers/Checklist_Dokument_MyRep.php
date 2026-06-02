@@ -2093,6 +2093,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $packageId = (int) $this->input->post('id_doc_package');
         $itemIds = $this->input->post('id_doc_item');
         $docNames = $this->input->post('doc_name');
+        $notRequiredItemIds = array_map('intval', (array) $this->input->post('bulk_not_required'));
 
         if ($clusterId <= 0 || $packageId <= 0 || !is_array($itemIds)) {
             $this->handleUploadError('Data bulk upload tidak valid.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
@@ -2107,53 +2108,67 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $successCount = 0;
         $uploadedDocNames = [];
         $uploadedFileNames = [];
+        $notRequiredCount = 0;
 
         foreach ($itemIds as $index => $itemId) {
             $itemId = (int) $itemId;
             $docName = trim((string) ($docNames[$index] ?? ''));
             $inputName = 'bulk_file_' . $itemId;
+            $isNoDocumentRequired = in_array($itemId, $notRequiredItemIds, true);
 
-            if ($itemId <= 0 || empty($_FILES[$inputName]['name'])) {
+            if ($itemId <= 0 || (!$isNoDocumentRequired && empty($_FILES[$inputName]['name']))) {
                 continue;
             }
 
-            $extension = pathinfo($_FILES[$inputName]['name'], PATHINFO_EXTENSION);
-            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docName);
-            $fileName = 'DOC_' . $clusterId . '_' . $packageId . '_' . $itemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+            $fileName = '';
+            $filePath = '';
+            if (!$isNoDocumentRequired) {
+                $extension = pathinfo($_FILES[$inputName]['name'], PATHINFO_EXTENSION);
+                $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docName);
+                $fileName = 'DOC_' . $clusterId . '_' . $packageId . '_' . $itemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
 
-            $config = [
-                'upload_path' => $uploadDir,
-                'allowed_types' => '*',
-                'max_size' => 102400,
-                'file_name' => $fileName,
-                'overwrite' => true,
-            ];
+                $config = [
+                    'upload_path' => $uploadDir,
+                    'allowed_types' => '*',
+                    'max_size' => 102400,
+                    'file_name' => $fileName,
+                    'overwrite' => true,
+                ];
 
-            $_FILES['single_bulk_file'] = $_FILES[$inputName];
-            $this->upload->initialize($config);
+                $_FILES['single_bulk_file'] = $_FILES[$inputName];
+                $this->upload->initialize($config);
 
-            if (!$this->upload->do_upload('single_bulk_file')) {
-                continue;
+                if (!$this->upload->do_upload('single_bulk_file')) {
+                    continue;
+                }
+
+                $fileData = $this->upload->data();
+                $fileName = (string) $fileData['file_name'];
+                $filePath = 'uploads/checklist_myrep/' . $fileName;
             }
 
-            $fileData = $this->upload->data();
             $payload = [
                 'id_doc_package' => $packageId,
                 'id_doc_item' => $itemId,
-                'file_name' => $fileData['file_name'],
-                'file_path' => 'uploads/checklist_myrep/' . $fileData['file_name'],
+                'file_name' => $fileName,
+                'file_path' => $filePath,
                 'status_file' => 'UPLOADED',
                 'remark' => '',
                 'uploaded_by' => (int) $this->session->userdata('id_user'),
+                'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
             ];
 
             $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
             $uploadedDocNames[] = $docName !== '' ? $docName : ('Dokumen #' . $itemId);
-            $uploadedFileNames[] = (string) $fileData['file_name'];
+            $uploadedFileNames[] = $isNoDocumentRequired ? '[Tanpa Dokumen]' : $fileName;
+            if ($isNoDocumentRequired) {
+                $notRequiredCount++;
+            }
             $successCount++;
         }
 
         if ($successCount > 0) {
+            $notificationTitle = $successCount > 1 ? 'FULL CLUSTER DOCUMENT' : 'NEW DOCUMENT';
             $this->notifyClusterDocumentSubmittedToHo($clusterId, [
                 'package_id' => $packageId,
                 'item_id' => 0,
@@ -2162,19 +2177,122 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'remark' => $successCount > 1
                     ? ($successCount . ' dokumen dikirim dalam satu kali submit dan menunggu review HO.')
                     : ('Dokumen ' . (isset($uploadedDocNames[0]) ? $uploadedDocNames[0] : '') . ' menunggu review HO.'),
-                'is_document_not_required' => false,
-                'notification_title' => $successCount > 1 ? 'FULL CLUSTER DOCUMENT' : 'NEW DOCUMENT',
+                'is_document_not_required' => $notRequiredCount > 0,
+                'notification_title' => $notificationTitle,
             ]);
-            $this->handleUploadSuccess($successCount . ' dokumen berhasil diupload.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $message = $successCount . ' dokumen berhasil disubmit.';
+            if ($notRequiredCount > 0) {
+                $message .= ' ' . $notRequiredCount . ' ditandai tidak dibutuhkan.';
+            }
+            $this->handleUploadSuccess($message, 'Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
-        $this->handleUploadError('Tidak ada file yang berhasil diupload.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
+        $this->handleUploadError('Tidak ada file atau penanda tidak dibutuhkan yang berhasil disubmit.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
+    }
+
+    public function approveAllDocuments()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $packageId = (int) $this->input->post('id_doc_package');
+
+        if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses approve semua dokumen.');
+                return;
+            }
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve semua dokumen.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if ($clusterId <= 0 || $packageId <= 0) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Data approve all tidak valid.');
+                return;
+            }
+            $this->session->set_flashdata('error', 'Data approve all tidak valid.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $scopeTabs = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId, false);
+        $targetGroup = [];
+        foreach (['CLUSTER', 'SUBFEEDER'] as $scopeKey) {
+            foreach (($scopeTabs[$scopeKey] ?? []) as $group) {
+                if ((int) ($group['id_doc_package'] ?? 0) === $packageId) {
+                    $targetGroup = $group;
+                    break 2;
+                }
+            }
+        }
+
+        if (empty($targetGroup)) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Grup dokumen tidak ditemukan.');
+                return;
+            }
+            $this->session->set_flashdata('error', 'Grup dokumen tidak ditemukan.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $approvedBy = (int) $this->session->userdata('id_user');
+        $updatedCount = 0;
+        foreach (($targetGroup['items'] ?? []) as $item) {
+            $fileId = (int) ($item['id_doc_file'] ?? 0);
+            $status = strtoupper(trim((string) ($item['status_file'] ?? '')));
+            $isLinkedSource = !empty($item['linked_source_file_id']);
+            if ($isLinkedSource || $fileId <= 0 || !in_array($status, ['UPLOADED', 'REJECTED'], true)) {
+                continue;
+            }
+
+            $updated = $this->MChecklist_Dokument_MyRep->updateFileStatus($fileId, [
+                'status_file' => 'APPROVED',
+                'remark' => 'Approved via Approve All',
+                'approved_by' => $approvedBy,
+            ]);
+            if ($updated) {
+                $updatedCount++;
+            }
+        }
+
+        if ($updatedCount <= 0) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Tidak ada dokumen yang bisa di-approve.');
+                return;
+            }
+            $this->session->set_flashdata('error', 'Tidak ada dokumen yang bisa di-approve.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $message = $updatedCount . ' dokumen berhasil di-approve.';
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse(true, $message, base_url('Checklist_Dokument_MyRep/detail/' . $clusterId));
+            return;
+        }
+
+        $this->session->set_flashdata('success', $message);
+        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
     public function approveDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
@@ -2183,22 +2301,35 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
 
         if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses approve dokumen.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve dokumen.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
         if ($fileId <= 0 || $clusterId <= 0) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Dokumen tidak ditemukan.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
-        $this->MChecklist_Dokument_MyRep->updateFileStatus($fileId, [
+        $updated = $this->MChecklist_Dokument_MyRep->updateFileStatus($fileId, [
             'status_file' => 'APPROVED',
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse((bool) $updated, $updated ? 'Dokumen berhasil di-approve.' : 'Gagal approve dokumen.', base_url('Checklist_Dokument_MyRep/detail/' . $clusterId));
+            return;
+        }
 
         $this->session->set_flashdata('success', 'Dokumen berhasil di-approve.');
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
@@ -2207,12 +2338,20 @@ class Checklist_Dokument_MyRep extends CI_Controller
     public function rejectDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
         if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses reject dokumen.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject dokumen.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
@@ -2221,16 +2360,25 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $fileId = (int) $this->input->post('id_doc_file');
         $remark = trim((string) $this->input->post('remark'));
         if ($fileId <= 0) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Dokumen tidak ditemukan.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
-        $this->MChecklist_Dokument_MyRep->updateFileStatus($fileId, [
+        $updated = $this->MChecklist_Dokument_MyRep->updateFileStatus($fileId, [
             'status_file' => 'REJECTED',
             'remark' => $remark,
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse((bool) $updated, $updated ? 'Dokumen berhasil di-reject.' : 'Gagal reject dokumen.', base_url('Checklist_Dokument_MyRep/detail/' . $clusterId));
+            return;
+        }
 
         $this->session->set_flashdata('success', 'Dokumen berhasil di-reject.');
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);

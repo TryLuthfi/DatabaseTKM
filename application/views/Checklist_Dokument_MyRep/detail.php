@@ -674,6 +674,15 @@ $clusterProgressPercent = checklist_doc_percent(
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="tab-cluster" role="tabpanel">
                             <?php foreach ($clusterTabRows as $group): ?>
+                                <?php
+                                $groupHasApprovalItems = false;
+                                foreach ($group['items'] as $groupItem) {
+                                    if (empty($groupItem['linked_source_file_id']) && (int) $groupItem['id_doc_file'] > 0 && in_array($groupItem['status_file'], ['UPLOADED', 'REJECTED'], true)) {
+                                        $groupHasApprovalItems = true;
+                                        break;
+                                    }
+                                }
+                                ?>
                                 <div class="card card-outline card-primary">
                                     <div class="card-header">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -682,6 +691,14 @@ $clusterProgressPercent = checklist_doc_percent(
                                                 <span class="badge badge-<?= checklist_doc_status_badge($group['status_package']) ?> mr-2">
                                                     <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
                                                 </span>
+                                                <?php if ($canApprove && $canApprovalAction && $groupHasApprovalItems): ?>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-primary btn-approve-all-doc"
+                                                        data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                        data-package-id="<?= (int) $group['id_doc_package'] ?>">
+                                                        <i class="fas fa-check-double mr-1"></i>Approve All
+                                                    </button>
+                                                <?php endif; ?>
                                                 <button type="button"
                                                     class="btn btn-sm btn-outline-info"
                                                     data-toggle="modal"
@@ -689,16 +706,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     Download Format
                                                 </button>
                                                 <?php if ($canTambah): ?>
-                                                <?php if ($canTambah): ?>
-                                                <?php if ($canTambah): ?>
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-success"
                                                         data-toggle="modal"
                                                         data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                                         Bulk Upload
                                                     </button>
-                                                <?php endif; ?>
-                                                <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -899,6 +912,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <th>No</th>
                                                                     <th>Dokumen</th>
                                                                     <th>Status Saat Ini</th>
+                                                                    <th>Tidak Dibutuhkan</th>
                                                                     <th>Upload File</th>
                                                                 </tr>
                                                             </thead>
@@ -922,7 +936,20 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             </span>
                                                                         </td>
                                                                         <td>
-                                                                            <input type="file" name="bulk_file_<?= (int) $item['id_doc_item'] ?>" class="form-control doc-bulk-input">
+                                                                            <?php $bulkInputId = 'bulk-file-' . (int) $group['id_doc_package'] . '-' . (int) $item['id_doc_item']; ?>
+                                                                            <?php $bulkNotRequiredId = 'bulk-not-required-' . (int) $group['id_doc_package'] . '-' . (int) $item['id_doc_item']; ?>
+                                                                            <div class="custom-control custom-checkbox">
+                                                                                <input type="checkbox"
+                                                                                    class="custom-control-input bulk-not-required-checkbox"
+                                                                                    id="<?= $bulkNotRequiredId ?>"
+                                                                                    name="bulk_not_required[]"
+                                                                                    value="<?= (int) $item['id_doc_item'] ?>"
+                                                                                    data-file-input="#<?= $bulkInputId ?>">
+                                                                                <label class="custom-control-label" for="<?= $bulkNotRequiredId ?>">Tidak dibutuhkan dokument</label>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="file" name="bulk_file_<?= (int) $item['id_doc_item'] ?>" id="<?= $bulkInputId ?>" class="form-control doc-bulk-input bulk-file-input">
                                                                         </td>
                                                                     </tr>
                                                                 <?php endforeach; ?>
@@ -1004,6 +1031,15 @@ $clusterProgressPercent = checklist_doc_percent(
 
                         <div class="tab-pane fade" id="tab-subfeeder" role="tabpanel">
                             <?php foreach ($subfeederTabRows as $group): ?>
+                                <?php
+                                $groupHasApprovalItems = false;
+                                foreach ($group['items'] as $groupItem) {
+                                    if ((int) $groupItem['id_doc_file'] > 0 && in_array($groupItem['status_file'], ['UPLOADED', 'REJECTED'], true)) {
+                                        $groupHasApprovalItems = true;
+                                        break;
+                                    }
+                                }
+                                ?>
                                 <div class="card card-outline card-success">
                                     <div class="card-header">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -1012,6 +1048,14 @@ $clusterProgressPercent = checklist_doc_percent(
                                                 <span class="badge badge-<?= checklist_doc_status_badge($group['status_package']) ?> mr-2">
                                                     <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
                                                 </span>
+                                                <?php if ($canApprove && $canApprovalAction && $groupHasApprovalItems): ?>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-primary btn-approve-all-doc"
+                                                        data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                        data-package-id="<?= (int) $group['id_doc_package'] ?>">
+                                                        <i class="fas fa-check-double mr-1"></i>Approve All
+                                                    </button>
+                                                <?php endif; ?>
                                                 <button type="button"
                                                     class="btn btn-sm btn-outline-info"
                                                     data-toggle="modal"
@@ -1211,6 +1255,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <th>No</th>
                                                                     <th>Dokumen</th>
                                                                     <th>Status Saat Ini</th>
+                                                                    <th>Tidak Dibutuhkan</th>
                                                                     <th>Upload File</th>
                                                                 </tr>
                                                             </thead>
@@ -1234,7 +1279,20 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             </span>
                                                                         </td>
                                                                         <td>
-                                                                            <input type="file" name="bulk_file_<?= (int) $item['id_doc_item'] ?>" class="form-control doc-bulk-input">
+                                                                            <?php $bulkInputId = 'bulk-file-' . (int) $group['id_doc_package'] . '-' . (int) $item['id_doc_item']; ?>
+                                                                            <?php $bulkNotRequiredId = 'bulk-not-required-' . (int) $group['id_doc_package'] . '-' . (int) $item['id_doc_item']; ?>
+                                                                            <div class="custom-control custom-checkbox">
+                                                                                <input type="checkbox"
+                                                                                    class="custom-control-input bulk-not-required-checkbox"
+                                                                                    id="<?= $bulkNotRequiredId ?>"
+                                                                                    name="bulk_not_required[]"
+                                                                                    value="<?= (int) $item['id_doc_item'] ?>"
+                                                                                    data-file-input="#<?= $bulkInputId ?>">
+                                                                                <label class="custom-control-label" for="<?= $bulkNotRequiredId ?>">Tidak dibutuhkan dokument</label>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="file" name="bulk_file_<?= (int) $item['id_doc_item'] ?>" id="<?= $bulkInputId ?>" class="form-control doc-bulk-input bulk-file-input">
                                                                         </td>
                                                                     </tr>
                                                                 <?php endforeach; ?>
@@ -1609,6 +1667,8 @@ $clusterProgressPercent = checklist_doc_percent(
 </div>
 
 <script>
+    var checklistApproveAllUrl = "<?= base_url('Checklist_Dokument_MyRep/approveAllDocuments') ?>";
+
     function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
         var dropzone = document.querySelector(dropzoneSelector);
         var input = document.querySelector(inputSelector);
@@ -1791,6 +1851,16 @@ $clusterProgressPercent = checklist_doc_percent(
         }
     });
 
+    $(document).on('change', '.bulk-not-required-checkbox', function() {
+        var checked = $(this).is(':checked');
+        var fileInputSelector = $(this).data('file-input');
+        var fileInput = $(fileInputSelector);
+        fileInput.prop('disabled', checked);
+        if (checked) {
+            fileInput.val('');
+        }
+    });
+
     $(document).on('change', '#astri-status', function() {
         var isNy = $(this).val() === 'NY';
         $('#astri-submitted-date').prop('required', !isNy);
@@ -1840,6 +1910,7 @@ $clusterProgressPercent = checklist_doc_percent(
                 progressBar.removeClass('warning').addClass('success').css('width', '100%');
                 progressPercent.text('100%');
                 if (response && response.status) {
+                    alert(response.message || 'Dokumen berhasil disubmit.');
                     window.location.href = response.redirect_url || window.location.href;
                     return;
                 }
@@ -1896,6 +1967,7 @@ $clusterProgressPercent = checklist_doc_percent(
                 progressBar.removeClass('warning').addClass('success').css('width', '100%');
                 progressPercent.text('100%');
                 if (response && response.status) {
+                    alert(response.message || 'Bulk upload berhasil disubmit.');
                     window.location.href = response.redirect_url || window.location.href;
                     return;
                 }
@@ -1906,6 +1978,82 @@ $clusterProgressPercent = checklist_doc_percent(
             error: function() {
                 alert('Bulk upload gagal. Silakan coba lagi.');
                 submitButton.prop('disabled', false).text('Upload Semua Yang Diisi');
+            }
+        });
+    });
+
+    $(document).on('click', '.btn-approve-all-doc', function() {
+        var button = $(this);
+        var clusterId = parseInt(button.data('cluster-id'), 10) || 0;
+        var packageId = parseInt(button.data('package-id'), 10) || 0;
+        if (!clusterId || !packageId) {
+            alert('Data approve all tidak valid.');
+            return;
+        }
+
+        if (!window.confirm('Approve semua dokumen yang masih menunggu review untuk grup ini?')) {
+            return;
+        }
+
+        button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Approving...');
+        $.ajax({
+            url: checklistApproveAllUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                cluster_id: clusterId,
+                id_doc_package: packageId
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response && response.status) {
+                    alert(response.message || 'Approve all berhasil.');
+                    window.location.href = response.redirect_url || window.location.href;
+                    return;
+                }
+
+                alert(response && response.message ? response.message : 'Approve all gagal.');
+                button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i>Approve All');
+            },
+            error: function() {
+                alert('Approve all gagal. Silakan coba lagi.');
+                button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i>Approve All');
+            }
+        });
+    });
+
+    $('#modalApproveDocument form, #modalRejectDocument form').on('submit', function(e) {
+        e.preventDefault();
+
+        var form = this;
+        var formEl = $(form);
+        var submitButton = formEl.find('button[type="submit"]');
+        var originalText = submitButton.text();
+
+        submitButton.prop('disabled', true).text('Memproses...');
+        $.ajax({
+            url: formEl.attr('action'),
+            type: 'POST',
+            dataType: 'json',
+            data: formEl.serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response && response.status) {
+                    alert(response.message || 'Dokumen berhasil diproses.');
+                    window.location.href = response.redirect_url || window.location.href;
+                    return;
+                }
+
+                alert(response && response.message ? response.message : 'Proses dokumen gagal.');
+                submitButton.prop('disabled', false).text(originalText);
+            },
+            error: function() {
+                alert('Proses dokumen gagal. Silakan coba lagi.');
+                submitButton.prop('disabled', false).text(originalText);
             }
         });
     });
