@@ -379,36 +379,298 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $exportRows[] = $row;
         }
 
-        header('Content-Type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="monitoring_item_dokumen_' . date('Y-m-d') . '.xls"');
+        $excel = $this->createPHPExcelObject();
+        $this->populateChecklistItemDataSheet($excel->getActiveSheet(), $exportRows);
+
+        $pivotSheet = $excel->createSheet();
+        $this->populateChecklistItemPivotSheet($pivotSheet, $exportRows);
+
+        $excel->setActiveSheetIndex(0);
+        $this->outputChecklistItemWorkbook($excel, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xlsx');
+    }
+
+    private function createPHPExcelObject()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+
+        return new PHPExcel();
+    }
+
+    private function outputChecklistItemWorkbook($excel, $filename)
+    {
+        if (!class_exists('PHPExcel_IOFactory')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel/IOFactory.php';
+        }
+
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
         header('Pragma: no-cache');
         header('Expires: 0');
 
-        echo "<table border='1'>";
-        echo "<tr><th>No</th><th>Regional</th><th>Kota</th><th>Cluster</th><th>Scope</th><th>SOW</th><th>Dokumen</th><th>Verification By</th><th>Status Internal</th><th>Remark Internal</th><th>Status Astri</th><th>Remark Astri</th><th>Uploaded At</th><th>Reviewed At</th><th>Approved At</th><th>Submit Astri</th></tr>";
-        $no = 1;
-        foreach ($exportRows as $row) {
-            echo '<tr>';
-            echo '<td>' . $no++ . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['scope_type'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['sow_type'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['doc_name'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['verification_by'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['remark'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->statusLabel((string) ($row['astri_status'] ?? 'NY')), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars((string) ($row['astri_remark'] ?? '-'), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['uploaded_at'] ?? null), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['reviewed_at'] ?? null), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['approved_at'] ?? null), ENT_QUOTES) . '</td>';
-            echo '<td>' . htmlspecialchars($this->formatDateDisplay($row['astri_submitted_date'] ?? null), ENT_QUOTES) . '</td>';
-            echo '</tr>';
-        }
-        echo '</table>';
+        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+        $writer->save('php://output');
         exit;
+    }
+
+    private function populateChecklistItemDataSheet($sheet, array $rows)
+    {
+        $sheet->setTitle('Data Item');
+        $headers = [
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'SOW',
+            'Dokumen',
+            'Verification By',
+            'Status Internal',
+            'Remark Internal',
+            'Status Astri',
+            'Remark Astri',
+            'Uploaded At',
+            'Reviewed At',
+            'Approved At',
+            'Submit Astri',
+        ];
+
+        foreach ($headers as $index => $header) {
+            $sheet->setCellValueByColumnAndRow($index, 1, $header);
+        }
+
+        $rowNo = 2;
+        $no = 1;
+        foreach ($rows as $row) {
+            $values = [
+                $no++,
+                (string) ($row['regional_name'] ?? '-'),
+                (string) ($row['city_name'] ?? '-'),
+                (string) ($row['cluster_name'] ?? '-'),
+                (string) ($row['scope_type'] ?? '-'),
+                (string) ($row['sow_type'] ?? '-'),
+                (string) ($row['doc_name'] ?? '-'),
+                (string) ($row['verification_by'] ?? '-'),
+                $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')),
+                (string) ($row['remark'] ?? '-'),
+                $this->statusLabel((string) ($row['astri_status'] ?? 'NY')),
+                (string) ($row['astri_remark'] ?? '-'),
+                $this->formatDateDisplay($row['uploaded_at'] ?? null),
+                $this->formatDateDisplay($row['reviewed_at'] ?? null),
+                $this->formatDateDisplay($row['approved_at'] ?? null),
+                $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
+            ];
+
+            foreach ($values as $index => $value) {
+                $sheet->setCellValueByColumnAndRow($index, $rowNo, $value);
+            }
+            $rowNo++;
+        }
+
+        $lastColumn = PHPExcel_Cell::stringFromColumnIndex(count($headers) - 1);
+        $sheet->getStyle('A1:' . $lastColumn . '1')->applyFromArray($this->checklistExcelHeaderStyle());
+        $sheet->getStyle('A1:' . $lastColumn . max(1, $rowNo - 1))->applyFromArray($this->checklistExcelBorderStyle());
+        $sheet->setAutoFilter('A1:' . $lastColumn . max(1, $rowNo - 1));
+        $sheet->freezePane('A2');
+
+        for ($col = 0; $col < count($headers); $col++) {
+            $sheet->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($col))->setAutoSize(true);
+        }
+    }
+
+    private function populateChecklistItemPivotSheet($sheet, array $rows)
+    {
+        $sheet->setTitle('Pivot Status');
+        $pivot = $this->buildChecklistItemPivotData($rows);
+        $statusesBySow = $pivot['statusesBySow'];
+
+        $sheet->mergeCells('A1:A2');
+        $sheet->mergeCells('B1:B2');
+        $sheet->mergeCells('C1:C2');
+        $sheet->mergeCells('D1:D2');
+        $sheet->setCellValue('A1', 'Regional');
+        $sheet->setCellValue('B1', 'Kota');
+        $sheet->setCellValue('C1', 'Cluster');
+        $sheet->setCellValue('D1', 'Scope');
+
+        $col = 4;
+        foreach ($statusesBySow as $sow => $statuses) {
+            $startCol = $col;
+            foreach ($statuses as $status) {
+                $sheet->setCellValueByColumnAndRow($col, 2, $status);
+                $col++;
+            }
+            $endCol = $col - 1;
+            $sheet->mergeCellsByColumnAndRow($startCol, 1, $endCol, 1);
+            $sheet->setCellValueByColumnAndRow($startCol, 1, $sow);
+        }
+
+        $grandTotalCol = $col;
+        $sheet->mergeCellsByColumnAndRow($grandTotalCol, 1, $grandTotalCol, 2);
+        $sheet->setCellValueByColumnAndRow($grandTotalCol, 1, 'Grand Total');
+
+        $rowNo = 3;
+        foreach ($pivot['rows'] as $pivotRow) {
+            $sheet->setCellValueByColumnAndRow(0, $rowNo, $pivotRow['regional']);
+            $sheet->setCellValueByColumnAndRow(1, $rowNo, $pivotRow['city']);
+            $sheet->setCellValueByColumnAndRow(2, $rowNo, $pivotRow['cluster']);
+            $sheet->setCellValueByColumnAndRow(3, $rowNo, $pivotRow['scope']);
+
+            $rowTotal = 0;
+            $col = 4;
+            foreach ($statusesBySow as $sow => $statuses) {
+                foreach ($statuses as $status) {
+                    $value = (int) ($pivotRow['counts'][$sow][$status] ?? 0);
+                    if ($value > 0) {
+                        $sheet->setCellValueByColumnAndRow($col, $rowNo, $value);
+                    }
+                    $rowTotal += $value;
+                    $col++;
+                }
+            }
+            $sheet->setCellValueByColumnAndRow($grandTotalCol, $rowNo, $rowTotal);
+            $rowNo++;
+        }
+
+        $sheet->mergeCellsByColumnAndRow(0, $rowNo, 3, $rowNo);
+        $sheet->setCellValueByColumnAndRow(0, $rowNo, 'Grand Total');
+        $col = 4;
+        $grandTotal = 0;
+        foreach ($statusesBySow as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $value = (int) ($pivot['totals'][$sow][$status] ?? 0);
+                $sheet->setCellValueByColumnAndRow($col, $rowNo, $value);
+                $grandTotal += $value;
+                $col++;
+            }
+        }
+        $sheet->setCellValueByColumnAndRow($grandTotalCol, $rowNo, $grandTotal);
+
+        $lastColumn = PHPExcel_Cell::stringFromColumnIndex($grandTotalCol);
+        $lastRow = max(2, $rowNo);
+        $sheet->getStyle('A1:' . $lastColumn . '2')->applyFromArray($this->checklistExcelHeaderStyle());
+        $sheet->getStyle('A1:' . $lastColumn . $lastRow)->applyFromArray($this->checklistExcelBorderStyle());
+        $sheet->getStyle('A' . $lastRow . ':' . $lastColumn . $lastRow)->applyFromArray($this->checklistExcelTotalStyle());
+        $sheet->getStyle('A1:' . $lastColumn . $lastRow)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('E3:' . $lastColumn . $lastRow)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_RIGHT);
+        $sheet->freezePane('E3');
+
+        for ($dimensionCol = 0; $dimensionCol <= $grandTotalCol; $dimensionCol++) {
+            $sheet->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($dimensionCol))->setAutoSize(true);
+        }
+    }
+
+    private function buildChecklistItemPivotData(array $rows)
+    {
+        $preferredSowOrder = ['CW ATP', 'FULL OPM', 'RFS'];
+        $preferredStatusOrder = ['APPROVED', 'NOT UPLOADED', 'ON REVIEW', 'REJECTED'];
+        $pivotRows = [];
+        $statusesBySow = [];
+        $totals = [];
+
+        foreach ($rows as $row) {
+            $regional = trim((string) ($row['regional_name'] ?? '-'));
+            $city = trim((string) ($row['city_name'] ?? '-'));
+            $cluster = trim((string) ($row['cluster_name'] ?? '-'));
+            $scope = trim((string) ($row['scope_type'] ?? '-'));
+            $sow = strtoupper(trim((string) ($row['sow_type'] ?? '-')));
+            $sow = $sow !== '' ? $sow : '-';
+            $status = $this->normalizeUiStatusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
+            $key = implode("\t", [$regional, $city, $cluster, $scope]);
+
+            if (!isset($pivotRows[$key])) {
+                $pivotRows[$key] = [
+                    'regional' => $regional !== '' ? $regional : '-',
+                    'city' => $city !== '' ? $city : '-',
+                    'cluster' => $cluster !== '' ? $cluster : '-',
+                    'scope' => $scope !== '' ? $scope : '-',
+                    'counts' => [],
+                ];
+            }
+
+            if (!isset($statusesBySow[$sow])) {
+                $statusesBySow[$sow] = [];
+            }
+            $statusesBySow[$sow][$status] = true;
+            $pivotRows[$key]['counts'][$sow][$status] = (int) ($pivotRows[$key]['counts'][$sow][$status] ?? 0) + 1;
+            $totals[$sow][$status] = (int) ($totals[$sow][$status] ?? 0) + 1;
+        }
+
+        if (empty($statusesBySow)) {
+            $statusesBySow['-'] = ['NOT UPLOADED' => true];
+        }
+
+        uksort($statusesBySow, static function ($left, $right) use ($preferredSowOrder) {
+            $leftPos = array_search($left, $preferredSowOrder, true);
+            $rightPos = array_search($right, $preferredSowOrder, true);
+            $leftPos = $leftPos === false ? 999 : $leftPos;
+            $rightPos = $rightPos === false ? 999 : $rightPos;
+            return $leftPos === $rightPos ? strcmp($left, $right) : ($leftPos - $rightPos);
+        });
+
+        foreach ($statusesBySow as $sow => $statusMap) {
+            $statuses = array_keys($statusMap);
+            usort($statuses, static function ($left, $right) use ($preferredStatusOrder) {
+                $leftPos = array_search($left, $preferredStatusOrder, true);
+                $rightPos = array_search($right, $preferredStatusOrder, true);
+                $leftPos = $leftPos === false ? 999 : $leftPos;
+                $rightPos = $rightPos === false ? 999 : $rightPos;
+                return $leftPos === $rightPos ? strcmp($left, $right) : ($leftPos - $rightPos);
+            });
+            $statusesBySow[$sow] = $statuses;
+        }
+
+        return [
+            'rows' => array_values($pivotRows),
+            'statusesBySow' => $statusesBySow,
+            'totals' => $totals,
+        ];
+    }
+
+    private function checklistExcelHeaderStyle()
+    {
+        return [
+            'font' => ['bold' => true],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'D9E2F3'],
+            ],
+            'alignment' => [
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+            ],
+        ];
+    }
+
+    private function checklistExcelTotalStyle()
+    {
+        return [
+            'font' => ['bold' => true],
+            'fill' => [
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => ['rgb' => 'E2E8F4'],
+            ],
+        ];
+    }
+
+    private function checklistExcelBorderStyle()
+    {
+        return [
+            'borders' => [
+                'allborders' => [
+                    'style' => PHPExcel_Style_Border::BORDER_THIN,
+                    'color' => ['rgb' => '000000'],
+                ],
+            ],
+        ];
     }
 
     private function buildClusterTableRow(array $cluster, $no, $canHapus)
