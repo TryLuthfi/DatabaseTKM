@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Database Project TKM</title>
-    <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
-    <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+    <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
+    <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png') ?>">
     <!-- Tell the browser to be responsive to screen width -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -21,6 +21,50 @@
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <style>
+        .login-logo {
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .login-logo img {
+            width: 92px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .login-logo .brand-mark-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 106px;
+            height: 106px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .login-logo .brand-text-custom {
+            display: block;
+            margin-top: 6px;
+            color: #ffffff;
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            line-height: 1;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+        }
+
+        .login-logo .brand-tagline-custom {
+            display: block;
+            margin-top: 6px;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+        }
+
         .password-toggle.input-group-text {
             width: 40px;
             justify-content: center;
@@ -33,13 +77,43 @@
             box-shadow: none;
             outline: 0;
         }
+
+        .login-page-footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding-bottom: 18px;
+            text-align: center;
+            font-size: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+            z-index: 2;
+        }
+
+        .login-page-footer span {
+            display: inline-block;
+            padding: 7px 12px;
+            background: rgba(0, 0, 0, 0.58);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 999px;
+            backdrop-filter: blur(2px);
+        }
     </style>
 </head>
 
 <body class="hold-transition login-page" style="background: linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.41)), url('<?= base_url("assets/img/IMG_1247.JPG") ?>') no-repeat center center fixed; background-size: cover;">
     <div class="login-box">
         <div class="login-logo">
-            <a style="color: white;"><b>Database</b>Project TKM</a>
+            <a>
+                <span class="brand-mark-wrap">
+                    <img src="<?= base_url('assets/dist/img/zeyn-logo.png') ?>" alt="ZEYN Logo">
+                </span>
+                <span class="brand-text-custom">ZEYN</span>
+                <span class="brand-tagline-custom">ZERO-ERROR EXECUTION, YIELDING NETWORKS</span>
+            </a>
         </div>
         <!-- /.login-logo -->
         <div class="card">
@@ -97,6 +171,7 @@
                 </form>
             </div>
         </div>
+        <div class="login-page-footer"><span>'A Product of PT. Technology Karya Mandiri'</span></div>
     </div>
 </body>
 
@@ -127,3 +202,4 @@
 </script>
 
 </html>
+
