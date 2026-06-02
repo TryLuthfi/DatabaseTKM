@@ -379,15 +379,231 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $exportRows[] = $row;
         }
 
-        $this->suppressPhpExcelCompatibilityWarnings();
-        $excel = $this->createPHPExcelObject();
-        $this->populateChecklistItemDataSheet($excel->getActiveSheet(), $exportRows);
+        $this->outputChecklistItemXmlWorkbook($exportRows, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xls');
+    }
 
-        $pivotSheet = $excel->createSheet();
-        $this->populateChecklistItemPivotSheet($pivotSheet, $exportRows);
+    private function outputChecklistItemXmlWorkbook(array $rows, $filename)
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
 
-        $excel->setActiveSheetIndex(0);
-        $this->outputChecklistItemWorkbook($excel, 'monitoring_item_dokumen_' . date('Y-m-d') . '.xls');
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+        echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
+        echo 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
+        echo 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
+        echo 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
+        echo 'xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+        echo $this->checklistXmlStyles();
+        echo $this->buildChecklistItemDataWorksheetXml($rows);
+        echo $this->buildChecklistItemPivotWorksheetXml($rows);
+        echo '</Workbook>';
+        exit;
+    }
+
+    private function buildChecklistItemDataWorksheetXml(array $rows)
+    {
+        $headers = [
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'SOW',
+            'Dokumen',
+            'Verification By',
+            'Status Internal',
+            'Remark Internal',
+            'Status Astri',
+            'Remark Astri',
+            'Uploaded At',
+            'Reviewed At',
+            'Approved At',
+            'Submit Astri',
+        ];
+
+        $xml = '<Worksheet ss:Name="Data Item"><Table>' . "\n";
+        $widths = [45, 110, 130, 220, 80, 90, 220, 140, 120, 220, 110, 220, 90, 90, 90, 90];
+        foreach ($widths as $width) {
+            $xml .= '<Column ss:Width="' . (int) $width . '"/>' . "\n";
+        }
+
+        $xml .= '<Row>';
+        foreach ($headers as $header) {
+            $xml .= $this->checklistXmlCell($header, 'String', 'Header');
+        }
+        $xml .= '</Row>' . "\n";
+
+        $no = 1;
+        foreach ($rows as $row) {
+            $values = [
+                ['value' => $no++, 'type' => 'Number'],
+                ['value' => (string) ($row['regional_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['city_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['cluster_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['scope_type'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['sow_type'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['doc_name'] ?? '-'), 'type' => 'String'],
+                ['value' => (string) ($row['verification_by'] ?? '-'), 'type' => 'String'],
+                ['value' => $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED')), 'type' => 'String'],
+                ['value' => (string) ($row['remark'] ?? '-'), 'type' => 'String'],
+                ['value' => $this->statusLabel((string) ($row['astri_status'] ?? 'NY')), 'type' => 'String'],
+                ['value' => (string) ($row['astri_remark'] ?? '-'), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['uploaded_at'] ?? null), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['reviewed_at'] ?? null), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['approved_at'] ?? null), 'type' => 'String'],
+                ['value' => $this->formatDateDisplay($row['astri_submitted_date'] ?? null), 'type' => 'String'],
+            ];
+
+            $xml .= '<Row>';
+            foreach ($values as $cell) {
+                $xml .= $this->checklistXmlCell($cell['value'], $cell['type'], 'Border');
+            }
+            $xml .= '</Row>' . "\n";
+        }
+
+        $xml .= '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">';
+        $xml .= '<FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane>';
+        $xml .= '</WorksheetOptions></Worksheet>' . "\n";
+
+        return $xml;
+    }
+
+    private function buildChecklistItemPivotWorksheetXml(array $rows)
+    {
+        $pivot = $this->buildChecklistItemPivotData($rows);
+        $statusesBySow = $pivot['statusesBySow'];
+        $grandTotalColIndex = 5;
+        foreach ($statusesBySow as $statuses) {
+            $grandTotalColIndex += count($statuses);
+        }
+
+        $xml = '<Worksheet ss:Name="Pivot Status"><Table>' . "\n";
+        foreach ([110, 130, 220, 80] as $width) {
+            $xml .= '<Column ss:Width="' . (int) $width . '"/>' . "\n";
+        }
+        for ($col = 5; $col <= $grandTotalColIndex; $col++) {
+            $xml .= '<Column ss:Width="95"/>' . "\n";
+        }
+
+        $xml .= '<Row>';
+        $xml .= $this->checklistXmlCell('Regional', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= $this->checklistXmlCell('Kota', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= $this->checklistXmlCell('Cluster', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= $this->checklistXmlCell('Scope', 'String', 'Header', ['ss:MergeDown' => 1]);
+        foreach ($statusesBySow as $sow => $statuses) {
+            $attrs = [];
+            if (count($statuses) > 1) {
+                $attrs['ss:MergeAcross'] = count($statuses) - 1;
+            }
+            $xml .= $this->checklistXmlCell($sow, 'String', 'Header', $attrs);
+        }
+        $xml .= $this->checklistXmlCell('Grand Total', 'String', 'Header', ['ss:MergeDown' => 1]);
+        $xml .= '</Row>' . "\n";
+
+        $xml .= '<Row>';
+        $isFirstStatusHeader = true;
+        foreach ($statusesBySow as $statuses) {
+            foreach ($statuses as $status) {
+                $attrs = $isFirstStatusHeader ? ['ss:Index' => 5] : [];
+                $xml .= $this->checklistXmlCell($status, 'String', 'Header', $attrs);
+                $isFirstStatusHeader = false;
+            }
+        }
+        $xml .= '</Row>' . "\n";
+
+        foreach ($pivot['rows'] as $pivotRow) {
+            $rowTotal = 0;
+            $xml .= '<Row>';
+            $xml .= $this->checklistXmlCell($pivotRow['regional'], 'String', 'Border');
+            $xml .= $this->checklistXmlCell($pivotRow['city'], 'String', 'Border');
+            $xml .= $this->checklistXmlCell($pivotRow['cluster'], 'String', 'Border');
+            $xml .= $this->checklistXmlCell($pivotRow['scope'], 'String', 'Border');
+            foreach ($statusesBySow as $sow => $statuses) {
+                foreach ($statuses as $status) {
+                    $value = (int) ($pivotRow['counts'][$sow][$status] ?? 0);
+                    $rowTotal += $value;
+                    $xml .= $this->checklistXmlCell($value > 0 ? $value : '', $value > 0 ? 'Number' : 'String', 'Number');
+                }
+            }
+            $xml .= $this->checklistXmlCell($rowTotal, 'Number', 'Number');
+            $xml .= '</Row>' . "\n";
+        }
+
+        $grandTotal = 0;
+        $xml .= '<Row>';
+        $xml .= $this->checklistXmlCell('Grand Total', 'String', 'Total', ['ss:MergeAcross' => 3]);
+        foreach ($statusesBySow as $sow => $statuses) {
+            foreach ($statuses as $status) {
+                $value = (int) ($pivot['totals'][$sow][$status] ?? 0);
+                $grandTotal += $value;
+                $xml .= $this->checklistXmlCell($value, 'Number', 'TotalNumber');
+            }
+        }
+        $xml .= $this->checklistXmlCell($grandTotal, 'Number', 'TotalNumber');
+        $xml .= '</Row>' . "\n";
+
+        $xml .= '</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">';
+        $xml .= '<FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><SplitVertical>4</SplitVertical><LeftColumnRightPane>4</LeftColumnRightPane>';
+        $xml .= '</WorksheetOptions></Worksheet>' . "\n";
+
+        return $xml;
+    }
+
+    private function checklistXmlStyles()
+    {
+        return '<Styles>'
+            . '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>'
+            . '<Style ss:ID="Border"><Alignment ss:Vertical="Center" ss:WrapText="1"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="Number"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Font ss:Bold="1"/><Interior ss:Color="#D9E2F3" ss:Pattern="Solid"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="Total"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1"/><Interior ss:Color="#E2E8F4" ss:Pattern="Solid"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '<Style ss:ID="TotalNumber"><Alignment ss:Horizontal="Right" ss:Vertical="Center"/><Font ss:Bold="1"/><Interior ss:Color="#E2E8F4" ss:Pattern="Solid"/><Borders>'
+            . '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>'
+            . '</Borders></Style>'
+            . '</Styles>' . "\n";
+    }
+
+    private function checklistXmlCell($value, $type = 'String', $styleId = 'Border', array $attrs = [])
+    {
+        $attrs = array_merge(['ss:StyleID' => $styleId], $attrs);
+        $attrString = '';
+        foreach ($attrs as $name => $attrValue) {
+            $attrString .= ' ' . $name . '="' . $this->checklistXmlEscape($attrValue) . '"';
+        }
+
+        if ($value === '' || $value === null) {
+            return '<Cell' . $attrString . '/>';
+        }
+
+        return '<Cell' . $attrString . '><Data ss:Type="' . $this->checklistXmlEscape($type) . '">'
+            . $this->checklistXmlEscape($value)
+            . '</Data></Cell>';
+    }
+
+    private function checklistXmlEscape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
     private function createPHPExcelObject()
