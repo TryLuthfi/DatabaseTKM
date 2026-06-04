@@ -633,8 +633,11 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $finalAchieve = array_fill_keys($itemTypes, 0.0);
         foreach ($dateRows as $dateRow) {
+            $dateAchieveTotal = 0.0;
             foreach ($itemTypes as $itemType) {
-                $finalAchieve[$itemType] += (float) ($dateRow['achieve'][$itemType] ?? 0);
+                $dailyAchieve = (float) ($dateRow['achieve'][$itemType] ?? 0);
+                $finalAchieve[$itemType] += $dailyAchieve;
+                $dateAchieveTotal += abs($dailyAchieve);
             }
 
             $remarkPool = array_values(array_filter(array_unique((array) ($dateRow['remark'] ?? [])), static function ($value) {
@@ -649,11 +652,16 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $dailyRemarkPool = array_values(array_filter(array_unique((array) ($dateRow['daily_progress_remarks'] ?? [])), static function ($value) {
                 return trim((string) $value) !== '';
             }));
+
+            if ($dateAchieveTotal < 0.00001 && empty($dailyRemarkPool) && empty($manualRemarkPool)) {
+                continue;
+            }
+
             $finalRemark = !empty($dailyRemarkPool)
                 ? implode(' | ', $dailyRemarkPool)
                 : (!empty($manualRemarkPool)
                     ? implode(' | ', $manualRemarkPool)
-                    : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian'));
+                    : 'Progress Harian');
             $historyRows[] = [
                 'progress_date' => (string) ($dateRow['progress_date'] ?? '-'),
                 'remark' => $finalRemark,

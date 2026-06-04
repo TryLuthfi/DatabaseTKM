@@ -116,10 +116,12 @@ if (!function_exists('implBuildHistoryRowsByScope')) {
         }
 
         foreach ($historyDateRowsByScope as $progressDate => $entry) {
+            $dateAchieveTotal = 0.0;
             foreach ($historyTypeOrder as $itemType) {
                 $dailyAchieve = (float) ($entry['achieve'][$itemType] ?? 0);
                 $historyRunningAchieve[$itemType] += $dailyAchieve;
                 $historyFinalAchieve[$itemType] = $historyRunningAchieve[$itemType];
+                $dateAchieveTotal += abs($dailyAchieve);
             }
 
             $remarkPool = array_values(array_filter(array_unique((array) ($entry['remark'] ?? [])), static function ($text) {
@@ -146,12 +148,22 @@ if (!function_exists('implBuildHistoryRowsByScope')) {
                 });
                 $dailyNonBoqRemark = implode(' / ', $labels);
             }
+
+            if (
+                $dateAchieveTotal < 0.00001
+                && empty($dailyRemarkPool)
+                && empty($manualRemarkPool)
+                && $dailyNonBoqRemark === ''
+            ) {
+                continue;
+            }
+
             $finalRemark = !empty($dailyRemarkPool)
                 ? implode(' | ', $dailyRemarkPool)
                 : (!empty($manualRemarkPool)
                 ? implode(' | ', $manualRemarkPool)
                 : ($dailyNonBoqRemark !== '' ? $dailyNonBoqRemark
-                : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian')));
+                : 'Progress Harian'));
 
             $historyRows[] = [
                 'progress_date' => $progressDate,

@@ -287,7 +287,7 @@ $appendPreviewPhotoItemToRemark = static function ($remark, array $photo) {
                             <i class="fas fa-file-pdf mr-1"></i>Buka PDF
                         </a>
                     <?php endif; ?>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="window.print();">
+                    <button type="button" class="btn btn-primary btn-sm js-comply-print">
                         <i class="fas fa-print mr-1"></i>Print / Save PDF
                     </button>
                 </div>
@@ -348,7 +348,7 @@ $appendPreviewPhotoItemToRemark = static function ($remark, array $photo) {
                                     ?>
                                     <div class="comply-print-tile">
                                         <div class="comply-print-tile__image">
-                                            <img src="<?= htmlspecialchars($photoUrl) ?>" alt="<?= htmlspecialchars($description) ?>">
+                                            <img src="<?= htmlspecialchars($photoUrl) ?>" alt="<?= htmlspecialchars($description) ?>" loading="lazy" decoding="async" fetchpriority="low">
                                         </div>
                                         <div class="comply-print-tile__desc">Description: <?= htmlspecialchars($description) ?></div>
                                         <div class="comply-print-tile__caption"><?= htmlspecialchars($metaLine) ?></div>
@@ -366,3 +366,55 @@ $appendPreviewPhotoItemToRemark = static function ($remark, array $photo) {
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        function waitForPreviewImages() {
+            var images = Array.prototype.slice.call(document.querySelectorAll('.comply-print-tile__image img'));
+            if (!images.length) {
+                return Promise.resolve();
+            }
+
+            var waiters = images.map(function (img) {
+                img.loading = 'eager';
+                if (img.complete && img.naturalWidth > 0) {
+                    return Promise.resolve();
+                }
+
+                return new Promise(function (resolve) {
+                    var done = function () {
+                        img.removeEventListener('load', done);
+                        img.removeEventListener('error', done);
+                        resolve();
+                    };
+                    img.addEventListener('load', done, { once: true });
+                    img.addEventListener('error', done, { once: true });
+                });
+            });
+
+            return Promise.all(waiters);
+        }
+
+        document.addEventListener('beforeprint', function () {
+            Array.prototype.forEach.call(document.querySelectorAll('.comply-print-tile__image img'), function (img) {
+                img.loading = 'eager';
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            var printButton = event.target.closest('.js-comply-print');
+            if (!printButton) {
+                return;
+            }
+
+            printButton.disabled = true;
+            var originalHtml = printButton.innerHTML;
+            printButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyiapkan foto...';
+            waitForPreviewImages().then(function () {
+                printButton.disabled = false;
+                printButton.innerHTML = originalHtml;
+                window.print();
+            });
+        });
+    })();
+</script>
