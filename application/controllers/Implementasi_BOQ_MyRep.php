@@ -743,7 +743,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             ->select('nama_olt')
             ->from('tb_myrep_drm')
             ->where('id_myrep_cluster', (int) $clusterId)
-            ->where("TRIM(COALESCE(nama_olt, '')) <>", '', false)
+            ->where("TRIM(COALESCE(nama_olt, '')) <> ''", null, false)
             ->order_by('id_drm', 'DESC')
             ->get()
             ->row_array();
