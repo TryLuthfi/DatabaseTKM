@@ -5,6 +5,13 @@ if (!function_exists('poEmrDetailValue')) {
         return number_format((float) $value, 0, ',', '.');
     }
 }
+
+$backUrl = base_url('PO_EMR_Myrep');
+$requestedBackUrl = trim((string) $this->input->get('back'));
+$allowedBackBase = base_url('PO_EMR_Myrep');
+if ($requestedBackUrl !== '' && strpos($requestedBackUrl, $allowedBackBase) === 0) {
+    $backUrl = $requestedBackUrl;
+}
 ?>
 
 <style>
@@ -80,9 +87,9 @@ if (!function_exists('poEmrDetailValue')) {
 <div class="emr-detail-head">
     <div>
         <h1>Detail PO EMR MyRep</h1>
-        <div class="text-muted font-weight-bold">PO target yang sudah dikunci untuk akses EMR.</div>
+        <div class="text-muted font-weight-bold">PO on target yang sudah dikunci untuk akses EMR.</div>
     </div>
-    <a href="<?= base_url('PO_EMR_Myrep') ?>" class="btn btn-outline-secondary">Kembali</a>
+    <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-outline-secondary">Kembali</a>
 </div>
 
 <div class="emr-detail-hero">
@@ -120,7 +127,7 @@ if (!function_exists('poEmrDetailValue')) {
         </div>
         <div class="card-body">
             <?php if (empty($groupRows)): ?>
-                <div class="text-muted">Belum ada data <?= $groupKey === 'SUBFEEDER' ? 'PO Subfeeder' : 'PO Cluster' ?> dengan status TARGET.</div>
+                <div class="text-muted">Belum ada data <?= $groupKey === 'SUBFEEDER' ? 'PO Subfeeder' : 'PO Cluster' ?> yang ditandai on target.</div>
             <?php else: ?>
                 <?php foreach ($groupRows as $header): ?>
                     <div class="emr-po-box mb-3">

@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="<?= base_url('assets') ?>/dist/css/adminlte.min.css">
   <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
   <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+  <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2/css/select2.min.css">
+  <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
 
   <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
   <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -24,6 +26,7 @@
   <script src="<?= base_url('assets') ?>/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
   <script src="<?= base_url('assets') ?>/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
   <script src="<?= base_url('assets') ?>/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+  <script src="<?= base_url('assets') ?>/plugins/select2/js/select2.full.min.js"></script>
 
   <style>
     :root {
@@ -100,25 +103,46 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: .75rem;
+      gap: 1rem;
       min-width: 0;
     }
 
-    .emr-account__name {
-      max-width: 34vw;
-      overflow: hidden;
-      color: #334155;
-      font-size: .86rem;
+    .emr-account__logos {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-width: 0;
+      padding: .15rem .35rem;
+      background: #fff;
+      border: 1px solid var(--emr-line);
+      border-radius: 12px;
+    }
+
+    .emr-account__logo-ekamora {
+      width: 170px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .emr-account__logo-tkm {
+      width: 170px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .emr-logout-btn {
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .45rem .75rem;
       font-weight: 700;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     .emr-main {
       width: 100%;
-      max-width: 1480px;
-      margin: 0 auto;
-      padding: 1.25rem;
+      margin: 0;
+      padding: 1rem;
     }
 
     .card,
@@ -149,14 +173,28 @@
       .emr-account {
         width: 100%;
         justify-content: space-between;
+        gap: .65rem;
       }
 
-      .emr-account__name {
-        max-width: 62vw;
+      .emr-account__logos {
+        flex: 1;
+        justify-content: flex-start;
+        gap: 0;
+        padding: .2rem .5rem;
+      }
+
+      .emr-account__logo-ekamora {
+        width: 128px;
+        height: 34px;
+      }
+
+      .emr-account__logo-tkm {
+        width: 128px;
+        height: 34px;
       }
 
       .emr-main {
-        padding: .9rem;
+        padding: .65rem;
       }
     }
   </style>
@@ -168,13 +206,16 @@
       <div class="emr-brand">
         <img src="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>" alt="Zeyn">
         <div>
-          <div class="emr-brand__title">PO EMR MyRep</div>
+          <div class="emr-brand__title">PO EMR - TKM</div>
           <div class="emr-brand__subtitle">Target PO Monitoring</div>
         </div>
       </div>
       <div class="emr-account">
-        <div class="emr-account__name"><?= htmlspecialchars((string) $this->session->userdata('nama_user'), ENT_QUOTES, 'UTF-8') ?></div>
-        <a href="<?= base_url('Auth/logout') ?>" class="btn btn-outline-danger btn-sm">
+        <div class="emr-account__logos">
+          <img class="emr-account__logo-ekamora" src="<?= base_url('assets/dist/img/logoweb.png') ?>" alt="MoraRepublic">
+          <img class="emr-account__logo-tkm" src="<?= base_url('assets/dist/img/logotkmsolid.png') ?>" alt="TKM">
+        </div>
+        <a href="<?= base_url('Auth/logout') ?>" class="btn btn-outline-danger btn-sm emr-logout-btn">
           <i class="fas fa-sign-out-alt mr-1"></i> Logout
         </a>
       </div>

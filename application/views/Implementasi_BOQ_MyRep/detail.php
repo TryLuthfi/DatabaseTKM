@@ -2347,7 +2347,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                 <div class="impl-gallery-photo-grid" data-lightbox-group="gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . $galleryIndex)) ?>">
                                                                     <?php foreach (($galleryItem['photos'] ?? []) as $photo): ?>
                                                                         <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
-                                                                            <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>">
+                                                                            <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>" loading="lazy" decoding="async">
                                                                         </a>
                                                                     <?php endforeach; ?>
                                                                 </div>
@@ -2432,7 +2432,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
                                                                             <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
-                                                                                <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>">
+                                                                                <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
                                                                             </a>
                                                                             <div class="impl-gallery-photo-card__meta">
                                                                                 <div class="small font-weight-bold text-dark mb-2"><?= htmlspecialchars($photoCaption) ?></div>
@@ -2879,7 +2879,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         </div>
         <div class="impl-lightbox__body">
             <div class="impl-lightbox__stage">
-                <img src="" alt="Preview Foto" class="impl-lightbox__image" id="impl-lightbox-image">
+                <img src="" alt="Preview Foto" class="impl-lightbox__image" id="impl-lightbox-image" decoding="async">
             </div>
             <div class="impl-lightbox__caption" id="impl-lightbox-caption">-</div>
         </div>
@@ -3200,6 +3200,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (!photoInput || !note || !preview) {
                 return;
             }
+            Array.prototype.forEach.call(preview.querySelectorAll('img[data-object-url]'), function (img) {
+                if (window.URL && typeof window.URL.revokeObjectURL === 'function') {
+                    window.URL.revokeObjectURL(img.getAttribute('data-object-url'));
+                }
+            });
             preview.innerHTML = '';
             var files = photoInput.files ? Array.prototype.slice.call(photoInput.files) : [];
             if (!files.length) {
@@ -3208,7 +3213,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 return;
             }
             note.textContent = files.length + ' foto dipilih';
-            files.forEach(function (file) {
+            files.slice(0, 12).forEach(function (file) {
                 var card = document.createElement('div');
                 card.style.width = '72px';
                 var img = document.createElement('img');
@@ -3219,12 +3224,39 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 img.style.border = '1px solid #dbe3ef';
                 card.appendChild(img);
                 preview.appendChild(card);
-                var reader = new FileReader();
-                reader.onload = function (event) {
-                    img.src = event.target && event.target.result ? event.target.result : '';
-                };
-                reader.readAsDataURL(file);
+                if (window.URL && typeof window.URL.createObjectURL === 'function') {
+                    var objectUrl = window.URL.createObjectURL(file);
+                    img.setAttribute('data-object-url', objectUrl);
+                    img.onload = function () {
+                        if (img.getAttribute('data-object-url')) {
+                            window.URL.revokeObjectURL(objectUrl);
+                            img.removeAttribute('data-object-url');
+                        }
+                    };
+                    img.src = objectUrl;
+                } else {
+                    var reader = new FileReader();
+                    reader.onload = function (event) {
+                        img.src = event.target && event.target.result ? event.target.result : '';
+                    };
+                    reader.readAsDataURL(file);
+                }
             });
+            if (files.length > 12) {
+                var more = document.createElement('div');
+                more.style.width = '72px';
+                more.style.minHeight = '52px';
+                more.style.border = '1px dashed #cbd5e1';
+                more.style.borderRadius = '6px';
+                more.style.display = 'flex';
+                more.style.alignItems = 'center';
+                more.style.justifyContent = 'center';
+                more.style.textAlign = 'center';
+                more.style.fontSize = '.68rem';
+                more.style.color = '#64748b';
+                more.textContent = '+' + (files.length - 12) + ' foto';
+                preview.appendChild(more);
+            }
             syncAllAutoComplyFields();
         }
 
@@ -4040,7 +4072,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                 var imageUrl = '<?= base_url() ?>' + imagePath;
                                 var photoCaption = photo.caption || photo.file_name || 'Foto';
                                 htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-image="' + imageUrl + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
-                                htmlDaily += '<img src="' + imageUrl + '" alt="' + escapeAttr(photo.file_name || 'Foto') + '" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
+                                htmlDaily += '<img src="' + imageUrl + '" alt="' + escapeAttr(photo.file_name || 'Foto') + '" loading="lazy" decoding="async" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
                                 htmlDaily += '</a>';
                             });
                             htmlDaily += '</div>';
@@ -4151,7 +4183,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
                         html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">';
                         html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-open-lightbox d-block" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
-                        html += '<img src="<?= base_url() ?>' + (photo.file_path || '') + '" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '">';
+                        html += '<img src="<?= base_url() ?>' + (photo.file_path || '') + '" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '" loading="lazy" decoding="async">';
                         html += '<div>' + escapeAttr(photoCaption) + '</div>';
                         html += '</a>';
                         html += '<div class="small mt-1"><span class="badge badge-' + getComplyBadgeClass(photoStatus) + (isComplyPhoto ? ' js-comply-photo-status' : '') + '">' + escapeAttr(photoStatus) + '</span></div>';
@@ -4520,6 +4552,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 return;
             }
 
+            Array.prototype.forEach.call(previewList.querySelectorAll('img[data-object-url]'), function (img) {
+                if (window.URL && typeof window.URL.revokeObjectURL === 'function') {
+                    window.URL.revokeObjectURL(img.getAttribute('data-object-url'));
+                }
+            });
             previewList.innerHTML = '';
             var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
             if (!files.length) {
@@ -4528,7 +4565,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
 
             emptyText.classList.add('d-none');
-            files.forEach(function (file) {
+            files.slice(0, 12).forEach(function (file) {
                 var item = document.createElement('div');
                 item.style.width = '76px';
                 item.style.textAlign = 'center';
@@ -4549,16 +4586,43 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 label.textContent = file.name.length > 18 ? (file.name.slice(0, 15) + '...') : file.name;
                 label.title = file.name;
 
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                if (window.URL && typeof window.URL.createObjectURL === 'function') {
+                    var objectUrl = window.URL.createObjectURL(file);
+                    img.setAttribute('data-object-url', objectUrl);
+                    img.onload = function () {
+                        if (img.getAttribute('data-object-url')) {
+                            window.URL.revokeObjectURL(objectUrl);
+                            img.removeAttribute('data-object-url');
+                        }
+                    };
+                    img.src = objectUrl;
+                } else {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
 
                 item.appendChild(img);
                 item.appendChild(label);
                 previewList.appendChild(item);
             });
+            if (files.length > 12) {
+                var moreItem = document.createElement('div');
+                moreItem.style.width = '76px';
+                moreItem.style.minHeight = '56px';
+                moreItem.style.border = '1px dashed #cbd5e1';
+                moreItem.style.borderRadius = '8px';
+                moreItem.style.display = 'flex';
+                moreItem.style.alignItems = 'center';
+                moreItem.style.justifyContent = 'center';
+                moreItem.style.textAlign = 'center';
+                moreItem.style.fontSize = '.68rem';
+                moreItem.style.color = '#64748b';
+                moreItem.textContent = '+' + (files.length - 12) + ' foto';
+                previewList.appendChild(moreItem);
+            }
         });
 
         form.addEventListener('submit', function (event) {

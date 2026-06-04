@@ -34,6 +34,12 @@ class MPO_MyRep extends CI_Model
         return true;
     }
 
+    public function emrTargetReady()
+    {
+        return $this->tablesReady()
+            && $this->db->field_exists('on_target', 'tb_myrep_po_header');
+    }
+
     public function getCityOptions()
     {
         if (!$this->tablesReady()) {
@@ -280,23 +286,28 @@ class MPO_MyRep extends CI_Model
         return $rows;
     }
 
-    public function getEmrTargetCityOptions()
+    public function getEmrTargetCityOptions($regional = '')
     {
-        if (!$this->tablesReady()) {
+        if (!$this->emrTargetReady()) {
             return [];
         }
 
+        $regional = $this->normalizeUpperList($regional);
         $rows = $this->db
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('UPPER(p.status_po)', 'TARGET')
+            ->where('p.on_target', 1)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
-            ->order_by('c.city_name', 'ASC')
-            ->get()
-            ->result_array();
+            ->order_by('c.city_name', 'ASC');
+
+        if (!empty($regional)) {
+            $this->applyUpperInFilter($rows, 'c.regional_name', $regional);
+        }
+
+        $rows = $rows->get()->result_array();
 
         $cities = [];
         foreach ($rows as $row) {
@@ -309,12 +320,126 @@ class MPO_MyRep extends CI_Model
         return array_values(array_unique($cities));
     }
 
-    public function getEmrTargetPoListRows($city = '', $stageStatus = '')
+    public function getEmrTargetRegionalOptions($city = '')
     {
-        if (!$this->tablesReady()) {
+        if (!$this->emrTargetReady()) {
             return [];
         }
 
+        $city = $this->normalizeUpperList($city);
+        $rows = $this->db
+            ->distinct()
+            ->select('c.regional_name')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('p.on_target', 1)
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where("TRIM(c.regional_name) !=", '')
+            ->order_by('c.regional_name', 'ASC');
+
+        if (!empty($city)) {
+            $this->applyUpperInFilter($rows, 'c.city_name', $city);
+        }
+
+        $rows = $rows->get()->result_array();
+
+        $regionals = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regionalName !== '') {
+                $regionals[] = $regionalName;
+            }
+        }
+
+        return array_values(array_unique($regionals));
+    }
+
+    public function getEmrTargetCityOptionsByRegional()
+    {
+        if (!$this->emrTargetReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.regional_name, c.city_name')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('p.on_target', 1)
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where('c.city_name IS NOT NULL', null, false)
+            ->where("TRIM(c.regional_name) !=", '')
+            ->where("TRIM(c.city_name) !=", '')
+            ->order_by('c.regional_name', 'ASC')
+            ->order_by('c.city_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($regionalName === '' || $cityName === '') {
+                continue;
+            }
+            if (!isset($map[$regionalName])) {
+                $map[$regionalName] = [];
+            }
+            if (!in_array($cityName, $map[$regionalName], true)) {
+                $map[$regionalName][] = $cityName;
+            }
+        }
+
+        return $map;
+    }
+
+    public function getEmrTargetRegionalOptionsByCity()
+    {
+        if (!$this->emrTargetReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.city_name, c.regional_name')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('p.on_target', 1)
+            ->where('c.city_name IS NOT NULL', null, false)
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where("TRIM(c.city_name) !=", '')
+            ->where("TRIM(c.regional_name) !=", '')
+            ->order_by('c.city_name', 'ASC')
+            ->order_by('c.regional_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($cityName === '' || $regionalName === '') {
+                continue;
+            }
+            if (!isset($map[$cityName])) {
+                $map[$cityName] = [];
+            }
+            if (!in_array($regionalName, $map[$cityName], true)) {
+                $map[$cityName][] = $regionalName;
+            }
+        }
+
+        return $map;
+    }
+
+    public function getEmrTargetPoListRows($city = '', $stageStatus = '', $regional = '')
+    {
+        if (!$this->emrTargetReady()) {
+            return [];
+        }
+
+        $city = $this->normalizeUpperList($city);
+        $regional = $this->normalizeUpperList($regional);
         $this->db
             ->select('
                 p.id_po_header,
@@ -325,20 +450,25 @@ class MPO_MyRep extends CI_Model
                 p.po_date,
                 p.po_value,
                 p.status_po,
+                p.on_target,
                 p.po_version_label,
                 p.remark_po,
                 c.cluster_name,
                 c.cluster_code,
                 c.city_name,
                 c.regional_name,
+                c.team_name,
                 c.status_current
             ')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('UPPER(p.status_po)', 'TARGET');
+            ->where('p.on_target', 1);
 
-        if ($city !== '') {
-            $this->db->where('UPPER(c.city_name)', strtoupper($city));
+        if (!empty($city)) {
+            $this->applyUpperInFilter($this->db, 'c.city_name', $city);
+        }
+        if (!empty($regional)) {
+            $this->applyUpperInFilter($this->db, 'c.regional_name', $regional);
         }
 
         $rows = $this->db
@@ -352,7 +482,7 @@ class MPO_MyRep extends CI_Model
 
     public function getEmrTargetClusterById($clusterId)
     {
-        if (!$this->tablesReady()) {
+        if (!$this->emrTargetReady()) {
             return [];
         }
 
@@ -365,7 +495,7 @@ class MPO_MyRep extends CI_Model
             ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND UPPER(p.status_po) = ' . $this->db->escape('TARGET'), 'inner')
+            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND p.on_target = 1', 'inner')
             ->where('c.id_myrep_cluster', $clusterId)
             ->group_by('c.id_myrep_cluster')
             ->get()
@@ -393,7 +523,7 @@ class MPO_MyRep extends CI_Model
 
     public function getEmrTargetPoHeadersByClusterId($clusterId)
     {
-        if (!$this->tablesReady()) {
+        if (!$this->emrTargetReady()) {
             return [];
         }
 
@@ -406,7 +536,7 @@ class MPO_MyRep extends CI_Model
             ->select('*')
             ->from('tb_myrep_po_header')
             ->where('id_myrep_cluster', $clusterId)
-            ->where('UPPER(status_po)', 'TARGET')
+            ->where('on_target', 1)
             ->order_by('po_type', 'ASC')
             ->order_by('po_date', 'DESC')
             ->order_by('po_number', 'ASC')
@@ -467,7 +597,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $filtered = [];
-        $stageStatus = strtoupper(trim((string) $stageStatus));
+        $stageStatuses = $this->normalizeUpperList($stageStatus);
         foreach ($rows as $row) {
             $headerId = (int) ($row['id_po_header'] ?? 0);
             $meta = $terminMap[$headerId] ?? [
@@ -488,7 +618,7 @@ class MPO_MyRep extends CI_Model
             $row['outstanding_total'] = (float) $row['plan_invoice_total'];
             $row['po_stage_status'] = $this->resolveStageStatus($terminByHeader[$headerId] ?? []);
 
-            if ($stageStatus !== '' && strtoupper((string) ($row['po_stage_status'] ?? '')) !== $stageStatus) {
+            if (!empty($stageStatuses) && !in_array(strtoupper((string) ($row['po_stage_status'] ?? '')), $stageStatuses, true)) {
                 continue;
             }
 
@@ -496,6 +626,44 @@ class MPO_MyRep extends CI_Model
         }
 
         return $filtered;
+    }
+
+    private function normalizeUpperList($value)
+    {
+        $items = is_array($value) ? $value : [$value];
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                foreach ($this->normalizeUpperList($item) as $nestedItem) {
+                    if (!in_array($nestedItem, $normalized, true)) {
+                        $normalized[] = $nestedItem;
+                    }
+                }
+                continue;
+            }
+
+            $item = strtoupper(trim((string) $item));
+            if ($item !== '' && !in_array($item, $normalized, true)) {
+                $normalized[] = $item;
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function applyUpperInFilter($builder, $column, array $values)
+    {
+        if (empty($values)) {
+            return;
+        }
+
+        $escapedValues = [];
+        foreach ($values as $value) {
+            $escapedValues[] = $this->db->escape($value);
+        }
+
+        $builder->where('UPPER(' . $column . ') IN (' . implode(',', $escapedValues) . ')', null, false);
     }
 
     public function getDashboardSummary($rows)

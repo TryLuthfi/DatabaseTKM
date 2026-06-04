@@ -1213,6 +1213,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             }
 
             $fileData = $this->upload->data();
+            $this->optimizeUploadedPhoto((string) ($fileData['full_path'] ?? ''));
             $uploadedRows[] = [
                 'file_name' => $fileData['file_name'],
                 'file_path' => 'uploads/myrep_boq_progress/' . $fileData['file_name'],
@@ -1270,6 +1271,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             }
 
             $fileData = $this->upload->data();
+            $this->optimizeUploadedPhoto((string) ($fileData['full_path'] ?? ''));
             $uploadedRows[] = [
                 'file_name' => (string) $fileData['file_name'],
                 'file_path' => 'uploads/myrep_boq_activity/' . $fileData['file_name'],
@@ -1345,6 +1347,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             }
 
             $fileData = $this->upload->data();
+            $this->optimizeUploadedPhoto((string) ($fileData['full_path'] ?? ''));
             $uploadedRows[] = [
                 'file_name' => $fileData['file_name'],
                 'file_path' => 'uploads/myrep_boq_progress/' . $fileData['file_name'],
@@ -1357,6 +1360,44 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         return $uploadedRows;
+    }
+
+    private function optimizeUploadedPhoto($fullPath)
+    {
+        $fullPath = trim((string) $fullPath);
+        if ($fullPath === '' || !is_file($fullPath)) {
+            return;
+        }
+
+        $info = @getimagesize($fullPath);
+        if ($info === false || empty($info[0]) || empty($info[1])) {
+            return;
+        }
+
+        $extension = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
+        if (!in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+            return;
+        }
+
+        $maxSide = 1600;
+        $width = (int) $info[0];
+        $height = (int) $info[1];
+        if ($width <= $maxSide && $height <= $maxSide) {
+            return;
+        }
+
+        $this->load->library('image_lib');
+        $this->image_lib->clear();
+        $this->image_lib->initialize([
+            'image_library' => 'gd2',
+            'source_image' => $fullPath,
+            'maintain_ratio' => true,
+            'width' => $maxSide,
+            'height' => $maxSide,
+            'quality' => '82%',
+        ]);
+        @$this->image_lib->resize();
+        $this->image_lib->clear();
     }
 
     private function normalizeDate($value)
