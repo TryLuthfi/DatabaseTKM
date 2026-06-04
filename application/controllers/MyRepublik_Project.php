@@ -1457,7 +1457,7 @@ class MyRepublik_Project extends CI_Controller
             ->get()
             ->row_array();
         if (!empty($existingCluster['id_myrep_cluster'])) {
-            return $this->syncExistingImportedCluster($existingCluster, $row, $userId);
+            return $this->syncExistingImportedCluster($existingCluster, $row, $userId, $target, $statusCurrent);
         }
 
         $homepassPlan = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
@@ -1538,15 +1538,17 @@ class MyRepublik_Project extends CI_Controller
             $homepassBak = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
         }
 
-        $this->db->insert('tb_myrep_bak', [
-            'id_myrep_cluster' => $clusterId,
+        $payload = [
             'ba_open_date' => $this->normalizeDate((string) ($row['ba_open_date'] ?? '')) ?: date('Y-m-d'),
             'bak_date' => $this->normalizeDate((string) ($row['bak_date'] ?? '')) ?: date('Y-m-d'),
             'homepass_bak' => max(0, $homepassBak),
             'status_bak' => 'DONE',
             'remark_bak' => trim((string) ($row['remark_general'] ?? '')) ?: null,
-            'created_by' => $userId,
             'updated_by' => $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_bak', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
         ]);
     }
 
@@ -1569,14 +1571,16 @@ class MyRepublik_Project extends CI_Controller
             $homepassValsal = (int) $this->normalizeNumber($row['homepass_bak'] ?? 0);
         }
 
-        $this->db->insert('tb_myrep_valsal', [
-            'id_myrep_cluster' => $clusterId,
+        $payload = [
             'valsal_date' => $valsalDate ?: date('Y-m-d'),
             'homepass_valsal' => max(0, $homepassValsal),
             'status_valsal' => 'DONE',
             'remark_valsal' => $remarkValsal !== '' ? $remarkValsal : (trim((string) ($row['remark_general'] ?? '')) ?: null),
-            'created_by' => $userId,
             'updated_by' => $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_valsal', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
         ]);
     }
 
@@ -1649,18 +1653,24 @@ class MyRepublik_Project extends CI_Controller
         $recipientPeriod = trim((string) ($row['recipient_period'] ?? ''));
         $astriBatchNumber = trim((string) ($row['astri_batch_number'] ?? ''));
 
+        $existingBatch = $this->db
+            ->from('tb_myrep_batch_approval')
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
         $submittedToHoAt = in_array($stagingStatus, ['WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED'], true)
-            ? date('Y-m-d H:i:s')
+            ? (!empty($existingBatch['submitted_to_ho_at']) ? $existingBatch['submitted_to_ho_at'] : date('Y-m-d H:i:s'))
             : null;
         $submittedToMyrepAt = in_array($stagingStatus, ['WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED'], true)
-            ? date('Y-m-d H:i:s')
+            ? (!empty($existingBatch['submitted_to_astri_at']) ? $existingBatch['submitted_to_astri_at'] : date('Y-m-d H:i:s'))
             : null;
         $submittedToFinanceAt = in_array($stagingStatus, ['WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED'], true)
-            ? date('Y-m-d H:i:s')
+            ? (!empty($existingBatch['submitted_to_finance_at']) ? $existingBatch['submitted_to_finance_at'] : date('Y-m-d H:i:s'))
             : null;
 
-        $this->db->insert('tb_myrep_batch_approval', [
-            'id_myrep_cluster' => $clusterId,
+        $payload = [
             'submission_date' => $submissionDate ?: date('Y-m-d'),
             'hp_donasi' => max(0, $hpDonasi),
             'nominal_pengajuan_area' => $nominalPengajuanArea,
@@ -1682,8 +1692,11 @@ class MyRepublik_Project extends CI_Controller
             'submitted_to_finance_at' => $submittedToFinanceAt,
             'released_at' => $releasedAt,
             'remark_batch_approval' => $batchRemark !== '' ? $batchRemark : (trim((string) ($row['remark_general'] ?? '')) ?: null),
-            'created_by' => $userId,
             'updated_by' => $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_batch_approval', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
         ]);
     }
 
@@ -1708,15 +1721,17 @@ class MyRepublik_Project extends CI_Controller
         $statusDrm = 'COMPLETE';
         $remarkDrm = trim((string) ($row['remark_drm'] ?? ''));
 
-        $this->db->insert('tb_myrep_drm', [
-            'id_myrep_cluster' => $clusterId,
+        $payload = [
             'drm_date' => $drmDate ?: date('Y-m-d'),
             'homepass_drm' => max(0, $hpDrm),
             'nama_olt' => trim((string) ($row['nama_olt'] ?? '')) ?: null,
             'status_drm' => $statusDrm,
             'remark_drm' => $remarkDrm !== '' ? $remarkDrm : (trim((string) ($row['remark_general'] ?? '')) ?: null),
-            'created_by' => $userId,
             'updated_by' => $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_drm', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
         ]);
     }
 
@@ -1774,18 +1789,40 @@ class MyRepublik_Project extends CI_Controller
         } elseif ($emailAtpDate !== null) {
             $statusAtp = 'WAITING';
         }
-        $dateAtp = $atpDate;
+        $rfsClusterId = 0;
+        $linkedCluster = $this->db
+            ->select('rfs_cluster_id')
+            ->from('tb_myrep_cluster')
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($linkedCluster['rfs_cluster_id'])) {
+            $rfsClusterId = (int) $linkedCluster['rfs_cluster_id'];
+        }
 
-        $this->db->insert('tb_rfs_myrep_cluster', [
+        $payload = [
             'id_target' => (int) ($target['id_target'] ?? 0),
             'cluster_name' => trim((string) ($row['cluster_name'] ?? '')),
             'status_rfs' => $statusRfs,
             'homepass' => $homepassRfs,
             'status_atp' => $statusAtp,
             'email_atp_date' => $emailAtpDate,
-            'created_by' => $userId,
-        ]);
-        $rfsClusterId = (int) $this->db->insert_id();
+        ];
+        if ($this->db->field_exists('updated_by', 'tb_rfs_myrep_cluster')) {
+            $payload['updated_by'] = (int) $userId;
+        }
+
+        if ($rfsClusterId > 0) {
+            $this->db
+                ->where('id_cluster', $rfsClusterId)
+                ->update('tb_rfs_myrep_cluster', $this->filterPayloadByTableFields('tb_rfs_myrep_cluster', $payload));
+        } else {
+            $this->db->insert('tb_rfs_myrep_cluster', $this->filterPayloadByTableFields('tb_rfs_myrep_cluster', array_merge($payload, [
+                'created_by' => (int) $userId,
+            ])));
+            $rfsClusterId = (int) $this->db->insert_id();
+        }
 
         if ($rfsClusterId > 0) {
             $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', [
@@ -1854,11 +1891,24 @@ class MyRepublik_Project extends CI_Controller
                 if ($claimHasRpmApprovalNote) {
                     $payload['rpm_approval_note'] = 'Auto approve from cutoff import';
                 }
-                if ($claimHasCreatedBy) {
-                    $payload['created_by'] = $userId;
-                }
+                $existingClaim = $this->db
+                    ->from('tb_rfs_myrep_claim')
+                    ->where('cluster_id', (int) $rfsClusterId)
+                    ->where('claim_date', $claimDate)
+                    ->limit(1)
+                    ->get()
+                    ->row_array();
 
-                $this->db->insert('tb_rfs_myrep_claim', $payload);
+                if (!empty($existingClaim['id_claim'])) {
+                    $this->db
+                        ->where('id_claim', (int) $existingClaim['id_claim'])
+                        ->update('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
+                } else {
+                    if ($claimHasCreatedBy) {
+                        $payload['created_by'] = $userId;
+                    }
+                    $this->db->insert('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
+                }
             }
         }
 
@@ -1883,62 +1933,67 @@ class MyRepublik_Project extends CI_Controller
         ];
     }
 
-    private function syncExistingImportedCluster(array $existingCluster, array $row, $userId)
+    private function syncExistingImportedCluster(array $existingCluster, array $row, $userId, array $target, $statusCurrent)
     {
         $clusterId = (int) ($existingCluster['id_myrep_cluster'] ?? 0);
-        $rfsClusterId = (int) ($existingCluster['rfs_cluster_id'] ?? 0);
         if ($clusterId <= 0) {
             return ['inserted' => false, 'message' => 'Cluster existing tidak valid.'];
         }
 
-        if (!$this->hasChecklistImportPayload($row)) {
-            return ['inserted' => false, 'message' => 'Cluster sudah ada; tidak ada kolom checklist yang perlu diupdate.'];
-        }
-
-        if ($rfsClusterId <= 0) {
-            return ['inserted' => false, 'message' => 'Cluster sudah ada, tetapi belum memiliki data RFS/ATP untuk update checklist.'];
-        }
-
-        $currentStatuses = $this->getCurrentChecklistImportStatuses($rfsClusterId);
-        $changedRow = [];
-        $changedColumns = [];
-        foreach (array_keys($this->getChecklistImportColumnMap()) as $column) {
-            $incomingStatus = $this->normalizeChecklistImportStatus($row[$column] ?? '');
-            if ($incomingStatus === '') {
-                continue;
-            }
-
-            $currentStatus = $this->normalizeChecklistImportStatus($currentStatuses[$column] ?? '');
-            if ($incomingStatus !== $currentStatus) {
-                $changedRow[$column] = $incomingStatus;
-                $changedColumns[] = $column . ':' . ($currentStatus !== '' ? $currentStatus : '-') . '>' . $incomingStatus;
-            }
-        }
-
-        if (empty($changedRow)) {
-            return ['inserted' => false, 'message' => 'Cluster sudah ada; checklist tidak berubah.'];
-        }
-
         $this->db->trans_start();
-        $this->applyImportedChecklistStatuses($rfsClusterId, $changedRow, $userId);
-        $this->db
-            ->where('id_myrep_cluster', $clusterId)
-            ->update('tb_myrep_cluster', [
-                'updated_by' => (int) $userId,
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
+        $this->overwriteImportedClusterHeader($clusterId, $row, $userId, $target, $statusCurrent);
+        $this->upsertImportedBak($clusterId, $row, $userId);
+        $this->upsertImportedValsal($clusterId, $row, $userId);
+        $this->upsertImportedBatch($clusterId, $row, $userId, $statusCurrent);
+        $this->upsertImportedDrm($clusterId, $row, $userId);
+        $this->upsertImportedPo($clusterId, $row, $userId);
+        $rfsClusterId = $this->upsertImportedRfsAtp($clusterId, $row, $userId, $target, $statusCurrent);
+        if ($rfsClusterId > 0) {
+            $this->applyImportedChecklistStatuses($rfsClusterId, $row, $userId);
+        }
         $this->db->trans_complete();
 
         if (!$this->db->trans_status()) {
-            return ['inserted' => false, 'message' => 'Update checklist existing gagal (rollback).'];
+            return ['inserted' => false, 'message' => 'Overwrite cluster existing gagal (rollback).'];
         }
 
         return [
             'inserted' => false,
             'updated' => true,
             'cluster_id' => $clusterId,
-            'message' => 'Checklist updated: ' . implode(', ', $changedColumns),
+            'message' => 'Cluster existing dioverwrite dari data import.',
         ];
+    }
+
+    private function overwriteImportedClusterHeader($clusterId, array $row, $userId, array $target, $statusCurrent)
+    {
+        $ntpDate = $this->normalizeDate((string) ($row['tanggal_ntp'] ?? ''));
+        $payload = [
+            'id_target' => (int) ($target['id_target'] ?? 0),
+            'cluster_name' => trim((string) ($row['cluster_name'] ?? '')),
+            'cluster_code' => trim((string) ($row['cluster_code'] ?? '')) !== '' ? trim((string) ($row['cluster_code'] ?? '')) : null,
+            'regional_name' => trim((string) ($row['regional_name'] ?? '')) !== '' ? trim((string) ($row['regional_name'] ?? '')) : ($target['regional_name'] ?? null),
+            'province_name' => trim((string) ($row['province_name'] ?? '')) !== '' ? trim((string) ($row['province_name'] ?? '')) : ($target['province_name'] ?? null),
+            'city_name' => strtoupper(trim((string) ($row['city_name'] ?? ''))),
+            'district_name' => trim((string) ($row['district_name'] ?? '')) ?: null,
+            'village_name' => trim((string) ($row['village_name'] ?? '')) ?: null,
+            'team_name' => trim((string) ($row['team_name'] ?? '')) !== '' ? trim((string) ($row['team_name'] ?? '')) : ($target['team_name'] ?? null),
+            'chief' => trim((string) ($row['chief'] ?? '')) !== '' ? trim((string) ($row['chief'] ?? '')) : ($target['chief'] ?? null),
+            'rpm' => trim((string) ($row['rpm'] ?? '')) !== '' ? trim((string) ($row['rpm'] ?? '')) : ($target['rpm'] ?? null),
+            'sm' => trim((string) ($row['sm'] ?? '')) !== '' ? trim((string) ($row['sm'] ?? '')) : ($target['sm'] ?? null),
+            'spv' => trim((string) ($row['spv'] ?? '')) !== '' ? trim((string) ($row['spv'] ?? '')) : ($target['spv'] ?? null),
+            'hp_plan' => max(0, (int) $this->normalizeNumber($row['hp_plan'] ?? 0)),
+            'ntp_name' => trim((string) ($row['nomor_ntp'] ?? '')) !== '' ? trim((string) ($row['nomor_ntp'] ?? '')) : null,
+            'ntp_date' => $ntpDate,
+            'ntp_year' => $ntpDate ? (int) date('Y', strtotime($ntpDate)) : null,
+            'status_current' => $statusCurrent,
+            'remark_general' => trim((string) ($row['remark_general'] ?? '')) !== '' ? trim((string) ($row['remark_general'] ?? '')) : null,
+            'updated_by' => (int) $userId,
+        ];
+
+        $this->db
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->update('tb_myrep_cluster', $this->filterPayloadByTableFields('tb_myrep_cluster', $payload));
     }
 
     private function getAllowedChecklistImportStatuses()
@@ -2501,7 +2556,7 @@ class MyRepublik_Project extends CI_Controller
                 $statusPo = 'ISSUED';
             }
 
-            $poHeaderId = (int) $this->MPO_MyRep->createPoHeader($clusterId, [
+            $poPayload = [
                 'parent_po_header_id' => null,
                 'po_type' => $poType,
                 'po_category' => $poCategory,
@@ -2513,12 +2568,70 @@ class MyRepublik_Project extends CI_Controller
                 'remark_po' => trim((string) ($poDef['remark'] ?? '')),
                 'created_by' => $userId,
                 'updated_by' => $userId,
-            ]);
+            ];
+
+            $poHeaderId = $this->resolveImportedPoHeaderId($clusterId, $poType, $poNumber);
+            if ($poHeaderId > 0) {
+                $this->db
+                    ->where('id_po_header', (int) $poHeaderId)
+                    ->update('tb_myrep_po_header', $this->filterPayloadByTableFields('tb_myrep_po_header', [
+                        'parent_po_header_id' => null,
+                        'po_type' => $poType,
+                        'po_category' => $poCategory,
+                        'po_number' => $poNumber,
+                        'po_date' => $poDate,
+                        'po_value' => $poValue,
+                        'status_po' => $statusPo,
+                        'po_version_label' => trim((string) ($poDef['version'] ?? '')) ?: null,
+                        'remark_po' => trim((string) ($poDef['remark'] ?? '')) ?: null,
+                        'updated_by' => (int) $userId,
+                    ]));
+            } else {
+                $poHeaderId = (int) $this->MPO_MyRep->createPoHeader($clusterId, $poPayload);
+            }
 
             if ($poHeaderId > 0) {
                 $this->applyImportedPoTerminDataFromRow($poHeaderId, $row, (string) ($poDef['prefix'] ?? 'po_cluster'));
             }
         }
+    }
+
+    private function resolveImportedPoHeaderId($clusterId, $poType, $poNumber)
+    {
+        $clusterId = (int) $clusterId;
+        $poType = strtoupper(trim((string) $poType));
+        $poNumber = trim((string) $poNumber);
+        if ($clusterId <= 0 || $poType === '' || !$this->db->table_exists('tb_myrep_po_header')) {
+            return 0;
+        }
+
+        if ($poNumber !== '') {
+            $existingByNumber = $this->db
+                ->select('id_po_header')
+                ->from('tb_myrep_po_header')
+                ->where('id_myrep_cluster', $clusterId)
+                ->where('po_type', $poType)
+                ->where('po_number', $poNumber)
+                ->order_by('id_po_header', 'DESC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($existingByNumber['id_po_header'])) {
+                return (int) $existingByNumber['id_po_header'];
+            }
+        }
+
+        $existingByType = $this->db
+            ->select('id_po_header')
+            ->from('tb_myrep_po_header')
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('po_type', $poType)
+            ->order_by('id_po_header', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return !empty($existingByType['id_po_header']) ? (int) $existingByType['id_po_header'] : 0;
     }
 
     private function applyImportedPoTerminDataFromRow($poHeaderId, array $row, $prefix)

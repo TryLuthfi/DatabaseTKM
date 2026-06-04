@@ -14,6 +14,10 @@ class Dashboard extends CI_Controller
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
+        if (strtoupper(trim((string) $this->session->userdata('homebase'))) === 'EMR' || strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'EMR') {
+            redirect('PO_EMR_Myrep');
+            return;
+        }
         $data['title'] = 'Dashboard';
         $data['dashboardYear'] = (int) date('Y');
         $data['invoiceTarget'] = 110000000;

@@ -280,6 +280,224 @@ class MPO_MyRep extends CI_Model
         return $rows;
     }
 
+    public function getEmrTargetCityOptions()
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.city_name')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('UPPER(p.status_po)', 'TARGET')
+            ->where('c.city_name IS NOT NULL', null, false)
+            ->where("TRIM(c.city_name) !=", '')
+            ->order_by('c.city_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $cities = [];
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $cities[] = $cityName;
+            }
+        }
+
+        return array_values(array_unique($cities));
+    }
+
+    public function getEmrTargetPoListRows($city = '', $stageStatus = '')
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->select('
+                p.id_po_header,
+                p.id_myrep_cluster,
+                p.po_type,
+                p.po_category,
+                p.po_number,
+                p.po_date,
+                p.po_value,
+                p.status_po,
+                p.po_version_label,
+                p.remark_po,
+                c.cluster_name,
+                c.cluster_code,
+                c.city_name,
+                c.regional_name,
+                c.status_current
+            ')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('UPPER(p.status_po)', 'TARGET');
+
+        if ($city !== '') {
+            $this->db->where('UPPER(c.city_name)', strtoupper($city));
+        }
+
+        $rows = $this->db
+            ->order_by('p.po_date', 'DESC')
+            ->order_by('p.po_number', 'ASC')
+            ->get()
+            ->result_array();
+
+        return $this->decoratePoRowsWithTerminMeta($rows, $stageStatus);
+    }
+
+    public function getEmrTargetClusterById($clusterId)
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return [];
+        }
+
+        $row = $this->db
+            ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND UPPER(p.status_po) = ' . $this->db->escape('TARGET'), 'inner')
+            ->where('c.id_myrep_cluster', $clusterId)
+            ->group_by('c.id_myrep_cluster')
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        $targetRows = $this->getEmrTargetPoListRows('', '');
+        $clusterTargetRows = [];
+        foreach ($targetRows as $targetRow) {
+            if ((int) ($targetRow['id_myrep_cluster'] ?? 0) === $clusterId) {
+                $clusterTargetRows[] = $targetRow;
+            }
+        }
+
+        $row['po_count'] = count($clusterTargetRows);
+        $row['po_total_value'] = array_sum(array_map(static function ($targetRow) {
+            return (float) ($targetRow['po_value'] ?? 0);
+        }, $clusterTargetRows));
+
+        return $row;
+    }
+
+    public function getEmrTargetPoHeadersByClusterId($clusterId)
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || empty($this->getEmrTargetClusterById($clusterId))) {
+            return [];
+        }
+
+        return $this->db
+            ->select('*')
+            ->from('tb_myrep_po_header')
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(status_po)', 'TARGET')
+            ->order_by('po_type', 'ASC')
+            ->order_by('po_date', 'DESC')
+            ->order_by('po_number', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    private function decoratePoRowsWithTerminMeta(array $rows, $stageStatus = '')
+    {
+        if (empty($rows)) {
+            return [];
+        }
+
+        $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
+        if (empty($headerIds)) {
+            return [];
+        }
+
+        $terminRows = $this->db
+            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', $headerIds)
+            ->get()
+            ->result_array();
+
+        $terminMap = [];
+        $terminByHeader = [];
+        foreach ($terminRows as $termin) {
+            $headerId = (int) ($termin['id_po_header'] ?? 0);
+            $terminByHeader[$headerId][] = $termin;
+            if (!isset($terminMap[$headerId])) {
+                $terminMap[$headerId] = [
+                    'total' => 0,
+                    'progress' => 0,
+                    'paid' => 0,
+                    'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                ];
+            }
+
+            $terminMap[$headerId]['total']++;
+            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            $terminNo = (int) ($termin['termin_no'] ?? 0);
+            $terminValue = (float) ($termin['termin_value'] ?? 0);
+
+            if ($terminNo >= 1 && $terminNo <= 5 && !in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                $terminMap[$headerId]['plan_invoice'][$terminNo] = $terminValue;
+            }
+            if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                $terminMap[$headerId]['progress']++;
+                if ($terminNo >= 1 && $terminNo <= 5) {
+                    $terminMap[$headerId]['done_invoice'][$terminNo] = $terminValue;
+                }
+            }
+            if ($statusTermin === 'PAID') {
+                $terminMap[$headerId]['paid']++;
+            }
+        }
+
+        $filtered = [];
+        $stageStatus = strtoupper(trim((string) $stageStatus));
+        foreach ($rows as $row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $meta = $terminMap[$headerId] ?? [
+                'total' => 0,
+                'progress' => 0,
+                'paid' => 0,
+                'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+            ];
+            $row['termin_total_count'] = (int) $meta['total'];
+            $row['termin_progress_count'] = (int) $meta['progress'];
+            $row['termin_paid_count'] = (int) $meta['paid'];
+            $row['plan_invoice_per_termin'] = $meta['plan_invoice'];
+            $row['done_invoice_per_termin'] = $meta['done_invoice'];
+            $row['plan_invoice_total'] = array_sum($meta['plan_invoice']);
+            $row['done_invoice_total'] = array_sum($meta['done_invoice']);
+            $row['total_invoiced'] = $row['done_invoice_total'];
+            $row['outstanding_total'] = (float) $row['plan_invoice_total'];
+            $row['po_stage_status'] = $this->resolveStageStatus($terminByHeader[$headerId] ?? []);
+
+            if ($stageStatus !== '' && strtoupper((string) ($row['po_stage_status'] ?? '')) !== $stageStatus) {
+                continue;
+            }
+
+            $filtered[] = $row;
+        }
+
+        return $filtered;
+    }
+
     public function getDashboardSummary($rows)
     {
         $summary = [

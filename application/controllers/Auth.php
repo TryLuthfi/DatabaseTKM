@@ -14,7 +14,11 @@ class Auth extends CI_Controller
 
     public function index()
     {
-        if ($this->session->userdata('kode') != null) {
+        if ($this->session->userdata('id_user') != null) {
+            if (strtoupper(trim((string) $this->session->userdata('homebase'))) === 'EMR' || strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'EMR') {
+                redirect('PO_EMR_Myrep');
+                return;
+            }
             redirect('Dashboard');
         } else {
             $this->form_validation->set_rules('username', 'Username', 'required|trim');

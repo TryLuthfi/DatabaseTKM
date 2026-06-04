@@ -25,6 +25,11 @@ class Myrep_access_service
 
     public function enforcePermission($pageKey, $actionKey, $message = '')
     {
+        if ($this->isEmrSession()) {
+            redirect('PO_EMR_Myrep');
+            return false;
+        }
+
         if (!$this->hasPermission($pageKey, $actionKey)) {
             $normalizedAction = strtoupper(trim((string) $actionKey));
             if ($normalizedAction === 'VIEW') {
@@ -39,6 +44,20 @@ class Myrep_access_service
         }
 
         return true;
+    }
+
+    private function isEmrSession()
+    {
+        if (!$this->ci->session->userdata('id_user')) {
+            return false;
+        }
+        if ((string) $this->ci->session->userdata('nama_level') === 'Super Admin') {
+            return false;
+        }
+
+        $homebase = strtoupper(trim((string) $this->ci->session->userdata('homebase')));
+        $lokasiUser = strtoupper(trim((string) $this->ci->session->userdata('lokasi_user')));
+        return $homebase === 'EMR' || $lokasiUser === 'EMR';
     }
 
     public function hasPermission($pageKey, $actionKey)

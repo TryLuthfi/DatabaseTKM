@@ -878,7 +878,7 @@ if (!empty($summaryRows)) {
                 alert('Tidak ada data valid untuk diimport.');
                 return;
             }
-            if (!confirm('Lanjut import semua data valid? Distribusi flow akan mengikuti status_current.')) {
+            if (!confirm('Lanjut import semua data valid? Cluster existing akan dioverwrite mengikuti isi file dan status_current.')) {
                 return;
             }
 

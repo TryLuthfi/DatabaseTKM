@@ -61,6 +61,7 @@ class MAuth extends CI_Model
                         'nama_user' => $akun['nama_user'],
                         'username_user' => $akun['username_user'],
                         'password_user' => $akun['password_user'],
+                        'homebase' => $akun['homebase'] ?? '',
                         'lokasi_user' => $akun['lokasi_user'],
                         'nama_level' => $akun['nama_level'],
                         'validation' => !empty($validationList) ? implode(', ', $validationList) : 'non',
@@ -71,7 +72,9 @@ class MAuth extends CI_Model
                 $this->setMaintenanceBypassCookie($akun);
 
                 $isBypassUser = $this->isFirstLoginBypassUser((string) ($akun['username_user'] ?? ''));
+                $isEmrUser = $this->isEmrUser($akun);
                 $isFirstLogin = !$isBypassUser
+                    && !$isEmrUser
                     && trim((string) ($akun['nik'] ?? '')) !== ''
                     && trim((string) $akun['password_user']) === trim((string) $akun['nik']);
 
@@ -81,6 +84,10 @@ class MAuth extends CI_Model
                 }
 
                 $this->session->unset_userdata('first_login_required');
+                if ($isEmrUser) {
+                    redirect('PO_EMR_Myrep');
+                    return;
+                }
                 redirect('Dashboard');
             } else {
                 $this->session->set_flashdata('error_log', 'salah');
@@ -208,6 +215,16 @@ class MAuth extends CI_Model
 
         return false;
     }
-}
 
+    private function isEmrUser(array $akun)
+    {
+        $homebase = strtoupper(trim((string) ($akun['homebase'] ?? '')));
+        if ($homebase === 'EMR') {
+            return true;
+        }
+
+        $lokasiUser = strtoupper(trim((string) ($akun['lokasi_user'] ?? $akun['lokasi_kantor'] ?? '')));
+        return $lokasiUser === 'EMR';
+    }
+}
 
