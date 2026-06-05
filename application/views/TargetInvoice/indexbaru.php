@@ -355,7 +355,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -529,7 +529,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET OKTOBER'];
                                                         $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -719,7 +719,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterPIC as $data):
                                                 $target = $data['TOTAL TARGET NOVEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
 
                                                 ?>
                                                 <tr>
@@ -880,7 +880,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterPIC as $data):
                                                 $target = $data['TOTAL TARGET DESEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -1021,7 +1021,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -1195,7 +1195,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET JANUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED JANUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -1397,7 +1397,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET FEBRUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED FEBRUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -1599,7 +1599,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET MARET'];
                                                         $achiev = $data['TOTAL ACHIEVED MARET'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -1786,7 +1786,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -1960,7 +1960,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET APRIL'];
                                                         $achiev = $data['TOTAL ACHIEVED APRIL'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -2162,7 +2162,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET MEI'];
                                                         $achiev = $data['TOTAL ACHIEVED MEI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -2364,7 +2364,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterPIC as $data):
                                                         $target = $data['TOTAL TARGET JUNI'];
                                                         $achiev = $data['TOTAL ACHIEVED JUNI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -2738,7 +2738,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterBowheer as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -2894,7 +2894,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterBowheer as $data):
                                                         $target = $data['TOTAL TARGET OKTOBER'];
                                                         $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -3011,7 +3011,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET NOVEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
 
                                                 ?>
                                                 <tr>
@@ -3116,7 +3116,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET DESEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -3227,7 +3227,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterBowheer as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -3371,7 +3371,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET JANUARI'];
                                                 $achiev = $data['TOTAL ACHIEVED JANUARI'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -3478,7 +3478,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET FEBRUARI'];
                                                 $achiev = $data['TOTAL ACHIEVED FEBRUARI'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -3585,7 +3585,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET MARET'];
                                                 $achiev = $data['TOTAL ACHIEVED MARET'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -3700,7 +3700,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterBowheer as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -3844,7 +3844,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET APRIL'];
                                                 $achiev = $data['TOTAL ACHIEVED APRIL'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -3951,7 +3951,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET MEI'];
                                                 $achiev = $data['TOTAL ACHIEVED MEI'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -4058,7 +4058,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterBowheer as $data):
                                                 $target = $data['TOTAL TARGET JUNI'];
                                                 $achiev = $data['TOTAL ACHIEVED JUNI'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -4341,7 +4341,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -4501,7 +4501,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET OKTOBER'];
                                                         $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -4619,7 +4619,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterRegional as $data):
                                                 $target = $data['TOTAL TARGET NOVEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
 
                                                 ?>
                                                 <tr>
@@ -4719,7 +4719,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterRegional as $data):
                                                 $target = $data['TOTAL TARGET DESEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -4822,7 +4822,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -4982,7 +4982,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET JANUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED JANUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5104,7 +5104,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET FEBRUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED FEBRUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5226,7 +5226,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET FEBRUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED FEBRUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5348,7 +5348,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET MARET'];
                                                         $achiev = $data['TOTAL ACHIEVED MARET'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5466,7 +5466,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5626,7 +5626,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET APRIL'];
                                                         $achiev = $data['TOTAL ACHIEVED APRIL'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5748,7 +5748,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET MEI'];
                                                         $achiev = $data['TOTAL ACHIEVED MEI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -5870,7 +5870,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterRegional as $data):
                                                         $target = $data['TOTAL TARGET JUNI'];
                                                         $achiev = $data['TOTAL ACHIEVED JUNI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -6165,7 +6165,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -6343,7 +6343,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET OKTOBER'];
                                                         $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -6545,7 +6545,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterCity as $data):
                                                 $target = $data['TOTAL TARGET NOVEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
 
                                                 ?>
                                                 <tr>
@@ -6717,7 +6717,7 @@ $total = 1;
                                             foreach ($getTargetRincianFilterCity as $data):
                                                 $target = $data['TOTAL TARGET DESEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                $deviasi = max($target - $achiev, 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= $no++ ?></td>
@@ -6863,7 +6863,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -7041,7 +7041,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET JANUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED JANUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -7247,7 +7247,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET FEBRUARI'];
                                                         $achiev = $data['TOTAL ACHIEVED FEBRUARI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -7453,7 +7453,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET MARET'];
                                                         $achiev = $data['TOTAL ACHIEVED MARET'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -7644,7 +7644,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -7822,7 +7822,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET APRIL'];
                                                         $achiev = $data['TOTAL ACHIEVED APRIL'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -8028,7 +8028,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET MEI'];
                                                         $achiev = $data['TOTAL ACHIEVED MEI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -8234,7 +8234,7 @@ $total = 1;
                                                     foreach ($getTargetRincianFilterCity as $data):
                                                         $target = $data['TOTAL TARGET JUNI'];
                                                         $achiev = $data['TOTAL ACHIEVED JUNI'];
-                                                        $deviasi = $target - $achiev;
+                                                        $deviasi = max($target - $achiev, 0);
                                                         ?>
                                                         <tr>
                                                             <td><?= $no++ ?></td>
@@ -9159,8 +9159,9 @@ $total = 1;
 
                     totalTargetInvoiceBowheer += parseFloat(row[3].replace(/\./g, '')) || 0;
                     totalAchievedInvoiceBowheer += parseFloat(row[4].replace(/\./g, '')) || 0;
-                    totalSisaInvoiceBowheer += parseFloat(row[5].replace(/\./g, '')) || 0;
                 });
+
+                totalSisaInvoiceBowheer = Math.max(totalTargetInvoiceBowheer - totalAchievedInvoiceBowheer, 0);
 
                 let persen = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(1);
 
@@ -10796,9 +10797,9 @@ $total = 1;
                 $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
                 $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
-                const deviasiOktNov = totalKolom[1] - totalKolom[2];
-                const deviasiNovDes = totalKolom[4] - totalKolom[5];
-                const deviasiDesTotal = totalKolom[7] - totalKolom[8];
+                const deviasiOktNov = Math.max(totalKolom[1] - totalKolom[2], 0);
+                const deviasiNovDes = Math.max(totalKolom[4] - totalKolom[5], 0);
+                const deviasiDesTotal = Math.max(totalKolom[7] - totalKolom[8], 0);
 
                 const footerRows = $('#tabel_targetpic_month2025 tfoot tr');
                 const barisDeviasi = $(footerRows[1]).find('th');
@@ -10878,9 +10879,9 @@ $total = 1;
                 $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
                 $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
-                const deviasiOktNov = totalKolom[1] - totalKolom[2];
-                const deviasiNovDes = totalKolom[4] - totalKolom[5];
-                const deviasiDesTotal = totalKolom[7] - totalKolom[8];
+                const deviasiOktNov = Math.max(totalKolom[1] - totalKolom[2], 0);
+                const deviasiNovDes = Math.max(totalKolom[4] - totalKolom[5], 0);
+                const deviasiDesTotal = Math.max(totalKolom[7] - totalKolom[8], 0);
 
                 const footerRows = $('#tabel_targetpic_month2026-tw1 tfoot tr');
                 const barisDeviasi = $(footerRows[1]).find('th');
@@ -10960,9 +10961,9 @@ $total = 1;
                 $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
                 $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
-                const deviasiOktNov = totalKolom[1] - totalKolom[2];
-                const deviasiNovDes = totalKolom[4] - totalKolom[5];
-                const deviasiDesTotal = totalKolom[7] - totalKolom[8];
+                const deviasiOktNov = Math.max(totalKolom[1] - totalKolom[2], 0);
+                const deviasiNovDes = Math.max(totalKolom[4] - totalKolom[5], 0);
+                const deviasiDesTotal = Math.max(totalKolom[7] - totalKolom[8], 0);
 
                 const footerRows = $('#tabel_targetpic_month2026-tw2 tfoot tr');
                 const barisDeviasi = $(footerRows[1]).find('th');

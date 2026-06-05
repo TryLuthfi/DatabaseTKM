@@ -190,7 +190,7 @@ $total = 1;
                                                         if ($data['id_bowheer'] == $decoded_url_area):
                                                             $target = $data['GRAND TOTAL TARGET'];
                                                             $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                            $deviasi = $target - $achiev;
+                                                            $deviasi = max($target - $achiev, 0);
                                                             ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
@@ -305,7 +305,7 @@ $total = 1;
                                                         if ($data['id_bowheer'] == $decoded_url_area):
                                                             $target = $data['TOTAL TARGET OKTOBER'];
                                                             $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                            $deviasi = $target - $achiev;
+                                                            $deviasi = max($target - $achiev, 0);
                                                             ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
@@ -424,7 +424,7 @@ $total = 1;
                                                 if ($data['id_bowheer'] == $decoded_url_area):
                                                     $target = $data['TOTAL TARGET NOVEMBER'];
                                                     $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                    $deviasi = $target - $achiev;
+                                                    $deviasi = max($target - $achiev, 0);
 
                                                     ?>
                                                     <tr>
@@ -525,7 +525,7 @@ $total = 1;
                                                 if ($data['id_bowheer'] == $decoded_url_area):
                                                     $target = $data['TOTAL TARGET DESEMBER'];
                                                     $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                    $deviasi = $target - $achiev;
+                                                    $deviasi = max($target - $achiev, 0);
                                                     ?>
                                                     <tr>
                                                         <td><?= $no++ ?></td>
@@ -753,7 +753,7 @@ $total = 1;
                                                         if ($data['id_bowheer'] == $decoded_url_area):
                                                             $target = $data['GRAND TOTAL TARGET'];
                                                             $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                            $deviasi = $target - $achiev;
+                                                            $deviasi = max($target - $achiev, 0);
                                                             ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
@@ -868,7 +868,7 @@ $total = 1;
                                                         if ($data['id_bowheer'] == $decoded_url_area):
                                                             $target = $data['TOTAL TARGET OKTOBER'];
                                                             $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                            $deviasi = $target - $achiev;
+                                                            $deviasi = max($target - $achiev, 0);
                                                             ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
@@ -987,7 +987,7 @@ $total = 1;
                                                 if ($data['id_bowheer'] == $decoded_url_area):
                                                     $target = $data['TOTAL TARGET NOVEMBER'];
                                                     $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                    $deviasi = $target - $achiev;
+                                                    $deviasi = max($target - $achiev, 0);
 
                                                     ?>
                                                     <tr>
@@ -1088,7 +1088,7 @@ $total = 1;
                                                 if ($data['id_bowheer'] == $decoded_url_area):
                                                     $target = $data['TOTAL TARGET DESEMBER'];
                                                     $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                    $deviasi = $target - $achiev;
+                                                    $deviasi = max($target - $achiev, 0);
                                                     ?>
                                                     <tr>
                                                         <td><?= $no++ ?></td>
