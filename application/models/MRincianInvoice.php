@@ -60,7 +60,7 @@ class MRincianInvoice extends CI_Model
     tmb.pic_user,
     SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
+    GREATEST(SUM(tti.qty_target) - SUM(tti.qty_achiev_target), 0) AS deviasi,
 
     ROUND(
         CASE 
@@ -73,7 +73,7 @@ class MRincianInvoice extends CI_Model
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
+            ELSE (GREATEST(SUM(tti.qty_target) - SUM(tti.qty_achiev_target), 0) / SUM(tti.qty_target)) * 100
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
@@ -94,9 +94,9 @@ ORDER BY total_target DESC;')
         area_target,
         SUM(qty_target) as total_target,
         SUM(qty_achiev_target) as total_achieved,
-        (SUM(qty_target) - SUM(qty_achiev_target)) as sisa,
+        GREATEST(SUM(qty_target) - SUM(qty_achiev_target), 0) as sisa,
         CASE WHEN SUM(qty_target) > 0 THEN (SUM(qty_achiev_target)/SUM(qty_target))*100 ELSE 0 END as persen_achieved,
-        CASE WHEN SUM(qty_target) > 0 THEN ((SUM(qty_target) - SUM(qty_achiev_target))/SUM(qty_target))*100 ELSE 0 END as persen_sisa
+        CASE WHEN SUM(qty_target) > 0 THEN (GREATEST(SUM(qty_target) - SUM(qty_achiev_target), 0)/SUM(qty_target))*100 ELSE 0 END as persen_sisa
     ');
         $this->db->from('tb_target_invoice');
         $this->db->join('tb_master_bowheer_invoice', 'tb_target_invoice.id_bowheer = tb_master_bowheer_invoice.id_bowheer');
