@@ -176,27 +176,56 @@ if (!function_exists('monitoring_rfs_normalize_rpm_name')) {
     }
 }
 
+if (!function_exists('monitoring_rfs_pic_nik_list')) {
+    function monitoring_rfs_pic_nik_list($value)
+    {
+        $parts = preg_split('/[,;|]+/', (string) $value);
+        $items = [];
+        foreach ($parts as $part) {
+            $nik = trim((string) $part);
+            if ($nik !== '') {
+                $items[$nik] = true;
+            }
+        }
+
+        return array_keys($items);
+    }
+}
+
 if (!function_exists('monitoring_rfs_area_approver')) {
     function monitoring_rfs_area_approver(array $claim)
     {
         $role = trim((string) ($claim['area_approval_role'] ?? ''));
         $name = trim((string) ($claim['area_approval_name'] ?? ''));
+        $niks = monitoring_rfs_pic_nik_list($claim['area_approval_niks'] ?? '');
 
-        if ($name !== '') {
-            return ['role' => $role !== '' ? $role : 'AREA', 'name' => $name];
+        if ($name !== '' || !empty($niks)) {
+            return [
+                'role' => $role !== '' ? $role : 'AREA',
+                'name' => $name !== '' ? $name : implode(', ', $niks),
+                'niks' => implode(',', $niks),
+            ];
         }
 
-        $rpmName = monitoring_rfs_normalize_rpm_name($claim['rpm'] ?? '');
-        if ($rpmName !== '') {
-            return ['role' => 'RPM', 'name' => $rpmName];
+        $rpmNiks = monitoring_rfs_pic_nik_list($claim['rpm_area_niks'] ?? '');
+        if (!empty($rpmNiks)) {
+            return [
+                'role' => 'RPM',
+                'name' => trim((string) ($claim['rpm'] ?? '')) !== '' ? trim((string) ($claim['rpm'] ?? '')) : implode(', ', $rpmNiks),
+                'niks' => implode(',', $rpmNiks),
+            ];
         }
 
-        $smName = monitoring_rfs_normalize_rpm_name($claim['sm'] ?? '');
-        if ($smName !== '') {
-            return ['role' => 'SM', 'name' => $smName];
+        $smNiks = monitoring_rfs_pic_nik_list($claim['sm_area_niks'] ?? '');
+        if (!empty($smNiks)) {
+            return [
+                'role' => 'SM',
+                'name' => trim((string) ($claim['sm'] ?? '')) !== '' ? trim((string) ($claim['sm'] ?? '')) : implode(', ', $smNiks),
+                'niks' => implode(',', $smNiks),
+            ];
         }
 
-        return ['role' => '', 'name' => ''];
+        return ['role' => '', 'name' => '', 'niks' => ''];
     }
 }
 
@@ -2494,9 +2523,10 @@ if (!empty($kpiDetailRowMap)) {
                                             $areaApproverRole = $areaApprover['role'] !== '' ? $areaApprover['role'] : 'PIC Area';
                                             $rpmApprovalStatus = trim((string) ($claim['rpm_approval_status'] ?? ''));
                                             $claimStatus = trim((string) ($claim['status_claim'] ?? ''));
-                                            $sessionName = strtoupper(trim((string) $this->session->userdata('nama_user')));
+                                            $sessionNik = trim((string) ($currentUserNik ?? ''));
+                                            $areaApproverNiks = monitoring_rfs_pic_nik_list($areaApprover['niks'] ?? '');
                                             $canApproveRpm = $this->session->userdata('nama_level') === 'Super Admin'
-                                                || ($claimRpm !== '' && $sessionName === strtoupper($claimRpm));
+                                                || ($sessionNik !== '' && in_array($sessionNik, $areaApproverNiks, true));
                                             ?>
                                             <?php if ($claimRpm === '') { ?>
                                                 <span class="badge badge-secondary">SKIPPED</span>

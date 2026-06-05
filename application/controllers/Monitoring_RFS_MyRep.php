@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class Monitoring_RFS_MyRep extends CI_Controller
 {
@@ -84,6 +85,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['selectedCity'] = $selectedCity;
         $data['selectedClaimStartDate'] = $selectedClaimStartDate;
         $data['selectedClaimEndDate'] = $selectedClaimEndDate;
+        $data['currentUserNik'] = $this->getCurrentUserNik();
         $data['monthLabels'] = $this->getMonthLabels();
         $data['selectedPeriodLabel'] = $this->buildPeriodLabel($selectedStartMonth, $selectedEndMonth);
 
@@ -854,7 +856,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         $areaApprover = $this->MMonitoring_RFS_MyRep->resolveAreaApprover($cluster);
-        $hasAreaApprover = $areaApprover['name'] !== '';
+        $hasAreaApprover = !empty($areaApprover['niks']);
         $payload = [
             'cluster_id' => $clusterId,
             'claim_year' => $claimYear,
@@ -1160,14 +1162,19 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return true;
         }
 
-        $areaApproverName = trim((string) ($claim['area_approval_name'] ?? ''));
-        if ($areaApproverName === '') {
+        $areaApproverNiks = myrep_pic_nik_list($claim['area_approval_niks'] ?? '');
+        if (empty($areaApproverNiks)) {
             $areaApprover = $this->MMonitoring_RFS_MyRep->resolveAreaApprover($claim);
-            $areaApproverName = (string) ($areaApprover['name'] ?? '');
+            $areaApproverNiks = (array) ($areaApprover['niks'] ?? []);
         }
 
-        return $areaApproverName !== ''
-            && strtoupper(trim((string) $this->session->userdata('nama_user'))) === strtoupper($areaApproverName);
+        $currentNik = $this->getCurrentUserNik();
+        return $currentNik !== '' && in_array($currentNik, $areaApproverNiks, true);
+    }
+
+    private function getCurrentUserNik()
+    {
+        return $this->MMonitoring_RFS_MyRep->getUserNikById((int) $this->session->userdata('id_user'));
     }
 
     private function getMonthLabels()

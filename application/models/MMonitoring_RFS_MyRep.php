@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MMonitoring_RFS_MyRep extends CI_Model
 {
@@ -25,20 +26,30 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function resolveAreaApprover($cluster)
     {
         if (!is_array($cluster)) {
-            $cluster = ['rpm' => $cluster];
+            $cluster = ['rpm_area_niks' => $cluster];
         }
 
-        $rpmName = $this->normalizeAreaApproverName($cluster['rpm'] ?? '');
-        if ($rpmName !== '') {
-            return ['role' => 'RPM', 'name' => $rpmName];
+        $rpmNiks = myrep_pic_nik_list($cluster['rpm_area_niks'] ?? '');
+        if (!empty($rpmNiks)) {
+            $rpmName = trim((string) ($cluster['rpm'] ?? ''));
+            return [
+                'role' => 'RPM',
+                'name' => $rpmName !== '' ? $rpmName : implode(', ', $rpmNiks),
+                'niks' => $rpmNiks,
+            ];
         }
 
-        $smName = $this->normalizeAreaApproverName($cluster['sm'] ?? '');
-        if ($smName !== '') {
-            return ['role' => 'SM', 'name' => $smName];
+        $smNiks = myrep_pic_nik_list($cluster['sm_area_niks'] ?? '');
+        if (!empty($smNiks)) {
+            $smName = trim((string) ($cluster['sm'] ?? ''));
+            return [
+                'role' => 'SM',
+                'name' => $smName !== '' ? $smName : implode(', ', $smNiks),
+                'niks' => $smNiks,
+            ];
         }
 
-        return ['role' => '', 'name' => ''];
+        return ['role' => '', 'name' => '', 'niks' => []];
     }
 
     public function claimSupportsStatusRfs()
@@ -530,64 +541,12 @@ class MMonitoring_RFS_MyRep extends CI_Model
             return [];
         }
 
-        $sql = "SELECT
-                c.*,
-                mc.id_myrep_cluster,
-                mc.status_current AS myrep_status_current,
-                md.homepass_drm AS homepass_drm_latest,
-                COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective,
-                mt.id_target,
-                mt.year_num,
-                mt.month_num,
-                mt.regional_name,
-                mt.province_name,
-                mt.city_name,
-                mt.chief,
-                mt.rpm,
-                mt.sm,
-                mt.spv,
-                COALESCE((
-                    SELECT COUNT(1)
-                    FROM tb_rfs_myrep_claim cl_pending
-                    WHERE cl_pending.cluster_id = c.id_cluster
-                    AND cl_pending.status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO')
-                ), 0) AS pending_claim_count,
-                COALESCE(p.optimistic_target, 0) AS optimistic_target,
-                COALESCE((
-                    SELECT SUM(claim_qty)
-                    FROM tb_rfs_myrep_claim cl
-                    WHERE cl.cluster_id = c.id_cluster
-                    AND cl.status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO', 'APPROVED')
-                ), 0) AS claimed_qty
-             FROM tb_rfs_myrep_cluster c
-             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
-             INNER JOIN tb_myrep_cluster mc ON mc.rfs_cluster_id = c.id_cluster
-             INNER JOIN (
-                SELECT d.id_myrep_cluster, d.homepass_drm
-                FROM tb_myrep_drm d
-                INNER JOIN (
-                    SELECT id_myrep_cluster, MAX(id_drm) AS latest_id_drm
-                    FROM tb_myrep_drm
-                    GROUP BY id_myrep_cluster
-                ) latest_drm ON latest_drm.latest_id_drm = d.id_drm
-             ) md ON md.id_myrep_cluster = mc.id_myrep_cluster
-             LEFT JOIN tb_rfs_myrep_cluster_plan p
-               ON p.cluster_id = c.id_cluster
-               AND p.year_num = ?
-               AND p.month_num = ?
-             WHERE UPPER(COALESCE(mc.status_current, '')) IN ('DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE')
-               ";
-
-        $params = [$year, $endMonth];
-
-        if ($city !== '') {
-            $sql .= " AND UPPER(mt.city_name) = ? ";
-            $params[] = $city;
-        }
-
+        $sql = $this->getClustersWithPlanSelectSql() . $this->getClustersWithPlanBaseSql();
+        $params = [(int) $year, (int) $endMonth];
+        $this->appendClusterWithPlanFilters($sql, $params, $city, '');
         $sql .= " ORDER BY mt.city_name ASC, c.cluster_name ASC";
 
-        return $this->db->query($sql, $params)->result_array();
+        return $this->decorateCityPicMappingRows($this->db->query($sql, $params)->result_array());
     }
 
     public function getClustersWithPlanPage($year, $startMonth, $endMonth, $city = '', $start = 0, $length = 10, $search = '', array $order = [])
@@ -617,7 +576,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return [
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
-            'rows' => $this->db->query($sql, $params)->result_array(),
+            'rows' => $this->decorateCityPicMappingRows($this->db->query($sql, $params)->result_array()),
         ];
     }
 
@@ -671,6 +630,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mc.status_current AS myrep_status_current,
                 md.homepass_drm AS homepass_drm_latest,
                 COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective,
+                mt.id_target,
                 mt.id_target AS monthly_target_id,
                 mt.year_num,
                 mt.month_num,
@@ -678,9 +638,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.province_name,
                 mt.city_name,
                 mt.chief,
-                mt.rpm,
-                mt.sm,
-                mt.spv,
+                mt.rpm AS monthly_rpm,
+                mt.sm AS monthly_sm,
+                mt.spv AS monthly_spv" . $this->getCityPicMappingSelectSql() . ",
                 COALESCE((
                     SELECT COUNT(1)
                     FROM tb_rfs_myrep_claim cl_pending
@@ -701,6 +661,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return " FROM tb_rfs_myrep_cluster c
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
              INNER JOIN tb_myrep_cluster mc ON mc.rfs_cluster_id = c.id_cluster
+             " . $this->getCityPicMappingJoinSql('mt') . "
              INNER JOIN (
                 SELECT d.id_myrep_cluster, d.homepass_drm
                 FROM tb_myrep_drm d
@@ -733,10 +694,26 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 OR UPPER(COALESCE(c.status_rfs, '')) LIKE ?
                 OR UPPER(COALESCE(mt.rpm, '')) LIKE ?
                 OR UPPER(COALESCE(mt.sm, '')) LIKE ?
-                OR UPPER(COALESCE(mt.spv, '')) LIKE ?
+                OR UPPER(COALESCE(mt.spv, '')) LIKE ?";
+            if ($this->hasCityPicMappingTable()) {
+                $sql .= "
+                OR UPPER(COALESCE(city_pic_map.rpm_area, '')) LIKE ?
+                OR UPPER(COALESCE(city_pic_map.sm_area, '')) LIKE ?";
+                if ($this->hasCityPicMappingField('spv_area')) {
+                    $sql .= "
+                OR UPPER(COALESCE(city_pic_map.spv_area, '')) LIKE ?";
+                }
+            }
+            $sql .= "
             ) ";
             $like = '%' . $search . '%';
             array_push($params, $like, $like, $like, $like, $like, $like);
+            if ($this->hasCityPicMappingTable()) {
+                array_push($params, $like, $like);
+                if ($this->hasCityPicMappingField('spv_area')) {
+                    $params[] = $like;
+                }
+            }
         }
     }
 
@@ -746,9 +723,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             1 => 'mt.city_name',
             2 => 'c.cluster_name',
             3 => 'c.status_rfs',
-            4 => 'mt.rpm',
-            5 => 'mt.sm',
-            6 => 'mt.spv',
+            4 => $this->hasCityPicMappingTable() ? 'city_pic_map.rpm_area' : 'mt.rpm',
+            5 => $this->hasCityPicMappingTable() ? 'city_pic_map.sm_area' : 'mt.sm',
+            6 => $this->hasCityPicMappingField('spv_area') ? 'city_pic_map.spv_area' : 'mt.spv',
         ];
 
         $column = isset($order['column']) ? (int) $order['column'] : 0;
@@ -786,15 +763,16 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.id_target,
                 c.cluster_name,
                 c.homepass,
-                mt.rpm,
-                mt.sm,
-                mt.spv,
+                mt.rpm AS monthly_rpm,
+                mt.sm AS monthly_sm,
+                mt.spv AS monthly_spv" . $this->getCityPicMappingSelectSql() . ",
                 su.nama_karyawan AS submitted_name,
                 au.nama_karyawan AS approved_name,
                 ru.nama_karyawan AS rpm_approved_name
              FROM tb_rfs_myrep_claim cl
              INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
+             " . $this->getCityPicMappingJoinSql('mt') . "
              LEFT JOIN tb_master_user_new su ON su.id = cl.submitted_by
              LEFT JOIN tb_master_user_new au ON au.id = cl.approved_by
              LEFT JOIN tb_master_user_new ru ON ru.id = cl.rpm_approved_by
@@ -833,7 +811,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
         $sql .= " ORDER BY cl.claim_date DESC, cl.id_claim DESC";
 
-        return $this->normalizeClaimApprovalRows($this->db->query($sql, $params)->result_array());
+        return $this->normalizeClaimApprovalRows($this->decorateCityPicMappingRows($this->db->query($sql, $params)->result_array()));
     }
 
     private function normalizeDateFilter($value)
@@ -1057,14 +1035,23 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClaimById($claimId)
     {
-        $row = $this->db
-            ->select('cl.*, mt.rpm, mt.sm, mt.spv, mt.city_name, c.cluster_name')
-            ->from('tb_rfs_myrep_claim cl')
-            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = cl.cluster_id', 'inner')
-            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
-            ->where('cl.id_claim', (int) $claimId)
-            ->get()
-            ->row_array();
+        $sql = "SELECT
+                cl.*,
+                mt.rpm AS monthly_rpm,
+                mt.sm AS monthly_sm,
+                mt.spv AS monthly_spv,
+                mt.city_name,
+                mt.regional_name,
+                mt.province_name,
+                c.cluster_name" . $this->getCityPicMappingSelectSql() . "
+             FROM tb_rfs_myrep_claim cl
+             INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
+             " . $this->getCityPicMappingJoinSql('mt') . "
+             WHERE cl.id_claim = ?";
+
+        $rows = $this->decorateCityPicMappingRows($this->db->query($sql, [(int) $claimId])->result_array());
+        $row = !empty($rows[0]) ? $rows[0] : [];
 
         return !empty($row) ? $this->normalizeClaimApprovalRow($row) : $row;
     }
@@ -1081,17 +1068,16 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     private function normalizeClaimApprovalRow(array $row)
     {
-        $row['rpm_raw'] = $row['rpm'] ?? '';
-        $row['rpm'] = $this->normalizeRpmApproverName($row['rpm'] ?? '');
-        $row['sm_raw'] = $row['sm'] ?? '';
-        $row['sm'] = $this->normalizeAreaApproverName($row['sm'] ?? '');
+        $row['rpm_raw'] = $row['rpm_area_niks'] ?? '';
+        $row['sm_raw'] = $row['sm_area_niks'] ?? '';
         $areaApprover = $this->resolveAreaApprover($row);
         $row['area_approval_role'] = $areaApprover['role'];
         $row['area_approval_name'] = $areaApprover['name'];
+        $row['area_approval_niks'] = implode(',', (array) ($areaApprover['niks'] ?? []));
         $statusClaim = strtoupper(trim((string) ($row['status_claim'] ?? '')));
         $rpmApprovalStatus = strtoupper(trim((string) ($row['rpm_approval_status'] ?? '')));
 
-        if ($row['area_approval_name'] === '') {
+        if ($row['area_approval_niks'] === '') {
             if ($statusClaim === 'WAITING APPROVAL RPM') {
                 $row['status_claim'] = 'WAITING APPROVAL HO';
             }
@@ -1168,7 +1154,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClusterById($clusterId)
     {
-        return $this->db
+        $this->db
             ->select('
                 c.*,
                 mt.id_target,
@@ -1178,15 +1164,26 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.regional_name,
                 mt.province_name,
                 mt.chief,
-                mt.rpm,
-                mt.sm,
-                mt.spv,
+                mt.rpm AS monthly_rpm,
+                mt.sm AS monthly_sm,
+                mt.spv AS monthly_spv' . $this->getCityPicMappingSelectSql() . ',
                 md.homepass_drm AS homepass_drm_latest,
                 COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective
             ', false)
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
-            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
+            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left');
+
+        if ($this->hasCityPicMappingTable()) {
+            $this->db->join(
+                'tb_myrep_pic_mapping_city city_pic_map',
+                $this->getCityPicMappingJoinCondition('mt'),
+                'left',
+                false
+            );
+        }
+
+        $row = $this->db
             ->join(
                 "(SELECT d.id_myrep_cluster, d.homepass_drm
                   FROM tb_myrep_drm d
@@ -1203,6 +1200,13 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ->where('c.id_cluster', $clusterId)
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return $row;
+        }
+
+        $rows = $this->decorateCityPicMappingRows([$row]);
+        return $rows[0] ?? $row;
     }
 
     public function getTargetById($idTarget)
@@ -1275,6 +1279,160 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $dateTime = new DateTime($date);
         $dateTime->modify('+' . (int) $days . ' day');
         return $dateTime->format('Y-m-d');
+    }
+
+    public function getUserNikById($userId)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new')) {
+            return '';
+        }
+
+        $row = (array) $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return trim((string) ($row['nik'] ?? ''));
+    }
+
+    private function hasCityPicMappingTable()
+    {
+        return $this->db->table_exists('tb_myrep_pic_mapping_city')
+            && $this->db->field_exists('city_name', 'tb_myrep_pic_mapping_city')
+            && $this->db->field_exists('rpm_area', 'tb_myrep_pic_mapping_city')
+            && $this->db->field_exists('sm_area', 'tb_myrep_pic_mapping_city');
+    }
+
+    private function hasCityPicMappingField($fieldName)
+    {
+        return $this->db->table_exists('tb_myrep_pic_mapping_city')
+            && $this->db->field_exists((string) $fieldName, 'tb_myrep_pic_mapping_city');
+    }
+
+    private function getCityPicMappingSelectSql()
+    {
+        if (!$this->hasCityPicMappingTable()) {
+            return ",
+                NULL AS rpm_area_niks,
+                NULL AS sm_area_niks,
+                NULL AS spv_area_niks";
+        }
+
+        return ",
+                city_pic_map.rpm_area AS rpm_area_niks,
+                city_pic_map.sm_area AS sm_area_niks,
+                " . ($this->hasCityPicMappingField('spv_area') ? 'city_pic_map.spv_area' : 'NULL') . " AS spv_area_niks";
+    }
+
+    private function getCityPicMappingJoinSql($targetAlias = 'mt')
+    {
+        if (!$this->hasCityPicMappingTable()) {
+            return '';
+        }
+
+        return ' LEFT JOIN tb_myrep_pic_mapping_city city_pic_map ON ' . $this->getCityPicMappingJoinCondition($targetAlias) . ' ';
+    }
+
+    private function getCityPicMappingJoinCondition($targetAlias = 'mt')
+    {
+        $targetAlias = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $targetAlias);
+        if ($targetAlias === '') {
+            $targetAlias = 'mt';
+        }
+
+        $orderExpression = 'city_pic_pick.id';
+        if ($this->hasCityPicMappingField('province_name') && $this->hasCityPicMappingField('regional_name')) {
+            $orderExpression = "CASE
+                    WHEN UPPER(COALESCE(city_pic_pick.province_name, '')) = UPPER(COALESCE({$targetAlias}.province_name, ''))
+                     AND UPPER(COALESCE(city_pic_pick.regional_name, '')) = UPPER(COALESCE({$targetAlias}.regional_name, ''))
+                    THEN 0
+                    ELSE 1
+                END";
+        } elseif ($this->hasCityPicMappingField('province_name')) {
+            $orderExpression = "CASE
+                    WHEN UPPER(COALESCE(city_pic_pick.province_name, '')) = UPPER(COALESCE({$targetAlias}.province_name, ''))
+                    THEN 0
+                    ELSE 1
+                END";
+        }
+
+        return "city_pic_map.id = (
+            SELECT city_pic_pick.id
+            FROM tb_myrep_pic_mapping_city city_pic_pick
+            WHERE UPPER(city_pic_pick.city_name) = UPPER({$targetAlias}.city_name)
+            ORDER BY
+                {$orderExpression},
+                city_pic_pick.id ASC
+            LIMIT 1
+        )";
+    }
+
+    private function decorateCityPicMappingRows(array $rows)
+    {
+        if (empty($rows)) {
+            return $rows;
+        }
+
+        $nikSet = [];
+        foreach ($rows as $row) {
+            foreach (['rpm_area_niks', 'sm_area_niks', 'spv_area_niks'] as $columnName) {
+                foreach (myrep_pic_nik_list($row[$columnName] ?? '') as $nik) {
+                    $nikSet[$nik] = true;
+                }
+            }
+        }
+
+        $nameByNik = $this->getMasterUserNamesByNiks(array_keys($nikSet));
+        foreach ($rows as &$row) {
+            $row['rpm_area_niks'] = myrep_pic_nik_csv($row['rpm_area_niks'] ?? '');
+            $row['sm_area_niks'] = myrep_pic_nik_csv($row['sm_area_niks'] ?? '');
+            $row['spv_area_niks'] = myrep_pic_nik_csv($row['spv_area_niks'] ?? '');
+            $row['rpm'] = $this->formatCityPicNames($row['rpm_area_niks'], $nameByNik);
+            $row['sm'] = $this->formatCityPicNames($row['sm_area_niks'], $nameByNik);
+            $row['spv'] = $this->formatCityPicNames($row['spv_area_niks'], $nameByNik);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private function getMasterUserNamesByNiks(array $niks)
+    {
+        $niks = array_values(array_unique(array_filter(array_map('trim', $niks))));
+        if (empty($niks) || !$this->db->table_exists('tb_master_user_new')) {
+            return [];
+        }
+
+        $rows = (array) $this->db
+            ->select('nik, nama_karyawan')
+            ->from('tb_master_user_new')
+            ->where_in('nik', $niks)
+            ->get()
+            ->result_array();
+
+        $nameByNik = [];
+        foreach ($rows as $row) {
+            $nik = trim((string) ($row['nik'] ?? ''));
+            if ($nik !== '') {
+                $nameByNik[$nik] = trim((string) ($row['nama_karyawan'] ?? ''));
+            }
+        }
+
+        return $nameByNik;
+    }
+
+    private function formatCityPicNames($nikCsv, array $nameByNik)
+    {
+        $names = [];
+        foreach (myrep_pic_nik_list($nikCsv) as $nik) {
+            $names[] = ($nameByNik[$nik] ?? '') !== '' ? $nameByNik[$nik] : $nik;
+        }
+
+        return implode(', ', $names);
     }
 
     private function hasMyrepClusterTables()
