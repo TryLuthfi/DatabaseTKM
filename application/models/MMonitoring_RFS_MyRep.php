@@ -630,7 +630,6 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mc.status_current AS myrep_status_current,
                 md.homepass_drm AS homepass_drm_latest,
                 COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective,
-                mt.id_target,
                 mt.id_target AS monthly_target_id,
                 mt.year_num,
                 mt.month_num,
