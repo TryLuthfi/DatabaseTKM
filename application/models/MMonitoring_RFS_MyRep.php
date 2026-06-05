@@ -1344,17 +1344,24 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $targetAlias = 'mt';
         }
 
+        $cityPicCity = "UPPER(city_pic_pick.city_name) COLLATE utf8mb4_unicode_ci";
+        $targetCity = "UPPER({$targetAlias}.city_name) COLLATE utf8mb4_unicode_ci";
+        $cityPicProvince = "UPPER(COALESCE(city_pic_pick.province_name, '')) COLLATE utf8mb4_unicode_ci";
+        $targetProvince = "UPPER(COALESCE({$targetAlias}.province_name, '')) COLLATE utf8mb4_unicode_ci";
+        $cityPicRegional = "UPPER(COALESCE(city_pic_pick.regional_name, '')) COLLATE utf8mb4_unicode_ci";
+        $targetRegional = "UPPER(COALESCE({$targetAlias}.regional_name, '')) COLLATE utf8mb4_unicode_ci";
+
         $orderExpression = 'city_pic_pick.id';
         if ($this->hasCityPicMappingField('province_name') && $this->hasCityPicMappingField('regional_name')) {
             $orderExpression = "CASE
-                    WHEN UPPER(COALESCE(city_pic_pick.province_name, '')) = UPPER(COALESCE({$targetAlias}.province_name, ''))
-                     AND UPPER(COALESCE(city_pic_pick.regional_name, '')) = UPPER(COALESCE({$targetAlias}.regional_name, ''))
+                    WHEN {$cityPicProvince} = {$targetProvince}
+                     AND {$cityPicRegional} = {$targetRegional}
                     THEN 0
                     ELSE 1
                 END";
         } elseif ($this->hasCityPicMappingField('province_name')) {
             $orderExpression = "CASE
-                    WHEN UPPER(COALESCE(city_pic_pick.province_name, '')) = UPPER(COALESCE({$targetAlias}.province_name, ''))
+                    WHEN {$cityPicProvince} = {$targetProvince}
                     THEN 0
                     ELSE 1
                 END";
@@ -1363,7 +1370,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return "city_pic_map.id = (
             SELECT city_pic_pick.id
             FROM tb_myrep_pic_mapping_city city_pic_pick
-            WHERE UPPER(city_pic_pick.city_name) = UPPER({$targetAlias}.city_name)
+            WHERE {$cityPicCity} = {$targetCity}
             ORDER BY
                 {$orderExpression},
                 city_pic_pick.id ASC
