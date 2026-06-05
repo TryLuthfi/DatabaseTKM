@@ -2885,6 +2885,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-prev" aria-label="Sebelumnya">&#8249;</button>
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-zoom-out" aria-label="Zoom Out">-</button>
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-zoom-in" aria-label="Zoom In">+</button>
+                <button type="button" class="impl-lightbox__action" id="impl-lightbox-rotate-left" aria-label="Rotate Kiri">&#8634;</button>
+                <button type="button" class="impl-lightbox__action" id="impl-lightbox-rotate-right" aria-label="Rotate Kanan">&#8635;</button>
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-next" aria-label="Berikutnya">&#8250;</button>
                 <button type="button" class="impl-lightbox__close" id="impl-lightbox-close" aria-label="Tutup">&times;</button>
             </div>
@@ -3409,10 +3411,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lightboxNext = document.getElementById('impl-lightbox-next');
         var lightboxZoomIn = document.getElementById('impl-lightbox-zoom-in');
         var lightboxZoomOut = document.getElementById('impl-lightbox-zoom-out');
+        var lightboxRotateLeft = document.getElementById('impl-lightbox-rotate-left');
+        var lightboxRotateRight = document.getElementById('impl-lightbox-rotate-right');
         var lightboxStage = document.querySelector('#impl-lightbox .impl-lightbox__stage');
         var lightboxItems = [];
         var lightboxIndex = -1;
         var lightboxScale = 1;
+        var lightboxRotation = 0;
 
         function escapeAttr(value) {
             return String(value || '')
@@ -3608,7 +3613,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxNext.disabled = !hasMultiple;
         }
 
-        function applyLightboxScale() {
+        function applyLightboxTransform() {
             if (!lightboxImage) {
                 return;
             }
@@ -3619,11 +3624,26 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (!naturalWidth || !naturalHeight) {
                 lightboxImage.style.width = '';
                 lightboxImage.style.height = 'auto';
+                lightboxImage.style.margin = '';
+                lightboxImage.style.transform = '';
                 return;
             }
 
-            lightboxImage.style.width = Math.round(naturalWidth * lightboxScale) + 'px';
+            var displayWidth = Math.round(naturalWidth * lightboxScale);
+            var displayHeight = Math.round(naturalHeight * lightboxScale);
+            var normalizedRotation = ((lightboxRotation % 360) + 360) % 360;
+            var isSideways = normalizedRotation === 90 || normalizedRotation === 270;
+            var verticalMargin = isSideways ? Math.max(0, (displayWidth - displayHeight) / 2) : 0;
+            var horizontalMargin = isSideways ? Math.max(0, (displayHeight - displayWidth) / 2) : 0;
+
+            lightboxImage.style.width = displayWidth + 'px';
             lightboxImage.style.height = 'auto';
+            lightboxImage.style.marginTop = Math.ceil(verticalMargin) + 'px';
+            lightboxImage.style.marginBottom = Math.ceil(verticalMargin) + 'px';
+            lightboxImage.style.marginLeft = Math.ceil(horizontalMargin) + 'px';
+            lightboxImage.style.marginRight = Math.ceil(horizontalMargin) + 'px';
+            lightboxImage.style.transform = 'rotate(' + normalizedRotation + 'deg)';
+            lightboxImage.style.transformOrigin = 'center center';
         }
 
         function zoomLightboxTo(nextScale, originEvent) {
@@ -3651,7 +3671,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
 
             lightboxScale = targetScale;
-            applyLightboxScale();
+            applyLightboxTransform();
 
             if (lightboxStage) {
                 lightboxStage.scrollLeft = (contentX * scaleRatio) - originX;
@@ -3729,8 +3749,21 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
         if (lightboxImage) {
             lightboxImage.addEventListener('load', function () {
-                applyLightboxScale();
+                applyLightboxTransform();
             });
+        }
+
+        function rotateLightbox(deltaDegrees) {
+            if (!lightbox || !lightboxImage || !lightbox.classList.contains('is-open')) {
+                return;
+            }
+
+            lightboxRotation = ((lightboxRotation + deltaDegrees) % 360 + 360) % 360;
+            applyLightboxTransform();
+            if (lightboxStage) {
+                lightboxStage.scrollLeft = Math.max(0, (lightboxStage.scrollWidth - lightboxStage.clientWidth) / 2);
+                lightboxStage.scrollTop = Math.max(0, (lightboxStage.scrollHeight - lightboxStage.clientHeight) / 2);
+            }
         }
 
         function renderLightbox(index) {
@@ -3751,14 +3784,17 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxTitle.textContent = activeItem.title || 'Preview Foto';
             lightboxCaption.textContent = activeItem.caption || '-';
             lightboxScale = 1;
+            lightboxRotation = 0;
             lightboxImage.style.width = '';
             lightboxImage.style.height = 'auto';
+            lightboxImage.style.margin = '';
+            lightboxImage.style.transform = '';
             if (lightboxStage) {
                 lightboxStage.scrollLeft = 0;
                 lightboxStage.scrollTop = 0;
             }
             if (lightboxImage.complete) {
-                applyLightboxScale();
+                applyLightboxTransform();
             }
             syncLightboxButtons();
         }
@@ -3814,10 +3850,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxImage.src = '';
             lightboxImage.style.width = '';
             lightboxImage.style.height = 'auto';
+            lightboxImage.style.margin = '';
+            lightboxImage.style.transform = '';
             document.body.style.overflow = '';
             lightboxItems = [];
             lightboxIndex = -1;
             lightboxScale = 1;
+            lightboxRotation = 0;
         }
 
         if (lightboxClose) {
@@ -3855,6 +3894,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     return;
                 }
                 zoomLightboxTo(lightboxScale - 0.25);
+            });
+        }
+
+        if (lightboxRotateLeft) {
+            lightboxRotateLeft.addEventListener('click', function () {
+                rotateLightbox(-90);
+            });
+        }
+
+        if (lightboxRotateRight) {
+            lightboxRotateRight.addEventListener('click', function () {
+                rotateLightbox(90);
             });
         }
 
@@ -3900,6 +3951,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             } else if (event.key === '-') {
                 event.preventDefault();
                 zoomLightboxTo(lightboxScale - 0.25);
+            } else if (event.key === '[') {
+                event.preventDefault();
+                rotateLightbox(-90);
+            } else if (event.key === ']' || event.key === 'r' || event.key === 'R') {
+                event.preventDefault();
+                rotateLightbox(90);
             }
         });
 
