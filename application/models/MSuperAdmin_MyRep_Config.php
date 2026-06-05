@@ -61,6 +61,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'DRM_MyRep',
         'Monitoring_RFS_MyRep',
         'Checklist_Dokument_MyRep',
+        'Implementasi_BOQ_MyRep',
     ];
 
     private $defaultEventOptions = [
@@ -70,6 +71,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'full_upload',
         'batch_revised',
         'claim_rfs_approved',
+        'daily_progress_masuk',
     ];
 
     private $defaultTargetTypeOptions = [

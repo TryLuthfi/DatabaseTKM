@@ -358,6 +358,10 @@ class Myrep_notification_service
         $documentLabel = trim((string) ($payload['document_label'] ?? ''));
         $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
 
+        if ($normalizedEvent === 'daily_progress_masuk' && $normalizedModule === 'implementasi_boq_myrep') {
+            return '<b>DAILY PROGRESS - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+        }
+
         if ($normalizedEvent === 'full_upload' && in_array($normalizedModule, ['batch_approval_myrep', 'drm_myrep'], true)) {
             return '✅ <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
@@ -381,6 +385,10 @@ class Myrep_notification_service
     {
         $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
         $documentLabel = trim((string) ($payload['document_label'] ?? ''));
+
+        if (strtolower(trim((string) $eventName)) === 'daily_progress_masuk') {
+            return $documentLabel !== '' ? ($moduleLabel . ' - ' . $documentLabel) : $moduleLabel;
+        }
 
         if (strtolower(trim((string) $eventName)) === 'claim_rfs_approved') {
             return $documentLabel !== '' ? $documentLabel : 'RFS';
@@ -427,6 +435,55 @@ class Myrep_notification_service
     {
         $normalizedModule = strtolower(trim((string) $moduleName));
         $normalizedEvent = strtolower(trim((string) $eventName));
+
+        if ($normalizedModule === 'implementasi_boq_myrep' && $normalizedEvent === 'daily_progress_masuk') {
+            $activityDate = trim((string) ($payload['activity_date'] ?? ''));
+            $scopeType = trim((string) ($payload['scope_type'] ?? ''));
+            $teamCount = (int) ($payload['team_count'] ?? 0);
+            $workerCount = (int) ($payload['worker_count'] ?? 0);
+            $createdCount = (int) ($payload['created_count'] ?? 0);
+            $allocatedQtyTotal = (float) ($payload['allocated_qty_total'] ?? 0);
+            $activityRows = (array) ($payload['daily_activity_summary'] ?? []);
+            $activities = array_slice($activityRows, 0, 6);
+            $lines = [];
+
+            if ($activityDate !== '') {
+                $lines[] = $this->escapeTelegramText('Tanggal: ' . $activityDate);
+            }
+            if ($scopeType !== '') {
+                $lines[] = $this->escapeTelegramText('Scope: ' . $scopeType);
+            }
+
+            $lines[] = $this->escapeTelegramText('Tim/Orang: ' . $teamCount . ' / ' . $workerCount);
+            $lines[] = $this->escapeTelegramText('Jumlah Aktivitas: ' . $createdCount);
+
+            if (abs($allocatedQtyTotal) > 0.00001) {
+                $allocatedText = rtrim(rtrim(number_format($allocatedQtyTotal, 2, ',', '.'), '0'), ',');
+                $lines[] = $this->escapeTelegramText('Auto BOQ: ' . $allocatedText . ' teralokasi');
+            }
+
+            foreach ($activities as $activity) {
+                $activity = (array) $activity;
+                $name = trim((string) ($activity['activity_name'] ?? 'Aktivitas'));
+                $detail = trim((string) ($activity['activity_detail'] ?? '-'));
+                $qty = (float) ($activity['qty_activity'] ?? 0);
+                $unit = trim((string) ($activity['unit_activity'] ?? ''));
+                $photoCount = (int) ($activity['photo_count'] ?? 0);
+                $qtyText = rtrim(rtrim(number_format($qty, 2, ',', '.'), '0'), ',');
+
+                $lines[] = $this->escapeTelegramText('- ' . $name . ' | ' . $detail . ' | ' . $qtyText . ' ' . $unit . ' | ' . $photoCount . ' foto');
+            }
+
+            if (count($activityRows) > count($activities)) {
+                $lines[] = $this->escapeTelegramText('... +' . (count($activityRows) - count($activities)) . ' aktivitas lain');
+            }
+
+            if (!empty($lines)) {
+                $lines[] = '';
+            }
+
+            return $lines;
+        }
 
         if ($normalizedModule === 'batch_approval_myrep' && $normalizedEvent === 'cluster_masuk') {
             $donationTotal = (float) ($payload['donation_total'] ?? 0);

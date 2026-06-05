@@ -146,6 +146,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $createdCount = 0;
         $allocatedQtyTotal = 0;
         $userId = (int) $this->session->userdata('id_user');
+        $createdActivitySummaries = [];
 
         foreach ($activityItems as $index => $item) {
             $activityCode = strtoupper(trim((string) ($item['activity_code'] ?? '')));
@@ -189,6 +190,13 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
             if ($created > 0) {
                 $createdCount++;
+                $createdActivitySummaries[] = [
+                    'activity_name' => (string) ($selectedDefinition['activity_name'] ?? $activityCode),
+                    'activity_detail' => $activityDetail !== '' ? $activityDetail : '-',
+                    'qty_activity' => $qtyActivity,
+                    'unit_activity' => (string) ($selectedDefinition['default_unit'] ?? ''),
+                    'photo_count' => count($photoRows),
+                ];
                 $allocatedQtyTotal += (float) $this->MImplementasi_BOQ_MyRep->applyDailyActivityToBoqProgress(
                     $clusterId,
                     $activityDate,
@@ -211,6 +219,15 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $autoBoqMessage = $allocatedQtyTotal > 0
             ? (' Auto BOQ: ' . number_format((float) $allocatedQtyTotal, 2, ',', '.') . ' teralokasi.')
             : '';
+        $this->notifyDailyActivityCreated($clusterId, [
+            'activity_date' => $activityDate,
+            'scope_type' => $scopeType,
+            'team_count' => $teamCount,
+            'worker_count' => $workerCount,
+            'created_count' => $createdCount,
+            'allocated_qty_total' => $allocatedQtyTotal,
+            'activities' => $createdActivitySummaries,
+        ]);
         $this->session->set_flashdata('success', $createdCount . ' aktivitas harian berhasil disimpan.' . $autoBoqMessage);
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
     }
@@ -686,6 +703,46 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             'hasPlan' => abs($totalPlan) > 0.00001,
             'dailyActivityGroups' => $dailyActivityGroups,
         ];
+    }
+
+    private function notifyDailyActivityCreated($clusterId, array $summary)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $cluster = $this->MImplementasi_BOQ_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            return false;
+        }
+
+        $this->load->library('Myrep_notification_service', null, 'myrepNotification');
+
+        try {
+            return (bool) $this->myrepNotification->notify('Implementasi_BOQ_MyRep', 'daily_progress_masuk', [
+                'module_label' => 'Implementasi BOQ',
+                'document_label' => 'Daily Progress',
+                'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+                'province_name' => (string) ($cluster['province_name'] ?? ''),
+                'city_name' => (string) ($cluster['city_name'] ?? ''),
+                'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+                'homepass' => (int) ($cluster['homepass_drm'] ?? ($cluster['homepass'] ?? 0)),
+                'sender_name' => (string) ($this->session->userdata('nama_user') ?: $this->session->userdata('nama_karyawan') ?: 'System'),
+                'timestamp' => date('Y-m-d H:i:s'),
+                'detail_url' => base_url('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-breakdown-pane'),
+                'activity_date' => (string) ($summary['activity_date'] ?? ''),
+                'scope_type' => (string) ($summary['scope_type'] ?? ''),
+                'team_count' => (int) ($summary['team_count'] ?? 0),
+                'worker_count' => (int) ($summary['worker_count'] ?? 0),
+                'created_count' => (int) ($summary['created_count'] ?? 0),
+                'allocated_qty_total' => (float) ($summary['allocated_qty_total'] ?? 0),
+                'daily_activity_summary' => (array) ($summary['activities'] ?? []),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Daily progress Telegram notification failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     private function detectProgressReportScope($scopeValue, $remarkValue = '')
