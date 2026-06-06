@@ -279,6 +279,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                     <tbody>
                         <?php
                         $sumTotalPo = 0;
+                        $sumPoCount = 0;
                         $sumTermDone = 0;
                         $sumTotalInvoiced = 0;
                         $sumOutstanding = 0;
@@ -287,6 +288,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                         <?php foreach ($terminBreakdownRows as $index => $row): ?>
                             <?php
                             $sumTotalPo += (float) ($row['total_po_value'] ?? 0);
+                            $sumPoCount += (int) ($row['po_count'] ?? 0);
                             $sumTermDone += (int) ($row['term_done_count'] ?? 0);
                             $sumTotalInvoiced += (float) ($row['total_invoiced_value'] ?? 0);
                             $sumOutstanding += (float) ($row['outstanding_value'] ?? 0);
@@ -297,8 +299,8 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                             <tr>
                                 <td class="text-center"><?= $index + 1 ?></td>
                                 <td><strong><?= htmlspecialchars((string) ($row['po_type'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong></td>
+                                <td class="text-center"><?= (int) ($row['po_count'] ?? 0) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['total_po_value'] ?? 0)) ?></td>
-                                <td class="text-center"><?= (int) ($row['term_done_count'] ?? 0) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['termin_values'][1] ?? 0)) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['termin_values'][2] ?? 0)) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['termin_values'][3] ?? 0)) ?></td>
@@ -318,8 +320,8 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                         <tfoot>
                             <tr>
                                 <th colspan="2" class="text-right">TOTAL</th>
+                                <th class="text-center"><?= (int) $sumPoCount ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumTotalPo) ?></th>
-                                <th class="text-center"><?= (int) $sumTermDone ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumTermin[1]) ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumTermin[2]) ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumTermin[3]) ?></th>

@@ -412,6 +412,7 @@ class PO_EMR_Myrep extends CI_Controller
         $breakdown = [
             'CLUSTER' => [
                 'po_type' => 'CLUSTER',
+                'po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
@@ -420,6 +421,7 @@ class PO_EMR_Myrep extends CI_Controller
             ],
             'SUBFEEDER' => [
                 'po_type' => 'SUBFEEDER',
+                'po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
@@ -432,6 +434,7 @@ class PO_EMR_Myrep extends CI_Controller
             $type = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
             $type = $type === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
 
+            $breakdown[$type]['po_count']++;
             $breakdown[$type]['total_po_value'] += (float) ($row['po_value'] ?? 0);
             $breakdown[$type]['term_done_count'] += (int) ($row['termin_progress_count'] ?? 0);
             $breakdown[$type]['total_invoiced_value'] += (float) ($row['total_invoiced'] ?? 0);

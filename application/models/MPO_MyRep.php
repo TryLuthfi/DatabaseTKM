@@ -485,6 +485,7 @@ class MPO_MyRep extends CI_Model
         $emptyBreakdown = [
             'CLUSTER' => [
                 'po_type' => 'CLUSTER',
+                'po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
@@ -493,6 +494,7 @@ class MPO_MyRep extends CI_Model
             ],
             'SUBFEEDER' => [
                 'po_type' => 'SUBFEEDER',
+                'po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
@@ -531,6 +533,7 @@ class MPO_MyRep extends CI_Model
         $breakdownRows = $this->db->query("
             SELECT
                 CASE WHEN UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) = 'SUBFEEDER' THEN 'SUBFEEDER' ELSE 'CLUSTER' END AS po_type,
+                COUNT(*) AS po_count,
                 COALESCE(SUM(p.po_value), 0) AS total_po_value,
                 COALESCE(SUM(COALESCE(tm.termin_progress_count, 0)), 0) AS term_done_count,
                 COALESCE(SUM(COALESCE(tm.plan_1, 0)), 0) AS termin_1,
@@ -551,6 +554,7 @@ class MPO_MyRep extends CI_Model
                 continue;
             }
 
+            $emptyBreakdown[$type]['po_count'] = (int) ($row['po_count'] ?? 0);
             $emptyBreakdown[$type]['total_po_value'] = (float) ($row['total_po_value'] ?? 0);
             $emptyBreakdown[$type]['term_done_count'] = (int) ($row['term_done_count'] ?? 0);
             $emptyBreakdown[$type]['termin_values'] = [
