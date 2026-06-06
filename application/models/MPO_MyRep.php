@@ -480,6 +480,267 @@ class MPO_MyRep extends CI_Model
         return $this->decoratePoRowsWithTerminMeta($rows, $stageStatus);
     }
 
+    public function getEmrTargetAggregateData($city = '', $stageStatus = '', $regional = '')
+    {
+        $emptyBreakdown = [
+            'CLUSTER' => [
+                'po_type' => 'CLUSTER',
+                'total_po_value' => 0,
+                'term_done_count' => 0,
+                'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'total_invoiced_value' => 0,
+                'outstanding_value' => 0,
+            ],
+            'SUBFEEDER' => [
+                'po_type' => 'SUBFEEDER',
+                'total_po_value' => 0,
+                'term_done_count' => 0,
+                'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'total_invoiced_value' => 0,
+                'outstanding_value' => 0,
+            ],
+        ];
+
+        if (!$this->emrTargetReady()) {
+            return [
+                'summary' => [
+                    'total_po' => 0,
+                    'total_cluster' => 0,
+                    'total_po_value' => 0,
+                    'total_outstanding' => 0,
+                    'total_invoiced' => 0,
+                ],
+                'terminBreakdownRows' => array_values($emptyBreakdown),
+            ];
+        }
+
+        $fromSql = $this->getEmrTargetPoFromSql();
+        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
+
+        $summary = $this->db->query("
+            SELECT
+                COUNT(*) AS total_po,
+                COUNT(DISTINCT p.id_myrep_cluster) AS total_cluster,
+                COALESCE(SUM(p.po_value), 0) AS total_po_value,
+                COALESCE(SUM(COALESCE(tm.plan_invoice_total, 0)), 0) AS total_outstanding,
+                COALESCE(SUM(COALESCE(tm.done_invoice_total, 0)), 0) AS total_invoiced
+            {$fromSql}
+            {$whereSql}
+        ")->row_array();
+
+        $breakdownRows = $this->db->query("
+            SELECT
+                CASE WHEN UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) = 'SUBFEEDER' THEN 'SUBFEEDER' ELSE 'CLUSTER' END AS po_type,
+                COALESCE(SUM(p.po_value), 0) AS total_po_value,
+                COALESCE(SUM(COALESCE(tm.termin_progress_count, 0)), 0) AS term_done_count,
+                COALESCE(SUM(COALESCE(tm.plan_1, 0)), 0) AS termin_1,
+                COALESCE(SUM(COALESCE(tm.plan_2, 0)), 0) AS termin_2,
+                COALESCE(SUM(COALESCE(tm.plan_3, 0)), 0) AS termin_3,
+                COALESCE(SUM(COALESCE(tm.plan_4, 0)), 0) AS termin_4,
+                COALESCE(SUM(COALESCE(tm.plan_5, 0)), 0) AS termin_5,
+                COALESCE(SUM(COALESCE(tm.done_invoice_total, 0)), 0) AS total_invoiced_value,
+                COALESCE(SUM(COALESCE(tm.plan_invoice_total, 0)), 0) AS outstanding_value
+            {$fromSql}
+            {$whereSql}
+            GROUP BY CASE WHEN UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) = 'SUBFEEDER' THEN 'SUBFEEDER' ELSE 'CLUSTER' END
+        ")->result_array();
+
+        foreach ($breakdownRows as $row) {
+            $type = (string) ($row['po_type'] ?? 'CLUSTER');
+            if (!isset($emptyBreakdown[$type])) {
+                continue;
+            }
+
+            $emptyBreakdown[$type]['total_po_value'] = (float) ($row['total_po_value'] ?? 0);
+            $emptyBreakdown[$type]['term_done_count'] = (int) ($row['term_done_count'] ?? 0);
+            $emptyBreakdown[$type]['termin_values'] = [
+                1 => (float) ($row['termin_1'] ?? 0),
+                2 => (float) ($row['termin_2'] ?? 0),
+                3 => (float) ($row['termin_3'] ?? 0),
+                4 => (float) ($row['termin_4'] ?? 0),
+                5 => (float) ($row['termin_5'] ?? 0),
+            ];
+            $emptyBreakdown[$type]['total_invoiced_value'] = (float) ($row['total_invoiced_value'] ?? 0);
+            $emptyBreakdown[$type]['outstanding_value'] = (float) ($row['outstanding_value'] ?? 0);
+        }
+
+        return [
+            'summary' => [
+                'total_po' => (int) ($summary['total_po'] ?? 0),
+                'total_cluster' => (int) ($summary['total_cluster'] ?? 0),
+                'total_po_value' => (float) ($summary['total_po_value'] ?? 0),
+                'total_outstanding' => (float) ($summary['total_outstanding'] ?? 0),
+                'total_invoiced' => (float) ($summary['total_invoiced'] ?? 0),
+            ],
+            'terminBreakdownRows' => array_values($emptyBreakdown),
+        ];
+    }
+
+    public function getEmrTargetPoDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 4, $orderDir = 'desc')
+    {
+        if (!$this->emrTargetReady()) {
+            return ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
+        }
+
+        $fromSql = $this->getEmrTargetPoFromSql();
+        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
+        $searchSql = $this->buildEmrTargetSearchSql($search, [
+            'p.po_number',
+            'p.po_type',
+            'p.po_category',
+            'p.status_po',
+            'c.cluster_name',
+            'c.cluster_code',
+            'c.city_name',
+            'c.regional_name',
+            $this->getEmrTargetStageExpression(),
+        ]);
+
+        $recordsTotal = (int) ($this->db->query("SELECT COUNT(*) AS total {$fromSql} {$whereSql}")->row_array()['total'] ?? 0);
+        $recordsFiltered = (int) ($this->db->query("SELECT COUNT(*) AS total {$fromSql} {$whereSql} {$searchSql}")->row_array()['total'] ?? 0);
+
+        $orderMap = [
+            1 => 'p.po_number',
+            2 => 'p.po_type',
+            3 => 'p.po_category',
+            4 => 'p.po_date',
+            5 => 'c.cluster_name',
+            6 => 'c.city_name',
+            7 => 'c.regional_name',
+            8 => $this->getEmrTargetStageExpression(),
+            9 => 'p.po_value',
+            10 => 'COALESCE(tm.termin_progress_count, 0)',
+            11 => 'COALESCE(tm.plan_invoice_total, 0)',
+            12 => 'COALESCE(tm.done_invoice_total, 0)',
+        ];
+        $orderSql = $this->buildDataTableOrderSql($orderMap, $orderColumn, $orderDir, 'p.po_date DESC, p.po_number ASC');
+        $limitSql = $this->buildLimitSql($start, $length);
+
+        $rows = $this->db->query("
+            SELECT
+                p.id_po_header,
+                p.id_myrep_cluster,
+                p.po_type,
+                p.po_category,
+                p.po_number,
+                p.po_date,
+                p.po_value,
+                p.status_po,
+                p.on_target,
+                p.po_version_label,
+                p.remark_po,
+                c.cluster_name,
+                c.cluster_code,
+                c.city_name,
+                c.regional_name,
+                c.team_name,
+                c.status_current,
+                COALESCE(tm.termin_total_count, 0) AS termin_total_count,
+                COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
+                COALESCE(tm.termin_paid_count, 0) AS termin_paid_count,
+                COALESCE(tm.plan_invoice_total, 0) AS outstanding_total,
+                COALESCE(tm.done_invoice_total, 0) AS total_invoiced,
+                {$this->getEmrTargetStageExpression()} AS po_stage_status
+            {$fromSql}
+            {$whereSql}
+            {$searchSql}
+            {$orderSql}
+            {$limitSql}
+        ")->result_array();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    public function getEmrTargetClusterDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc')
+    {
+        if (!$this->emrTargetReady()) {
+            return ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
+        }
+
+        $fromSql = $this->getEmrTargetPoFromSql();
+        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
+        $searchSql = $this->buildEmrTargetSearchSql($search, [
+            'c.cluster_name',
+            'c.cluster_code',
+            'c.team_name',
+            'c.city_name',
+            'c.regional_name',
+            'c.status_current',
+        ]);
+        $groupBySql = 'GROUP BY c.id_myrep_cluster, c.cluster_name, c.team_name, c.city_name, c.regional_name, c.status_current';
+
+        $recordsTotal = (int) ($this->db->query("
+            SELECT COUNT(*) AS total FROM (
+                SELECT c.id_myrep_cluster
+                {$fromSql}
+                {$whereSql}
+                {$groupBySql}
+            ) grouped_rows
+        ")->row_array()['total'] ?? 0);
+        $recordsFiltered = (int) ($this->db->query("
+            SELECT COUNT(*) AS total FROM (
+                SELECT c.id_myrep_cluster
+                {$fromSql}
+                {$whereSql}
+                {$searchSql}
+                {$groupBySql}
+            ) grouped_rows
+        ")->row_array()['total'] ?? 0);
+
+        $orderMap = [
+            1 => 'c.cluster_name',
+            2 => 'c.city_name',
+            3 => 'c.regional_name',
+            4 => 'c.status_current',
+            5 => 'COUNT(p.id_po_header)',
+            6 => 'COALESCE(SUM(p.po_value), 0)',
+            7 => 'COALESCE(SUM(COALESCE(tm.termin_progress_count, 0)), 0)',
+            8 => 'MAX(p.po_date)',
+        ];
+        $orderSql = $this->buildDataTableOrderSql($orderMap, $orderColumn, $orderDir, 'c.cluster_name ASC');
+        $limitSql = $this->buildLimitSql($start, $length);
+
+        $rows = $this->db->query("
+            SELECT
+                c.id_myrep_cluster,
+                c.cluster_name,
+                c.team_name,
+                c.city_name,
+                c.regional_name,
+                c.status_current,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) = 'SUBFEEDER' THEN 0 ELSE 1 END) AS po_cluster_count,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) = 'SUBFEEDER' THEN 1 ELSE 0 END) AS po_subfeeder_count,
+                COALESCE(SUM(p.po_value), 0) AS po_total_value,
+                COALESCE(SUM(COALESCE(tm.termin_total_count, 0)), 0) AS termin_total_count,
+                COALESCE(SUM(COALESCE(tm.termin_progress_count, 0)), 0) AS termin_progress_count,
+                COALESCE(SUM(COALESCE(tm.termin_paid_count, 0)), 0) AS termin_paid_count,
+                MAX(p.po_date) AS last_po_date
+            {$fromSql}
+            {$whereSql}
+            {$searchSql}
+            {$groupBySql}
+            {$orderSql}
+            {$limitSql}
+        ")->result_array();
+
+        $latestStageMap = $this->getEmrTargetLatestStageMap(array_column($rows, 'id_myrep_cluster'), $city, $stageStatus, $regional);
+        foreach ($rows as &$row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $row['po_stage_status'] = $latestStageMap[$clusterId] ?? 'NOT ISSUED';
+        }
+        unset($row);
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
     public function getEmrTargetClusterById($clusterId)
     {
         if (!$this->emrTargetReady()) {
@@ -664,6 +925,165 @@ class MPO_MyRep extends CI_Model
         }
 
         $builder->where('UPPER(' . $column . ') IN (' . implode(',', $escapedValues) . ')', null, false);
+    }
+
+    private function getEmrTargetPoFromSql()
+    {
+        return "
+            FROM tb_myrep_po_header p
+            INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = p.id_myrep_cluster
+            LEFT JOIN ({$this->getEmrTargetTerminAggregateSql()}) tm ON tm.id_po_header = p.id_po_header
+        ";
+    }
+
+    private function getEmrTargetTerminAggregateSql()
+    {
+        return "
+            SELECT
+                id_po_header,
+                COUNT(*) AS termin_total_count,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS termin_progress_count,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) = 'PAID' THEN 1 ELSE 0 END) AS termin_paid_count,
+                SUM(CASE WHEN termin_no = 1 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_1_done,
+                SUM(CASE WHEN termin_no = 2 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_2_done,
+                SUM(CASE WHEN termin_no = 3 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_3_done,
+                SUM(CASE WHEN termin_no = 4 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_4_done,
+                SUM(CASE WHEN termin_no = 5 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_5_done,
+                SUM(CASE WHEN termin_no = 1 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_1,
+                SUM(CASE WHEN termin_no = 2 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_2,
+                SUM(CASE WHEN termin_no = 3 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_3,
+                SUM(CASE WHEN termin_no = 4 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_4,
+                SUM(CASE WHEN termin_no = 5 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_5,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_invoice_total,
+                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS done_invoice_total
+            FROM tb_myrep_po_termin
+            GROUP BY id_po_header
+        ";
+    }
+
+    private function getEmrTargetStageExpression()
+    {
+        return "
+            CASE
+                WHEN COALESCE(tm.termin_total_count, 0) = 0 THEN 'NOT ISSUED'
+                WHEN COALESCE(tm.term_1_done, 0) = 0 THEN 'DP'
+                WHEN COALESCE(tm.term_2_done, 0) = 0 THEN 'ATP CW'
+                WHEN COALESCE(tm.term_3_done, 0) = 0 THEN 'FULL OPM'
+                WHEN COALESCE(tm.term_4_done, 0) = 0 THEN 'RFS'
+                WHEN COALESCE(tm.term_5_done, 0) = 0 THEN 'FAC'
+                ELSE 'FAC'
+            END
+        ";
+    }
+
+    private function buildEmrTargetWhereSql($city = '', $stageStatus = '', $regional = '', array $extraConditions = [])
+    {
+        $conditions = ['p.on_target = 1'];
+        $city = $this->normalizeUpperList($city);
+        $regional = $this->normalizeUpperList($regional);
+        $stageStatus = $this->normalizeUpperList($stageStatus);
+
+        if (!empty($city)) {
+            $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
+        }
+        if (!empty($regional)) {
+            $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
+        }
+        if (!empty($stageStatus)) {
+            $conditions[] = '(' . $this->getEmrTargetStageExpression() . ') IN (' . $this->buildEscapedSqlList($stageStatus) . ')';
+        }
+
+        foreach ($extraConditions as $condition) {
+            if (trim((string) $condition) !== '') {
+                $conditions[] = (string) $condition;
+            }
+        }
+
+        return 'WHERE ' . implode(' AND ', $conditions);
+    }
+
+    private function buildEmrTargetSearchSql($search, array $columns)
+    {
+        $search = strtoupper(trim((string) $search));
+        if ($search === '') {
+            return '';
+        }
+
+        $like = $this->db->escape('%' . $this->db->escape_like_str($search) . '%');
+        $conditions = [];
+        foreach ($columns as $column) {
+            $column = trim((string) $column);
+            if ($column !== '') {
+                $conditions[] = 'UPPER(' . $column . ') LIKE ' . $like;
+            }
+        }
+
+        return empty($conditions) ? '' : 'AND (' . implode(' OR ', $conditions) . ')';
+    }
+
+    private function buildEscapedSqlList(array $values)
+    {
+        $escapedValues = [];
+        foreach ($values as $value) {
+            $escapedValues[] = $this->db->escape($value);
+        }
+
+        return implode(',', $escapedValues);
+    }
+
+    private function buildDataTableOrderSql(array $orderMap, $orderColumn, $orderDir, $defaultOrder)
+    {
+        $orderColumn = (int) $orderColumn;
+        $orderDir = strtolower((string) $orderDir) === 'asc' ? 'ASC' : 'DESC';
+        $orderBy = $orderMap[$orderColumn] ?? '';
+
+        if ($orderBy === '') {
+            return 'ORDER BY ' . $defaultOrder;
+        }
+
+        return 'ORDER BY ' . $orderBy . ' ' . $orderDir;
+    }
+
+    private function buildLimitSql($start, $length)
+    {
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length <= 0) {
+            return '';
+        }
+
+        $length = min($length, 100);
+        return 'LIMIT ' . $start . ', ' . $length;
+    }
+
+    private function getEmrTargetLatestStageMap(array $clusterIds, $city = '', $stageStatus = '', $regional = '')
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', $clusterIds)));
+        if (empty($clusterIds)) {
+            return [];
+        }
+
+        $extraConditions = ['p.id_myrep_cluster IN (' . implode(',', $clusterIds) . ')'];
+        $rows = $this->db->query("
+            SELECT
+                p.id_myrep_cluster,
+                p.po_date,
+                p.id_po_header,
+                {$this->getEmrTargetStageExpression()} AS po_stage_status
+            {$this->getEmrTargetPoFromSql()}
+            {$this->buildEmrTargetWhereSql($city, $stageStatus, $regional, $extraConditions)}
+            ORDER BY p.id_myrep_cluster ASC, p.po_date DESC, p.id_po_header DESC
+        ")->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if ($clusterId > 0 && !isset($map[$clusterId])) {
+                $map[$clusterId] = (string) ($row['po_stage_status'] ?? 'NOT ISSUED');
+            }
+        }
+
+        return $map;
     }
 
     public function getDashboardSummary($rows)
@@ -1068,7 +1488,7 @@ class MPO_MyRep extends CI_Model
 
         $this->db->trans_start();
 
-        $this->db->insert('tb_myrep_po_header', [
+        $headerPayload = [
             'id_myrep_cluster' => $clusterId,
             'parent_po_header_id' => !empty($payload['parent_po_header_id']) ? (int) $payload['parent_po_header_id'] : null,
             'po_type' => (string) $payload['po_type'],
@@ -1081,7 +1501,12 @@ class MPO_MyRep extends CI_Model
             'remark_po' => $payload['remark_po'] !== '' ? (string) $payload['remark_po'] : null,
             'created_by' => (int) $payload['created_by'],
             'updated_by' => (int) $payload['updated_by'],
-        ]);
+        ];
+        if ($this->db->field_exists('on_target', 'tb_myrep_po_header')) {
+            $headerPayload['on_target'] = array_key_exists('on_target', $payload) ? (int) $payload['on_target'] : 1;
+        }
+
+        $this->db->insert('tb_myrep_po_header', $headerPayload);
 
         $poHeaderId = (int) $this->db->insert_id();
         foreach ($this->defaultTerminPercents as $index => $percent) {

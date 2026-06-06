@@ -27,14 +27,115 @@ class PO_EMR_Myrep extends CI_Controller
         $data['cityOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptions($selectedRegional) : [];
         $data['cityOptionsByRegional'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptionsByRegional() : [];
         $data['regionalOptionsByCity'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetRegionalOptionsByCity() : [];
-        $data['poRows'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetPoListRows($selectedCity, $selectedStage, $selectedRegional) : [];
-        $data['clusterRows'] = $this->buildClusterRows($data['poRows']);
-        $data['summary'] = $this->buildSummary($data['poRows']);
-        $data['terminBreakdownRows'] = $this->buildTerminBreakdown($data['poRows']);
+        $aggregateData = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetAggregateData($selectedCity, $selectedStage, $selectedRegional) : [];
+        $data['summary'] = $aggregateData['summary'] ?? $this->buildSummary([]);
+        $data['terminBreakdownRows'] = $aggregateData['terminBreakdownRows'] ?? $this->buildTerminBreakdown([]);
 
         $this->load->view('Templates/01_Header_EMR', $data);
         $this->load->view('PO_EMR_Myrep/index', $data);
         $this->load->view('Templates/99_JS_EMR');
+    }
+
+    public function datatableMonitor()
+    {
+        if (!$this->MPO_MyRep->emrTargetReady()) {
+            $this->jsonResponse($this->emptyDataTableResponse());
+            return;
+        }
+
+        $request = $this->getDataTableRequest();
+        $result = $this->MPO_MyRep->getEmrTargetClusterDataTable(
+            $request['city'],
+            $request['stage'],
+            $request['regional'],
+            $request['start'],
+            $request['length'],
+            $request['search'],
+            $request['order_column'],
+            $request['order_dir']
+        );
+
+        $rows = [];
+        foreach ($result['rows'] as $index => $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $summaryStatus = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
+            $terminTotal = (int) ($row['termin_total_count'] ?? 0);
+            $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
+            $terminPercent = $terminTotal > 0 ? min(100, round(($terminProgress / $terminTotal) * 100)) : 0;
+            $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url']);
+
+            $rows[] = [
+                $request['start'] + $index + 1,
+                '<strong><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a></strong><div class="small text-muted">' . htmlspecialchars((string) ($row['team_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</div>',
+                htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
+                '<div>Cluster: ' . (int) ($row['po_cluster_count'] ?? 0) . '</div><div>Subfeeder: ' . (int) ($row['po_subfeeder_count'] ?? 0) . '</div><div><span class="badge badge-' . $this->stageBadgeClass($summaryStatus) . '">' . htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') . '</span></div>',
+                $this->formatNumber((float) ($row['po_total_value'] ?? 0)),
+                '<div class="po-mini-progress"><div class="po-mini-progress__head"><span>Termin Billed/Paid</span><span>' . $terminPercent . '%</span></div><div class="po-mini-progress__track"><span style="width: ' . $terminPercent . '%;"></span></div><div class="po-mini-progress__meta"><span>' . $terminProgress . ' billed/paid</span><span>' . $terminTotal . ' termin</span></div></div>',
+                !empty($row['last_po_date']) ? htmlspecialchars((string) $row['last_po_date'], ENT_QUOTES, 'UTF-8') : '-',
+                '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '" class="btn btn-sm btn-primary">Detail</a>',
+            ];
+        }
+
+        $this->jsonResponse([
+            'draw' => $request['draw'],
+            'recordsTotal' => (int) ($result['recordsTotal'] ?? 0),
+            'recordsFiltered' => (int) ($result['recordsFiltered'] ?? 0),
+            'data' => $rows,
+        ]);
+    }
+
+    public function datatablePo()
+    {
+        if (!$this->MPO_MyRep->emrTargetReady()) {
+            $this->jsonResponse($this->emptyDataTableResponse());
+            return;
+        }
+
+        $request = $this->getDataTableRequest();
+        $result = $this->MPO_MyRep->getEmrTargetPoDataTable(
+            $request['city'],
+            $request['stage'],
+            $request['regional'],
+            $request['start'],
+            $request['length'],
+            $request['search'],
+            $request['order_column'],
+            $request['order_dir']
+        );
+
+        $rows = [];
+        foreach ($result['rows'] as $index => $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $stage = strtoupper(trim((string) ($row['po_stage_status'] ?? '-')));
+            $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url']);
+
+            $rows[] = [
+                $request['start'] + $index + 1,
+                '<strong><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['po_number'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a></strong><div class="small text-muted">' . htmlspecialchars((string) ($row['status_po'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</div>',
+                '<span class="badge badge-' . ($tipePo === 'SUBFEEDER' ? 'warning' : 'primary') . '">' . htmlspecialchars($tipePo, ENT_QUOTES, 'UTF-8') . '</span>',
+                htmlspecialchars((string) ($row['po_category'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date'], ENT_QUOTES, 'UTF-8') : '-',
+                htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                '<span class="badge badge-' . $this->stageBadgeClass($stage) . '">' . htmlspecialchars($stage, ENT_QUOTES, 'UTF-8') . '</span>',
+                $this->formatNumber((float) ($row['po_value'] ?? 0)),
+                (int) ($row['termin_progress_count'] ?? 0) . '/' . (int) ($row['termin_total_count'] ?? 0),
+                $this->formatNumberOrDash((float) ($row['outstanding_total'] ?? 0)),
+                $this->formatNumberOrDash((float) ($row['total_invoiced'] ?? 0)),
+                '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '" class="btn btn-sm btn-primary">Detail</a>',
+            ];
+        }
+
+        $this->jsonResponse([
+            'draw' => $request['draw'],
+            'recordsTotal' => (int) ($result['recordsTotal'] ?? 0),
+            'recordsFiltered' => (int) ($result['recordsFiltered'] ?? 0),
+            'data' => $rows,
+        ]);
     }
 
     public function detail($clusterId = 0)
@@ -180,6 +281,93 @@ class PO_EMR_Myrep extends CI_Controller
         }
 
         return $normalized;
+    }
+
+    private function getDataTableRequest()
+    {
+        $order = (array) $this->input->post('order');
+        $firstOrder = (array) ($order[0] ?? []);
+        $search = (array) $this->input->post('search');
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        return [
+            'draw' => (int) $this->input->post('draw'),
+            'start' => max(0, (int) $this->input->post('start')),
+            'length' => min($length, 100),
+            'search' => (string) ($search['value'] ?? ''),
+            'order_column' => (int) ($firstOrder['column'] ?? 0),
+            'order_dir' => (string) ($firstOrder['dir'] ?? 'asc'),
+            'regional' => $this->normalizeFilterValues($this->input->post('regional')),
+            'city' => $this->normalizeFilterValues($this->input->post('city')),
+            'stage' => $this->normalizeFilterValues($this->input->post('stage')),
+            'back_url' => (string) $this->input->post('back_url'),
+        ];
+    }
+
+    private function buildDetailUrl($clusterId, $backUrl = '')
+    {
+        $url = base_url('PO_EMR_Myrep/detail/' . (int) $clusterId);
+        $backUrl = trim((string) $backUrl);
+        if ($backUrl === '') {
+            $backUrl = base_url('PO_EMR_Myrep');
+        }
+
+        if (strpos($backUrl, base_url('PO_EMR_Myrep')) !== 0) {
+            $backUrl = base_url('PO_EMR_Myrep');
+        }
+
+        return $url . '?back=' . rawurlencode($backUrl);
+    }
+
+    private function stageBadgeClass($stage)
+    {
+        $stage = strtoupper(trim((string) $stage));
+        if ($stage === 'DP') {
+            return 'danger';
+        }
+        if ($stage === 'ATP CW') {
+            return 'warning';
+        }
+        if ($stage === 'FULL OPM') {
+            return 'info';
+        }
+        if ($stage === 'RFS') {
+            return 'primary';
+        }
+        if ($stage === 'FAC') {
+            return 'success';
+        }
+        return 'secondary';
+    }
+
+    private function formatNumber($value)
+    {
+        return number_format((float) $value, 0, ',', '.');
+    }
+
+    private function formatNumberOrDash($value)
+    {
+        return (float) $value == 0.0 ? '-' : $this->formatNumber($value);
+    }
+
+    private function jsonResponse(array $payload)
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($payload));
+    }
+
+    private function emptyDataTableResponse()
+    {
+        return [
+            'draw' => (int) $this->input->post('draw'),
+            'recordsTotal' => 0,
+            'recordsFiltered' => 0,
+            'data' => [],
+        ];
     }
 
     private function buildSummary(array $rows)

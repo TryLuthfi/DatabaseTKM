@@ -366,59 +366,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php foreach ($clusterRows as $index => $row): ?>
-                                    <?php
-                                    $summaryStatus = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
-                                    $statusBadgeClass = $summaryStatus === 'DP' ? 'danger' : ($summaryStatus === 'ATP CW' ? 'warning' : ($summaryStatus === 'FULL OPM' ? 'info' : ($summaryStatus === 'RFS' ? 'primary' : ($summaryStatus === 'FAC' ? 'success' : 'secondary'))));
-                                    $terminTotal = (int) ($row['termin_total_count'] ?? 0);
-                                    $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
-                                    $terminPercent = $terminTotal > 0 ? min(100, round(($terminProgress / $terminTotal) * 100)) : 0;
-                                    ?>
-                                    <tr>
-                                        <td class="text-center"><?= $index + 1 ?></td>
-                                        <td>
-                                            <strong>
-                                                <a href="<?= base_url('PO_EMR_Myrep/detail/' . (int) $row['id_myrep_cluster']) . $detailBackQuery ?>">
-                                                    <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
-                                                </a>
-                                            </strong>
-                                            <div class="small text-muted"><?= htmlspecialchars((string) ($row['team_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></div>
-                                        </td>
-                                        <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span></td>
-                                        <td>
-                                            <div>Cluster: <?= (int) ($row['po_cluster_count'] ?? 0) ?></div>
-                                            <div>Subfeeder: <?= (int) ($row['po_subfeeder_count'] ?? 0) ?></div>
-                                            <div><span class="badge badge-<?= $statusBadgeClass ?>"><?= htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') ?></span></div>
-                                        </td>
-                                        <td class="text-right"><?= poEmrNumber((float) ($row['po_total_value'] ?? 0)) ?></td>
-                                        <td class="po-progress-cell">
-                                            <div class="po-mini-progress">
-                                                <div class="po-mini-progress__head">
-                                                    <span>Termin Billed/Paid</span>
-                                                    <span><?= $terminPercent ?>%</span>
-                                                </div>
-                                                <div class="po-mini-progress__track">
-                                                    <span style="width: <?= $terminPercent ?>%;"></span>
-                                                </div>
-                                                <div class="po-mini-progress__meta">
-                                                    <span><?= $terminProgress ?> billed/paid</span>
-                                                    <span><?= $terminTotal ?> termin</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center"><?= !empty($row['last_po_date']) ? htmlspecialchars((string) $row['last_po_date'], ENT_QUOTES, 'UTF-8') : '-' ?></td>
-                                        <td class="text-center">
-                                            <a href="<?= base_url('PO_EMR_Myrep/detail/' . (int) $row['id_myrep_cluster']) . $detailBackQuery ?>" class="btn btn-sm btn-primary">Detail</a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php if (empty($clusterRows)): ?>
-                                    <tr><td colspan="10" class="text-center text-muted">Belum ada data PO MyRep.</td></tr>
-                                <?php endif; ?>
-                            </tbody>
+                            <tbody></tbody>
                             <tfoot>
                                 <tr>
                                     <th colspan="5" class="text-right">TOTAL</th>
@@ -454,47 +402,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                             <th>Detail</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php foreach ($poRows as $index => $row): ?>
-                            <?php
-                            $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
-                            $stage = strtoupper(trim((string) ($row['po_stage_status'] ?? '-')));
-                            $badgeClass = $stage === 'DP' ? 'danger' : ($stage === 'ATP CW' ? 'warning' : ($stage === 'FULL OPM' ? 'info' : ($stage === 'RFS' ? 'primary' : ($stage === 'FAC' ? 'success' : 'secondary'))));
-                            ?>
-                            <tr>
-                                <td class="text-center"><?= $index + 1 ?></td>
-                                <td>
-                                    <strong>
-                                        <a href="<?= base_url('PO_EMR_Myrep/detail/' . (int) $row['id_myrep_cluster']) . $detailBackQuery ?>">
-                                            <?= htmlspecialchars((string) ($row['po_number'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>
-                                        </a>
-                                    </strong>
-                                    <div class="small text-muted"><?= htmlspecialchars((string) ($row['status_po'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></div>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge badge-<?= $tipePo === 'SUBFEEDER' ? 'warning' : 'primary' ?>">
-                                        <?= htmlspecialchars($tipePo, ENT_QUOTES, 'UTF-8') ?>
-                                    </span>
-                                </td>
-                                <td class="text-center"><?= htmlspecialchars((string) ($row['po_category'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td class="text-center"><?= !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date'], ENT_QUOTES, 'UTF-8') : '-' ?></td>
-                                <td><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></td>
-                                <td class="text-center"><span class="badge badge-<?= $badgeClass ?>"><?= htmlspecialchars($stage, ENT_QUOTES, 'UTF-8') ?></span></td>
-                                <td class="text-right"><?= poEmrNumber((float) ($row['po_value'] ?? 0)) ?></td>
-                                <td class="text-center"><?= (int) ($row['termin_progress_count'] ?? 0) ?>/<?= (int) ($row['termin_total_count'] ?? 0) ?></td>
-                                <td class="text-right"><?= poEmrNumberOrDash((float) ($row['outstanding_total'] ?? 0)) ?></td>
-                                <td class="text-right"><?= poEmrNumberOrDash((float) ($row['total_invoiced'] ?? 0)) ?></td>
-                                <td class="text-center">
-                                    <a href="<?= base_url('PO_EMR_Myrep/detail/' . (int) $row['id_myrep_cluster']) . $detailBackQuery ?>" class="btn btn-sm btn-primary">Detail</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <?php if (empty($poRows)): ?>
-                            <tr><td colspan="14" class="text-center text-muted">Belum ada PO yang ditandai on target.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
                     </div>
                 </div>
@@ -511,6 +419,8 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         var regionalOptionsByCity = <?= json_encode($regionalOptionsByCity ?? [], JSON_UNESCAPED_SLASHES) ?> || {};
         var allCityOptions = <?= json_encode($allCityOptions ?? [], JSON_UNESCAPED_SLASHES) ?> || [];
         var allRegionalOptions = <?= json_encode($regionalOptions ?? [], JSON_UNESCAPED_SLASHES) ?> || [];
+        var monitorAjaxUrl = '<?= base_url('PO_EMR_Myrep/datatableMonitor') ?>';
+        var targetAjaxUrl = '<?= base_url('PO_EMR_Myrep/datatablePo') ?>';
         var isUpdatingFilter = false;
         var activeTabStorageKey = 'po_emr_myrep_active_tab';
         var activeTabSelector = '';
@@ -599,6 +509,15 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             }, 650);
         }
 
+        function currentFilterPayload() {
+            return {
+                regional: $('#po-emr-filter-regional').val() || [],
+                city: $('#po-emr-filter-city').val() || [],
+                stage: $('#po-emr-filter-stage').val() || [],
+                back_url: window.location.href.split('#')[0]
+            };
+        }
+
         if ($.fn.select2) {
             $('.js-po-emr-searchable').select2({
                 theme: 'bootstrap4',
@@ -660,14 +579,34 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             return match ? parseInt(match[1], 10) : 0;
         }
 
-        if ($.fn.DataTable && $('#table_po_emr_monitor').length) {
+        function initMonitorTable() {
+            if (tableMonitor || !$.fn.DataTable || !$('#table_po_emr_monitor').length) {
+                return;
+            }
+
             tableMonitor = $('#table_po_emr_monitor').DataTable({
+                processing: true,
+                serverSide: true,
+                deferRender: true,
                 responsive: true,
                 autoWidth: false,
                 stateSave: true,
                 stateDuration: -1,
+                searchDelay: 500,
                 pageLength: 10,
                 order: [[0, 'asc']],
+                ajax: {
+                    url: monitorAjaxUrl,
+                    type: 'POST',
+                    data: function (data) {
+                        return $.extend(data, currentFilterPayload());
+                    }
+                },
+                columnDefs: [
+                    { targets: [0, 8, 9], className: 'text-center' },
+                    { targets: [6], className: 'text-right' },
+                    { targets: [0, 9], orderable: false }
+                ],
                 footerCallback: function () {
                     var api = this.api();
                     var totalNilaiPo = api.column(6, { page: 'current' }).data().reduce(function (a, b) {
@@ -687,15 +626,35 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             });
         }
 
-        if ($.fn.DataTable && $('#table_po_emr_target').length) {
+        function initTargetTable() {
+            if (tableTarget || !$.fn.DataTable || !$('#table_po_emr_target').length) {
+                return;
+            }
+
             tableTarget = $('#table_po_emr_target').DataTable({
+                processing: true,
+                serverSide: true,
+                deferRender: true,
                 responsive: false,
                 scrollX: true,
                 autoWidth: false,
                 stateSave: true,
                 stateDuration: -1,
+                searchDelay: 500,
                 pageLength: 10,
-                order: [[4, 'desc']]
+                order: [[4, 'desc']],
+                ajax: {
+                    url: targetAjaxUrl,
+                    type: 'POST',
+                    data: function (data) {
+                        return $.extend(data, currentFilterPayload());
+                    }
+                },
+                columnDefs: [
+                    { targets: [0, 2, 3, 4, 8, 10, 13], className: 'text-center' },
+                    { targets: [9, 11, 12], className: 'text-right' },
+                    { targets: [0, 13], orderable: false }
+                ]
             });
         }
 
@@ -708,6 +667,12 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                     // Browser storage may be disabled.
                 }
             }
+            if (tabTarget === '#po-emr-monitor-pane') {
+                initMonitorTable();
+            }
+            if (tabTarget === '#po-emr-list-pane') {
+                initTargetTable();
+            }
             if (tableMonitor) {
                 tableMonitor.columns.adjust().responsive.recalc();
             }
@@ -718,6 +683,14 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
         if (activeTabSelector && $('#po-emr-tabs a[href="' + activeTabSelector + '"]').length) {
             $('#po-emr-tabs a[href="' + activeTabSelector + '"]').tab('show');
+        } else {
+            initMonitorTable();
+        }
+
+        if ($('#po-emr-list-pane').hasClass('active')) {
+            initTargetTable();
+        } else if ($('#po-emr-monitor-pane').hasClass('active')) {
+            initMonitorTable();
         }
     });
 </script>

@@ -701,11 +701,13 @@ class MyRepublik_Project extends CI_Controller
             'cluster_cwatp',
             'cluster_fullopm',
             'cluster_rfs',
+            'cluster_rfs_nro_flow',
             'subfeeder_cwatp',
             'subfeeder_fullopm',
             'subfeeder_rfs',
             'po_cluster_category',
             'po_cluster_status',
+            'po_cluster_on_target',
             'po_cluster_number',
             'po_cluster_date',
             'po_cluster_value',
@@ -713,6 +715,7 @@ class MyRepublik_Project extends CI_Controller
             'po_cluster_remark',
             'po_subfeeder_category',
             'po_subfeeder_status',
+            'po_subfeeder_on_target',
             'po_subfeeder_number',
             'po_subfeeder_date',
             'po_subfeeder_value',
@@ -1095,11 +1098,13 @@ class MyRepublik_Project extends CI_Controller
             'cluster_cwatp',
             'cluster_fullopm',
             'cluster_rfs',
+            'cluster_rfs_nro_flow',
             'subfeeder_cwatp',
             'subfeeder_fullopm',
             'subfeeder_rfs',
             'po_cluster_category',
             'po_cluster_status',
+            'po_cluster_on_target',
             'po_cluster_number',
             'po_cluster_date',
             'po_cluster_value',
@@ -1107,6 +1112,7 @@ class MyRepublik_Project extends CI_Controller
             'po_cluster_remark',
             'po_subfeeder_category',
             'po_subfeeder_status',
+            'po_subfeeder_on_target',
             'po_subfeeder_number',
             'po_subfeeder_date',
             'po_subfeeder_value',
@@ -1214,11 +1220,27 @@ class MyRepublik_Project extends CI_Controller
             }
         }
         $claimMap = $this->getCurrentRfsClaimsForSnapshot($rfsClusterIds);
+        $myrepClusterIds = array_values(array_filter(array_map(static function ($row) {
+            return (int) ($row['id_myrep_cluster'] ?? 0);
+        }, $rows)));
+        $poMap = $this->getCurrentPoHeadersForSnapshot($myrepClusterIds);
+        $poHeaderIds = [];
+        foreach ($poMap as $poByType) {
+            foreach ($poByType as $poRow) {
+                if (!empty($poRow['id_po_header'])) {
+                    $poHeaderIds[] = (int) $poRow['id_po_header'];
+                }
+            }
+        }
+        $poTerminMap = $this->getCurrentPoTerminRowsForSnapshot($poHeaderIds);
 
         $result = [];
         foreach ($rows as $row) {
             $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+            $myrepClusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $checklistStatuses = $rfsClusterId > 0 ? $this->getCurrentChecklistImportStatuses($rfsClusterId) : [];
+            $clusterPo = $poMap[$myrepClusterId]['CLUSTER'] ?? [];
+            $subfeederPo = $poMap[$myrepClusterId]['SUBFEEDER'] ?? [];
             $rowMap = [
                 'status_current' => (string) ($row['status_current'] ?? ''),
                 'city_name' => (string) ($row['city_name'] ?? ''),
@@ -1263,9 +1285,30 @@ class MyRepublik_Project extends CI_Controller
                 'actual_atp_date' => (string) ($row['actual_atp_date'] ?? ''),
                 'status_atp' => (string) ($row['status_atp'] ?? ''),
                 'remark_general' => (string) ($row['remark_general'] ?? ''),
+                'po_cluster_category' => (string) ($clusterPo['po_category'] ?? ''),
+                'po_cluster_status' => (string) ($clusterPo['status_po'] ?? ''),
+                'po_cluster_on_target' => $this->formatImportBoolean($clusterPo['on_target'] ?? ''),
+                'po_cluster_number' => (string) ($clusterPo['po_number'] ?? ''),
+                'po_cluster_date' => (string) ($clusterPo['po_date'] ?? ''),
+                'po_cluster_value' => (string) ($clusterPo['po_value'] ?? ''),
+                'po_cluster_version_label' => (string) ($clusterPo['po_version_label'] ?? ''),
+                'po_cluster_remark' => (string) ($clusterPo['remark_po'] ?? ''),
+                'po_subfeeder_category' => (string) ($subfeederPo['po_category'] ?? ''),
+                'po_subfeeder_status' => (string) ($subfeederPo['status_po'] ?? ''),
+                'po_subfeeder_on_target' => $this->formatImportBoolean($subfeederPo['on_target'] ?? ''),
+                'po_subfeeder_number' => (string) ($subfeederPo['po_number'] ?? ''),
+                'po_subfeeder_date' => (string) ($subfeederPo['po_date'] ?? ''),
+                'po_subfeeder_value' => (string) ($subfeederPo['po_value'] ?? ''),
+                'po_subfeeder_version_label' => (string) ($subfeederPo['po_version_label'] ?? ''),
+                'po_subfeeder_remark' => (string) ($subfeederPo['remark_po'] ?? ''),
             ];
+            $this->appendPoTerminSnapshotColumns($rowMap, 'po_cluster', $clusterPo, $poTerminMap);
+            $this->appendPoTerminSnapshotColumns($rowMap, 'po_subfeeder', $subfeederPo, $poTerminMap);
 
             foreach (array_keys($this->getChecklistImportColumnMap()) as $column) {
+                $rowMap[$column] = (string) ($checklistStatuses[$column] ?? '');
+            }
+            foreach (array_keys($this->getChecklistNroFlowImportColumnMap()) as $column) {
                 $rowMap[$column] = (string) ($checklistStatuses[$column] ?? '');
             }
 
@@ -1276,10 +1319,20 @@ class MyRepublik_Project extends CI_Controller
                 $rowMap['rfs_' . $i . '_qty'] = (string) ($claim['claim_qty'] ?? '');
             }
 
-            $result[] = $rowMap;
+            $result[] = $this->normalizeCutoffSnapshotRowForExport($rowMap);
         }
 
         return $result;
+    }
+
+    private function normalizeCutoffSnapshotRowForExport(array $rowMap)
+    {
+        $normalized = [];
+        foreach ($this->getCutoffImportHeaders() as $header) {
+            $normalized[$header] = isset($rowMap[$header]) ? (string) $rowMap[$header] : '';
+        }
+
+        return $normalized;
     }
 
     private function getCurrentRfsClaimsForSnapshot(array $rfsClusterIds)
@@ -1933,6 +1986,62 @@ class MyRepublik_Project extends CI_Controller
         ];
     }
 
+    private function getChecklistNroFlowImportColumnMap()
+    {
+        return [
+            'cluster_rfs_nro_flow' => ['status_column' => 'cluster_rfs'],
+        ];
+    }
+
+    private function getProjectOpnameFlowStatusMap()
+    {
+        return [
+            'WASPANG' => 'WAITING WASPANG',
+            'WASPAN' => 'WAITING WASPANG',
+            'WAITING WASPANG' => 'WAITING WASPANG',
+            'WAITING WASPAN' => 'WAITING WASPANG',
+            'PLANNING' => 'WAITING PLANNING',
+            'WAITING PLANNING' => 'WAITING PLANNING',
+            'TEAMLEADER' => 'WAITING TL',
+            'TEAM LEADER' => 'WAITING TL',
+            'TL' => 'WAITING TL',
+            'WAITING TL' => 'WAITING TL',
+            'LOGISTIK' => 'WAITING LOGISTIK',
+            'LOGISTIC' => 'WAITING LOGISTIK',
+            'WAITING LOGISTIK' => 'WAITING LOGISTIK',
+            'WAITING LOGISTIC' => 'WAITING LOGISTIK',
+        ];
+    }
+
+    private function normalizeProjectOpnameFlowImportStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $status = preg_replace('/\s+/', ' ', str_replace(['_', '-'], ' ', $status));
+        if ($status === '') {
+            return '';
+        }
+
+        $map = $this->getProjectOpnameFlowStatusMap();
+        return $map[$status] ?? '';
+    }
+
+    private function getProjectOpnameFlowImportLabel($status)
+    {
+        $status = $this->normalizeProjectOpnameFlowImportStatus($status);
+        switch ($status) {
+            case 'WAITING PLANNING':
+                return 'PLANNING';
+            case 'WAITING TL':
+                return 'TEAMLEADER';
+            case 'WAITING LOGISTIK':
+                return 'LOGISTIK';
+            case 'WAITING WASPANG':
+                return 'WASPANG';
+            default:
+                return '';
+        }
+    }
+
     private function syncExistingImportedCluster(array $existingCluster, array $row, $userId, array $target, $statusCurrent)
     {
         $clusterId = (int) ($existingCluster['id_myrep_cluster'] ?? 0);
@@ -2084,6 +2193,10 @@ class MyRepublik_Project extends CI_Controller
             if ($status === '') {
                 continue;
             }
+            $nroFlowStatus = '';
+            if ($column === 'cluster_rfs' && $status === 'NRO') {
+                $nroFlowStatus = $this->normalizeProjectOpnameFlowImportStatus($row['cluster_rfs_nro_flow'] ?? '');
+            }
 
             $key = $this->buildChecklistGroupKey($target['scope_type'], $target['sow_type']);
             if (empty($packagesByKey[$key])) {
@@ -2106,7 +2219,8 @@ class MyRepublik_Project extends CI_Controller
                         (int) $item['id_doc_item'],
                         $status,
                         $userId,
-                        (string) ($item['doc_name'] ?? '')
+                        (string) ($item['doc_name'] ?? ''),
+                        $nroFlowStatus
                     );
                 }
             }
@@ -2118,7 +2232,10 @@ class MyRepublik_Project extends CI_Controller
     private function getCurrentChecklistImportStatuses($rfsClusterId)
     {
         $rfsClusterId = (int) $rfsClusterId;
-        $result = array_fill_keys(array_keys($this->getChecklistImportColumnMap()), '');
+        $result = array_merge(
+            array_fill_keys(array_keys($this->getChecklistImportColumnMap()), ''),
+            array_fill_keys(array_keys($this->getChecklistNroFlowImportColumnMap()), '')
+        );
         if ($rfsClusterId <= 0 || !$this->db->table_exists('tb_rfs_myrep_doc_package')) {
             return $result;
         }
@@ -2190,6 +2307,12 @@ class MyRepublik_Project extends CI_Controller
                 $itemsByGroup[$groupId] ?? [],
                 $filesByPackageItem[$packageId] ?? []
             );
+            if ($groupKey === $this->buildChecklistGroupKey('CLUSTER', 'RFS')) {
+                $result['cluster_rfs_nro_flow'] = $this->deriveProjectOpnameFlowImportStatus(
+                    $itemsByGroup[$groupId] ?? [],
+                    $filesByPackageItem[$packageId] ?? []
+                );
+            }
         }
 
         return $result;
@@ -2205,7 +2328,7 @@ class MyRepublik_Project extends CI_Controller
         $uploaded = 0;
         $approved = 0;
         $astriApproved = 0;
-        $hasProjectOpnameWaitingWaspang = false;
+        $hasProjectOpnameNroFlow = false;
         foreach ($items as $item) {
             $itemId = (int) ($item['id_doc_item'] ?? 0);
             $file = $filesByItem[$itemId] ?? [];
@@ -2226,8 +2349,11 @@ class MyRepublik_Project extends CI_Controller
             if ($astriStatus === 'APPROVED') {
                 $astriApproved++;
             }
-            if (strtoupper(trim((string) ($item['doc_name'] ?? ''))) === 'PROJECT OPNAME' && $astriStatus === 'WAITING WASPANG') {
-                $hasProjectOpnameWaitingWaspang = true;
+            if (
+                strtoupper(trim((string) ($item['doc_name'] ?? ''))) === 'PROJECT OPNAME'
+                && $this->normalizeProjectOpnameFlowImportStatus($astriStatus) !== ''
+            ) {
+                $hasProjectOpnameNroFlow = true;
             }
         }
 
@@ -2243,7 +2369,7 @@ class MyRepublik_Project extends CI_Controller
         if (
             strtoupper(trim((string) $scopeType)) === 'CLUSTER'
             && strtoupper(trim((string) $sowType)) === 'RFS'
-            && $hasProjectOpnameWaitingWaspang
+            && $hasProjectOpnameNroFlow
         ) {
             return 'NRO';
         }
@@ -2251,12 +2377,30 @@ class MyRepublik_Project extends CI_Controller
         return 'EMR';
     }
 
+    private function deriveProjectOpnameFlowImportStatus(array $items, array $filesByItem)
+    {
+        foreach ($items as $item) {
+            if (strtoupper(trim((string) ($item['doc_name'] ?? ''))) !== 'PROJECT OPNAME') {
+                continue;
+            }
+
+            $itemId = (int) ($item['id_doc_item'] ?? 0);
+            $file = $filesByItem[$itemId] ?? [];
+            $label = $this->getProjectOpnameFlowImportLabel((string) ($file['astri_status'] ?? ''));
+            if ($label !== '') {
+                return $label;
+            }
+        }
+
+        return '';
+    }
+
     private function buildChecklistGroupKey($scopeType, $sowType)
     {
         return strtoupper(trim((string) $scopeType)) . '|' . strtoupper(trim((string) $sowType));
     }
 
-    private function upsertImportedChecklistFile($packageId, $itemId, $cutoffStatus, $userId, $docName = '')
+    private function upsertImportedChecklistFile($packageId, $itemId, $cutoffStatus, $userId, $docName = '', $nroFlowStatus = '')
     {
         $packageId = (int) $packageId;
         $itemId = (int) $itemId;
@@ -2285,10 +2429,13 @@ class MyRepublik_Project extends CI_Controller
             $astriUpdatedAt = $now;
             $astriRemark = 'Imported cutoff ASTRI closed.';
         } elseif ($isNroProjectOpname) {
-            $astriStatus = 'WAITING WASPANG';
+            $astriStatus = $this->normalizeProjectOpnameFlowImportStatus($nroFlowStatus);
+            if ($astriStatus === '') {
+                $astriStatus = 'WAITING WASPANG';
+            }
             $astriSubmittedDate = $today;
             $astriUpdatedAt = $now;
-            $astriRemark = 'Imported cutoff NRO - Project Opname waiting Waspang.';
+            $astriRemark = 'Imported cutoff NRO - Project Opname ' . $this->getProjectOpnameFlowImportLabel($astriStatus) . '.';
         } elseif ($isEmrAstriReview) {
             $astriStatus = 'ON REVIEW';
             $astriSubmittedDate = $today;
@@ -2474,6 +2621,123 @@ class MyRepublik_Project extends CI_Controller
         return $claims;
     }
 
+    private function getCurrentPoHeadersForSnapshot(array $myrepClusterIds)
+    {
+        $myrepClusterIds = array_values(array_unique(array_filter(array_map('intval', $myrepClusterIds))));
+        if (empty($myrepClusterIds) || !$this->db->table_exists('tb_myrep_po_header')) {
+            return [];
+        }
+
+        $select = '
+            id_po_header,
+            id_myrep_cluster,
+            po_type,
+            po_category,
+            po_number,
+            po_date,
+            po_value,
+            status_po,
+            po_version_label,
+            remark_po
+        ';
+        if ($this->db->field_exists('on_target', 'tb_myrep_po_header')) {
+            $select .= ', on_target';
+        }
+
+        $rows = $this->db
+            ->select($select, false)
+            ->from('tb_myrep_po_header')
+            ->where_in('id_myrep_cluster', $myrepClusterIds)
+            ->order_by('id_myrep_cluster', 'ASC')
+            ->order_by('po_type', 'ASC')
+            ->order_by('id_po_header', 'DESC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            if ($clusterId <= 0 || !in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+                continue;
+            }
+            if (isset($map[$clusterId][$poType])) {
+                continue;
+            }
+
+            if (!array_key_exists('on_target', $row)) {
+                $row['on_target'] = '';
+            }
+            $map[$clusterId][$poType] = $row;
+        }
+
+        return $map;
+    }
+
+    private function getCurrentPoTerminRowsForSnapshot(array $poHeaderIds)
+    {
+        $poHeaderIds = array_values(array_unique(array_filter(array_map('intval', $poHeaderIds))));
+        if (empty($poHeaderIds) || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', $poHeaderIds)
+            ->where('termin_no >=', 1)
+            ->where('termin_no <=', 5)
+            ->order_by('id_po_header', 'ASC')
+            ->order_by('termin_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            if ($headerId <= 0 || $terminNo < 1 || $terminNo > 5) {
+                continue;
+            }
+
+            $map[$headerId][$terminNo] = $row;
+        }
+
+        return $map;
+    }
+
+    private function appendPoTerminSnapshotColumns(array &$rowMap, $prefix, array $poRow, array $poTerminMap)
+    {
+        $poHeaderId = (int) ($poRow['id_po_header'] ?? 0);
+        $terminRows = $poHeaderId > 0 ? ($poTerminMap[$poHeaderId] ?? []) : [];
+
+        for ($terminNo = 1; $terminNo <= 5; $terminNo++) {
+            $planKey = $prefix . '_termin' . $terminNo . '_plan_invoice';
+            $submitKey = $prefix . '_termin' . $terminNo . '_submit_invoice';
+            $nilaiKey = $prefix . '_termin' . $terminNo . '_nilai_invoice';
+
+            $rowMap[$planKey] = '';
+            $rowMap[$submitKey] = '';
+            $rowMap[$nilaiKey] = '';
+
+            if (empty($terminRows[$terminNo])) {
+                continue;
+            }
+
+            $termin = $terminRows[$terminNo];
+            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            $terminValue = (string) ($termin['termin_value'] ?? '');
+            $invoiceDate = (string) ($termin['invoice_date'] ?? '');
+
+            if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                $rowMap[$submitKey] = $invoiceDate;
+                $rowMap[$nilaiKey] = $terminValue;
+            } else {
+                $rowMap[$planKey] = $terminValue;
+            }
+        }
+    }
+
     private function buildPoTerminImportHeaders()
     {
         $headers = [];
@@ -2501,6 +2765,7 @@ class MyRepublik_Project extends CI_Controller
                 'number' => (string) ($row['po_cluster_number'] ?? ''),
                 'date' => (string) ($row['po_cluster_date'] ?? ''),
                 'value' => $row['po_cluster_value'] ?? 0,
+                'on_target' => $row['po_cluster_on_target'] ?? '',
                 'version' => (string) ($row['po_cluster_version_label'] ?? ''),
                 'remark' => (string) ($row['po_cluster_remark'] ?? ''),
                 'prefix' => 'po_cluster',
@@ -2512,6 +2777,7 @@ class MyRepublik_Project extends CI_Controller
                 'number' => (string) ($row['po_subfeeder_number'] ?? ''),
                 'date' => (string) ($row['po_subfeeder_date'] ?? ''),
                 'value' => $row['po_subfeeder_value'] ?? 0,
+                'on_target' => $row['po_subfeeder_on_target'] ?? '',
                 'version' => (string) ($row['po_subfeeder_version_label'] ?? ''),
                 'remark' => (string) ($row['po_subfeeder_remark'] ?? ''),
                 'prefix' => 'po_subfeeder',
@@ -2527,6 +2793,7 @@ class MyRepublik_Project extends CI_Controller
                 'number' => (string) ($row['po_number'] ?? ''),
                 'date' => (string) ($row['po_date'] ?? ''),
                 'value' => $row['po_value'] ?? 0,
+                'on_target' => $row['po_on_target'] ?? '',
                 'version' => (string) ($row['po_version_label'] ?? ''),
                 'remark' => (string) ($row['remark_po'] ?? ''),
                 'prefix' => 'po_cluster',
@@ -2555,6 +2822,7 @@ class MyRepublik_Project extends CI_Controller
             if (!in_array($statusPo, ['NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED'], true)) {
                 $statusPo = 'ISSUED';
             }
+            $onTarget = $this->normalizeImportBoolean($poDef['on_target'] ?? '');
 
             $poPayload = [
                 'parent_po_header_id' => null,
@@ -2569,23 +2837,30 @@ class MyRepublik_Project extends CI_Controller
                 'created_by' => $userId,
                 'updated_by' => $userId,
             ];
+            if ($onTarget !== null) {
+                $poPayload['on_target'] = $onTarget;
+            }
 
             $poHeaderId = $this->resolveImportedPoHeaderId($clusterId, $poType, $poNumber);
             if ($poHeaderId > 0) {
+                $updatePayload = [
+                    'parent_po_header_id' => null,
+                    'po_type' => $poType,
+                    'po_category' => $poCategory,
+                    'po_number' => $poNumber,
+                    'po_date' => $poDate,
+                    'po_value' => $poValue,
+                    'status_po' => $statusPo,
+                    'po_version_label' => trim((string) ($poDef['version'] ?? '')) ?: null,
+                    'remark_po' => trim((string) ($poDef['remark'] ?? '')) ?: null,
+                    'updated_by' => (int) $userId,
+                ];
+                if ($onTarget !== null) {
+                    $updatePayload['on_target'] = $onTarget;
+                }
                 $this->db
                     ->where('id_po_header', (int) $poHeaderId)
-                    ->update('tb_myrep_po_header', $this->filterPayloadByTableFields('tb_myrep_po_header', [
-                        'parent_po_header_id' => null,
-                        'po_type' => $poType,
-                        'po_category' => $poCategory,
-                        'po_number' => $poNumber,
-                        'po_date' => $poDate,
-                        'po_value' => $poValue,
-                        'status_po' => $statusPo,
-                        'po_version_label' => trim((string) ($poDef['version'] ?? '')) ?: null,
-                        'remark_po' => trim((string) ($poDef['remark'] ?? '')) ?: null,
-                        'updated_by' => (int) $userId,
-                    ]));
+                    ->update('tb_myrep_po_header', $this->filterPayloadByTableFields('tb_myrep_po_header', $updatePayload));
             } else {
                 $poHeaderId = (int) $this->MPO_MyRep->createPoHeader($clusterId, $poPayload);
             }
@@ -2745,6 +3020,7 @@ class MyRepublik_Project extends CI_Controller
             'cluster_cwatp',
             'cluster_fullopm',
             'cluster_rfs',
+            'cluster_rfs_nro_flow',
             'subfeeder_cwatp',
             'subfeeder_fullopm',
             'subfeeder_rfs',
@@ -3334,6 +3610,29 @@ class MyRepublik_Project extends CI_Controller
                 $errors[] = 'NRO hanya boleh diisi pada cluster_rfs';
             }
         }
+        foreach ($this->getChecklistNroFlowImportColumnMap() as $column => $target) {
+            $rawFlowStatus = trim((string) ($row[$column] ?? ''));
+            if ($rawFlowStatus === '') {
+                continue;
+            }
+
+            $normalizedFlowStatus = $this->normalizeProjectOpnameFlowImportStatus($rawFlowStatus);
+            if ($normalizedFlowStatus === '') {
+                $errors[] = $column . ' harus WASPANG, PLANNING, TEAMLEADER/TL, atau LOGISTIK';
+            }
+
+            $statusColumn = (string) ($target['status_column'] ?? '');
+            $rawChecklistStatus = trim((string) ($row[$statusColumn] ?? ''));
+            $normalizedChecklistStatus = $this->normalizeChecklistImportStatus($rawChecklistStatus);
+            if ($normalizedChecklistStatus !== 'NRO') {
+                $errors[] = $column . ' hanya dipakai saat ' . $statusColumn . ' = NRO';
+            }
+        }
+        foreach (['po_cluster_on_target', 'po_subfeeder_on_target', 'po_on_target'] as $booleanColumn) {
+            if (!$this->isValidImportBoolean($row[$booleanColumn] ?? '')) {
+                $errors[] = $booleanColumn . ' harus 1/0, TRUE/FALSE, YES/NO, atau ON/OFF';
+            }
+        }
         if ($this->resolveTargetByCity((string) ($row['city_name'] ?? '')) === []) {
             $errors[] = 'target kota tidak ditemukan di tb_rfs_myrep_monthly_target';
         }
@@ -3449,6 +3748,38 @@ class MyRepublik_Project extends CI_Controller
         }
         $value = str_replace(['.', ','], ['', '.'], $value);
         return is_numeric($value) ? (float) $value : 0;
+    }
+
+    private function normalizeImportBoolean($value)
+    {
+        $value = strtoupper(trim((string) $value));
+        if ($value === '') {
+            return null;
+        }
+
+        if (in_array($value, ['1', 'Y', 'YES', 'TRUE', 'ON', 'TARGET'], true)) {
+            return 1;
+        }
+
+        if (in_array($value, ['0', 'N', 'NO', 'FALSE', 'OFF', 'NON TARGET', 'NOT TARGET'], true)) {
+            return 0;
+        }
+
+        return null;
+    }
+
+    private function isValidImportBoolean($value)
+    {
+        return trim((string) $value) === '' || $this->normalizeImportBoolean($value) !== null;
+    }
+
+    private function formatImportBoolean($value)
+    {
+        if ($value === '' || $value === null) {
+            return '';
+        }
+
+        return (int) $value === 1 ? '1' : '0';
     }
 
     private function normalizeNullableNumber($value)
