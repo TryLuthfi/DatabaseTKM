@@ -3836,8 +3836,8 @@ class MyRepublik_Project extends CI_Controller
 
     private function loadPHPExcel()
     {
-        if (!class_exists('PHPExcel_IOFactory')) {
-            $this->load->library('excel');
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
         }
     }
 
