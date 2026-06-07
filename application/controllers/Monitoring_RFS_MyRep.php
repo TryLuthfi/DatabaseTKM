@@ -86,6 +86,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['selectedClaimStartDate'] = $selectedClaimStartDate;
         $data['selectedClaimEndDate'] = $selectedClaimEndDate;
         $data['currentUserNik'] = $this->getCurrentUserNik();
+        $data['currentUserName'] = $this->getCurrentUserName();
         $data['monthLabels'] = $this->getMonthLabels();
         $data['selectedPeriodLabel'] = $this->buildPeriodLabel($selectedStartMonth, $selectedEndMonth);
 
@@ -1162,6 +1163,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return true;
         }
 
+        $areaApprover = [];
         $areaApproverNiks = myrep_pic_nik_list($claim['area_approval_niks'] ?? '');
         if (empty($areaApproverNiks)) {
             $areaApprover = $this->MMonitoring_RFS_MyRep->resolveAreaApprover($claim);
@@ -1169,12 +1171,23 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         $currentNik = $this->getCurrentUserNik();
-        return $currentNik !== '' && in_array($currentNik, $areaApproverNiks, true);
+        $currentName = $this->getCurrentUserName();
+        $areaApproverName = trim((string) ($claim['area_approval_name'] ?? ''));
+        if ($areaApproverName === '' && !empty($areaApprover['name'])) {
+            $areaApproverName = trim((string) $areaApprover['name']);
+        }
+
+        return myrep_identity_matches($currentNik, $areaApproverNiks, $currentName, $areaApproverName);
     }
 
     private function getCurrentUserNik()
     {
         return $this->MMonitoring_RFS_MyRep->getUserNikById((int) $this->session->userdata('id_user'));
+    }
+
+    private function getCurrentUserName()
+    {
+        return trim((string) $this->session->userdata('nama_user'));
     }
 
     private function getMonthLabels()

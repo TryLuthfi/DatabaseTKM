@@ -2524,9 +2524,10 @@ if (!empty($kpiDetailRowMap)) {
                                             $rpmApprovalStatus = trim((string) ($claim['rpm_approval_status'] ?? ''));
                                             $claimStatus = trim((string) ($claim['status_claim'] ?? ''));
                                             $sessionNik = trim((string) ($currentUserNik ?? ''));
+                                            $sessionUserName = trim((string) ($currentUserName ?? $this->session->userdata('nama_user')));
                                             $areaApproverNiks = monitoring_rfs_pic_nik_list($areaApprover['niks'] ?? '');
                                             $canApproveRpm = $this->session->userdata('nama_level') === 'Super Admin'
-                                                || ($sessionNik !== '' && in_array($sessionNik, $areaApproverNiks, true));
+                                                || myrep_identity_matches($sessionNik, $areaApproverNiks, $sessionUserName, $claimRpm);
                                             ?>
                                             <?php if ($claimRpm === '') { ?>
                                                 <span class="badge badge-secondary">SKIPPED</span>
