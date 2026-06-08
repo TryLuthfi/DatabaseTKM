@@ -767,6 +767,102 @@ class MPO_MyRep extends CI_Model
         ];
     }
 
+    public function getEmrTargetPoTerminReportRows($city = '', $termStage = '', $regional = '', $pic = '', $nroStatus = '')
+    {
+        if (!$this->emrTargetReady()) {
+            return [];
+        }
+
+        $termStageValues = $this->normalizeUpperList($termStage);
+        $picValues = $this->normalizeUpperList($pic);
+        $nroStatusValues = $this->normalizeUpperList($nroStatus);
+        $fromSql = $this->getEmrTargetPoFromSql();
+        $whereSql = $this->buildEmrTargetWhereSql($city, '', $regional);
+        $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
+            ? 'c.rfs_cluster_id'
+            : '0 AS rfs_cluster_id';
+
+        $rows = $this->db->query("
+            SELECT
+                p.id_po_header,
+                p.id_myrep_cluster,
+                p.po_type,
+                p.po_category,
+                p.po_number,
+                p.po_date,
+                p.po_value,
+                p.status_po,
+                p.on_target,
+                p.po_version_label,
+                p.remark_po,
+                c.cluster_name,
+                c.cluster_code,
+                c.city_name,
+                c.regional_name,
+                c.team_name,
+                c.status_current,
+                {$rfsClusterSelect},
+                t.id_po_termin,
+                t.termin_no,
+                t.termin_value,
+                t.status_termin,
+                COALESCE(tm.termin_total_count, 0) AS termin_total_count,
+                COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
+                COALESCE(tm.termin_paid_count, 0) AS termin_paid_count,
+                COALESCE(tm.plan_invoice_total, 0) AS outstanding_total,
+                COALESCE(tm.done_invoice_total, 0) AS total_invoiced
+            {$fromSql}
+            INNER JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
+                AND t.termin_no BETWEEN 1 AND 5
+            {$whereSql}
+            ORDER BY p.po_date DESC, p.po_number ASC, t.termin_no ASC
+        ")->result_array();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $rfsClusterIds = [];
+        foreach ($rows as $row) {
+            $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+            if ($rfsClusterId > 0) {
+                $rfsClusterIds[] = $rfsClusterId;
+            }
+        }
+        $checklistStateMap = $this->getTerminChecklistStateMap($rfsClusterIds);
+
+        $reportRows = [];
+        foreach ($rows as $row) {
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            $stageLabel = $this->getStageFromTerminNo($terminNo);
+            if ($stageLabel === '') {
+                continue;
+            }
+            if (!empty($termStageValues) && !in_array($stageLabel, $termStageValues, true)) {
+                continue;
+            }
+
+            $row['po_stage_status'] = $stageLabel;
+            $row['current_termin_value'] = (float) ($row['termin_value'] ?? 0);
+            $row['current_pic'] = $this->resolveTerminCurrentPic($row, $checklistStateMap);
+            $row['current_nro_status'] = $this->resolveTerminNroFlowStatus($row, $checklistStateMap);
+
+            if ($row['current_pic'] === 'CLOSED') {
+                continue;
+            }
+            if (!empty($picValues) && !in_array((string) $row['current_pic'], $picValues, true)) {
+                continue;
+            }
+            if (!empty($nroStatusValues) && !in_array((string) $row['current_nro_status'], $nroStatusValues, true)) {
+                continue;
+            }
+
+            $reportRows[] = $row;
+        }
+
+        return $reportRows;
+    }
+
     public function getEmrTargetClusterDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc')
     {
         if (!$this->emrTargetReady()) {
@@ -2081,6 +2177,19 @@ class MPO_MyRep extends CI_Model
         ];
 
         return $map[strtoupper(trim((string) $stage))] ?? 0;
+    }
+
+    private function getStageFromTerminNo($terminNo)
+    {
+        $map = [
+            1 => 'DP',
+            2 => 'ATP CW',
+            3 => 'FULL OPM',
+            4 => 'RFS',
+            5 => 'FAC',
+        ];
+
+        return $map[(int) $terminNo] ?? '';
     }
 
     private function isTerminChecklistStageReady($statusCurrent)

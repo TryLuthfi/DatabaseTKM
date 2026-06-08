@@ -195,8 +195,10 @@ class PO_EMR_Myrep extends CI_Controller
 
         $selectedRegional = $this->normalizeFilterValues($this->input->get('regional'));
         $selectedCity = $this->normalizeFilterValues($this->input->get('city'));
-        $selectedStage = $this->normalizeFilterValues($this->input->get('stage'));
-        $rows = $this->MPO_MyRep->getEmrTargetPoListRows($selectedCity, $selectedStage, $selectedRegional);
+        $selectedTermStage = $this->normalizeFilterValues($this->input->get('term_stage'));
+        $selectedPic = $this->normalizeFilterValues($this->input->get('pic'));
+        $selectedNroStatus = $this->normalizeFilterValues($this->input->get('nro_status'));
+        $rows = $this->MPO_MyRep->getEmrTargetPoTerminReportRows($selectedCity, $selectedTermStage, $selectedRegional, $selectedPic, $selectedNroStatus);
 
         $filename = 'report_po_emr_myrep_target_' . date('Ymd_His') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
@@ -220,10 +222,12 @@ class PO_EMR_Myrep extends CI_Controller
             'On Target',
             'Status Current',
             'TERM PO',
+            'PIC',
+            'Status NRO',
+            'Nilai Tagihan',
             'Nilai PO',
             'Termin Progress',
             'Outstanding',
-            'Total Invoiced',
             'Remark',
         ]);
 
@@ -242,10 +246,12 @@ class PO_EMR_Myrep extends CI_Controller
                 (int) ($row['on_target'] ?? 0) === 1 ? 'TRUE' : 'FALSE',
                 (string) ($row['status_current'] ?? ''),
                 (string) ($row['po_stage_status'] ?? ''),
+                $this->picDisplayLabel((string) ($row['current_pic'] ?? '')),
+                (string) ($row['current_nro_status'] ?? ''),
+                (float) ($row['current_termin_value'] ?? 0),
                 (float) ($row['po_value'] ?? 0),
                 (int) ($row['termin_progress_count'] ?? 0) . '/' . (int) ($row['termin_total_count'] ?? 0),
                 (float) ($row['outstanding_total'] ?? 0),
-                (float) ($row['total_invoiced'] ?? 0),
                 (string) ($row['remark_po'] ?? ''),
             ]);
         }

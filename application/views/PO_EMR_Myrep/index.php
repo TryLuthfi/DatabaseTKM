@@ -18,17 +18,6 @@ if (!function_exists('poEmrNumberOrDash')) {
 $selectedRegionalValues = is_array($selectedRegional) ? array_values($selectedRegional) : array_filter([strtoupper(trim((string) $selectedRegional))]);
 $selectedCityValues = is_array($selectedCity) ? array_values($selectedCity) : array_filter([strtoupper(trim((string) $selectedCity))]);
 $selectedStageValues = is_array($selectedStage) ? array_values($selectedStage) : array_filter([strtoupper(trim((string) $selectedStage))]);
-$downloadParams = [];
-if (!empty($selectedRegionalValues)) {
-    $downloadParams['regional'] = $selectedRegionalValues;
-}
-if (!empty($selectedCityValues)) {
-    $downloadParams['city'] = $selectedCityValues;
-}
-if (!empty($selectedStageValues)) {
-    $downloadParams['stage'] = $selectedStageValues;
-}
-$downloadUrl = base_url('PO_EMR_Myrep/downloadReport') . (!empty($downloadParams) ? '?' . http_build_query($downloadParams) : '');
 
 $currentQueryParams = [];
 if (!empty($_SERVER['QUERY_STRING'])) {
@@ -499,10 +488,99 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     <div>
         <h1>OUTSTANDING TARGET PO EMR</h1>
     </div>
-    <a href="<?= $downloadUrl ?>" class="btn btn-success">
+    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-po-emr-download-report">
         <i class="fas fa-file-excel mr-1"></i> Download Report
-    </a>
+    </button>
 </div>
+
+<?php if ($isReady): ?>
+    <?php
+    $downloadTermOptions = ['DP', 'ATP CW', 'FULL OPM', 'RFS', 'FAC'];
+    $downloadPicOptions = [
+        'AREA' => 'TKM - AREA',
+        'HO' => 'TKM - HO',
+        'DC EMR' => 'EMR - DC',
+        'NRO' => 'NRO',
+    ];
+    ?>
+    <div class="modal fade" id="modal-po-emr-download-report" tabindex="-1" role="dialog" aria-labelledby="modalPoEmrDownloadReportLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form method="GET" target="_blank" action="<?= base_url('PO_EMR_Myrep/downloadReport') ?>">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-1" id="modalPoEmrDownloadReportLabel">Download PO EMR Report</h5>
+                            <p class="mb-0 text-muted">Export outstanding tagihan berdasarkan regional, kota, term, dan PIC.</p>
+                        </div>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Regional</label>
+                                    <select name="regional[]" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Regional" multiple>
+                                        <?php foreach ($regionalOptions as $regional): ?>
+                                            <?php $regionalValue = strtoupper((string) $regional); ?>
+                                            <option value="<?= htmlspecialchars((string) $regional, ENT_QUOTES, 'UTF-8') ?>" <?= in_array($regionalValue, $selectedRegionalValues, true) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars((string) $regional, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Kota</label>
+                                    <select name="city[]" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Kota" multiple>
+                                        <?php foreach ($allCityOptions as $city): ?>
+                                            <?php $cityValue = strtoupper((string) $city); ?>
+                                            <option value="<?= htmlspecialchars((string) $city, ENT_QUOTES, 'UTF-8') ?>" <?= in_array($cityValue, $selectedCityValues, true) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars((string) $city, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Term</label>
+                                    <select name="term_stage[]" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Term" multiple>
+                                        <?php foreach ($downloadTermOptions as $termOption): ?>
+                                            <option value="<?= htmlspecialchars($termOption, ENT_QUOTES, 'UTF-8') ?>" <?= in_array($termOption, $selectedStageValues, true) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($termOption, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>PIC</label>
+                                    <select name="pic[]" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua PIC" multiple>
+                                        <?php foreach ($downloadPicOptions as $picValue => $picLabel): ?>
+                                            <option value="<?= htmlspecialchars($picValue, ENT_QUOTES, 'UTF-8') ?>">
+                                                <?= htmlspecialchars($picLabel, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-file-excel mr-1"></i> Download Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <?php if (!empty($flashError)): ?>
     <div class="alert alert-danger"><?= htmlspecialchars((string) $flashError, ENT_QUOTES, 'UTF-8') ?></div>
