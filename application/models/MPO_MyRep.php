@@ -217,10 +217,11 @@ class MPO_MyRep extends CI_Model
         }
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
-        $terminRows = $this->db
+        $this->db
             ->select('id_po_header, termin_no, termin_value, status_termin')
-            ->from('tb_myrep_po_termin')
-            ->where_in('id_po_header', $headerIds)
+            ->from('tb_myrep_po_termin');
+        $this->applyIntWhereInChunks('id_po_header', $headerIds);
+        $terminRows = $this->db
             ->get()
             ->result_array();
 
@@ -580,12 +581,92 @@ class MPO_MyRep extends CI_Model
         ];
     }
 
-    public function getEmrTargetPoDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 4, $orderDir = 'desc')
+    public function getEmrTargetTerminPicSummary($city = '', $stageStatus = '', $regional = '')
+    {
+        $summary = $this->buildEmptyTerminPicSummary();
+        if (!$this->emrTargetReady()) {
+            return array_values($summary);
+        }
+
+        $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
+            ? 'c.rfs_cluster_id'
+            : '0 AS rfs_cluster_id';
+        $rows = $this->db->query("
+            SELECT
+                p.id_po_header,
+                p.po_type,
+                c.id_myrep_cluster,
+                c.status_current,
+                {$rfsClusterSelect},
+                t.id_po_termin,
+                t.termin_no,
+                t.termin_value,
+                t.status_termin
+            {$this->getEmrTargetPoFromSql()}
+            LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
+                AND t.termin_no BETWEEN 1 AND 5
+            {$this->buildEmrTargetWhereSql($city, $stageStatus, $regional)}
+        ")->result_array();
+
+        if (empty($rows)) {
+            return array_values($summary);
+        }
+
+        $rfsClusterIds = [];
+        foreach ($rows as $row) {
+            $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+            if ($rfsClusterId > 0) {
+                $rfsClusterIds[] = $rfsClusterId;
+            }
+        }
+        $checklistStateMap = $this->getTerminChecklistStateMap($rfsClusterIds);
+
+        foreach ($rows as $row) {
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            if ($terminNo < 1 || $terminNo > 5) {
+                continue;
+            }
+
+            $pic = $this->resolveTerminCurrentPic($row, $checklistStateMap);
+            if (!isset($summary[$terminNo]['pic'][$pic])) {
+                $summary[$terminNo]['pic'][$pic] = ['count' => 0, 'value' => 0];
+            }
+
+            $terminValue = (float) ($row['termin_value'] ?? 0);
+            $summary[$terminNo]['total_count']++;
+            $summary[$terminNo]['total_value'] += $terminValue;
+            $summary[$terminNo]['pic'][$pic]['count']++;
+            $summary[$terminNo]['pic'][$pic]['value'] += $terminValue;
+
+            if ($pic === 'NRO') {
+                $nroStatus = $this->resolveTerminNroFlowStatus($row, $checklistStateMap);
+                if ($nroStatus !== '') {
+                    if (empty($summary[$terminNo]['pic'][$pic]['nro_flow'])) {
+                        $summary[$terminNo]['pic'][$pic]['nro_flow'] = $this->buildEmptyNroFlowSummary();
+                    }
+                    if (!isset($summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus])) {
+                        $summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus] = ['count' => 0, 'value' => 0];
+                    }
+                    $summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus]['count']++;
+                    $summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus]['value'] += $terminValue;
+                }
+            }
+        }
+
+        return array_values($summary);
+    }
+
+    public function getEmrTargetPoDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 4, $orderDir = 'desc', $pic = '', $termStage = '', $nroStatus = '')
     {
         if (!$this->emrTargetReady()) {
             return ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
         }
 
+        $picValues = $this->normalizeUpperList($pic);
+        $termStageValues = $this->normalizeUpperList($termStage);
+        $nroStatusValues = $this->normalizeUpperList($nroStatus);
+        $termStageValue = $termStageValues[0] ?? '';
+        $hasComputedFilter = !empty($picValues) || $termStageValue !== '' || !empty($nroStatusValues);
         $fromSql = $this->getEmrTargetPoFromSql();
         $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
         $searchSql = $this->buildEmrTargetSearchSql($search, [
@@ -597,6 +678,7 @@ class MPO_MyRep extends CI_Model
             'c.cluster_code',
             'c.city_name',
             'c.regional_name',
+            'c.status_current',
             $this->getEmrTargetStageExpression(),
         ]);
 
@@ -611,16 +693,19 @@ class MPO_MyRep extends CI_Model
             5 => 'c.cluster_name',
             6 => 'c.city_name',
             7 => 'c.regional_name',
-            8 => $this->getEmrTargetStageExpression(),
-            9 => 'p.po_value',
-            10 => 'COALESCE(tm.termin_progress_count, 0)',
-            11 => 'COALESCE(tm.plan_invoice_total, 0)',
-            12 => 'COALESCE(tm.done_invoice_total, 0)',
+            8 => 'c.status_current',
+            9 => $this->getEmrTargetStageExpression(),
+            12 => 'p.po_value',
+            13 => 'COALESCE(tm.termin_progress_count, 0)',
+            14 => 'COALESCE(tm.plan_invoice_total, 0)',
+            15 => 'COALESCE(tm.done_invoice_total, 0)',
         ];
         $orderSql = $this->buildDataTableOrderSql($orderMap, $orderColumn, $orderDir, 'p.po_date DESC, p.po_number ASC');
         $limitSql = $this->buildLimitSql($start, $length);
-
-        $rows = $this->db->query("
+        $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
+            ? 'c.rfs_cluster_id'
+            : '0 AS rfs_cluster_id';
+        $selectSql = "
             SELECT
                 p.id_po_header,
                 p.id_myrep_cluster,
@@ -639,6 +724,7 @@ class MPO_MyRep extends CI_Model
                 c.regional_name,
                 c.team_name,
                 c.status_current,
+                {$rfsClusterSelect},
                 COALESCE(tm.termin_total_count, 0) AS termin_total_count,
                 COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
                 COALESCE(tm.termin_paid_count, 0) AS termin_paid_count,
@@ -647,10 +733,32 @@ class MPO_MyRep extends CI_Model
                 {$this->getEmrTargetStageExpression()} AS po_stage_status
             {$fromSql}
             {$whereSql}
-            {$searchSql}
-            {$orderSql}
-            {$limitSql}
-        ")->result_array();
+        ";
+
+        if ($hasComputedFilter) {
+            $totalRows = $this->decoratePoDataTableRowsWithCurrentPic(
+                $this->db->query($selectSql)->result_array(),
+                $termStageValue
+            );
+            $totalRows = $this->filterPoRowsByCurrentPic($totalRows, $picValues, $nroStatusValues);
+            $recordsTotal = count($totalRows);
+
+            $filteredRows = $this->decoratePoDataTableRowsWithCurrentPic(
+                $this->db->query("{$selectSql} {$searchSql} {$orderSql}")->result_array(),
+                $termStageValue
+            );
+            $filteredRows = $this->filterPoRowsByCurrentPic($filteredRows, $picValues, $nroStatusValues);
+            $recordsFiltered = count($filteredRows);
+            $rows = array_slice($filteredRows, max(0, (int) $start), min(max(0, (int) $length), 100));
+        } else {
+            $rows = $this->db->query("
+                {$selectSql}
+                {$searchSql}
+                {$orderSql}
+                {$limitSql}
+            ")->result_array();
+            $rows = $this->decoratePoDataTableRowsWithCurrentPic($rows);
+        }
 
         return [
             'recordsTotal' => $recordsTotal,
@@ -820,10 +928,11 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $terminRows = $this->db
+        $this->db
             ->select('id_po_header, termin_no, termin_value, status_termin')
-            ->from('tb_myrep_po_termin')
-            ->where_in('id_po_header', $headerIds)
+            ->from('tb_myrep_po_termin');
+        $this->applyIntWhereInChunks('id_po_header', $headerIds);
+        $terminRows = $this->db
             ->get()
             ->result_array();
 
@@ -975,7 +1084,7 @@ class MPO_MyRep extends CI_Model
                 WHEN COALESCE(tm.term_3_done, 0) = 0 THEN 'FULL OPM'
                 WHEN COALESCE(tm.term_4_done, 0) = 0 THEN 'RFS'
                 WHEN COALESCE(tm.term_5_done, 0) = 0 THEN 'FAC'
-                ELSE 'FAC'
+                ELSE 'CLOSED'
             END
         ";
     }
@@ -1152,10 +1261,11 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $terminRows = $this->db
+        $this->db
             ->select('id_po_header, termin_no, termin_value, status_termin')
-            ->from('tb_myrep_po_termin')
-            ->where_in('id_po_header', $headerIds)
+            ->from('tb_myrep_po_termin');
+        $this->applyIntWhereInChunks('id_po_header', $headerIds);
+        $terminRows = $this->db
             ->get()
             ->result_array();
 
@@ -1273,10 +1383,11 @@ class MPO_MyRep extends CI_Model
             $headerMap[$headerId] = $headerRow;
         }
 
-        $terminRows = $this->db
+        $this->db
             ->select('id_po_header, termin_no, termin_value, status_termin')
-            ->from('tb_myrep_po_termin')
-            ->where_in('id_po_header', $headerIds)
+            ->from('tb_myrep_po_termin');
+        $this->applyIntWhereInChunks('id_po_header', $headerIds);
+        $terminRows = $this->db
             ->order_by('termin_no', 'ASC')
             ->get()
             ->result_array();
@@ -1613,20 +1724,22 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $headerRows = $this->db
+        $this->db
             ->select('id_po_header, id_myrep_cluster, po_type, po_value, status_po, po_date')
-            ->from('tb_myrep_po_header')
-            ->where_in('id_myrep_cluster', $clusterIds)
+            ->from('tb_myrep_po_header');
+        $this->applyIntWhereInChunks('id_myrep_cluster', $clusterIds);
+        $headerRows = $this->db
             ->get()
             ->result_array();
 
         $headerIds = array_column($headerRows, 'id_po_header');
         $terminRows = [];
         if (!empty($headerIds)) {
-            $terminRows = $this->db
+            $this->db
                 ->select('id_po_header, termin_no, status_termin')
-                ->from('tb_myrep_po_termin')
-                ->where_in('id_po_header', $headerIds)
+                ->from('tb_myrep_po_termin');
+            $this->applyIntWhereInChunks('id_po_header', $headerIds);
+            $terminRows = $this->db
                 ->get()
                 ->result_array();
         }
@@ -1741,7 +1854,420 @@ class MPO_MyRep extends CI_Model
             }
         }
 
-        return 'FAC';
+        return 'CLOSED';
+    }
+
+    private function buildEmptyTerminPicSummary()
+    {
+        $picLabels = ['AREA', 'HO', 'DC EMR', 'NRO', 'CLOSED'];
+        $stageLabels = [
+            1 => 'DP',
+            2 => 'ATP CW',
+            3 => 'FULL OPM',
+            4 => 'RFS',
+            5 => 'FAC',
+        ];
+
+        $summary = [];
+        foreach ($stageLabels as $terminNo => $stageLabel) {
+            $summary[$terminNo] = [
+                'termin_no' => $terminNo,
+                'stage' => $stageLabel,
+                'total_count' => 0,
+                'total_value' => 0,
+                'pic' => [],
+            ];
+            foreach ($picLabels as $picLabel) {
+                $summary[$terminNo]['pic'][$picLabel] = ['count' => 0, 'value' => 0];
+                if ($picLabel === 'NRO') {
+                    $summary[$terminNo]['pic'][$picLabel]['nro_flow'] = $this->buildEmptyNroFlowSummary();
+                }
+            }
+        }
+
+        return $summary;
+    }
+
+    private function buildEmptyNroFlowSummary()
+    {
+        $summary = [];
+        foreach (['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'] as $status) {
+            $summary[$status] = ['count' => 0, 'value' => 0];
+        }
+
+        return $summary;
+    }
+
+    private function resolveTerminCurrentPic(array $row, array $checklistStateMap)
+    {
+        $statusTermin = strtoupper(trim((string) ($row['status_termin'] ?? 'NOT READY')));
+        if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+            return 'CLOSED';
+        }
+
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        if (!$this->isTerminChecklistStageReady($statusCurrent)) {
+            return 'AREA';
+        }
+
+        $terminNo = (int) ($row['termin_no'] ?? 0);
+        if ($terminNo === 1 || $terminNo === 5) {
+            return 'HO';
+        }
+
+        $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+        if ($rfsClusterId <= 0) {
+            return 'AREA';
+        }
+
+        $scopeType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $sowType = $this->getTerminSowType($terminNo);
+        if ($sowType === '') {
+            return 'HO';
+        }
+
+        $stateKey = $this->buildTerminChecklistStateKey($rfsClusterId, $scopeType, $sowType);
+        $state = $checklistStateMap[$stateKey] ?? [];
+        $required = (int) ($state['required'] ?? 0);
+        if ($required <= 0) {
+            return 'AREA';
+        }
+
+        $uploaded = (int) ($state['uploaded'] ?? 0);
+        $approved = (int) ($state['approved'] ?? 0);
+        $astriApproved = (int) ($state['astri_approved'] ?? 0);
+
+        if ($uploaded < $required) {
+            return 'AREA';
+        }
+        if ($approved < $required) {
+            return 'HO';
+        }
+        if ($sowType === 'RFS' && !empty($state['has_project_opname_nro_flow'])) {
+            return 'NRO';
+        }
+        if ($astriApproved >= $required) {
+            return 'HO';
+        }
+
+        return 'DC EMR';
+    }
+
+    private function resolveTerminNroFlowStatus(array $row, array $checklistStateMap)
+    {
+        $terminNo = (int) ($row['termin_no'] ?? 0);
+        if ($terminNo !== 4) {
+            return '';
+        }
+
+        $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+        if ($rfsClusterId <= 0) {
+            return '';
+        }
+
+        $scopeType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $stateKey = $this->buildTerminChecklistStateKey($rfsClusterId, $scopeType, 'RFS');
+        $state = $checklistStateMap[$stateKey] ?? [];
+        $nroStatus = strtoupper(trim((string) ($state['project_opname_nro_status'] ?? '')));
+
+        return in_array($nroStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)
+            ? $nroStatus
+            : '';
+    }
+
+    private function decoratePoDataTableRowsWithCurrentPic(array $rows, $termStage = '')
+    {
+        if (empty($rows)) {
+            return [];
+        }
+
+        $headerIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_po_header')))));
+        $terminMap = [];
+        if (!empty($headerIds)) {
+            $this->db
+                ->select('id_po_header, termin_no, termin_value, status_termin')
+                ->from('tb_myrep_po_termin');
+            $this->applyIntWhereInChunks('id_po_header', $headerIds);
+            $terminRows = $this->db
+                ->where('termin_no >=', 1)
+                ->where('termin_no <=', 5)
+                ->get()
+                ->result_array();
+
+            foreach ($terminRows as $terminRow) {
+                $terminMap[(int) ($terminRow['id_po_header'] ?? 0)][(int) ($terminRow['termin_no'] ?? 0)] = $terminRow;
+            }
+        }
+
+        $rfsClusterIds = [];
+        foreach ($rows as $row) {
+            $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+            if ($rfsClusterId > 0) {
+                $rfsClusterIds[] = $rfsClusterId;
+            }
+        }
+        $checklistStateMap = $this->getTerminChecklistStateMap($rfsClusterIds);
+
+        foreach ($rows as &$row) {
+            $stage = strtoupper(trim((string) $termStage));
+            if ($stage === '') {
+                $stage = strtoupper(trim((string) ($row['po_stage_status'] ?? '')));
+            } else {
+                $row['po_stage_status'] = $stage;
+            }
+
+            if ($stage === 'CLOSED') {
+                $row['current_pic'] = 'CLOSED';
+                $row['current_termin_value'] = 0;
+                continue;
+            }
+
+            $terminNo = $this->getTerminNoFromStage($stage);
+            if ($terminNo <= 0) {
+                $row['current_pic'] = 'AREA';
+                $row['current_termin_value'] = 0;
+                continue;
+            }
+
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $terminRow = $terminMap[$headerId][$terminNo] ?? [];
+            $row['current_termin_value'] = (float) ($terminRow['termin_value'] ?? 0);
+            $row['current_pic'] = $this->resolveTerminCurrentPic(array_merge($row, [
+                'termin_no' => $terminNo,
+                'termin_value' => (float) ($row['current_termin_value'] ?? 0),
+                'status_termin' => (string) ($terminRow['status_termin'] ?? 'NOT READY'),
+            ]), $checklistStateMap);
+            $row['current_nro_status'] = $this->resolveTerminNroFlowStatus(array_merge($row, [
+                'termin_no' => $terminNo,
+            ]), $checklistStateMap);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private function filterPoRowsByCurrentPic(array $rows, array $picValues, array $nroStatusValues = [])
+    {
+        if (empty($picValues) && empty($nroStatusValues)) {
+            return $rows;
+        }
+
+        $filtered = [];
+        foreach ($rows as $row) {
+            $currentPic = strtoupper(trim((string) ($row['current_pic'] ?? '')));
+            if (!empty($picValues) && !in_array($currentPic, $picValues, true)) {
+                continue;
+            }
+
+            $currentNroStatus = strtoupper(trim((string) ($row['current_nro_status'] ?? '')));
+            if (!empty($nroStatusValues) && !in_array($currentNroStatus, $nroStatusValues, true)) {
+                continue;
+            }
+
+            $filtered[] = $row;
+        }
+
+        return $filtered;
+    }
+
+    private function getTerminNoFromStage($stage)
+    {
+        $map = [
+            'DP' => 1,
+            'ATP CW' => 2,
+            'FULL OPM' => 3,
+            'RFS' => 4,
+            'FAC' => 5,
+        ];
+
+        return $map[strtoupper(trim((string) $stage))] ?? 0;
+    }
+
+    private function isTerminChecklistStageReady($statusCurrent)
+    {
+        $statusCurrent = strtoupper(trim((string) $statusCurrent));
+        return in_array($statusCurrent, ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true);
+    }
+
+    private function getTerminSowType($terminNo)
+    {
+        $map = [
+            2 => 'CW ATP',
+            3 => 'FULL OPM',
+            4 => 'RFS',
+        ];
+
+        return $map[(int) $terminNo] ?? '';
+    }
+
+    private function getTerminChecklistStateMap(array $rfsClusterIds)
+    {
+        $rfsClusterIds = array_values(array_unique(array_filter(array_map('intval', $rfsClusterIds))));
+        if (empty($rfsClusterIds) || !$this->checklistTablesReadyForTerminPic()) {
+            return [];
+        }
+
+        $groups = $this->db
+            ->select('id_doc_group, scope_type, sow_type')
+            ->from('md_rfs_myrep_doc_group')
+            ->where('is_active', 1)
+            ->get()
+            ->result_array();
+        $groupById = [];
+        foreach ($groups as $group) {
+            $groupById[(int) ($group['id_doc_group'] ?? 0)] = [
+                'scope_type' => strtoupper(trim((string) ($group['scope_type'] ?? ''))),
+                'sow_type' => strtoupper(trim((string) ($group['sow_type'] ?? ''))),
+            ];
+        }
+
+        $itemRows = $this->db
+            ->select('id_doc_item, id_doc_group, doc_name')
+            ->from('md_rfs_myrep_doc_item')
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->get()
+            ->result_array();
+        $itemsByGroup = [];
+        foreach ($itemRows as $item) {
+            $itemsByGroup[(int) ($item['id_doc_group'] ?? 0)][] = $item;
+        }
+
+        $this->db
+            ->select('id_doc_package, cluster_id, id_doc_group, actual_atp_date')
+            ->from('tb_rfs_myrep_doc_package');
+        $this->applyIntWhereInChunks('cluster_id', $rfsClusterIds);
+        $packageRows = $this->db
+            ->get()
+            ->result_array();
+        if (empty($packageRows)) {
+            return [];
+        }
+
+        $packageIds = array_values(array_filter(array_map('intval', array_column($packageRows, 'id_doc_package'))));
+        $filesByPackageItem = [];
+        if (!empty($packageIds)) {
+            $this->db
+                ->select('id_doc_package, id_doc_item, file_path, is_document_not_required, status_file, astri_status')
+                ->from('tb_rfs_myrep_doc_file');
+            $this->applyIntWhereInChunks('id_doc_package', $packageIds);
+            $fileRows = $this->db
+                ->get()
+                ->result_array();
+
+            foreach ($fileRows as $file) {
+                $filesByPackageItem[(int) ($file['id_doc_package'] ?? 0)][(int) ($file['id_doc_item'] ?? 0)] = $file;
+            }
+        }
+
+        $stateMap = [];
+        foreach ($packageRows as $package) {
+            $groupId = (int) ($package['id_doc_group'] ?? 0);
+            if (empty($groupById[$groupId])) {
+                continue;
+            }
+
+            $rfsClusterId = (int) ($package['cluster_id'] ?? 0);
+            $scopeType = (string) $groupById[$groupId]['scope_type'];
+            $sowType = (string) $groupById[$groupId]['sow_type'];
+            if (!in_array($sowType, ['CW ATP', 'FULL OPM', 'RFS'], true)) {
+                continue;
+            }
+
+            $stateKey = $this->buildTerminChecklistStateKey($rfsClusterId, $scopeType, $sowType);
+            if (!isset($stateMap[$stateKey])) {
+                $stateMap[$stateKey] = [
+                    'required' => 0,
+                    'uploaded' => 0,
+                    'approved' => 0,
+                    'astri_approved' => 0,
+                    'has_project_opname_nro_flow' => false,
+                    'project_opname_nro_status' => '',
+                ];
+            }
+
+            $packageId = (int) ($package['id_doc_package'] ?? 0);
+            $actualAtpDate = trim((string) ($package['actual_atp_date'] ?? ''));
+            $hasActualAtpDate = $actualAtpDate !== '' && !in_array($actualAtpDate, ['0000-00-00', '0000-00-00 00:00:00'], true);
+            foreach (($itemsByGroup[$groupId] ?? []) as $item) {
+                $file = $filesByPackageItem[$packageId][(int) ($item['id_doc_item'] ?? 0)] ?? [];
+                $statusFile = strtoupper(trim((string) ($file['status_file'] ?? '')));
+                $astriStatus = strtoupper(trim((string) ($file['astri_status'] ?? 'NY')));
+                $docName = strtoupper(trim((string) ($item['doc_name'] ?? '')));
+                if (
+                    $astriStatus === 'NY'
+                    && $hasActualAtpDate
+                    && $scopeType === 'CLUSTER'
+                    && $sowType === 'RFS'
+                    && $docName === 'PROJECT OPNAME'
+                ) {
+                    $astriStatus = 'WAITING WASPANG';
+                }
+                $hasDocument = !empty($file)
+                    && (
+                        trim((string) ($file['file_path'] ?? '')) !== ''
+                        || (int) ($file['is_document_not_required'] ?? 0) === 1
+                    );
+
+                $stateMap[$stateKey]['required']++;
+                if ($hasDocument && in_array($statusFile, ['UPLOADED', 'APPROVED'], true)) {
+                    $stateMap[$stateKey]['uploaded']++;
+                }
+                if ($statusFile === 'APPROVED') {
+                    $stateMap[$stateKey]['approved']++;
+                }
+                if ($astriStatus === 'APPROVED') {
+                    $stateMap[$stateKey]['astri_approved']++;
+                }
+                if (
+                    $sowType === 'RFS'
+                    && $scopeType === 'CLUSTER'
+                    && $docName === 'PROJECT OPNAME'
+                    && in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)
+                ) {
+                    $stateMap[$stateKey]['has_project_opname_nro_flow'] = true;
+                    $stateMap[$stateKey]['project_opname_nro_status'] = $astriStatus;
+                }
+            }
+        }
+
+        return $stateMap;
+    }
+
+    private function buildTerminChecklistStateKey($rfsClusterId, $scopeType, $sowType)
+    {
+        return (int) $rfsClusterId . '|' . strtoupper(trim((string) $scopeType)) . '|' . strtoupper(trim((string) $sowType));
+    }
+
+    private function applyIntWhereInChunks($column, array $values, $chunkSize = 500)
+    {
+        $values = array_values(array_unique(array_filter(array_map('intval', $values))));
+        if (empty($values)) {
+            $this->db->where('1 = 0', null, false);
+            return;
+        }
+
+        $chunks = array_chunk($values, max(1, (int) $chunkSize));
+        $this->db->group_start();
+        foreach ($chunks as $index => $chunk) {
+            if ($index === 0) {
+                $this->db->where_in($column, $chunk);
+            } else {
+                $this->db->or_where_in($column, $chunk);
+            }
+        }
+        $this->db->group_end();
+    }
+
+    private function checklistTablesReadyForTerminPic()
+    {
+        foreach (['md_rfs_myrep_doc_group', 'md_rfs_myrep_doc_item', 'tb_rfs_myrep_doc_package', 'tb_rfs_myrep_doc_file'] as $tableName) {
+            if (!$this->db->table_exists($tableName)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function applyAllowedCityRestriction($columnName = 'c.city_name')

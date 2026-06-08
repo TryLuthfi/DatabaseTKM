@@ -30,6 +30,7 @@ class PO_EMR_Myrep extends CI_Controller
         $aggregateData = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetAggregateData($selectedCity, $selectedStage, $selectedRegional) : [];
         $data['summary'] = $aggregateData['summary'] ?? $this->buildSummary([]);
         $data['terminBreakdownRows'] = $aggregateData['terminBreakdownRows'] ?? $this->buildTerminBreakdown([]);
+        $data['terminPicSummaryRows'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetTerminPicSummary($selectedCity, $selectedStage, $selectedRegional) : [];
 
         $this->load->view('Templates/01_Header_EMR', $data);
         $this->load->view('PO_EMR_Myrep/index', $data);
@@ -102,7 +103,10 @@ class PO_EMR_Myrep extends CI_Controller
             $request['length'],
             $request['search'],
             $request['order_column'],
-            $request['order_dir']
+            $request['order_dir'],
+            $request['pic'],
+            $request['term_stage'],
+            $request['nro_status']
         );
 
         $rows = [];
@@ -110,6 +114,8 @@ class PO_EMR_Myrep extends CI_Controller
             $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $stage = strtoupper(trim((string) ($row['po_stage_status'] ?? '-')));
             $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            $currentPic = strtoupper(trim((string) ($row['current_pic'] ?? '-')));
+            $currentPicLabel = $this->picDisplayLabel($currentPic);
             $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url']);
 
             $rows[] = [
@@ -121,7 +127,10 @@ class PO_EMR_Myrep extends CI_Controller
                 htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
                 '<span class="badge badge-' . $this->stageBadgeClass($stage) . '">' . htmlspecialchars($stage, ENT_QUOTES, 'UTF-8') . '</span>',
+                '<span class="badge badge-' . $this->picBadgeClass($currentPic) . '">' . htmlspecialchars($currentPicLabel, ENT_QUOTES, 'UTF-8') . '</span>',
+                $this->formatNumber((float) ($row['current_termin_value'] ?? 0)),
                 $this->formatNumber((float) ($row['po_value'] ?? 0)),
                 (int) ($row['termin_progress_count'] ?? 0) . '/' . (int) ($row['termin_total_count'] ?? 0),
                 $this->formatNumberOrDash((float) ($row['outstanding_total'] ?? 0)),
@@ -209,7 +218,8 @@ class PO_EMR_Myrep extends CI_Controller
             'Regional',
             'Status PO',
             'On Target',
-            'Stage',
+            'Status Current',
+            'TERM PO',
             'Nilai PO',
             'Termin Progress',
             'Outstanding',
@@ -230,6 +240,7 @@ class PO_EMR_Myrep extends CI_Controller
                 (string) ($row['regional_name'] ?? ''),
                 (string) ($row['status_po'] ?? ''),
                 (int) ($row['on_target'] ?? 0) === 1 ? 'TRUE' : 'FALSE',
+                (string) ($row['status_current'] ?? ''),
                 (string) ($row['po_stage_status'] ?? ''),
                 (float) ($row['po_value'] ?? 0),
                 (int) ($row['termin_progress_count'] ?? 0) . '/' . (int) ($row['termin_total_count'] ?? 0),
@@ -303,6 +314,9 @@ class PO_EMR_Myrep extends CI_Controller
             'regional' => $this->normalizeFilterValues($this->input->post('regional')),
             'city' => $this->normalizeFilterValues($this->input->post('city')),
             'stage' => $this->normalizeFilterValues($this->input->post('stage')),
+            'pic' => $this->normalizeFilterValues($this->input->post('pic')),
+            'term_stage' => $this->normalizeFilterValues($this->input->post('term_stage')),
+            'nro_status' => $this->normalizeFilterValues($this->input->post('nro_status')),
             'back_url' => (string) $this->input->post('back_url'),
         ];
     }
@@ -340,7 +354,49 @@ class PO_EMR_Myrep extends CI_Controller
         if ($stage === 'FAC') {
             return 'success';
         }
+        if ($stage === 'CLOSED') {
+            return 'dark';
+        }
         return 'secondary';
+    }
+
+    private function picBadgeClass($pic)
+    {
+        $pic = strtoupper(trim((string) $pic));
+        if ($pic === 'AREA') {
+            return 'warning';
+        }
+        if ($pic === 'HO') {
+            return 'primary';
+        }
+        if ($pic === 'DC EMR') {
+            return 'info';
+        }
+        if ($pic === 'NRO' || $pic === 'FLOW NRO') {
+            return 'danger';
+        }
+        if ($pic === 'TKM') {
+            return 'success';
+        }
+        if ($pic === 'CLOSED') {
+            return 'dark';
+        }
+        return 'secondary';
+    }
+
+    private function picDisplayLabel($pic)
+    {
+        $pic = strtoupper(trim((string) $pic));
+        if ($pic === 'AREA') {
+            return 'TKM - AREA';
+        }
+        if ($pic === 'HO') {
+            return 'TKM - HO';
+        }
+        if ($pic === 'DC EMR') {
+            return 'EMR - DC';
+        }
+        return $pic !== '' ? $pic : '-';
     }
 
     private function formatNumber($value)
@@ -384,6 +440,7 @@ class PO_EMR_Myrep extends CI_Controller
                 'FULL OPM' => 0,
                 'RFS' => 0,
                 'FAC' => 0,
+                'CLOSED' => 0,
             ],
         ];
 
