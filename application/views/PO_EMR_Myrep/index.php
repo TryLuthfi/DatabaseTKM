@@ -265,7 +265,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                             <th rowspan="2">PO QTY</th>
                             <th rowspan="2">Total PO</th>
                             <th colspan="5">Outstanding</th>
-                            <th rowspan="2">Total Invoiced</th>
                             <th rowspan="2">Outstanding Total</th>
                         </tr>
                         <tr>
@@ -281,7 +280,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                         $sumTotalPo = 0;
                         $sumPoCount = 0;
                         $sumTermDone = 0;
-                        $sumTotalInvoiced = 0;
                         $sumOutstanding = 0;
                         $sumTermin = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
                         ?>
@@ -290,7 +288,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                             $sumTotalPo += (float) ($row['total_po_value'] ?? 0);
                             $sumPoCount += (int) ($row['po_count'] ?? 0);
                             $sumTermDone += (int) ($row['term_done_count'] ?? 0);
-                            $sumTotalInvoiced += (float) ($row['total_invoiced_value'] ?? 0);
                             $sumOutstanding += (float) ($row['outstanding_value'] ?? 0);
                             for ($i = 1; $i <= 5; $i++) {
                                 $sumTermin[$i] += (float) ($row['termin_values'][$i] ?? 0);
@@ -306,13 +303,12 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                 <td class="text-right"><?= poEmrNumber((float) ($row['termin_values'][3] ?? 0)) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['termin_values'][4] ?? 0)) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['termin_values'][5] ?? 0)) ?></td>
-                                <td class="text-right"><?= poEmrNumber((float) ($row['total_invoiced_value'] ?? 0)) ?></td>
                                 <td class="text-right"><?= poEmrNumber((float) ($row['outstanding_value'] ?? 0)) ?></td>
                             </tr>
                         <?php endforeach; ?>
                         <?php if (empty($terminBreakdownRows)): ?>
                             <tr>
-                                <td colspan="11" class="text-center text-muted">Belum ada data pembagian termin.</td>
+                                <td colspan="10" class="text-center text-muted">Belum ada data pembagian termin.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -327,7 +323,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                 <th class="text-right"><?= poEmrNumber($sumTermin[3]) ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumTermin[4]) ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumTermin[5]) ?></th>
-                                <th class="text-right"><?= poEmrNumber($sumTotalInvoiced) ?></th>
                                 <th class="text-right"><?= poEmrNumber($sumOutstanding) ?></th>
                             </tr>
                         </tfoot>

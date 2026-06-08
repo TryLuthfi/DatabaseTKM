@@ -354,6 +354,7 @@ class MBAK_MyRep extends CI_Model
         }
 
         $clusterLocationSelect = $this->buildClusterLocationSelect();
+        $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
 
         $this->db
             ->select('
@@ -382,11 +383,12 @@ class MBAK_MyRep extends CI_Model
                 b.ba_open_date,
                 b.bak_date,
                 b.homepass_bak,
-                b.status_bak,
+                b.status_bak AS raw_status_bak,
                 b.remark_bak,
                 t.year_num,
                 t.month_num
             ')
+            ->select($effectiveBakStatusSql . ' AS status_bak', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
@@ -436,7 +438,7 @@ class MBAK_MyRep extends CI_Model
         if ($status !== '') {
             $normalizedStatus = strtoupper($status);
             if (in_array($normalizedStatus, ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'], true)) {
-                $this->db->where('b.status_bak', $normalizedStatus);
+                $this->db->where($effectiveBakStatusSql . ' = ' . $this->db->escape($normalizedStatus), null, false);
             } else {
                 $this->db->where('c.status_current', $normalizedStatus);
             }
@@ -513,18 +515,19 @@ class MBAK_MyRep extends CI_Model
             'DONE',
         ];
         $escapedPostBakStatuses = implode(',', array_map([$this->db, 'escape'], $postBakStatuses));
+        $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
 
         $this->db
             ->select('COUNT(1) AS total_count', false)
             ->select('COALESCE(SUM(COALESCE(b.homepass_bak, 0)), 0) AS total_hp', false)
             ->select("SUM(CASE WHEN UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BA OPEN' THEN 1 ELSE 0 END) AS ba_open_count", false)
             ->select("COALESCE(SUM(CASE WHEN UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BA OPEN' THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS ba_open_hp", false)
-            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'DONE' AND UPPER(COALESCE(c.status_current, 'DRAFT')) NOT IN (" . $escapedPostBakStatuses . ") THEN 1 ELSE 0 END) AS done_count", false)
-            ->select("COALESCE(SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'DONE' AND UPPER(COALESCE(c.status_current, 'DRAFT')) NOT IN (" . $escapedPostBakStatuses . ") THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS done_hp", false)
-            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' OR UPPER(COALESCE(c.status_current, 'DRAFT')) = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_count", false)
-            ->select("COALESCE(SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' OR UPPER(COALESCE(c.status_current, 'DRAFT')) = 'REJECTED' THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS rejected_hp", false)
-            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) NOT IN ('DONE', 'APPROVED') OR UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' THEN 1 ELSE 0 END) AS on_process_count", false)
-            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) IN ('DONE', 'APPROVED') AND UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BAK' THEN 1 ELSE 0 END) AS ny_valsal_count", false)
+            ->select("SUM(CASE WHEN {$effectiveBakStatusSql} = 'DONE' AND UPPER(COALESCE(c.status_current, 'DRAFT')) NOT IN (" . $escapedPostBakStatuses . ") THEN 1 ELSE 0 END) AS done_count", false)
+            ->select("COALESCE(SUM(CASE WHEN {$effectiveBakStatusSql} = 'DONE' AND UPPER(COALESCE(c.status_current, 'DRAFT')) NOT IN (" . $escapedPostBakStatuses . ") THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS done_hp", false)
+            ->select("SUM(CASE WHEN {$effectiveBakStatusSql} = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_count", false)
+            ->select("COALESCE(SUM(CASE WHEN {$effectiveBakStatusSql} = 'REJECTED' THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS rejected_hp", false)
+            ->select("SUM(CASE WHEN {$effectiveBakStatusSql} NOT IN ('DONE', 'APPROVED') THEN 1 ELSE 0 END) AS on_process_count", false)
+            ->select("SUM(CASE WHEN {$effectiveBakStatusSql} IN ('DONE', 'APPROVED') AND UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BAK' THEN 1 ELSE 0 END) AS ny_valsal_count", false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
@@ -617,6 +620,7 @@ class MBAK_MyRep extends CI_Model
             $this->db->select('COUNT(1) AS total', false);
         } else {
             $clusterLocationSelect = $this->buildClusterLocationSelect();
+            $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
             $this->db->select('
                 c.id_myrep_cluster,
                 c.rfs_cluster_id,
@@ -643,11 +647,12 @@ class MBAK_MyRep extends CI_Model
                 b.ba_open_date,
                 b.bak_date,
                 b.homepass_bak,
-                b.status_bak,
+                b.status_bak AS raw_status_bak,
                 b.remark_bak,
                 t.year_num,
                 t.month_num
             ');
+            $this->db->select($effectiveBakStatusSql . ' AS status_bak', false);
         }
 
         $this->db
@@ -683,7 +688,7 @@ class MBAK_MyRep extends CI_Model
         $status = strtoupper(trim((string) $status));
         if ($status !== '') {
             if (in_array($status, ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'], true)) {
-                $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) = " . $this->db->escape($status), null, false);
+                $this->db->where($this->buildBakEffectiveStatusSql() . ' = ' . $this->db->escape($status), null, false);
             } else {
                 $this->db->where('UPPER(c.status_current)', $status);
             }
@@ -695,13 +700,14 @@ class MBAK_MyRep extends CI_Model
     private function applyBakTabFilter($tab)
     {
         $tab = strtolower(trim((string) $tab));
+        $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
         if ($tab === 'on_process') {
-            $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) NOT IN ('DONE', 'APPROVED')", null, false);
+            $this->db->where("{$effectiveBakStatusSql} NOT IN ('DONE', 'APPROVED')", null, false);
             return;
         }
 
         if ($tab === 'ny_valsal') {
-            $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) IN ('DONE', 'APPROVED')", null, false);
+            $this->db->where("{$effectiveBakStatusSql} IN ('DONE', 'APPROVED')", null, false);
             $this->db->where("UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BAK'", null, false);
         }
     }
@@ -718,9 +724,10 @@ class MBAK_MyRep extends CI_Model
     {
         $approvalStatus = strtolower(trim((string) $approvalStatus));
         $rejectedSql = $this->buildBakRejectedSql();
+        $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
 
         if ($approvalStatus === 'on_review') {
-            return "(UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'ON REVIEW' AND NOT ({$rejectedSql}))";
+            return "({$effectiveBakStatusSql} = 'ON REVIEW' AND NOT ({$rejectedSql}))";
         }
 
         if ($approvalStatus === 'rejected') {
@@ -734,6 +741,12 @@ class MBAK_MyRep extends CI_Model
     {
         $docRejectedSql = $this->buildBakDocStatusExistsSql(['REJECTED']);
         return "(UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' OR UPPER(COALESCE(c.status_current, 'DRAFT')) = 'REJECTED' OR {$docRejectedSql})";
+    }
+
+    private function buildBakEffectiveStatusSql()
+    {
+        $rejectedSql = $this->buildBakRejectedSql();
+        return "(CASE WHEN {$rejectedSql} THEN 'REJECTED' ELSE UPPER(COALESCE(b.status_bak, 'DRAFT')) END)";
     }
 
     private function buildBakDocStatusExistsSql(array $statuses)
@@ -781,12 +794,13 @@ class MBAK_MyRep extends CI_Model
         }
 
         $like = $this->db->escape('%' . $this->db->escape_like_str($search) . '%');
+        $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
         $this->db->where("(
             UPPER(c.cluster_name) LIKE " . $like . " ESCAPE '!'
             OR UPPER(c.cluster_code) LIKE " . $like . " ESCAPE '!'
             OR UPPER(c.regional_name) LIKE " . $like . " ESCAPE '!'
             OR UPPER(c.city_name) LIKE " . $like . " ESCAPE '!'
-            OR UPPER(COALESCE(b.status_bak, 'DRAFT')) LIKE " . $like . " ESCAPE '!'
+            OR {$effectiveBakStatusSql} LIKE " . $like . " ESCAPE '!'
             OR UPPER(COALESCE(c.status_current, 'DRAFT')) LIKE " . $like . " ESCAPE '!'
             OR UPPER(c.rpm) LIKE " . $like . " ESCAPE '!'
             OR UPPER(c.sm) LIKE " . $like . " ESCAPE '!'
@@ -796,6 +810,7 @@ class MBAK_MyRep extends CI_Model
 
     private function applyBakRowsOrder(array $order = [])
     {
+        $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
         $columnMap = [
             1 => 'c.cluster_name',
             2 => 'c.regional_name',
@@ -803,12 +818,17 @@ class MBAK_MyRep extends CI_Model
             4 => 'b.homepass_bak',
             5 => 'b.ba_open_date',
             7 => 'b.bak_date',
-            8 => 'b.status_bak',
             11 => 'c.status_current',
         ];
 
         $column = isset($order['column']) ? (int) $order['column'] : 0;
         $dir = strtoupper(trim((string) ($order['dir'] ?? 'ASC'))) === 'DESC' ? 'DESC' : 'ASC';
+
+        if ($column === 8) {
+            $this->db->order_by($effectiveBakStatusSql, $dir, false);
+            $this->db->order_by('c.cluster_name', 'ASC');
+            return;
+        }
 
         if (isset($columnMap[$column])) {
             $this->db->order_by($columnMap[$column], $dir);
