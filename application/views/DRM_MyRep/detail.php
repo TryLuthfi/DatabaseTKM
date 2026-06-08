@@ -785,20 +785,30 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                             <span class="text-info small font-weight-bold">Review mengikuti approval BOQ</span>
                                                                         <?php elseif (!empty($row['id_doc_file']) && $docRawStatus === 'UPLOADED'): ?>
                                                                             <div class="d-flex flex-wrap" style="gap:.35rem;">
-                                                                                <form method="post" action="<?= base_url('DRM_MyRep/approveDocument') ?>" class="d-inline">
-                                                                                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                                                                    <input type="hidden" name="id_doc_file" value="<?= (int) ($row['id_doc_file'] ?? 0) ?>">
-                                                                                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
-                                                                                    <input type="hidden" name="remark" value="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                                                                                </form>
-                                                                                <form method="post" action="<?= base_url('DRM_MyRep/rejectDocument') ?>" class="d-inline" onsubmit="return confirm('Reject dokumen ini?');">
-                                                                                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                                                                    <input type="hidden" name="id_doc_file" value="<?= (int) ($row['id_doc_file'] ?? 0) ?>">
-                                                                                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
-                                                                                    <input type="hidden" name="remark" value="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
-                                                                                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                                                                                </form>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    class="btn btn-sm btn-success js-open-drm-review-modal"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modal-drm-review"
+                                                                                    data-review-action="approve"
+                                                                                    data-doc-file-id="<?= (int) ($row['id_doc_file'] ?? 0) ?>"
+                                                                                    data-scope-type="<?= htmlspecialchars((string) $scopeKey, ENT_QUOTES) ?>"
+                                                                                    data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                                    data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                                    Approve
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    class="btn btn-sm btn-danger js-open-drm-review-modal"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modal-drm-review"
+                                                                                    data-review-action="reject"
+                                                                                    data-doc-file-id="<?= (int) ($row['id_doc_file'] ?? 0) ?>"
+                                                                                    data-scope-type="<?= htmlspecialchars((string) $scopeKey, ENT_QUOTES) ?>"
+                                                                                    data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                                    data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                                    Reject
+                                                                                </button>
                                                                             </div>
                                                                         <?php elseif ($docRawStatus === 'APPROVED'): ?>
                                                                             <span class="text-success small font-weight-bold">Sudah approved</span>
@@ -1055,6 +1065,36 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary btn-sm">Simpan Dokumen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($canApprove && $canApprovalAction): ?>
+<div class="modal fade" id="modal-drm-review" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/approveDocument') ?>" id="form-drm-review">
+                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="id_doc_file" id="drm_review_doc_file_id">
+                <input type="hidden" name="scope_type" id="drm_review_scope_type" value="CLUSTER">
+                <div class="modal-header bg-success text-white" id="drm_review_header">
+                    <h5 class="modal-title" id="drm_review_title">Approve Dokumen DRM</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><strong>Scope:</strong> <span id="drm_review_scope_label">Cluster</span></div>
+                    <div class="mb-3"><strong>Dokumen:</strong> <span id="drm_review_doc_name">-</span></div>
+                    <div class="form-group mb-0">
+                        <label for="drm_review_remark">Remarks</label>
+                        <textarea name="remark" id="drm_review_remark" class="form-control" rows="4" placeholder="Catatan review dokumen"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success btn-sm" id="drm_review_submit">Approve</button>
                 </div>
             </form>
         </div>
@@ -1760,6 +1800,39 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
         bindApdBoqPreview();
 
         document.addEventListener('click', function (event) {
+            var reviewButton = event.target.closest('.js-open-drm-review-modal');
+            if (reviewButton) {
+                var actionType = reviewButton.getAttribute('data-review-action') || 'approve';
+                var isReject = actionType === 'reject';
+                var reviewForm = document.getElementById('form-drm-review');
+                var reviewHeader = document.getElementById('drm_review_header');
+                var reviewSubmit = document.getElementById('drm_review_submit');
+                var reviewRemark = document.getElementById('drm_review_remark');
+
+                if (reviewForm) {
+                    reviewForm.setAttribute('action', isReject ? '<?= base_url('DRM_MyRep/rejectDocument') ?>' : '<?= base_url('DRM_MyRep/approveDocument') ?>');
+                }
+                if (reviewHeader) {
+                    reviewHeader.className = 'modal-header ' + (isReject ? 'bg-danger' : 'bg-success') + ' text-white';
+                }
+                if (reviewSubmit) {
+                    reviewSubmit.className = 'btn ' + (isReject ? 'btn-danger' : 'btn-success') + ' btn-sm';
+                    reviewSubmit.textContent = isReject ? 'Reject' : 'Approve';
+                }
+
+                document.getElementById('drm_review_title').textContent = (isReject ? 'Reject' : 'Approve') + ' Dokumen DRM';
+                document.getElementById('drm_review_doc_file_id').value = reviewButton.getAttribute('data-doc-file-id') || '';
+                document.getElementById('drm_review_scope_type').value = reviewButton.getAttribute('data-scope-type') || 'CLUSTER';
+                document.getElementById('drm_review_scope_label').textContent = (reviewButton.getAttribute('data-scope-type') || 'CLUSTER') === 'SUBFEEDER' ? 'Subfeeder' : 'Cluster';
+                document.getElementById('drm_review_doc_name').textContent = reviewButton.getAttribute('data-doc-name') || '-';
+                if (reviewRemark) {
+                    reviewRemark.value = reviewButton.getAttribute('data-remark') || '';
+                    reviewRemark.required = isReject;
+                    reviewRemark.placeholder = isReject ? 'Alasan reject dokumen' : 'Catatan approve dokumen';
+                }
+                return;
+            }
+
             var uploadButton = event.target.closest('.js-open-drm-upload-modal');
             if (uploadButton) {
                 var currentLabel = document.querySelector('#modal-drm-upload .js-dropzone-label');

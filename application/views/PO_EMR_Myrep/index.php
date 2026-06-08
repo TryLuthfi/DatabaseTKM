@@ -422,6 +422,24 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         text-align: center;
     }
 
+    #table_po_emr_target tfoot th,
+    #table_po_emr_target_wrapper .dataTables_scrollFoot th {
+        background: #f8fafc;
+        border-top: 2px solid #cbd5e1;
+        color: #0f172a;
+        font-size: .82rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    #table_po_emr_target tfoot th.po-emr-list-footer__label,
+    #table_po_emr_target_wrapper .dataTables_scrollFoot th.po-emr-list-footer__label {
+        color: #475569;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+    }
+
     .po-mini-progress__head {
         display: flex;
         justify-content: space-between;
@@ -949,7 +967,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                 <span id="po-emr-drilldown-text"></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="po-emr-drilldown-reset">Reset</button>
             </div>
-            <div class="table-responsive">
+            <div>
                 <table id="table_po_emr_target" class="table table-bordered table-hover">
                     <thead>
                         <tr>
@@ -968,11 +986,30 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                             <th>Nilai PO</th>
                             <th>Progress</th>
                             <th>Outstanding</th>
-                            <th>Total Invoiced</th>
                             <th>Detail</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
+                    <tfoot>
+                        <tr>
+                            <th class="po-emr-list-footer__label">TOTAL</th>
+                            <th class="text-center">0 PO</th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th class="text-right">0</th>
+                            <th class="text-right">0</th>
+                            <th class="text-center">0/0</th>
+                            <th class="text-right">0</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -994,6 +1031,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         var activeDrilldownStage = '';
         var activeDrilldownNroStatus = '';
         var activeDrilldownNroLabel = '';
+        var lastTargetFooter = null;
 
         function toValueArray(value) {
             if ($.isArray(value)) {
@@ -1208,10 +1246,78 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             reloadTargetTableForDrilldown();
         });
 
+        function parseFooterNumber(value) {
+            var text = $('<div>').html(value || '').text();
+            text = text.replace(/[^0-9,-]/g, '').replace(/\./g, '').replace(',', '.');
+            var number = parseFloat(text);
+            return isNaN(number) ? 0 : number;
+        }
+
+        function formatFooterNumber(value) {
+            value = Math.round(parseFloat(value) || 0);
+            return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function buildTargetFooterFromCurrentPage(api) {
+            var summary = {
+                count_label: api.rows({ page: 'current' }).data().length + ' PO',
+                current_termin_value: 0,
+                po_value: 0,
+                progress_done: 0,
+                progress_total: 0,
+                outstanding_total: 0
+            };
+
+            api.rows({ page: 'current' }).data().each(function (row) {
+                summary.current_termin_value += parseFooterNumber(row[11]);
+                summary.po_value += parseFooterNumber(row[12]);
+                summary.outstanding_total += parseFooterNumber(row[14]);
+
+                var progress = String(row[13] || '').split('/');
+                summary.progress_done += parseInt(progress[0], 10) || 0;
+                summary.progress_total += parseInt(progress[1], 10) || 0;
+            });
+
+            return {
+                count_label: summary.count_label,
+                current_termin_value: formatFooterNumber(summary.current_termin_value),
+                po_value: formatFooterNumber(summary.po_value),
+                progress: summary.progress_done + '/' + summary.progress_total,
+                outstanding_total: formatFooterNumber(summary.outstanding_total)
+            };
+        }
+
+        function updateTargetFooter(api, footer) {
+            var hasFooter = footer && Object.prototype.hasOwnProperty.call(footer, 'count_label');
+            footer = hasFooter ? footer : buildTargetFooterFromCurrentPage(api);
+            var values = {
+                0: 'TOTAL',
+                1: footer.count_label || '0 PO',
+                11: footer.current_termin_value || '0',
+                12: footer.po_value || '0',
+                13: footer.progress || '0/0',
+                14: footer.outstanding_total || '0'
+            };
+
+            var $wrapper = $('#table_po_emr_target_wrapper');
+            for (var columnIndex = 0; columnIndex <= 15; columnIndex++) {
+                var value = values[columnIndex] || '';
+                var footerCell = api.column(columnIndex).footer();
+                if (footerCell) {
+                    $(footerCell).html(value);
+                }
+                $wrapper.find('.dataTables_scrollFoot tfoot th').eq(columnIndex).html(value);
+            }
+        }
+
         function initTargetTable() {
             if (tableTarget || !$.fn.DataTable || !$('#table_po_emr_target').length) {
                 return;
             }
+
+            $('#table_po_emr_target').on('xhr.dt', function (event, settings, json) {
+                lastTargetFooter = json && json.footer ? json.footer : null;
+            });
 
             tableTarget = $('#table_po_emr_target').DataTable({
                 processing: true,
@@ -1223,7 +1329,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                 stateSave: true,
                 stateDuration: -1,
                 stateLoadParams: function (settings, data) {
-                    return data && data.columns && data.columns.length === 17;
+                    return data && data.columns && data.columns.length === 16;
                 },
                 searchDelay: 500,
                 pageLength: 10,
@@ -1235,10 +1341,23 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                         return $.extend(data, currentFilterPayload());
                     }
                 },
+                footerCallback: function () {
+                    var json = this.api().ajax.json() || {};
+                    updateTargetFooter(this.api(), json.footer || lastTargetFooter);
+                },
+                drawCallback: function () {
+                    var api = this.api();
+                    var json = api.ajax.json() || {};
+                    lastTargetFooter = json.footer || lastTargetFooter;
+                    updateTargetFooter(api, lastTargetFooter);
+                    setTimeout(function () {
+                        updateTargetFooter(api, lastTargetFooter);
+                    }, 0);
+                },
                 columnDefs: [
-                    { targets: [0, 2, 3, 4, 8, 9, 10, 13, 16], className: 'text-center' },
-                    { targets: [11, 12, 14, 15], className: 'text-right' },
-                    { targets: [0, 10, 11, 16], orderable: false }
+                    { targets: [0, 2, 3, 4, 8, 9, 10, 13, 15], className: 'text-center' },
+                    { targets: [11, 12, 14], className: 'text-right' },
+                    { targets: [0, 10, 11, 15], orderable: false }
                 ]
             });
         }

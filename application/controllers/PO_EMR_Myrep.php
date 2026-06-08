@@ -83,6 +83,7 @@ class PO_EMR_Myrep extends CI_Controller
             'draw' => $request['draw'],
             'recordsTotal' => (int) ($result['recordsTotal'] ?? 0),
             'recordsFiltered' => (int) ($result['recordsFiltered'] ?? 0),
+            'footer' => $this->formatPoFooterSummary((array) ($result['footer'] ?? [])),
             'data' => $rows,
         ]);
     }
@@ -134,7 +135,6 @@ class PO_EMR_Myrep extends CI_Controller
                 $this->formatNumber((float) ($row['po_value'] ?? 0)),
                 (int) ($row['termin_progress_count'] ?? 0) . '/' . (int) ($row['termin_total_count'] ?? 0),
                 $this->formatNumberOrDash((float) ($row['outstanding_total'] ?? 0)),
-                $this->formatNumberOrDash((float) ($row['total_invoiced'] ?? 0)),
                 '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '" class="btn btn-sm btn-primary">Detail</a>',
             ];
         }
@@ -143,6 +143,7 @@ class PO_EMR_Myrep extends CI_Controller
             'draw' => $request['draw'],
             'recordsTotal' => (int) ($result['recordsTotal'] ?? 0),
             'recordsFiltered' => (int) ($result['recordsFiltered'] ?? 0),
+            'footer' => $this->formatPoFooterSummary((array) ($result['footer'] ?? [])),
             'data' => $rows,
         ]);
     }
@@ -403,6 +404,23 @@ class PO_EMR_Myrep extends CI_Controller
             return 'EMR - DC';
         }
         return $pic !== '' ? $pic : '-';
+    }
+
+    private function formatPoFooterSummary(array $footer)
+    {
+        $count = (int) ($footer['count'] ?? 0);
+        $progressDone = (int) ($footer['termin_progress_count'] ?? 0);
+        $progressTotal = (int) ($footer['termin_total_count'] ?? 0);
+
+        return [
+            'count' => $count,
+            'count_label' => $this->formatNumber($count) . ' PO',
+            'current_termin_value' => $this->formatNumber((float) ($footer['current_termin_value'] ?? 0)),
+            'po_value' => $this->formatNumber((float) ($footer['po_value'] ?? 0)),
+            'progress' => $progressDone . '/' . $progressTotal,
+            'outstanding_total' => $this->formatNumber((float) ($footer['outstanding_total'] ?? 0)),
+            'total_invoiced' => $this->formatNumber((float) ($footer['total_invoiced'] ?? 0)),
+        ];
     }
 
     private function formatNumber($value)

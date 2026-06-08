@@ -698,7 +698,6 @@ class MPO_MyRep extends CI_Model
             12 => 'p.po_value',
             13 => 'COALESCE(tm.termin_progress_count, 0)',
             14 => 'COALESCE(tm.plan_invoice_total, 0)',
-            15 => 'COALESCE(tm.done_invoice_total, 0)',
         ];
         $orderSql = $this->buildDataTableOrderSql($orderMap, $orderColumn, $orderDir, 'p.po_date DESC, p.po_number ASC');
         $limitSql = $this->buildLimitSql($start, $length);
@@ -735,6 +734,16 @@ class MPO_MyRep extends CI_Model
             {$whereSql}
         ";
 
+        $footerSummary = [
+            'count' => 0,
+            'current_termin_value' => 0,
+            'po_value' => 0,
+            'termin_progress_count' => 0,
+            'termin_total_count' => 0,
+            'outstanding_total' => 0,
+            'total_invoiced' => 0,
+        ];
+
         if ($hasComputedFilter) {
             $totalRows = $this->decoratePoDataTableRowsWithCurrentPic(
                 $this->db->query($selectSql)->result_array(),
@@ -749,8 +758,14 @@ class MPO_MyRep extends CI_Model
             );
             $filteredRows = $this->filterPoRowsByCurrentPic($filteredRows, $picValues, $nroStatusValues);
             $recordsFiltered = count($filteredRows);
+            $footerSummary = $this->buildPoDataTableFooterSummary($filteredRows);
             $rows = array_slice($filteredRows, max(0, (int) $start), min(max(0, (int) $length), 100));
         } else {
+            $footerRows = $this->decoratePoDataTableRowsWithCurrentPic(
+                $this->db->query("{$selectSql} {$searchSql}")->result_array()
+            );
+            $footerSummary = $this->buildPoDataTableFooterSummary($footerRows);
+
             $rows = $this->db->query("
                 {$selectSql}
                 {$searchSql}
@@ -764,6 +779,7 @@ class MPO_MyRep extends CI_Model
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
             'rows' => $rows,
+            'footer' => $footerSummary,
         ];
     }
 
@@ -2164,6 +2180,30 @@ class MPO_MyRep extends CI_Model
         }
 
         return $filtered;
+    }
+
+    private function buildPoDataTableFooterSummary(array $rows)
+    {
+        $summary = [
+            'count' => count($rows),
+            'current_termin_value' => 0,
+            'po_value' => 0,
+            'termin_progress_count' => 0,
+            'termin_total_count' => 0,
+            'outstanding_total' => 0,
+            'total_invoiced' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $summary['current_termin_value'] += (float) ($row['current_termin_value'] ?? 0);
+            $summary['po_value'] += (float) ($row['po_value'] ?? 0);
+            $summary['termin_progress_count'] += (int) ($row['termin_progress_count'] ?? 0);
+            $summary['termin_total_count'] += (int) ($row['termin_total_count'] ?? 0);
+            $summary['outstanding_total'] += (float) ($row['outstanding_total'] ?? 0);
+            $summary['total_invoiced'] += (float) ($row['total_invoiced'] ?? 0);
+        }
+
+        return $summary;
     }
 
     private function getTerminNoFromStage($stage)
