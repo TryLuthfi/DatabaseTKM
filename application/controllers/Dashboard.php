@@ -30,7 +30,7 @@ class Dashboard extends CI_Controller
         $data['statusCards'] = $this->MMyRepublik_Project->getStatusCards($rows, 'HP');
         $data['stageSummary'] = $this->buildStageSummary($rows);
         $data['citySummary'] = $this->buildCitySummary($rows);
-        $data['topCities'] = array_slice($data['citySummary'], 0, 8);
+        $data['topCities'] = array_slice($this->buildTkmCitySummary($year, $data['citySummary']), 0, 8);
         $data['monthlyTrend'] = $this->buildMonthlyTrend($year);
         $data['annualSummary'] = $this->buildAnnualTargetSummary($year);
         $data['batchSummary'] = $this->buildBatchSummary();
@@ -115,6 +115,45 @@ class Dashboard extends CI_Controller
         });
 
         return $result;
+    }
+
+    private function buildTkmCitySummary($year, array $clusterCitySummary)
+    {
+        if (
+            !$this->db->table_exists('tb_rfs_myrep_monthly_target') ||
+            !$this->db->table_exists('tb_rfs_myrep_cluster') ||
+            !$this->db->table_exists('tb_rfs_myrep_claim')
+        ) {
+            return [];
+        }
+
+        $clusterMap = [];
+        foreach ($clusterCitySummary as $cityRow) {
+            $cityName = strtoupper(trim((string) ($cityRow['city_name'] ?? '-')));
+            if ($cityName !== '') {
+                $clusterMap[$cityName] = $cityRow;
+            }
+        }
+
+        $rows = $this->MMonitoring_RFS_MyRep->getAnnualCitySummary((int) $year, 1, 12, '');
+        foreach ($rows as &$row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '-')));
+            $clusterMeta = $clusterMap[$cityName] ?? [];
+            $row['city_name'] = $cityName !== '' ? $cityName : '-';
+            $row['cluster_count'] = (int) ($clusterMeta['cluster_count'] ?? 0);
+            $row['po_total'] = (float) ($clusterMeta['po_total'] ?? 0);
+            $row['po_count'] = (int) ($clusterMeta['po_count'] ?? 0);
+            $row['rfs_count'] = (int) ($clusterMeta['rfs_count'] ?? 0);
+            $row['atp_count'] = (int) ($clusterMeta['atp_count'] ?? 0);
+            $row['hp_rfs_total'] = (float) ($row['realization_tkm'] ?? 0);
+        }
+        unset($row);
+
+        usort($rows, static function ($a, $b) {
+            return (float) ($b['hp_rfs_total'] ?? 0) <=> (float) ($a['hp_rfs_total'] ?? 0);
+        });
+
+        return $rows;
     }
 
     private function buildMonthlyTrend($year)

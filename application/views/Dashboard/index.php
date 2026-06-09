@@ -42,7 +42,7 @@ $batchSummary = $batchSummary ?? [];
 $topCities = $topCities ?? [];
 $citySummary = $citySummary ?? [];
 $chartPayload = $chartPayload ?? [];
-$achievementMyRep = (float) ($annualSummary['pct_tkm'] ?? 0);
+$achievementTkm = (float) ($annualSummary['pct_tkm'] ?? 0);
 $batchReleaseRatio = (float) ($batchSummary['release_ratio'] ?? 0);
 $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 ?>
@@ -57,10 +57,10 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                     <p>Monitoring cluster, HP, PO, batch approval, dan target RFS tahun <?= (int) ($dashboardYear ?? date('Y')) ?>.</p>
                 </div>
                 <div class="myrep-hero__metric">
-                    <span>Pencapaian MyRep</span>
-                    <strong><?= dashboard_percent($achievementMyRep) ?></strong>
+                    <span>Pencapaian TKM</span>
+                    <strong><?= dashboard_percent($achievementTkm) ?></strong>
                     <div class="myrep-progress" aria-hidden="true">
-                        <div style="width: <?= max(0, min($achievementMyRep, 100)) ?>%;"></div>
+                        <div style="width: <?= max(0, min($achievementTkm, 100)) ?>%;"></div>
                     </div>
                     <small><?= dashboard_number($annualSummary['realization_tkm'] ?? 0) ?> dari <?= dashboard_number($annualSummary['target_tkm'] ?? 0) ?> HP TKM</small>
                 </div>
@@ -78,7 +78,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                 <a href="<?= base_url('MyRepublik_Project') ?>" class="myrep-kpi myrep-kpi--teal">
                     <span>Total Cluster</span>
                     <strong><?= dashboard_number($overview['total_cluster'] ?? 0) ?></strong>
-                    <small><?= dashboard_number($overview['total_hp'] ?? 0) ?> HP pipeline</small>
+                    <small><?= dashboard_number($annualSummary['realization_tkm'] ?? 0) ?> HP RFS TKM</small>
                 </a>
                 <a href="<?= base_url('PO_MyRep') ?>" class="myrep-kpi myrep-kpi--indigo">
                     <span>Total PO</span>
@@ -103,7 +103,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                         <div class="myrep-panel__head">
                             <div>
                                 <span class="myrep-eyebrow">Target vs Realisasi</span>
-                                <h3>Tren Bulanan MyRep</h3>
+                                <h3>Tren Bulanan TKM</h3>
                             </div>
                             <a href="<?= base_url('Monitoring_RFS_MyRep') ?>" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-chart-line"></i> Monitoring RFS
@@ -216,10 +216,10 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                                     <tr>
                                         <th>Kota</th>
                                         <th class="text-right">Cluster</th>
+                                        <th class="text-right">Target TKM</th>
                                         <th class="text-right">HP RFS</th>
+                                        <th class="text-right">Pencapaian</th>
                                         <th class="text-right">PO</th>
-                                        <th class="text-right">RFS</th>
-                                        <th class="text-right">ATP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -232,10 +232,10 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                                         <tr>
                                             <td><strong><?= htmlspecialchars((string) ($cityRow['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong></td>
                                             <td class="text-right"><?= dashboard_number($cityRow['cluster_count'] ?? 0) ?></td>
+                                            <td class="text-right"><?= dashboard_number($cityRow['target_tkm'] ?? 0) ?></td>
                                             <td class="text-right"><?= dashboard_number($cityRow['hp_rfs_total'] ?? 0) ?></td>
+                                            <td class="text-right"><?= dashboard_percent($cityRow['pct_tkm'] ?? 0) ?></td>
                                             <td class="text-right"><?= dashboard_compact_money($cityRow['po_total'] ?? 0) ?></td>
-                                            <td class="text-right"><?= dashboard_number($cityRow['rfs_count'] ?? 0) ?></td>
-                                            <td class="text-right"><?= dashboard_number($cityRow['atp_count'] ?? 0) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -566,24 +566,16 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
             data: {
                 labels: monthly.labels || [],
                 datasets: [{
-                    label: 'Target MyRep',
+                    label: 'Target TKM',
                     backgroundColor: 'rgba(20, 111, 122, 0.22)',
                     borderColor: '#146f7a',
                     borderWidth: 1,
-                    data: monthly.target_myrep || []
+                    data: monthly.target_tkm || []
                 }, {
-                    label: 'Realisasi MyRep',
+                    label: 'HP RFS TKM',
                     backgroundColor: '#d58b16',
                     borderColor: '#d58b16',
                     borderWidth: 1,
-                    data: monthly.realization_myrep || []
-                }, {
-                    label: 'Realisasi TKM',
-                    type: 'line',
-                    fill: false,
-                    borderColor: '#3554d1',
-                    pointBackgroundColor: '#3554d1',
-                    lineTension: 0.25,
                     data: monthly.realization_tkm || []
                 }]
             },
