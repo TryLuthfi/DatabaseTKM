@@ -998,34 +998,34 @@ class MyRepublik_Project extends CI_Controller
             'village_name' => (string) ($cluster['village_name'] ?? ''),
             'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
             'cluster_code' => (string) ($cluster['cluster_code'] ?? ''),
-            'hp_plan' => (string) ($cluster['hp_plan'] ?? ''),
-            'homepass_bak' => (string) ($cluster['homepass_bak'] ?? ''),
+            'hp_plan' => $this->formatQuickIntegerValue($cluster['hp_plan'] ?? ''),
+            'homepass_bak' => $this->formatQuickIntegerValue($cluster['homepass_bak'] ?? ''),
             'ba_open_date' => (string) ($cluster['ba_open_date'] ?? ''),
             'bak_date' => (string) ($cluster['bak_date'] ?? ''),
             'nomor_ntp' => (string) ($cluster['ntp_name'] ?? ''),
             'tanggal_ntp' => (string) ($cluster['ntp_date'] ?? ''),
-            'homepass_valsal' => (string) ($cluster['homepass_valsal'] ?? ''),
+            'homepass_valsal' => $this->formatQuickIntegerValue($cluster['homepass_valsal'] ?? ''),
             'valsal_date' => (string) ($cluster['valsal_date'] ?? ''),
             'remark_valsal' => (string) ($cluster['remark_valsal'] ?? ''),
-            'hp_donasi' => (string) ($cluster['hp_donasi'] ?? ''),
+            'hp_donasi' => $this->formatQuickIntegerValue($cluster['hp_donasi'] ?? ''),
             'submission_date' => (string) ($cluster['submission_date'] ?? ''),
-            'nominal_pengajuan_area' => (string) ($cluster['nominal_pengajuan_area'] ?? ''),
-            'nominal_nego_emr' => (string) ($cluster['nominal_nego_emr'] ?? ''),
-            'nominal_release_finance' => (string) ($cluster['nominal_release_finance'] ?? ''),
-            'nominal_per_homepass' => (string) ($cluster['nominal_per_homepass'] ?? ''),
+            'nominal_pengajuan_area' => $this->formatQuickIntegerValue($cluster['nominal_pengajuan_area'] ?? ''),
+            'nominal_nego_emr' => $this->formatQuickIntegerValue($cluster['nominal_nego_emr'] ?? ''),
+            'nominal_release_finance' => $this->formatQuickIntegerValue($cluster['nominal_release_finance'] ?? ''),
+            'nominal_per_homepass' => $this->formatQuickIntegerValue($cluster['nominal_per_homepass'] ?? ''),
             'bank_name' => (string) ($cluster['bank_name'] ?? ''),
-            'bank_account_number' => (string) ($cluster['bank_account_number'] ?? ''),
+            'bank_account_number' => $this->formatQuickTextNumber($cluster['bank_account_number'] ?? ''),
             'recipient_name' => (string) ($cluster['recipient_name'] ?? ''),
-            'recipient_phone' => (string) ($cluster['recipient_phone'] ?? ''),
+            'recipient_phone' => $this->formatQuickTextNumber($cluster['recipient_phone'] ?? ''),
             'recipient_position' => (string) ($cluster['recipient_position'] ?? ''),
             'recipient_period' => (string) ($cluster['recipient_period'] ?? ''),
-            'free_wifi_qty' => (string) ($cluster['free_wifi_qty'] ?? ''),
-            'free_wifi_period_month' => (string) ($cluster['free_wifi_period_month'] ?? ''),
+            'free_wifi_qty' => $this->formatQuickIntegerValue($cluster['free_wifi_qty'] ?? ''),
+            'free_wifi_period_month' => $this->formatQuickIntegerValue($cluster['free_wifi_period_month'] ?? ''),
             'astri_batch_number' => (string) ($cluster['astri_batch_number'] ?? ''),
             'staging_status' => (string) ($cluster['staging_status'] ?? ''),
             'released_at' => (string) ($cluster['released_at'] ?? ''),
             'remark_batch_approval' => (string) ($cluster['remark_batch_approval'] ?? ''),
-            'homepass_drm' => (string) ($cluster['homepass_drm'] ?? ''),
+            'homepass_drm' => $this->formatQuickIntegerValue($cluster['homepass_drm'] ?? ''),
             'drm_date' => (string) ($cluster['drm_date'] ?? ''),
             'nama_olt' => (string) ($cluster['nama_olt'] ?? ''),
             'remark_drm' => (string) ($cluster['remark_drm'] ?? ''),
@@ -1044,7 +1044,7 @@ class MyRepublik_Project extends CI_Controller
         for ($i = 1; $i <= 5; $i++) {
             $claim = $claims[$i - 1] ?? [];
             $row['rfs_' . $i . '_date'] = (string) ($claim['claim_date'] ?? '');
-            $row['rfs_' . $i . '_qty'] = (string) ($claim['claim_qty'] ?? '');
+            $row['rfs_' . $i . '_qty'] = $this->formatQuickIntegerValue($claim['claim_qty'] ?? '');
         }
 
         return $row;
@@ -3540,10 +3540,40 @@ class MyRepublik_Project extends CI_Controller
         if (in_array($status, ['FULL', 'FULL RFS'], true)) {
             return 'FULL RFS';
         }
-        if (in_array($status, ['PARTIAL', 'PARTIAL RFS', 'NY RFS'], true)) {
+        if (in_array($status, ['PARTIAL', 'PARTIAL RFS'], true)) {
+            return 'PARTIAL';
+        }
+        if ($status === 'NY RFS') {
             return 'NY RFS';
         }
         return '';
+    }
+
+    private function formatQuickIntegerValue($value)
+    {
+        if (trim((string) $value) === '') {
+            return '';
+        }
+
+        $number = (float) $this->normalizeNumber($value);
+        if (abs($number - round($number)) < 0.000001) {
+            return (string) (int) round($number);
+        }
+        return rtrim(rtrim(number_format($number, 6, '.', ''), '0'), '.');
+    }
+
+    private function formatQuickTextNumber($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^[+-]?(?:\d+\.?\d*|\.\d+)e[+-]?\d+$/i', $value)) {
+            return number_format((float) $value, 0, '.', '');
+        }
+
+        return $value;
     }
 
     private function upsertSingleByWhere($table, array $where, array $payload, array $insertOnly = [])
@@ -3746,7 +3776,21 @@ class MyRepublik_Project extends CI_Controller
         if ($value === '') {
             return 0;
         }
-        $value = str_replace(['.', ','], ['', '.'], $value);
+
+        $value = preg_replace('/\s+/', '', $value);
+        $dotPos = strrpos($value, '.');
+        $commaPos = strrpos($value, ',');
+        if ($dotPos !== false && $commaPos !== false) {
+            $value = $dotPos > $commaPos
+                ? str_replace(',', '', $value)
+                : str_replace(',', '.', str_replace('.', '', $value));
+        } elseif ($commaPos !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif ($dotPos !== false && preg_match('/^-?\d{1,3}(?:\.\d{3})+$/', $value)) {
+            $value = str_replace('.', '', $value);
+        }
+
         return is_numeric($value) ? (float) $value : 0;
     }
 

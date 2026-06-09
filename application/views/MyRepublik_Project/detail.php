@@ -77,6 +77,13 @@ if (!function_exists('myrepQuickDateTimeValue')) {
 if (!function_exists('myrepQuickSelected')) {
     function myrepQuickSelected($row, $key, $value)
     {
+        if ($key === 'status_rfs') {
+            $current = strtoupper(trim((string) ($row[$key] ?? '')));
+            $expected = strtoupper(trim((string) $value));
+            $current = $current === 'PARTIAL RFS' ? 'PARTIAL' : $current;
+            $expected = $expected === 'PARTIAL RFS' ? 'PARTIAL' : $expected;
+            return $current === $expected ? 'selected' : '';
+        }
         return strtoupper(trim((string) ($row[$key] ?? ''))) === strtoupper(trim((string) $value)) ? 'selected' : '';
     }
 }
@@ -534,7 +541,12 @@ $canQuickUpdate = !empty($canQuickUpdate);
 <?php
 $quickStatusOptions = ['DRAFT', 'BA OPEN', 'BAK', 'VALSAL', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE', 'REJECTED', 'HOLD'];
 $quickStagingOptions = ['', 'DRAFT', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED', 'REJECTED'];
-$quickRfsOptions = ['', 'FULL RFS', 'PARTIAL RFS', 'NY RFS'];
+$quickRfsOptions = [
+    '' => '-',
+    'FULL RFS' => 'FULL RFS',
+    'PARTIAL' => 'PARTIAL RFS',
+    'NY RFS' => 'NY RFS',
+];
 $quickAtpOptions = ['', 'DONE', 'PUNCLIST'];
 $quickChecklistOptions = ['', 'AREA', 'HO', 'EMR', 'NRO', 'CLOSED'];
 ?>
@@ -717,8 +729,8 @@ $quickChecklistOptions = ['', 'AREA', 'HO', 'EMR', 'NRO', 'CLOSED'];
                                     <div class="form-group">
                                         <label>Status RFS</label>
                                         <select name="status_rfs" class="form-control">
-                                            <?php foreach ($quickRfsOptions as $option): ?>
-                                                <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, 'status_rfs', $option) ?>><?= $option === '' ? '-' : htmlspecialchars($option) ?></option>
+                                            <?php foreach ($quickRfsOptions as $option => $label): ?>
+                                                <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, 'status_rfs', $option) ?>><?= htmlspecialchars($label) ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
