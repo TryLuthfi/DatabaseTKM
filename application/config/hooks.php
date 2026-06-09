@@ -27,3 +27,11 @@ $hook['post_controller_constructor'][] = array(
 	'filepath' => 'hooks',
 	'params'   => array()
 );
+
+$hook['post_controller_constructor'][] = array(
+	'class'    => 'Login_activity_hook',
+	'function' => 'track',
+	'filename' => 'Login_activity_hook.php',
+	'filepath' => 'hooks',
+	'params'   => array()
+);

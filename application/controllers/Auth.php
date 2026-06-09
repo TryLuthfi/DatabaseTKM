@@ -35,6 +35,12 @@ class Auth extends CI_Controller
 
     public function logout()
     {
+        $userId = (int) $this->session->userdata('id_user');
+        $loginHistoryId = (int) $this->session->userdata('login_history_id');
+        if ($userId > 0 && $loginHistoryId > 0) {
+            $this->load->model('MLogin_History');
+            $this->MLogin_History->finishWebSession($loginHistoryId, $userId, 'manual_logout');
+        }
         $this->session->sess_destroy();
         setcookie('mtk_maintenance_bypass', '', time() - 3600, '/');
         redirect('Auth');

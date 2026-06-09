@@ -69,6 +69,14 @@ class MAuth extends CI_Model
                         'nama_jabatan' => $akun['nama_jabatan'] ?? ''
                     ];
                 $this->session->set_userdata($data);
+                $this->load->model('MLogin_History');
+                $loginHistoryId = $this->MLogin_History->startWebSession($akun);
+                if ($loginHistoryId > 0) {
+                    $this->session->set_userdata([
+                        'login_history_id' => $loginHistoryId,
+                        'login_history_seen_at' => time()
+                    ]);
+                }
                 $this->setMaintenanceBypassCookie($akun);
 
                 $isBypassUser = $this->isFirstLoginBypassUser((string) ($akun['username_user'] ?? ''));
@@ -227,4 +235,3 @@ class MAuth extends CI_Model
         return $lokasiUser === 'EMR';
     }
 }
-

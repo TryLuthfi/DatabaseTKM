@@ -119,17 +119,17 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                     </li>
 
                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                        <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea' || $id_menu == 'SuperAdmin_MyRep_Config' || $id_menu == 'SuperAdmin_MyRep_CityMapping' || $id_menu == 'SuperAdmin_UserAccess') {
+                        <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea' || $id_menu == 'SuperAdmin_MyRep_Config' || $id_menu == 'SuperAdmin_MyRep_CityMapping' || $id_menu == 'SuperAdmin_UserAccess' || $id_menu == 'Login_History') {
                             echo "menu-open";
                         } ?>">
-                            <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea' || $id_menu == 'SuperAdmin_MyRep_Config' || $id_menu == 'SuperAdmin_MyRep_CityMapping' || $id_menu == 'SuperAdmin_UserAccess') {
+                            <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea' || $id_menu == 'SuperAdmin_MyRep_Config' || $id_menu == 'SuperAdmin_MyRep_CityMapping' || $id_menu == 'SuperAdmin_UserAccess' || $id_menu == 'Login_History') {
                                 echo "active";
                             } ?>">
                                 <i class="nav-icon fas fa-money-check-alt"></i>
                                 <p>
                                     Super Admin
                                     <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right">6</span>
+                                    <span class="badge badge-info right">7</span>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
@@ -193,6 +193,16 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                                       } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>User Role Access</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('Login_History') ?>" class="nav-link <?php if ($id_menu == 'Login_History') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Login History</p>
                                     </a>
                                 </li>
                             </ul>
