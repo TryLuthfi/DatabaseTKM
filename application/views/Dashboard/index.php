@@ -573,8 +573,15 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                     data: monthly.target_tkm || []
                 }, {
                     label: 'HP RFS TKM',
+                    type: 'line',
+                    fill: false,
                     backgroundColor: '#d58b16',
                     borderColor: '#d58b16',
+                    pointBackgroundColor: '#d58b16',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    lineTension: 0.25,
                     borderWidth: 1,
                     data: monthly.realization_tkm || []
                 }]
