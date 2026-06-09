@@ -9,6 +9,14 @@ class MPO_MyRep extends CI_Model
 
     private $defaultTerminPercents = [20, 25, 15, 30, 10];
 
+    private $emrTargetAreaRegionalMap = [
+        'AREA 1' => ['REGIONAL 1', 'SUMATERA'],
+        'AREA 2' => ['REGIONAL 2', 'JABO', 'JABAR', 'JABO JABAR'],
+        'AREA 3' => ['REGIONAL 3', 'JATENG', 'DIY', 'JATENG DIY'],
+        'AREA 4' => ['REGIONAL 4', 'JATIM', 'BALNUS', 'JATIM BALNUS'],
+        'AREA 5' => ['REGIONAL 5', 'KALIMANTAN', 'SULAWESI', 'KALIMANTAN SULAWESI'],
+    ];
+
     public function __construct()
     {
         parent::__construct();
@@ -293,7 +301,8 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $regional = $this->normalizeUpperList($regional);
+        $areaNumbers = $this->resolveEmrTargetAreaNumbers($regional);
+        $regional = $this->resolveEmrTargetAreaRegionalValues($regional);
         $rows = $this->db
             ->distinct()
             ->select('c.city_name')
@@ -305,7 +314,15 @@ class MPO_MyRep extends CI_Model
             ->order_by('c.city_name', 'ASC');
 
         if (!empty($regional)) {
-            $this->applyUpperInFilter($rows, 'c.regional_name', $regional);
+            if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
+                $this->joinEmrTargetAreaMap($rows);
+                $rows->group_start();
+                $this->applyUpperInFilter($rows, 'area_map.area_number', $areaNumbers);
+                $rows->or_where('UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')', null, false);
+                $rows->group_end();
+            } else {
+                $this->applyUpperInFilter($rows, 'c.regional_name', $regional);
+            }
         }
 
         $rows = $rows->get()->result_array();
@@ -323,6 +340,11 @@ class MPO_MyRep extends CI_Model
 
     public function getEmrTargetRegionalOptions($city = '')
     {
+        return $this->getEmrTargetAreaOptions($city);
+    }
+
+    public function getEmrTargetAreaOptions($city = '')
+    {
         if (!$this->emrTargetReady()) {
             return [];
         }
@@ -331,12 +353,14 @@ class MPO_MyRep extends CI_Model
         $rows = $this->db
             ->distinct()
             ->select('c.regional_name')
+            ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->where('p.on_target', 1)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
             ->order_by('c.regional_name', 'ASC');
+        $this->joinEmrTargetAreaMap($rows);
 
         if (!empty($city)) {
             $this->applyUpperInFilter($rows, 'c.city_name', $city);
@@ -344,18 +368,29 @@ class MPO_MyRep extends CI_Model
 
         $rows = $rows->get()->result_array();
 
-        $regionals = [];
+        $areaSet = [];
         foreach ($rows as $row) {
-            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
-            if ($regionalName !== '') {
-                $regionals[] = $regionalName;
+            $areaName = $this->resolveEmrTargetAreaLabel((string) ($row['area_number'] ?? ''), (string) ($row['regional_name'] ?? ''));
+            if ($areaName !== '') {
+                $areaSet[$areaName] = true;
             }
         }
 
-        return array_values(array_unique($regionals));
+        if (empty($city)) {
+            return array_keys($this->emrTargetAreaRegionalMap);
+        }
+
+        return array_values(array_filter(array_keys($this->emrTargetAreaRegionalMap), static function ($areaName) use ($areaSet) {
+            return !empty($areaSet[$areaName]);
+        }));
     }
 
     public function getEmrTargetCityOptionsByRegional()
+    {
+        return $this->getEmrTargetCityOptionsByArea();
+    }
+
+    public function getEmrTargetCityOptionsByArea()
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -364,6 +399,7 @@ class MPO_MyRep extends CI_Model
         $rows = $this->db
             ->distinct()
             ->select('c.regional_name, c.city_name')
+            ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->where('p.on_target', 1)
@@ -373,21 +409,22 @@ class MPO_MyRep extends CI_Model
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.regional_name', 'ASC')
             ->order_by('c.city_name', 'ASC')
-            ->get()
-            ->result_array();
+        ;
+        $this->joinEmrTargetAreaMap($rows);
+        $rows = $rows->get()->result_array();
 
         $map = [];
         foreach ($rows as $row) {
-            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $areaName = $this->resolveEmrTargetAreaLabel((string) ($row['area_number'] ?? ''), (string) ($row['regional_name'] ?? ''));
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
-            if ($regionalName === '' || $cityName === '') {
+            if ($areaName === '' || $cityName === '') {
                 continue;
             }
-            if (!isset($map[$regionalName])) {
-                $map[$regionalName] = [];
+            if (!isset($map[$areaName])) {
+                $map[$areaName] = [];
             }
-            if (!in_array($cityName, $map[$regionalName], true)) {
-                $map[$regionalName][] = $cityName;
+            if (!in_array($cityName, $map[$areaName], true)) {
+                $map[$areaName][] = $cityName;
             }
         }
 
@@ -396,6 +433,11 @@ class MPO_MyRep extends CI_Model
 
     public function getEmrTargetRegionalOptionsByCity()
     {
+        return $this->getEmrTargetAreaOptionsByCity();
+    }
+
+    public function getEmrTargetAreaOptionsByCity()
+    {
         if (!$this->emrTargetReady()) {
             return [];
         }
@@ -403,6 +445,7 @@ class MPO_MyRep extends CI_Model
         $rows = $this->db
             ->distinct()
             ->select('c.city_name, c.regional_name')
+            ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->where('p.on_target', 1)
@@ -412,21 +455,22 @@ class MPO_MyRep extends CI_Model
             ->where("TRIM(c.regional_name) !=", '')
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.regional_name', 'ASC')
-            ->get()
-            ->result_array();
+        ;
+        $this->joinEmrTargetAreaMap($rows);
+        $rows = $rows->get()->result_array();
 
         $map = [];
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
-            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
-            if ($cityName === '' || $regionalName === '') {
+            $areaName = $this->resolveEmrTargetAreaLabel((string) ($row['area_number'] ?? ''), (string) ($row['regional_name'] ?? ''));
+            if ($cityName === '' || $areaName === '') {
                 continue;
             }
             if (!isset($map[$cityName])) {
                 $map[$cityName] = [];
             }
-            if (!in_array($regionalName, $map[$cityName], true)) {
-                $map[$cityName][] = $regionalName;
+            if (!in_array($areaName, $map[$cityName], true)) {
+                $map[$cityName][] = $areaName;
             }
         }
 
@@ -597,6 +641,9 @@ class MPO_MyRep extends CI_Model
                 p.po_type,
                 c.id_myrep_cluster,
                 c.status_current,
+                {$this->getEmrTargetAreaSelectSql()},
+                {$this->getEmrTargetDrmStatusSelectSql()},
+                {$this->getEmrTargetAtpSelectSql()},
                 {$rfsClusterSelect},
                 t.id_po_termin,
                 t.termin_no,
@@ -638,19 +685,6 @@ class MPO_MyRep extends CI_Model
             $summary[$terminNo]['pic'][$pic]['count']++;
             $summary[$terminNo]['pic'][$pic]['value'] += $terminValue;
 
-            if ($pic === 'NRO') {
-                $nroStatus = $this->resolveTerminNroFlowStatus($row, $checklistStateMap);
-                if ($nroStatus !== '') {
-                    if (empty($summary[$terminNo]['pic'][$pic]['nro_flow'])) {
-                        $summary[$terminNo]['pic'][$pic]['nro_flow'] = $this->buildEmptyNroFlowSummary();
-                    }
-                    if (!isset($summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus])) {
-                        $summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus] = ['count' => 0, 'value' => 0];
-                    }
-                    $summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus]['count']++;
-                    $summary[$terminNo]['pic'][$pic]['nro_flow'][$nroStatus]['value'] += $terminValue;
-                }
-            }
         }
 
         return array_values($summary);
@@ -723,6 +757,9 @@ class MPO_MyRep extends CI_Model
                 c.regional_name,
                 c.team_name,
                 c.status_current,
+                {$this->getEmrTargetAreaSelectSql()},
+                {$this->getEmrTargetDrmStatusSelectSql()},
+                {$this->getEmrTargetAtpSelectSql()},
                 {$rfsClusterSelect},
                 COALESCE(tm.termin_total_count, 0) AS termin_total_count,
                 COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
@@ -817,6 +854,9 @@ class MPO_MyRep extends CI_Model
                 c.regional_name,
                 c.team_name,
                 c.status_current,
+                {$this->getEmrTargetAreaSelectSql()},
+                {$this->getEmrTargetDrmStatusSelectSql()},
+                {$this->getEmrTargetAtpSelectSql()},
                 {$rfsClusterSelect},
                 t.id_po_termin,
                 t.termin_no,
@@ -1154,11 +1194,151 @@ class MPO_MyRep extends CI_Model
 
     private function getEmrTargetPoFromSql()
     {
-        return "
+        $sql = "
             FROM tb_myrep_po_header p
             INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = p.id_myrep_cluster
             LEFT JOIN ({$this->getEmrTargetTerminAggregateSql()}) tm ON tm.id_po_header = p.id_po_header
         ";
+
+        if ($this->supportsEmrTargetAreaColumn()) {
+            $sql .= "
+                LEFT JOIN ({$this->getEmrTargetAreaMapSubquery()}) area_map
+                    ON area_map.city_key COLLATE utf8mb4_unicode_ci = UPPER(TRIM(c.city_name)) COLLATE utf8mb4_unicode_ci
+                    AND (
+                        area_map.regional_key = ''
+                        OR area_map.regional_key COLLATE utf8mb4_unicode_ci = UPPER(TRIM(COALESCE(c.regional_name, ''))) COLLATE utf8mb4_unicode_ci
+                    )
+            ";
+        }
+
+        if ($this->db->table_exists('tb_myrep_drm')) {
+            $sql .= "
+                LEFT JOIN tb_myrep_drm d ON d.id_myrep_cluster = c.id_myrep_cluster
+            ";
+        }
+
+        if ($this->supportsEmrTargetAtpStageData()) {
+            $sql .= "
+                LEFT JOIN tb_rfs_myrep_cluster rfs ON rfs.id_cluster = c.rfs_cluster_id
+                LEFT JOIN (
+                    SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                    FROM tb_rfs_myrep_doc_package
+                    GROUP BY cluster_id
+                ) atp_summary ON atp_summary.cluster_id = rfs.id_cluster
+            ";
+        }
+
+        return $sql;
+    }
+
+    private function getEmrTargetAreaSelectSql()
+    {
+        return $this->supportsEmrTargetAreaColumn()
+            ? "COALESCE(area_map.area_number, '') AS area_number"
+            : "'' AS area_number";
+    }
+
+    private function getEmrTargetAreaMapSubquery()
+    {
+        $activeCondition = $this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')
+            ? 'AND COALESCE(is_active, 1) = 1'
+            : '';
+
+        return "
+            SELECT
+                UPPER(TRIM(city_name)) AS city_key,
+                UPPER(TRIM(COALESCE(regional_name, ''))) AS regional_key,
+                MAX(
+                    CASE
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA %'
+                            THEN TRIM(SUBSTRING(UPPER(TRIM(COALESCE(area, ''))), 6))
+                        ELSE TRIM(COALESCE(area, ''))
+                    END
+                ) AS area_number
+            FROM tb_myrep_pic_mapping_city
+            WHERE city_name IS NOT NULL
+                AND TRIM(city_name) != ''
+                AND area IS NOT NULL
+                AND TRIM(area) != ''
+                {$activeCondition}
+            GROUP BY UPPER(TRIM(city_name)), UPPER(TRIM(COALESCE(regional_name, '')))
+        ";
+    }
+
+    private function joinEmrTargetAreaMap($builder)
+    {
+        if (!$this->supportsEmrTargetAreaColumn()) {
+            return;
+        }
+
+        $builder->join(
+            '(' . $this->getEmrTargetAreaMapSubquery() . ') area_map',
+            "area_map.city_key COLLATE utf8mb4_unicode_ci = UPPER(TRIM(c.city_name)) COLLATE utf8mb4_unicode_ci
+                AND (
+                    area_map.regional_key = ''
+                    OR area_map.regional_key COLLATE utf8mb4_unicode_ci = UPPER(TRIM(COALESCE(c.regional_name, ''))) COLLATE utf8mb4_unicode_ci
+                )",
+            'left',
+            false
+        );
+    }
+
+    private function supportsEmrTargetAreaColumn()
+    {
+        return $this->db->table_exists('tb_myrep_pic_mapping_city')
+            && $this->db->field_exists('city_name', 'tb_myrep_pic_mapping_city')
+            && $this->db->field_exists('area', 'tb_myrep_pic_mapping_city');
+    }
+
+    private function getEmrTargetDrmStatusSelectSql()
+    {
+        return $this->db->table_exists('tb_myrep_drm')
+            ? "COALESCE(d.status_drm, '') AS status_drm"
+            : "'' AS status_drm";
+    }
+
+    private function getEmrTargetAtpSelectSql()
+    {
+        if (!$this->supportsEmrTargetAtpStageData()) {
+            return "
+                NULL AS email_atp_date,
+                NULL AS actual_atp_date,
+                '' AS status_atp,
+                '' AS stage_atp
+            ";
+        }
+
+        return "
+            rfs.email_atp_date,
+            atp_summary.actual_atp_date,
+            COALESCE(rfs.status_atp, '') AS status_atp,
+            {$this->getEmrTargetAtpStageExpression()} AS stage_atp
+        ";
+    }
+
+    private function getEmrTargetAtpStageExpression()
+    {
+        return "
+            CASE
+                WHEN UPPER(TRIM(COALESCE(rfs.status_atp, ''))) = 'DONE' THEN 'ATP DONE'
+                WHEN UPPER(TRIM(COALESCE(rfs.status_atp, ''))) = 'PUNCLIST' THEN 'ATP PUNCLIST'
+                WHEN rfs.email_atp_date IS NULL OR rfs.email_atp_date IN ('0000-00-00', '0000-00-00 00:00:00') THEN 'WAITING EMAIL'
+                WHEN atp_summary.actual_atp_date IS NULL OR atp_summary.actual_atp_date IN ('0000-00-00', '0000-00-00 00:00:00') THEN 'WAITING JADWAL ATP'
+                WHEN CURDATE() < DATE(atp_summary.actual_atp_date) THEN 'WAITING ATP'
+                WHEN CURDATE() = DATE(atp_summary.actual_atp_date) THEN 'PROSES ATP'
+                ELSE 'WAITING STATUS ATP'
+            END
+        ";
+    }
+
+    private function supportsEmrTargetAtpStageData()
+    {
+        return $this->db->table_exists('tb_rfs_myrep_cluster')
+            && $this->db->table_exists('tb_rfs_myrep_doc_package')
+            && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
+            && $this->db->field_exists('email_atp_date', 'tb_rfs_myrep_cluster')
+            && $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster')
+            && $this->db->field_exists('actual_atp_date', 'tb_rfs_myrep_doc_package');
     }
 
     private function getEmrTargetTerminAggregateSql()
@@ -1205,14 +1385,22 @@ class MPO_MyRep extends CI_Model
     {
         $conditions = ['p.on_target = 1'];
         $city = $this->normalizeUpperList($city);
-        $regional = $this->normalizeUpperList($regional);
+        $areaNumbers = $this->resolveEmrTargetAreaNumbers($regional);
+        $regional = $this->resolveEmrTargetAreaRegionalValues($regional);
         $stageStatus = $this->normalizeUpperList($stageStatus);
 
         if (!empty($city)) {
             $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
         }
         if (!empty($regional)) {
-            $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
+            if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
+                $conditions[] = '(
+                    UPPER(area_map.area_number) IN (' . $this->buildEscapedSqlList($areaNumbers) . ')
+                    OR UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')
+                )';
+            } else {
+                $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
+            }
         }
         if (!empty($stageStatus)) {
             $conditions[] = '(' . $this->getEmrTargetStageExpression() . ') IN (' . $this->buildEscapedSqlList($stageStatus) . ')';
@@ -1225,6 +1413,98 @@ class MPO_MyRep extends CI_Model
         }
 
         return 'WHERE ' . implode(' AND ', $conditions);
+    }
+
+    public function getEmrTargetAreaFromRegionalName($regionalName)
+    {
+        return $this->resolveEmrTargetAreaFromRegional($regionalName);
+    }
+
+    public function getEmrTargetAreaLabel($areaNumber = '', $regionalName = '')
+    {
+        return $this->resolveEmrTargetAreaLabel($areaNumber, $regionalName);
+    }
+
+    private function resolveEmrTargetAreaNumbers($areaValues)
+    {
+        $values = $this->normalizeUpperList($areaValues);
+        if (empty($values)) {
+            return [];
+        }
+
+        $numbers = [];
+        foreach ($values as $value) {
+            $number = $this->normalizeEmrTargetAreaNumber($value);
+            if ($number !== '') {
+                $numbers[] = $number;
+            }
+        }
+
+        return array_values(array_unique($numbers));
+    }
+
+    private function resolveEmrTargetAreaRegionalValues($areaValues)
+    {
+        $values = $this->normalizeUpperList($areaValues);
+        if (empty($values)) {
+            return [];
+        }
+
+        $regionals = [];
+        foreach ($values as $value) {
+            if (isset($this->emrTargetAreaRegionalMap[$value])) {
+                $regionals = array_merge($regionals, $this->emrTargetAreaRegionalMap[$value]);
+                continue;
+            }
+
+            $regionals[] = $value;
+        }
+
+        return array_values(array_unique($regionals));
+    }
+
+    private function resolveEmrTargetAreaFromRegional($regionalName)
+    {
+        $regionalName = strtoupper(trim((string) $regionalName));
+        if ($regionalName === '') {
+            return '';
+        }
+
+        foreach ($this->emrTargetAreaRegionalMap as $areaName => $regionals) {
+            if (in_array($regionalName, $regionals, true)) {
+                return $areaName;
+            }
+        }
+
+        return '';
+    }
+
+    private function resolveEmrTargetAreaLabel($areaNumber = '', $regionalName = '')
+    {
+        $number = $this->normalizeEmrTargetAreaNumber($areaNumber);
+        if ($number !== '') {
+            return 'AREA ' . $number;
+        }
+
+        return $this->resolveEmrTargetAreaFromRegional($regionalName);
+    }
+
+    private function normalizeEmrTargetAreaNumber($value)
+    {
+        $value = strtoupper(trim((string) $value));
+        if ($value === '') {
+            return '';
+        }
+
+        if (strpos($value, 'AREA ') === 0) {
+            $value = trim(substr($value, 5));
+        }
+
+        if (strpos($value, 'REGIONAL ') === 0) {
+            $value = trim(substr($value, 9));
+        }
+
+        return in_array($value, ['1', '2', '3', '4', '5'], true) ? $value : '';
     }
 
     private function buildEmrTargetSearchSql($search, array $columns)
@@ -1971,7 +2251,7 @@ class MPO_MyRep extends CI_Model
 
     private function buildEmptyTerminPicSummary()
     {
-        $picLabels = ['AREA', 'HO', 'DC EMR', 'NRO', 'CLOSED'];
+        $picLabels = ['AREA', 'HO', 'EMR NRO', 'DC EMR', 'WASPANG', 'PLANNING', 'TL', 'LOGISTIK', 'CLOSED'];
         $stageLabels = [
             1 => 'DP',
             2 => 'ATP CW',
@@ -1991,9 +2271,6 @@ class MPO_MyRep extends CI_Model
             ];
             foreach ($picLabels as $picLabel) {
                 $summary[$terminNo]['pic'][$picLabel] = ['count' => 0, 'value' => 0];
-                if ($picLabel === 'NRO') {
-                    $summary[$terminNo]['pic'][$picLabel]['nro_flow'] = $this->buildEmptyNroFlowSummary();
-                }
             }
         }
 
@@ -2017,11 +2294,6 @@ class MPO_MyRep extends CI_Model
             return 'CLOSED';
         }
 
-        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
-        if (!$this->isTerminChecklistStageReady($statusCurrent)) {
-            return 'AREA';
-        }
-
         $terminNo = (int) ($row['termin_no'] ?? 0);
         if ($terminNo === 1 || $terminNo === 5) {
             return 'HO';
@@ -2029,20 +2301,20 @@ class MPO_MyRep extends CI_Model
 
         $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
         if ($rfsClusterId <= 0) {
-            return 'AREA';
+            return $this->resolvePicFromClusterAndAtpStage($row);
         }
 
         $scopeType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
         $sowType = $this->getTerminSowType($terminNo);
         if ($sowType === '') {
-            return 'HO';
+            return $this->resolvePicFromClusterAndAtpStage($row);
         }
 
         $stateKey = $this->buildTerminChecklistStateKey($rfsClusterId, $scopeType, $sowType);
         $state = $checklistStateMap[$stateKey] ?? [];
         $required = (int) ($state['required'] ?? 0);
         if ($required <= 0) {
-            return 'AREA';
+            return $this->resolvePicFromClusterAndAtpStage($row);
         }
 
         $uploaded = (int) ($state['uploaded'] ?? 0);
@@ -2056,13 +2328,102 @@ class MPO_MyRep extends CI_Model
             return 'HO';
         }
         if ($sowType === 'RFS' && !empty($state['has_project_opname_nro_flow'])) {
-            return 'NRO';
+            $nroPic = $this->mapNroFlowStatusToPic((string) ($state['project_opname_nro_status'] ?? ''));
+            if ($nroPic !== '') {
+                return $nroPic;
+            }
+
+            return 'EMR NRO';
         }
         if ($astriApproved >= $required) {
             return 'HO';
         }
 
         return 'DC EMR';
+    }
+
+    private function resolvePicFromClusterAndAtpStage(array $row)
+    {
+        $displayStatus = $this->resolveClusterDetailedStatus($row);
+        if ($displayStatus === 'IMPLEMENTASI') {
+            return 'AREA';
+        }
+        if (in_array($displayStatus, ['ATP PUNCLIST', 'PUNCLIST'], true)) {
+            return 'AREA';
+        }
+        if ($displayStatus === 'WAITING EMAIL') {
+            return 'HO';
+        }
+        if (in_array($displayStatus, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true)) {
+            return 'EMR NRO';
+        }
+
+        $stageAtp = strtoupper(trim((string) ($row['stage_atp'] ?? '')));
+        $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+        if ($statusAtp === 'PUNCLIST' || in_array($stageAtp, ['ATP PUNCLIST', 'PUNCLIST'], true)) {
+            return 'AREA';
+        }
+
+        if ($stageAtp === 'WAITING EMAIL') {
+            return 'HO';
+        }
+
+        if (in_array($stageAtp, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true)) {
+            return 'EMR NRO';
+        }
+
+        return 'AREA';
+    }
+
+    public function getEmrTargetDetailedStatusLabel(array $row)
+    {
+        $status = $this->resolveClusterDetailedStatus($row);
+        return $status !== '' ? $status : '-';
+    }
+
+    private function resolveClusterDetailedStatus(array $row)
+    {
+        $displayStatus = $this->resolveClusterDisplayStatusForPic($row);
+        $stageAtp = strtoupper(trim((string) ($row['stage_atp'] ?? '')));
+        $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+
+        if ($displayStatus === 'IMPLEMENTASI') {
+            return 'IMPLEMENTASI';
+        }
+
+        if ($statusAtp === 'PUNCLIST' || in_array($stageAtp, ['ATP PUNCLIST', 'PUNCLIST'], true)) {
+            return 'PUNCLIST';
+        }
+
+        if (in_array($stageAtp, ['WAITING EMAIL', 'WAITING JADWAL ATP', 'WAITING JADWAL', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP', 'WAITING STATUS ATP'], true)) {
+            return $stageAtp === 'PROSES ATP' ? 'ON PROSES ATP' : $stageAtp;
+        }
+
+        return $displayStatus;
+    }
+
+    private function resolveClusterDisplayStatusForPic(array $row)
+    {
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        $statusDrm = strtoupper(trim((string) ($row['status_drm'] ?? '')));
+
+        if ($statusCurrent === 'DONE' && strpos($statusDrm, 'IMPLEMENTASI') !== false) {
+            return 'IMPLEMENTASI';
+        }
+
+        return $statusCurrent;
+    }
+
+    private function mapNroFlowStatusToPic($nroStatus)
+    {
+        $map = [
+            'WAITING WASPANG' => 'WASPANG',
+            'WAITING PLANNING' => 'PLANNING',
+            'WAITING TL' => 'TL',
+            'WAITING LOGISTIK' => 'LOGISTIK',
+        ];
+
+        return $map[strtoupper(trim((string) $nroStatus))] ?? '';
     }
 
     private function resolveTerminNroFlowStatus(array $row, array $checklistStateMap)

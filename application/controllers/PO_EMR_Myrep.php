@@ -69,7 +69,7 @@ class PO_EMR_Myrep extends CI_Controller
                 $request['start'] + $index + 1,
                 '<strong><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a></strong><div class="small text-muted">' . htmlspecialchars((string) ($row['team_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</div>',
                 htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($this->formatAreaLabel((string) ($row['area_number'] ?? ''), (string) ($row['regional_name'] ?? '')), ENT_QUOTES, 'UTF-8'),
                 '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
                 '<div>Cluster: ' . (int) ($row['po_cluster_count'] ?? 0) . '</div><div>Subfeeder: ' . (int) ($row['po_subfeeder_count'] ?? 0) . '</div><div><span class="badge badge-' . $this->stageBadgeClass($summaryStatus) . '">' . htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') . '</span></div>',
                 $this->formatNumber((float) ($row['po_total_value'] ?? 0)),
@@ -117,6 +117,7 @@ class PO_EMR_Myrep extends CI_Controller
             $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
             $currentPic = strtoupper(trim((string) ($row['current_pic'] ?? '-')));
             $currentPicLabel = $this->picDisplayLabel($currentPic);
+            $statusCurrentCell = $this->formatStatusCurrentCell($row);
             $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url']);
 
             $rows[] = [
@@ -127,8 +128,8 @@ class PO_EMR_Myrep extends CI_Controller
                 !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date'], ENT_QUOTES, 'UTF-8') : '-',
                 htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
-                '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
+                htmlspecialchars($this->formatAreaLabel((string) ($row['area_number'] ?? ''), (string) ($row['regional_name'] ?? '')), ENT_QUOTES, 'UTF-8'),
+                $statusCurrentCell,
                 '<span class="badge badge-' . $this->stageBadgeClass($stage) . '">' . htmlspecialchars($stage, ENT_QUOTES, 'UTF-8') . '</span>',
                 '<span class="badge badge-' . $this->picBadgeClass($currentPic) . '">' . htmlspecialchars($currentPicLabel, ENT_QUOTES, 'UTF-8') . '</span>',
                 $this->formatNumber((float) ($row['current_termin_value'] ?? 0)),
@@ -218,7 +219,7 @@ class PO_EMR_Myrep extends CI_Controller
             'Cluster',
             'Kode Cluster',
             'Kota',
-            'Regional',
+            'Area',
             'Status PO',
             'On Target',
             'Status Current',
@@ -242,10 +243,10 @@ class PO_EMR_Myrep extends CI_Controller
                 (string) ($row['cluster_name'] ?? ''),
                 (string) ($row['cluster_code'] ?? ''),
                 (string) ($row['city_name'] ?? ''),
-                (string) ($row['regional_name'] ?? ''),
+                $this->formatAreaLabel((string) ($row['area_number'] ?? ''), (string) ($row['regional_name'] ?? '')),
                 (string) ($row['status_po'] ?? ''),
                 (int) ($row['on_target'] ?? 0) === 1 ? 'TRUE' : 'FALSE',
-                (string) ($row['status_current'] ?? ''),
+                $this->formatStatusCurrentExport($row),
                 (string) ($row['po_stage_status'] ?? ''),
                 $this->picDisplayLabel((string) ($row['current_pic'] ?? '')),
                 (string) ($row['current_nro_status'] ?? ''),
@@ -379,8 +380,20 @@ class PO_EMR_Myrep extends CI_Controller
         if ($pic === 'DC EMR') {
             return 'info';
         }
-        if ($pic === 'NRO' || $pic === 'FLOW NRO') {
+        if ($pic === 'EMR NRO' || $pic === 'NRO' || $pic === 'FLOW NRO') {
             return 'danger';
+        }
+        if ($pic === 'WASPANG') {
+            return 'warning';
+        }
+        if ($pic === 'PLANNING') {
+            return 'primary';
+        }
+        if ($pic === 'TL') {
+            return 'secondary';
+        }
+        if ($pic === 'LOGISTIK') {
+            return 'info';
         }
         if ($pic === 'TKM') {
             return 'success';
@@ -400,10 +413,53 @@ class PO_EMR_Myrep extends CI_Controller
         if ($pic === 'HO') {
             return 'TKM - HO';
         }
+        if ($pic === 'EMR NRO' || $pic === 'NRO') {
+            return 'EMR - NRO';
+        }
         if ($pic === 'DC EMR') {
             return 'EMR - DC';
         }
+        if ($pic === 'TL') {
+            return 'TEAM LEADER';
+        }
         return $pic !== '' ? $pic : '-';
+    }
+
+    private function formatAreaLabel($areaNumber = '', $regionalName = '')
+    {
+        $areaName = $this->MPO_MyRep->getEmrTargetAreaLabel($areaNumber, $regionalName);
+        return $areaName !== '' ? $areaName : '-';
+    }
+
+    private function formatStatusCurrentCell(array $row)
+    {
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        $statusDetail = strtoupper(trim((string) $this->MPO_MyRep->getEmrTargetDetailedStatusLabel($row)));
+
+        if ($statusCurrent === '') {
+            $statusCurrent = '-';
+        }
+        if ($statusDetail === '' || $statusDetail === $statusCurrent) {
+            $statusDetail = '-';
+        }
+
+        return '<div><span class="badge badge-info">' . htmlspecialchars($statusCurrent, ENT_QUOTES, 'UTF-8') . '</span></div>'
+            . '<div class="small text-muted mt-1">' . htmlspecialchars($statusDetail, ENT_QUOTES, 'UTF-8') . '</div>';
+    }
+
+    private function formatStatusCurrentExport(array $row)
+    {
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        $statusDetail = strtoupper(trim((string) $this->MPO_MyRep->getEmrTargetDetailedStatusLabel($row)));
+
+        if ($statusCurrent === '') {
+            $statusCurrent = '-';
+        }
+        if ($statusDetail === '' || $statusDetail === $statusCurrent) {
+            return $statusCurrent;
+        }
+
+        return $statusCurrent . ' | ' . $statusDetail;
     }
 
     private function formatPoFooterSummary(array $footer)

@@ -18,6 +18,13 @@ if (!function_exists('poEmrNumberOrDash')) {
 $selectedRegionalValues = is_array($selectedRegional) ? array_values($selectedRegional) : array_filter([strtoupper(trim((string) $selectedRegional))]);
 $selectedCityValues = is_array($selectedCity) ? array_values($selectedCity) : array_filter([strtoupper(trim((string) $selectedCity))]);
 $selectedStageValues = is_array($selectedStage) ? array_values($selectedStage) : array_filter([strtoupper(trim((string) $selectedStage))]);
+$areaDescriptions = [
+    'AREA 1' => 'SUMATERA',
+    'AREA 2' => 'JABO JABAR',
+    'AREA 3' => 'JATENG DIY',
+    'AREA 4' => 'JATIM, BALNUS',
+    'AREA 5' => 'KALIMANTAN SULAWESI',
+];
 
 $currentQueryParams = [];
 if (!empty($_SERVER['QUERY_STRING'])) {
@@ -243,6 +250,15 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         line-height: 1.1;
     }
 
+    .emr-pic-cell__empty {
+        display: block;
+        color: #94a3b8;
+        font-size: .95rem;
+        font-weight: 800;
+        line-height: 1.1;
+        text-align: center;
+    }
+
     .emr-pic-drilldown {
         display: block;
         width: 100%;
@@ -332,6 +348,26 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         color: #0369a1;
     }
 
+    .emr-pic-row-badge--waspang {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .emr-pic-row-badge--planning {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .emr-pic-row-badge--tl {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    .emr-pic-row-badge--logistik {
+        background: #cffafe;
+        color: #0e7490;
+    }
+
     .emr-pic-row-badge--closed {
         background: #fef3c7;
         color: #92400e;
@@ -410,6 +446,12 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
     .emr-drilldown-state.is-visible {
         display: flex;
+    }
+
+    .po-emr-summary-loading {
+        opacity: .55;
+        pointer-events: none;
+        transition: opacity .15s ease;
     }
 
     #table_po_emr_target th,
@@ -517,8 +559,12 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     $downloadPicOptions = [
         'AREA' => 'TKM - AREA',
         'HO' => 'TKM - HO',
+        'EMR NRO' => 'EMR - NRO',
+        'WASPANG' => 'WASPANG',
+        'PLANNING' => 'PLANNING',
+        'TL' => 'TEAM LEADER',
+        'LOGISTIK' => 'LOGISTIK',
         'DC EMR' => 'EMR - DC',
-        'NRO' => 'NRO',
     ];
     ?>
     <div class="modal fade" id="modal-po-emr-download-report" tabindex="-1" role="dialog" aria-labelledby="modalPoEmrDownloadReportLabel" aria-hidden="true">
@@ -528,7 +574,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                     <div class="modal-header">
                         <div>
                             <h5 class="modal-title mb-1" id="modalPoEmrDownloadReportLabel">Download PO EMR Report</h5>
-                            <p class="mb-0 text-muted">Export outstanding tagihan berdasarkan regional, kota, term, dan PIC.</p>
+                            <p class="mb-0 text-muted">Export outstanding tagihan berdasarkan area, kota, term, dan PIC.</p>
                         </div>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -538,12 +584,13 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Regional</label>
-                                    <select name="regional[]" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Regional" multiple>
+                                    <label>Area</label>
+                                    <select name="regional[]" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Area" multiple>
                                         <?php foreach ($regionalOptions as $regional): ?>
                                             <?php $regionalValue = strtoupper((string) $regional); ?>
+                                            <?php $regionalLabel = $regionalValue . (!empty($areaDescriptions[$regionalValue]) ? ' - ' . $areaDescriptions[$regionalValue] : ''); ?>
                                             <option value="<?= htmlspecialchars((string) $regional, ENT_QUOTES, 'UTF-8') ?>" <?= in_array($regionalValue, $selectedRegionalValues, true) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars((string) $regional, ENT_QUOTES, 'UTF-8') ?>
+                                                <?= htmlspecialchars($regionalLabel, ENT_QUOTES, 'UTF-8') ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -608,25 +655,28 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     <div class="alert alert-warning">Tabel PO MyRep atau kolom on_target belum tersedia. Jalankan patch database terlebih dahulu.</div>
 <?php else: ?>
     <?php
-    $picRows = ['AREA', 'HO', 'DC EMR', 'NRO'];
-    $nroFlowLabels = [
-        'WAITING WASPANG' => 'Waiting Waspang',
-        'WAITING PLANNING' => 'Waiting Planning',
-        'WAITING TL' => 'Waiting TL',
-        'WAITING LOGISTIK' => 'Waiting Logistik',
-    ];
+    $picRows = ['AREA', 'HO', 'EMR NRO', 'WASPANG', 'PLANNING', 'TL', 'LOGISTIK', 'DC EMR'];
     $picLabelClasses = [
         'AREA' => 'area',
         'HO' => 'ho',
+        'EMR NRO' => 'flow',
+        'WASPANG' => 'waspang',
+        'PLANNING' => 'planning',
+        'TL' => 'tl',
+        'LOGISTIK' => 'logistik',
         'DC EMR' => 'dc',
-        'NRO' => 'flow',
     ];
     $picDisplayLabels = [
         'AREA' => 'TKM - AREA',
         'HO' => 'TKM - HO',
+        'EMR NRO' => 'EMR - NRO',
+        'WASPANG' => 'WASPANG',
+        'PLANNING' => 'PLANNING',
+        'TL' => 'TEAM LEADER',
+        'LOGISTIK' => 'LOGISTIK',
         'DC EMR' => 'EMR - DC',
-        'NRO' => 'NRO',
     ];
+    $executiveCardClasses = ['green', 'blue', 'red', 'cyan', 'amber', 'mint', 'blue', 'cyan'];
     $executivePicTotals = [];
     foreach ($picRows as $picRow) {
         $executivePicTotals[$picRow] = ['count' => 0, 'value' => 0];
@@ -643,35 +693,23 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         $activeOutstandingCount += (int) ($picTotal['count'] ?? 0);
     }
     ?>
-    <div class="emr-executive-summary">
+    <div class="emr-executive-summary" id="po-emr-executive-summary-section">
         <div class="emr-exec-card emr-exec-card--amber">
             <div class="emr-exec-card__label">Total Outstanding</div>
             <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($summary['total_outstanding'] ?? 0)) ?></div>
             <div class="emr-exec-card__meta"><?= $activeOutstandingCount ?> tagihan aktif</div>
         </div>
-        <div class="emr-exec-card emr-exec-card--green">
-            <div class="emr-exec-card__label"><?= htmlspecialchars($picDisplayLabels['AREA'], ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($executivePicTotals['AREA']['value'] ?? 0)) ?></div>
-            <div class="emr-exec-card__meta"><?= (int) ($executivePicTotals['AREA']['count'] ?? 0) ?> tagihan</div>
-        </div>
-        <div class="emr-exec-card emr-exec-card--blue">
-            <div class="emr-exec-card__label"><?= htmlspecialchars($picDisplayLabels['HO'], ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($executivePicTotals['HO']['value'] ?? 0)) ?></div>
-            <div class="emr-exec-card__meta"><?= (int) ($executivePicTotals['HO']['count'] ?? 0) ?> tagihan</div>
-        </div>
-        <div class="emr-exec-card emr-exec-card--cyan">
-            <div class="emr-exec-card__label"><?= htmlspecialchars($picDisplayLabels['DC EMR'], ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($executivePicTotals['DC EMR']['value'] ?? 0)) ?></div>
-            <div class="emr-exec-card__meta"><?= (int) ($executivePicTotals['DC EMR']['count'] ?? 0) ?> tagihan</div>
-        </div>
-        <div class="emr-exec-card emr-exec-card--red">
-            <div class="emr-exec-card__label">NRO</div>
-            <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($executivePicTotals['NRO']['value'] ?? 0)) ?></div>
-            <div class="emr-exec-card__meta"><?= (int) ($executivePicTotals['NRO']['count'] ?? 0) ?> tagihan</div>
-        </div>
+        <?php foreach ($picRows as $picIndex => $picRow): ?>
+            <?php $cardClass = $executiveCardClasses[$picIndex % count($executiveCardClasses)]; ?>
+            <div class="emr-exec-card emr-exec-card--<?= htmlspecialchars($cardClass, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="emr-exec-card__label"><?= htmlspecialchars($picDisplayLabels[$picRow] ?? $picRow, ENT_QUOTES, 'UTF-8') ?></div>
+                <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($executivePicTotals[$picRow]['value'] ?? 0)) ?></div>
+                <div class="emr-exec-card__meta"><?= (int) ($executivePicTotals[$picRow]['count'] ?? 0) ?> tagihan</div>
+            </div>
+        <?php endforeach; ?>
     </div>
 
-    <div class="card card-outline card-success">
+    <div class="card card-outline card-success" id="po-emr-pic-summary-section">
         <div class="card-header">
             <h3 class="card-title">Summary PIC per Termin</h3>
         </div>
@@ -693,10 +731,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             $picRowTotals = [];
             $visibleColumnTotals = [];
             foreach ($picRows as $picRow) {
-                $picRowTotals[$picRow] = ['count' => 0, 'value' => 0, 'nro_flow' => []];
-                foreach ($nroFlowLabels as $nroStatus => $nroLabel) {
-                    $picRowTotals[$picRow]['nro_flow'][$nroStatus] = ['count' => 0, 'value' => 0];
-                }
+                $picRowTotals[$picRow] = ['count' => 0, 'value' => 0];
             }
             foreach ($termColumns as $termColumn) {
                 $visibleColumnTotals[(string) ($termColumn['stage'] ?? '')] = ['count' => 0, 'value' => 0];
@@ -733,7 +768,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                     $picData = (array) (($termRow['pic'][$picRow] ?? ['count' => 0, 'value' => 0]));
                                     $picCount = (int) ($picData['count'] ?? 0);
                                     $picValue = (float) ($picData['value'] ?? 0);
-                                    $nroFlowData = (array) ($picData['nro_flow'] ?? []);
                                     $picRowTotals[$picRow]['count'] += $picCount;
                                     $picRowTotals[$picRow]['value'] += $picValue;
                                     if (!isset($visibleColumnTotals[$stageLabel])) {
@@ -741,11 +775,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                     }
                                     $visibleColumnTotals[$stageLabel]['count'] += $picCount;
                                     $visibleColumnTotals[$stageLabel]['value'] += $picValue;
-                                    foreach ($nroFlowLabels as $nroStatus => $nroLabel) {
-                                        $nroStatusData = (array) ($nroFlowData[$nroStatus] ?? ['count' => 0, 'value' => 0]);
-                                        $picRowTotals[$picRow]['nro_flow'][$nroStatus]['count'] += (int) ($nroStatusData['count'] ?? 0);
-                                        $picRowTotals[$picRow]['nro_flow'][$nroStatus]['value'] += (float) ($nroStatusData['value'] ?? 0);
-                                    }
                                     ?>
                                     <td class="emr-pic-cell <?= $isRfsColumn ? 'emr-pic-cell--focus' : '' ?>">
                                         <button
@@ -756,37 +785,22 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                             data-stage="<?= htmlspecialchars($stageLabel, ENT_QUOTES, 'UTF-8') ?>"
                                             <?= $picCount <= 0 ? 'disabled' : '' ?>
                                         >
-                                            <?php if (!($picRow === 'NRO' && $isRfsColumn)): ?>
-                                                <span class="emr-pic-cell__value"><?= $picValue > 0 ? poEmrNumber($picValue) : '&mdash;' ?></span>
+                                            <?php if ($picCount > 0 || $picValue > 0): ?>
+                                                <span class="emr-pic-cell__value"><?= poEmrNumber($picValue) ?></span>
                                                 <span class="emr-pic-cell__count"><?= $picCount ?> PO</span>
-                                            <?php endif; ?>
-                                            <?php if ($picRow === 'NRO' && $isRfsColumn): ?>
-                                                <span class="emr-nro-stack">
-                                                    <?php foreach ($nroFlowLabels as $nroStatus => $nroLabel): ?>
-                                                        <?php $nroStatusData = (array) ($nroFlowData[$nroStatus] ?? ['count' => 0, 'value' => 0]); ?>
-                                                        <?php if ((int) ($nroStatusData['count'] ?? 0) > 0): ?>
-                                                            <span
-                                                                class="emr-nro-stack__item js-po-nro-drilldown"
-                                                                data-pic="<?= htmlspecialchars($picRow, ENT_QUOTES, 'UTF-8') ?>"
-                                                                data-pic-label="<?= htmlspecialchars((string) ($picDisplayLabels[$picRow] ?? $picRow), ENT_QUOTES, 'UTF-8') ?>"
-                                                                data-stage="<?= htmlspecialchars($stageLabel, ENT_QUOTES, 'UTF-8') ?>"
-                                                                data-nro-status="<?= htmlspecialchars($nroStatus, ENT_QUOTES, 'UTF-8') ?>"
-                                                                data-nro-label="<?= htmlspecialchars($nroLabel, ENT_QUOTES, 'UTF-8') ?>"
-                                                            >
-                                                                <span class="emr-nro-stack__label"><?= htmlspecialchars($nroLabel, ENT_QUOTES, 'UTF-8') ?></span>
-                                                                <span class="emr-nro-stack__value"><?= poEmrNumber((float) ($nroStatusData['value'] ?? 0)) ?></span>
-                                                                <span class="emr-nro-stack__count"><?= (int) ($nroStatusData['count'] ?? 0) ?> PO</span>
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    <?php endforeach; ?>
-                                                </span>
+                                            <?php else: ?>
+                                                <span class="emr-pic-cell__empty">-</span>
                                             <?php endif; ?>
                                         </button>
                                     </td>
                                 <?php endforeach; ?>
                                 <td class="emr-pic-cell emr-pic-total-cell">
-                                    <div class="emr-pic-cell__value"><?= (float) ($picRowTotals[$picRow]['value'] ?? 0) > 0 ? poEmrNumber((float) ($picRowTotals[$picRow]['value'] ?? 0)) : '&mdash;' ?></div>
-                                    <div class="emr-pic-cell__count"><?= (int) ($picRowTotals[$picRow]['count'] ?? 0) ?> PO</div>
+                                    <?php if ((int) ($picRowTotals[$picRow]['count'] ?? 0) > 0 || (float) ($picRowTotals[$picRow]['value'] ?? 0) > 0): ?>
+                                        <div class="emr-pic-cell__value"><?= poEmrNumber((float) ($picRowTotals[$picRow]['value'] ?? 0)) ?></div>
+                                        <div class="emr-pic-cell__count"><?= (int) ($picRowTotals[$picRow]['count'] ?? 0) ?> PO</div>
+                                    <?php else: ?>
+                                        <div class="emr-pic-cell__empty">-</div>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -815,13 +829,21 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                                     $grandTotalValue += $columnTotalValue;
                                     ?>
                                     <th class="emr-pic-cell emr-pic-total-cell <?= $isRfsColumn ? 'emr-pic-cell--focus' : '' ?>">
-                                        <div class="emr-pic-cell__value"><?= $columnTotalValue > 0 ? poEmrNumber($columnTotalValue) : '&mdash;' ?></div>
-                                        <div class="emr-pic-cell__count"><?= $columnTotalCount ?> PO</div>
+                                        <?php if ($columnTotalCount > 0 || $columnTotalValue > 0): ?>
+                                            <div class="emr-pic-cell__value"><?= poEmrNumber($columnTotalValue) ?></div>
+                                            <div class="emr-pic-cell__count"><?= $columnTotalCount ?> PO</div>
+                                        <?php else: ?>
+                                            <div class="emr-pic-cell__empty">-</div>
+                                        <?php endif; ?>
                                     </th>
                                 <?php endforeach; ?>
                                 <th class="emr-pic-cell emr-pic-total-cell">
-                                    <div class="emr-pic-cell__value"><?= $grandTotalValue > 0 ? poEmrNumber($grandTotalValue) : '&mdash;' ?></div>
-                                    <div class="emr-pic-cell__count"><?= $grandTotalCount ?> PO</div>
+                                    <?php if ($grandTotalCount > 0 || $grandTotalValue > 0): ?>
+                                        <div class="emr-pic-cell__value"><?= poEmrNumber($grandTotalValue) ?></div>
+                                        <div class="emr-pic-cell__count"><?= $grandTotalCount ?> PO</div>
+                                    <?php else: ?>
+                                        <div class="emr-pic-cell__empty">-</div>
+                                    <?php endif; ?>
                                 </th>
                             </tr>
                         </tfoot>
@@ -839,11 +861,13 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             <form method="get" class="row" id="po-emr-filter-form">
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label>Regional</label>
-                        <select name="regional[]" id="po-emr-filter-regional" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Regional" multiple>
+                        <label>Area</label>
+                        <select name="regional[]" id="po-emr-filter-regional" class="form-control js-po-emr-searchable emr-filter-select" data-placeholder="Semua Area" multiple>
                             <?php foreach ($regionalOptions as $regional): ?>
+                                <?php $regionalValue = strtoupper((string) $regional); ?>
+                                <?php $regionalLabel = $regionalValue . (!empty($areaDescriptions[$regionalValue]) ? ' - ' . $areaDescriptions[$regionalValue] : ''); ?>
                                 <option value="<?= htmlspecialchars((string) $regional, ENT_QUOTES, 'UTF-8') ?>" <?= in_array(strtoupper((string) $regional), $selectedRegionalValues, true) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars((string) $regional, ENT_QUOTES, 'UTF-8') ?>
+                                    <?= htmlspecialchars($regionalLabel, ENT_QUOTES, 'UTF-8') ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -877,7 +901,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         </div>
     </div>
 
-    <div class="card card-outline card-info">
+    <div class="card card-outline card-info" id="po-emr-termin-breakdown-section">
         <div class="card-header">
             <h3 class="card-title">Pembagian Termin (Cluster &amp; Subfeeder)</h3>
         </div>
@@ -978,7 +1002,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                             <th>Tanggal PO</th>
                             <th>Cluster</th>
                             <th>Kota</th>
-                            <th>Regional</th>
+                            <th>Area</th>
                             <th>Status Current</th>
                             <th>TERM PO</th>
                             <th>PIC</th>
@@ -1023,6 +1047,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         var regionalOptionsByCity = <?= json_encode($regionalOptionsByCity ?? [], JSON_UNESCAPED_SLASHES) ?> || {};
         var allCityOptions = <?= json_encode($allCityOptions ?? [], JSON_UNESCAPED_SLASHES) ?> || [];
         var allRegionalOptions = <?= json_encode($regionalOptions ?? [], JSON_UNESCAPED_SLASHES) ?> || [];
+        var areaDescriptions = <?= json_encode($areaDescriptions ?? [], JSON_UNESCAPED_SLASHES) ?> || {};
         var targetAjaxUrl = '<?= base_url('PO_EMR_Myrep/datatablePo') ?>';
         var isUpdatingFilter = false;
         var filterSubmitTimer = null;
@@ -1032,6 +1057,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         var activeDrilldownNroStatus = '';
         var activeDrilldownNroLabel = '';
         var lastTargetFooter = null;
+        var summaryAjaxRequest = null;
 
         function toValueArray(value) {
             if ($.isArray(value)) {
@@ -1086,7 +1112,11 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                 if (!label) {
                     return;
                 }
-                $select.append($('<option>').attr('value', label).text(label));
+                var displayLabel = label;
+                if ($select.attr('id') === 'po-emr-filter-regional' && areaDescriptions[label]) {
+                    displayLabel = label + ' - ' + areaDescriptions[label];
+                }
+                $select.append($('<option>').attr('value', label).text(displayLabel));
             });
 
             selectedValues = selectedValues.filter(function (selected) {
@@ -1106,8 +1136,77 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         function submitFilter() {
             clearTimeout(filterSubmitTimer);
             filterSubmitTimer = setTimeout(function () {
-                $('#po-emr-filter-form').trigger('submit');
+                applyFilterAjax();
             }, 650);
+        }
+
+        function resetDrilldownFilter() {
+            activeDrilldownPic = '';
+            activeDrilldownPicLabel = '';
+            activeDrilldownStage = '';
+            activeDrilldownNroStatus = '';
+            activeDrilldownNroLabel = '';
+            updateDrilldownState();
+        }
+
+        function currentPageFilterQuery() {
+            return $('#po-emr-filter-form').serialize();
+        }
+
+        function setSummaryLoading(isLoading) {
+            $('#po-emr-executive-summary-section, #po-emr-pic-summary-section, #po-emr-termin-breakdown-section')
+                .toggleClass('po-emr-summary-loading', !!isLoading);
+        }
+
+        function replaceSectionFromResponse($response, selector) {
+            var $nextSection = $response.find(selector).first();
+            if ($nextSection.length) {
+                $(selector).replaceWith($nextSection);
+            }
+        }
+
+        function updateBrowserUrl(query) {
+            var nextUrl = window.location.pathname + (query ? '?' + query : '');
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, document.title, nextUrl);
+            }
+        }
+
+        function syncDownloadFiltersWithPageFilters() {
+            var $modal = $('#modal-po-emr-download-report');
+            $modal.find('select[name="regional[]"]').val($('#po-emr-filter-regional').val() || []).trigger('change.select2');
+            $modal.find('select[name="city[]"]').val($('#po-emr-filter-city').val() || []).trigger('change.select2');
+            $modal.find('select[name="term_stage[]"]').val($('#po-emr-filter-stage').val() || []).trigger('change.select2');
+        }
+
+        function applyFilterAjax() {
+            var query = currentPageFilterQuery();
+            resetDrilldownFilter();
+            updateBrowserUrl(query);
+            syncDownloadFiltersWithPageFilters();
+
+            if (summaryAjaxRequest && summaryAjaxRequest.readyState !== 4) {
+                summaryAjaxRequest.abort();
+            }
+
+            setSummaryLoading(true);
+            summaryAjaxRequest = $.ajax({
+                url: window.location.pathname,
+                type: 'GET',
+                data: query,
+                dataType: 'html'
+            }).done(function (response) {
+                var parsed = $.parseHTML(response, document, false) || [];
+                var $response = $('<div>').append(parsed);
+                replaceSectionFromResponse($response, '#po-emr-executive-summary-section');
+                replaceSectionFromResponse($response, '#po-emr-pic-summary-section');
+                replaceSectionFromResponse($response, '#po-emr-termin-breakdown-section');
+                if (tableTarget) {
+                    tableTarget.ajax.reload();
+                }
+            }).always(function () {
+                setSummaryLoading(false);
+            });
         }
 
         function currentFilterPayload() {
@@ -1195,7 +1294,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             var city = toValueArray($(this).val());
             var currentRegional = toValueArray($('#po-emr-filter-regional').val());
             var regionalOptions = optionsFromMap(city, regionalOptionsByCity, allRegionalOptions);
-            rebuildOptions($('#po-emr-filter-regional'), regionalOptions, 'Semua Regional', currentRegional);
+            rebuildOptions($('#po-emr-filter-regional'), regionalOptions, 'Semua Area', currentRegional);
             isUpdatingFilter = false;
             submitFilter();
         });
@@ -1204,7 +1303,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             submitFilter();
         });
 
-        $('.js-po-pic-drilldown').on('click', function () {
+        $(document).on('click', '.js-po-pic-drilldown', function () {
             if ($(this).prop('disabled')) {
                 return;
             }
@@ -1221,11 +1320,11 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             }
         });
 
-        $('.js-po-nro-drilldown').on('click', function (event) {
+        $(document).on('click', '.js-po-nro-drilldown', function (event) {
             event.preventDefault();
             event.stopPropagation();
 
-            activeDrilldownPic = String($(this).data('pic') || 'NRO');
+            activeDrilldownPic = String($(this).data('pic') || 'EMR NRO');
             activeDrilldownPicLabel = String($(this).data('pic-label') || activeDrilldownPic);
             activeDrilldownStage = String($(this).data('stage') || 'RFS');
             activeDrilldownNroStatus = String($(this).data('nro-status') || '');
@@ -1238,12 +1337,17 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         });
 
         $('#po-emr-drilldown-reset').on('click', function () {
-            activeDrilldownPic = '';
-            activeDrilldownPicLabel = '';
-            activeDrilldownStage = '';
-            activeDrilldownNroStatus = '';
-            activeDrilldownNroLabel = '';
+            resetDrilldownFilter();
             reloadTargetTableForDrilldown();
+        });
+
+        $('#po-emr-filter-form').on('submit', function (event) {
+            event.preventDefault();
+            applyFilterAjax();
+        });
+
+        $('#modal-po-emr-download-report').on('show.bs.modal', function () {
+            syncDownloadFiltersWithPageFilters();
         });
 
         function parseFooterNumber(value) {
