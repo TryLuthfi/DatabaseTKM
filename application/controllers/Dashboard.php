@@ -18,13 +18,17 @@ class Dashboard extends CI_Controller
             return;
         }
 
-        $year = (int) date('Y');
+        $yearOptions = [2023, 2024, 2025, 2026];
+        $requestedYear = (int) $this->input->get('year');
+        $defaultYear = in_array((int) date('Y'), $yearOptions, true) ? (int) date('Y') : 2026;
+        $year = in_array($requestedYear, $yearOptions, true) ? $requestedYear : $defaultYear;
         $rows = $this->MMyRepublik_Project->tablesReady()
             ? $this->MMyRepublik_Project->getClusterRows('', '', 'HP')
             : [];
 
         $data['title'] = 'Dashboard My Republik';
         $data['dashboardYear'] = $year;
+        $data['yearOptions'] = $yearOptions;
         $data['isReady'] = $this->MMyRepublik_Project->tablesReady();
         $data['overview'] = $this->MMyRepublik_Project->getOverview($rows);
         $data['statusCards'] = $this->MMyRepublik_Project->getStatusCards($rows, 'HP');

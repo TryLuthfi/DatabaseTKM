@@ -42,6 +42,8 @@ $batchSummary = $batchSummary ?? [];
 $topCities = $topCities ?? [];
 $citySummary = $citySummary ?? [];
 $chartPayload = $chartPayload ?? [];
+$yearOptions = $yearOptions ?? [2023, 2024, 2025, 2026];
+$selectedYear = (int) ($dashboardYear ?? date('Y'));
 $achievementTkm = (float) ($annualSummary['pct_tkm'] ?? 0);
 $batchReleaseRatio = (float) ($batchSummary['release_ratio'] ?? 0);
 $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
@@ -64,6 +66,16 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
                     </div>
                     <small><?= dashboard_number($annualSummary['realization_tkm'] ?? 0) ?> dari <?= dashboard_number($annualSummary['target_tkm'] ?? 0) ?> HP TKM</small>
                 </div>
+            </div>
+            <div class="myrep-year-switch" aria-label="Pilih tahun dashboard">
+                <?php foreach ($yearOptions as $yearOption) : ?>
+                    <?php $yearOption = (int) $yearOption; ?>
+                    <a href="<?= base_url('Dashboard?year=' . $yearOption) ?>"
+                        class="<?= $yearOption === $selectedYear ? 'is-active' : '' ?>">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span><?= $yearOption ?></span>
+                    </a>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
@@ -252,6 +264,46 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | 
     .myrep-dashboard {
         background: #f4f7fb;
         color: #172033;
+    }
+
+    .myrep-year-switch {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin: 14px 0 4px;
+        flex-wrap: wrap;
+    }
+
+    .myrep-year-switch a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 104px;
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 8px;
+        border: 1px solid #d8e2ec;
+        background: #ffffff;
+        color: #172033;
+        font-weight: 800;
+        box-shadow: 0 8px 18px rgba(33, 45, 70, 0.06);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .myrep-year-switch a:hover {
+        color: #172033;
+        text-decoration: none;
+        transform: translateY(-1px);
+        border-color: #146f7a;
+        box-shadow: 0 12px 24px rgba(33, 45, 70, 0.1);
+    }
+
+    .myrep-year-switch a.is-active {
+        color: #ffffff;
+        border-color: #146f7a;
+        background: #146f7a;
     }
 
     .myrep-hero {
