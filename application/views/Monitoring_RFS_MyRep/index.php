@@ -2185,6 +2185,10 @@ if (!empty($kpiDetailRowMap)) {
                                                 ? 'cluster-row-rejected'
                                                 : ($displayStatusRfs === 'WAITING APPROVAL' ? 'cluster-row-waiting' : '')));
                                     $clusterHomepassDrm = (float) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
+                                    $clusterClaimedQty = (float) ($cluster['claimed_qty'] ?? 0);
+                                    $clusterDeviasiBase = strtoupper($statusRfs) === 'PARTIAL'
+                                        ? max($clusterHomepassDrm - $clusterClaimedQty, 0)
+                                        : $clusterHomepassDrm;
                                     ?>
                                     <tr class="<?= $clusterRowClass ?>">
                                         <td></td>
@@ -2201,10 +2205,10 @@ if (!empty($kpiDetailRowMap)) {
                                         <td class="text-right"><?= number_format($clusterHomepassDrm, 0, ',', '.') ?>
                                         </td>
                                         <td class="text-right">
-                                            <?= number_format((float) $cluster['claimed_qty'], 0, ',', '.') ?>
+                                            <?= number_format($clusterClaimedQty, 0, ',', '.') ?>
                                         </td>
                                         <td class="text-right">
-                                            <?= number_format($clusterHomepassDrm - (float) $cluster['claimed_qty'], 0, ',', '.') ?>
+                                            <?= number_format($clusterHomepassDrm - $clusterClaimedQty, 0, ',', '.') ?>
                                         </td>
                                         <td>
                                             <?php if ($canTambahAction && in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) { ?>
@@ -2263,9 +2267,11 @@ if (!empty($kpiDetailRowMap)) {
                                                         </div>
                                                         <div class="form-group">
                                                             <label>HP RFS</label>
-                                                            <input type="number" min="1" max="<?= (int) $clusterHomepassDrm ?>"
+                                                            <input type="number" min="1" max="<?= (int) $clusterDeviasiBase ?>"
                                                                 name="claim_qty" class="form-control claim-rfs-qty-input"
                                                                 data-homepass="<?= (int) $clusterHomepassDrm ?>"
+                                                                data-claimed-qty="<?= (int) $clusterClaimedQty ?>"
+                                                                data-deviasi-base="<?= (int) $clusterDeviasiBase ?>"
                                                                 data-deviasi-target="#claim_rfs_deviasi_<?= (int) $cluster['id_cluster'] ?>"
                                                                 required>
                                                             <small class="text-muted">Isi sesuai HP RFS actual pada cluster ini.</small>
@@ -2273,8 +2279,8 @@ if (!empty($kpiDetailRowMap)) {
                                                         <div class="form-group">
                                                             <label>Deviasi</label>
                                                             <input type="text" id="claim_rfs_deviasi_<?= (int) $cluster['id_cluster'] ?>" class="form-control claim-rfs-deviasi-output"
-                                                                value="<?= number_format($clusterHomepassDrm, 0, ',', '.') ?>" readonly>
-                                                            <small class="text-muted">Deviasi = HP DRM - HP RFS</small>
+                                                                value="<?= number_format($clusterDeviasiBase, 0, ',', '.') ?>" readonly>
+                                                            <small class="text-muted">Deviasi = sisa HP - HP RFS</small>
                                                         </div>
                                                         <div class="form-group">
                                                             <label>Status RFS</label>
@@ -2365,7 +2371,7 @@ if (!empty($kpiDetailRowMap)) {
                                         <div class="form-group">
                                             <label>Deviasi</label>
                                             <input type="text" id="claim_rfs_deviasi_dynamic" class="form-control claim-rfs-deviasi-output" value="0" readonly>
-                                            <small class="text-muted">Deviasi = HP DRM - HP RFS</small>
+                                            <small class="text-muted">Deviasi = sisa HP - HP RFS</small>
                                         </div>
                                         <div class="form-group">
                                             <label>Status RFS</label>
@@ -4079,9 +4085,13 @@ if (!empty($kpiDetailRowMap)) {
 
         function updateClaimRfsDeviasi($input) {
             var homepass = parseLocaleNumber($input.data('homepass') || 0);
+            var deviasiBaseRaw = $input.data('deviasi-base');
+            var deviasiBase = (typeof deviasiBaseRaw === 'undefined' || deviasiBaseRaw === '')
+                ? homepass
+                : parseLocaleNumber(deviasiBaseRaw);
             var claimQty = parseLocaleNumber($input.val() || 0);
             var targetSelector = String($input.data('deviasi-target') || '');
-            var deviasi = homepass - claimQty;
+            var deviasi = deviasiBase - claimQty;
             if (deviasi < 0) {
                 deviasi = 0;
             }
@@ -4104,9 +4114,16 @@ if (!empty($kpiDetailRowMap)) {
             var clusterId = String($button.data('cluster-id') || '');
             var clusterName = String($button.data('cluster-name') || '-');
             var homepass = parseLocaleNumber($button.data('homepass') || 0);
+            var claimedQty = parseLocaleNumber($button.data('claimed-qty') || 0);
             var statusRfs = String($button.data('status-rfs') || '');
+            var hasDeviasiBase = typeof $button.attr('data-deviasi-base') !== 'undefined';
+            var deviasiBase = hasDeviasiBase ? parseLocaleNumber($button.data('deviasi-base')) : 0;
             var $qtyInput = $modal.find('.claim-rfs-qty-input');
             var $photoInput = $modal.find('.claim-photo-input');
+
+            if (!hasDeviasiBase) {
+                deviasiBase = statusRfs === 'PARTIAL' ? Math.max(homepass - claimedQty, 0) : homepass;
+            }
 
             $('#claim_rfs_cluster_id').val(clusterId);
             $('#claim_rfs_cluster_name').text(clusterName);
@@ -4114,9 +4131,11 @@ if (!empty($kpiDetailRowMap)) {
 
             $modal.find('input[name="claim_date"]').val('<?= date('Y-m-d') ?>');
             $qtyInput.val('');
-            $qtyInput.attr('max', homepass > 0 ? homepass : '');
+            $qtyInput.attr('max', deviasiBase > 0 ? deviasiBase : '');
             $qtyInput.data('homepass', homepass);
-            $modal.find('.claim-rfs-deviasi-output').val(formatLocaleNumber(homepass, 0));
+            $qtyInput.data('claimed-qty', claimedQty);
+            $qtyInput.data('deviasi-base', deviasiBase);
+            $modal.find('.claim-rfs-deviasi-output').val(formatLocaleNumber(deviasiBase, 0));
             $modal.find('select[name="status_rfs"]').val(statusRfs === 'PARTIAL' || statusRfs === 'FULL RFS' ? statusRfs : '');
             $modal.find('textarea[name="claim_note"]').val('');
             $modal.find('.claim-photo-filename').text('Belum ada file dipilih');
@@ -4359,8 +4378,12 @@ if (!empty($kpiDetailRowMap)) {
             .on('input.monitoringRfsFallback keyup.monitoringRfsFallback change.monitoringRfsFallback', '.claim-rfs-qty-input', function () {
                 var $input = $(this);
                 var homepass = parseLocaleNumber($input.data('homepass') || 0);
+                var deviasiBaseRaw = $input.data('deviasi-base');
+                var deviasiBase = (typeof deviasiBaseRaw === 'undefined' || deviasiBaseRaw === '')
+                    ? homepass
+                    : parseLocaleNumber(deviasiBaseRaw);
                 var claimQty = parseLocaleNumber($input.val() || 0);
-                var deviasi = Math.max(homepass - claimQty, 0);
+                var deviasi = Math.max(deviasiBase - claimQty, 0);
                 $input.closest('.modal-content').find('.claim-rfs-deviasi-output').first().val(formatLocaleNumber(deviasi, 0));
             });
 
@@ -4372,16 +4395,25 @@ if (!empty($kpiDetailRowMap)) {
                 var clusterId = String($button.data('cluster-id') || '');
                 var clusterName = String($button.data('cluster-name') || '-');
                 var homepass = parseLocaleNumber($button.data('homepass') || 0);
+                var claimedQty = parseLocaleNumber($button.data('claimed-qty') || 0);
                 var statusRfs = String($button.data('status-rfs') || '');
+                var hasDeviasiBase = typeof $button.attr('data-deviasi-base') !== 'undefined';
+                var deviasiBase = hasDeviasiBase ? parseLocaleNumber($button.data('deviasi-base')) : 0;
                 var $qtyInput = $modal.find('.claim-rfs-qty-input');
+
+                if (!hasDeviasiBase) {
+                    deviasiBase = statusRfs === 'PARTIAL' ? Math.max(homepass - claimedQty, 0) : homepass;
+                }
 
                 $('#claim_rfs_cluster_id').val(clusterId);
                 $('#claim_rfs_cluster_name').text(clusterName);
                 $('#claim_rfs_homepass_label').text(formatLocaleNumber(homepass, 0));
                 $qtyInput.val('');
-                $qtyInput.attr('max', homepass > 0 ? homepass : '');
+                $qtyInput.attr('max', deviasiBase > 0 ? deviasiBase : '');
                 $qtyInput.data('homepass', homepass);
-                $modal.find('.claim-rfs-deviasi-output').val(formatLocaleNumber(homepass, 0));
+                $qtyInput.data('claimed-qty', claimedQty);
+                $qtyInput.data('deviasi-base', deviasiBase);
+                $modal.find('.claim-rfs-deviasi-output').val(formatLocaleNumber(deviasiBase, 0));
                 $modal.find('select[name="status_rfs"]').val(statusRfs === 'PARTIAL' || statusRfs === 'FULL RFS' ? statusRfs : '');
                 $modal.find('.claim-photo-input').val('');
                 $modal.find('.claim-photo-filename').text('Belum ada file dipilih');

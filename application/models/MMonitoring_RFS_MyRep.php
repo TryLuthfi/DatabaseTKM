@@ -1484,10 +1484,29 @@ class MMonitoring_RFS_MyRep extends CI_Model
                     WHERE d.id_myrep_cluster = tb_myrep_cluster.id_myrep_cluster
                     ORDER BY d.id_drm DESC
                     LIMIT 1
-                ) AS latest_homepass_drm
+                ) AS latest_homepass_drm,
+                (
+                    SELECT r.status_rfs
+                    FROM tb_rfs_myrep_cluster r
+                    WHERE r.id_cluster = tb_myrep_cluster.rfs_cluster_id
+                    LIMIT 1
+                ) AS current_status_rfs
             ', false)
             ->from('tb_myrep_cluster')
             ->where_in('status_current', $this->rfsReadyStatuses);
+
+        if ($this->claimSupportsStatusRfs()) {
+            $this->db->select('
+                (
+                    SELECT cl.status_rfs
+                    FROM tb_rfs_myrep_claim cl
+                    WHERE cl.cluster_id = tb_myrep_cluster.rfs_cluster_id
+                    AND COALESCE(cl.status_rfs, "") <> ""
+                    ORDER BY cl.claim_date DESC, cl.id_claim DESC
+                    LIMIT 1
+                ) AS latest_claim_status_rfs
+            ', false);
+        }
 
         if ($city !== '') {
             $this->db->where('UPPER(city_name)', strtoupper($city));
@@ -1512,20 +1531,25 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
             if ($rfsClusterId > 0) {
                 $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
+                $syncedStatus = $this->resolveSyncedRfsStatus(
+                    $mappedStatus,
+                    $cluster['current_status_rfs'] ?? '',
+                    $cluster['latest_claim_status_rfs'] ?? ''
+                );
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
                     ->update('tb_rfs_myrep_cluster', [
                         'id_target' => $idTarget,
                         'cluster_name' => $cluster['cluster_name'],
                         'homepass' => $homepass,
-                        'status_rfs' => $mappedStatus,
+                        'status_rfs' => $syncedStatus,
                     ]);
-                $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $mappedStatus);
+                $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $syncedStatus);
                 continue;
             }
 
             $existing = $this->db
-                ->select('id_cluster')
+                ->select('id_cluster, status_rfs')
                 ->from('tb_rfs_myrep_cluster')
                 ->where('id_target', $idTarget)
                 ->where('UPPER(cluster_name)', strtoupper(trim((string) ($cluster['cluster_name'] ?? ''))))
@@ -1535,19 +1559,25 @@ class MMonitoring_RFS_MyRep extends CI_Model
             if ($existing) {
                 $rfsClusterId = (int) $existing['id_cluster'];
                 $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
+                $syncedStatus = $this->resolveSyncedRfsStatus(
+                    $mappedStatus,
+                    $existing['status_rfs'] ?? '',
+                    $cluster['latest_claim_status_rfs'] ?? ''
+                );
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
                     ->update('tb_rfs_myrep_cluster', [
                         'homepass' => $homepass,
-                        'status_rfs' => $mappedStatus,
+                        'status_rfs' => $syncedStatus,
                     ]);
             } else {
                 $homepass = $homepassBase;
+                $syncedStatus = $mappedStatus;
                 $this->db->insert('tb_rfs_myrep_cluster', [
                     'id_target' => $idTarget,
                     'cluster_name' => $cluster['cluster_name'],
                     'homepass' => $homepass,
-                    'status_rfs' => $mappedStatus,
+                    'status_rfs' => $syncedStatus,
                     'created_at' => date('Y-m-d H:i:s'),
                 ]);
                 $rfsClusterId = (int) $this->db->insert_id();
@@ -1561,7 +1591,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                         'updated_at' => date('Y-m-d H:i:s'),
                     ]);
 
-                $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $mappedStatus);
+                $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $syncedStatus);
             }
         }
     }
@@ -1615,6 +1645,31 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         return 'NY RFS';
+    }
+
+    private function resolveSyncedRfsStatus($mappedStatus, $currentStatus, $latestClaimStatus = '')
+    {
+        $mappedStatus = strtoupper(trim((string) $mappedStatus));
+        $currentStatus = strtoupper(trim((string) $currentStatus));
+        $latestClaimStatus = strtoupper(trim((string) $latestClaimStatus));
+
+        if (in_array($latestClaimStatus, ['PARTIAL', 'PARTIAL RFS'], true)) {
+            return 'PARTIAL';
+        }
+
+        if ($latestClaimStatus === 'REJECTED') {
+            return 'REJECTED';
+        }
+
+        if (in_array($currentStatus, ['PARTIAL', 'PARTIAL RFS'], true)) {
+            return 'PARTIAL';
+        }
+
+        if ($currentStatus === 'REJECTED') {
+            return 'REJECTED';
+        }
+
+        return $mappedStatus !== '' ? $mappedStatus : 'NY RFS';
     }
 
     private function syncMyrepStatusFromRfsCluster($rfsClusterId, $statusRfs)

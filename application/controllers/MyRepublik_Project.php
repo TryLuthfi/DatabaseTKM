@@ -1046,6 +1046,7 @@ class MyRepublik_Project extends CI_Controller
             $row['rfs_' . $i . '_date'] = (string) ($claim['claim_date'] ?? '');
             $row['rfs_' . $i . '_qty'] = $this->formatQuickIntegerValue($claim['claim_qty'] ?? '');
         }
+        $row['status_rfs'] = $this->resolveQuickRfsStatus($row['status_rfs'] ?? '', $claims, $cluster);
 
         return $row;
     }
@@ -3547,6 +3548,40 @@ class MyRepublik_Project extends CI_Controller
             return 'NY RFS';
         }
         return '';
+    }
+
+    private function resolveQuickRfsStatus($status, array $claims, array $cluster)
+    {
+        $status = $this->normalizeQuickRfsStatus($status);
+        for ($i = count($claims) - 1; $i >= 0; $i--) {
+            $claimStatus = $this->normalizeQuickRfsStatus((string) ($claims[$i]['status_rfs'] ?? ''));
+            if ($claimStatus !== '' && $claimStatus !== 'NY RFS') {
+                return $claimStatus;
+            }
+        }
+
+        if ($status !== '' && $status !== 'NY RFS') {
+            return $status;
+        }
+
+        $totalClaimQty = 0;
+        foreach ($claims as $claim) {
+            $totalClaimQty += (int) $this->normalizeNumber($claim['claim_qty'] ?? 0);
+        }
+        if ($totalClaimQty <= 0) {
+            return $status;
+        }
+
+        $homepass = (int) $this->normalizeNumber($cluster['homepass_drm'] ?? 0);
+        if ($homepass <= 0) {
+            $homepass = (int) $this->normalizeNumber($cluster['hp_plan'] ?? 0);
+        }
+
+        if ($homepass > 0) {
+            return $totalClaimQty >= $homepass ? 'FULL RFS' : 'PARTIAL';
+        }
+
+        return 'PARTIAL';
     }
 
     private function formatQuickIntegerValue($value)

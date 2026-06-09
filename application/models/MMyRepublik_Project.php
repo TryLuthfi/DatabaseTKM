@@ -345,7 +345,11 @@ class MMyRepublik_Project extends CI_Model
                 d.homepass_drm,
                 d.nama_olt,
                 d.status_drm,
-                d.remark_drm
+                d.remark_drm,
+                r.homepass AS homepass_rfs,
+                r.status_rfs,
+                r.status_atp,
+                r.email_atp_date
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
@@ -353,6 +357,7 @@ class MMyRepublik_Project extends CI_Model
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_rfs_myrep_cluster r', 'r.id_cluster = c.rfs_cluster_id', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
             ->row_array();
@@ -644,6 +649,9 @@ class MMyRepublik_Project extends CI_Model
         }
 
         $select = 'id_claim, claim_year, claim_month, claim_date, claim_qty, claim_note, status_claim, approval_note, submitted_by, approved_by, approved_at, created_at';
+        if ($this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim')) {
+            $select .= ', status_rfs';
+        }
         if ($this->db->field_exists('rpm_approval_status', 'tb_rfs_myrep_claim')) {
             $select .= ', rpm_approval_status, rpm_approval_note, rpm_approved_by, rpm_approved_at';
         }

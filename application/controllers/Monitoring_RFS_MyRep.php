@@ -219,6 +219,9 @@ class Monitoring_RFS_MyRep extends CI_Controller
                     : ($displayStatusRfs === 'REJECTED' ? 'danger' : 'secondary')));
         $clusterHomepassDrm = (float) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
         $claimedQty = (float) ($cluster['claimed_qty'] ?? 0);
+        $deviasiBase = strtoupper($statusRfs) === 'PARTIAL'
+            ? max($clusterHomepassDrm - $claimedQty, 0)
+            : $clusterHomepassDrm;
 
         $actionHtml = '<span class="text-muted small">Tidak tersedia</span>';
         if ($canTambahAction && in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) {
@@ -226,6 +229,8 @@ class Monitoring_RFS_MyRep extends CI_Controller
                 . ' data-cluster-id="' . (int) ($cluster['id_cluster'] ?? 0) . '"'
                 . ' data-cluster-name="' . $this->html($cluster['cluster_name'] ?? '') . '"'
                 . ' data-homepass="' . (int) $clusterHomepassDrm . '"'
+                . ' data-claimed-qty="' . (int) $claimedQty . '"'
+                . ' data-deviasi-base="' . (int) $deviasiBase . '"'
                 . ' data-status-rfs="' . $this->html($statusRfs) . '">Claim RFS</button>';
         }
 
