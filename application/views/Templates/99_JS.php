@@ -18,11 +18,6 @@
 <script src="<?= base_url('assets') ?>/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-<!-- PAGE SCRIPTS -->
-<?php $currentController = $this->uri->segment(1); ?>
-<?php if ($currentController === 'Dashboard') : ?>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboard2.js"></script>
-<?php endif; ?>
 <!-- date-range-picker -->
 <!-- <script src="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.js"></script> -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>

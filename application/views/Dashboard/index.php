@@ -1,8 +1,15 @@
 <?php
+if (!function_exists('dashboard_number')) {
+    function dashboard_number($value, $decimal = 0)
+    {
+        return number_format((float) $value, (int) $decimal, ',', '.');
+    }
+}
+
 if (!function_exists('dashboard_money')) {
     function dashboard_money($value)
     {
-        return 'Rp ' . number_format((float) $value, 0, ',', '.');
+        return 'Rp ' . dashboard_number($value);
     }
 }
 
@@ -11,15 +18,12 @@ if (!function_exists('dashboard_compact_money')) {
     {
         $value = (float) $value;
         $abs = abs($value);
-
         if ($abs >= 1000000000) {
-            return 'Rp ' . number_format($value / 1000000000, 1, ',', '.') . ' M';
+            return 'Rp ' . dashboard_number($value / 1000000000, 1) . ' M';
         }
-
         if ($abs >= 1000000) {
-            return 'Rp ' . number_format($value / 1000000, 1, ',', '.') . ' Jt';
+            return 'Rp ' . dashboard_number($value / 1000000, 1) . ' Jt';
         }
-
         return dashboard_money($value);
     }
 }
@@ -27,43 +31,38 @@ if (!function_exists('dashboard_compact_money')) {
 if (!function_exists('dashboard_percent')) {
     function dashboard_percent($value)
     {
-        return number_format((float) $value, 1, ',', '.') . '%';
+        return dashboard_number($value, 1) . '%';
     }
 }
 
-$invoiceTarget = (float) ($invoiceTarget ?? 0);
-$portfolioSummary = $portfolioSummary ?? [];
-$bilcoSummary = $bilcoSummary ?? [];
-$budgetSummary = $budgetSummary ?? [];
-$emrSummary = $emrSummary ?? [];
+$overview = $overview ?? [];
+$stageSummary = $stageSummary ?? [];
+$annualSummary = $annualSummary ?? [];
+$batchSummary = $batchSummary ?? [];
+$topCities = $topCities ?? [];
+$citySummary = $citySummary ?? [];
+$chartPayload = $chartPayload ?? [];
+$achievementMyRep = (float) ($annualSummary['pct_tkm'] ?? 0);
+$batchReleaseRatio = (float) ($batchSummary['release_ratio'] ?? 0);
+$chartJson = json_encode($chartPayload, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 ?>
 
-<div class="content-wrapper dashboard-premium">
+<div class="content-wrapper myrep-dashboard">
     <div class="content-header">
         <div class="container-fluid">
-            <div class="dashboard-hero">
-                <div class="dashboard-hero__copy">
-                    <span class="dashboard-hero__eyebrow">Executive Dashboard</span>
-                    <h1 class="dashboard-hero__title">Project Summary EMR, BILCO, dan Budgeting</h1>
-                    <p class="dashboard-hero__subtitle">Satu halaman ringkas untuk membaca performa invoice, approval EMR, serta penyerapan budget tahun <?= (int) ($dashboardYear ?? date('Y')) ?>.</p>
+            <div class="myrep-hero">
+                <div>
+                    <span class="myrep-eyebrow">Dashboard Project</span>
+                    <h1>My Republik</h1>
+                    <p>Monitoring cluster, HP, PO, batch approval, dan target RFS tahun <?= (int) ($dashboardYear ?? date('Y')) ?>.</p>
                 </div>
-                <div class="dashboard-hero__panel">
-                    <div class="hero-kpi-label">Target Invoice Utama</div>
-                    <div class="hero-kpi-value"><?= dashboard_compact_money($invoiceTarget) ?></div>
-                    <div class="hero-kpi-meta">Progress saat ini <?= dashboard_percent($portfolioSummary['invoice_progress'] ?? 0) ?></div>
-                    <div class="hero-progress">
-                        <div class="hero-progress__bar" style="width: <?= min((float) ($portfolioSummary['invoice_progress'] ?? 0), 100) ?>%;"></div>
+                <div class="myrep-hero__metric">
+                    <span>Pencapaian MyRep</span>
+                    <strong><?= dashboard_percent($achievementMyRep) ?></strong>
+                    <div class="myrep-progress" aria-hidden="true">
+                        <div style="width: <?= max(0, min($achievementMyRep, 100)) ?>%;"></div>
                     </div>
-                    <div class="hero-kpi-grid">
-                        <div>
-                            <span class="hero-kpi-grid__label">Actual</span>
-                            <strong><?= dashboard_compact_money($portfolioSummary['invoice_actual'] ?? 0) ?></strong>
-                        </div>
-                        <div>
-                            <span class="hero-kpi-grid__label">Gap</span>
-                            <strong><?= dashboard_compact_money($portfolioSummary['invoice_gap'] ?? 0) ?></strong>
-                        </div>
-                    </div>
+                    <small><?= dashboard_number($annualSummary['realization_tkm'] ?? 0) ?> dari <?= dashboard_number($annualSummary['target_tkm'] ?? 0) ?> HP TKM</small>
                 </div>
             </div>
         </div>
@@ -71,185 +70,176 @@ $emrSummary = $emrSummary ?? [];
 
     <section class="content">
         <div class="container-fluid">
-            <div class="row">
-                <div class="col-12 col-xl-8">
-                    <div class="dashboard-card dashboard-card--spotlight">
-                        <div class="dashboard-card__header">
-                            <div>
-                                <span class="dashboard-card__eyebrow">Portfolio Pulse</span>
-                                <h3 class="dashboard-card__title">Cross Project Snapshot</h3>
-                            </div>
-                        </div>
-                        <div class="spotlight-grid">
-                            <div class="spotlight-item spotlight-item--invoice">
-                                <span class="spotlight-item__label">Invoice Progress</span>
-                                <strong><?= dashboard_percent($portfolioSummary['invoice_progress'] ?? 0) ?></strong>
-                                <small>Terhadap target <?= dashboard_compact_money($invoiceTarget) ?></small>
-                            </div>
-                            <div class="spotlight-item spotlight-item--budget">
-                                <span class="spotlight-item__label">Budget Absorption</span>
-                                <strong><?= dashboard_percent($portfolioSummary['budget_absorption'] ?? 0) ?></strong>
-                                <small>Realisasi vs annual budget</small>
-                            </div>
-                            <div class="spotlight-item spotlight-item--emr">
-                                <span class="spotlight-item__label">EMR Release Ratio</span>
-                                <strong><?= dashboard_percent($portfolioSummary['emr_release_ratio'] ?? 0) ?></strong>
-                                <small>Release finance vs nominal EMR</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <?php if (empty($isReady)) : ?>
+                <div class="alert alert-warning">Tabel dashboard My Republik belum tersedia.</div>
+            <?php endif; ?>
 
-                <div class="col-12 col-xl-4">
-                    <div class="dashboard-card dashboard-card--target">
-                        <div class="dashboard-card__header">
-                            <div>
-                                <span class="dashboard-card__eyebrow">Quick Target</span>
-                                <h3 class="dashboard-card__title">110M Invoice Tracker</h3>
-                            </div>
-                        </div>
-                        <div class="target-ring">
-                            <div class="target-ring__inner">
-                                <span><?= dashboard_percent($portfolioSummary['invoice_progress'] ?? 0) ?></span>
-                            </div>
-                        </div>
-                        <div class="target-meta">
-                            <div><span>Outstanding BILCO</span><strong><?= dashboard_compact_money($bilcoSummary['total_invoice'] ?? 0) ?></strong></div>
-                            <div><span>Sisa ke Target</span><strong><?= dashboard_compact_money($portfolioSummary['invoice_gap'] ?? 0) ?></strong></div>
-                        </div>
-                    </div>
-                </div>
+            <div class="myrep-kpi-grid">
+                <a href="<?= base_url('MyRepublik_Project') ?>" class="myrep-kpi myrep-kpi--teal">
+                    <span>Total Cluster</span>
+                    <strong><?= dashboard_number($overview['total_cluster'] ?? 0) ?></strong>
+                    <small><?= dashboard_number($overview['total_hp'] ?? 0) ?> HP pipeline</small>
+                </a>
+                <a href="<?= base_url('PO_MyRep') ?>" class="myrep-kpi myrep-kpi--indigo">
+                    <span>Total PO</span>
+                    <strong><?= dashboard_compact_money($overview['total_po'] ?? 0) ?></strong>
+                    <small><?= dashboard_number($batchSummary['clusters'] ?? 0) ?> cluster batch</small>
+                </a>
+                <a href="<?= base_url('Monitoring_RFS_MyRep') ?>" class="myrep-kpi myrep-kpi--amber">
+                    <span>RFS / ATP</span>
+                    <strong><?= dashboard_number($overview['total_rfs'] ?? 0) ?> / <?= dashboard_number($overview['total_atp'] ?? 0) ?></strong>
+                    <small><?= dashboard_number($annualSummary['realization_tkm'] ?? 0) ?> HP claim TKM</small>
+                </a>
+                <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="myrep-kpi myrep-kpi--rose">
+                    <span>Release Batch</span>
+                    <strong><?= dashboard_percent($batchReleaseRatio) ?></strong>
+                    <small><?= dashboard_compact_money($batchSummary['nominal_release'] ?? 0) ?> released</small>
+                </a>
             </div>
 
             <div class="row">
-                <div class="col-12 col-lg-4">
-                    <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="dashboard-link-card">
-                        <div class="dashboard-card summary-card summary-card--emr">
-                            <div class="summary-card__icon"><i class="fas fa-network-wired"></i></div>
-                            <div class="summary-card__body">
-                                <span class="summary-card__eyebrow">Project EMR</span>
-                                <h3 class="summary-card__title">Approval & Release</h3>
-                                <div class="summary-card__value"><?= dashboard_compact_money($emrSummary['nominal_emr'] ?? 0) ?></div>
-                                <p class="summary-card__desc">Nominal approval EMR dari <?= (int) ($emrSummary['clusters'] ?? 0) ?> cluster batch.</p>
-                                <div class="summary-mini-grid">
-                                    <div><span>Released</span><strong><?= dashboard_compact_money($emrSummary['nominal_release'] ?? 0) ?></strong></div>
-                                    <div><span>HP Donasi</span><strong><?= number_format((float) ($emrSummary['hp_donasi'] ?? 0), 0, ',', '.') ?></strong></div>
-                                    <div><span>Waiting</span><strong><?= (int) ($emrSummary['waiting'] ?? 0) ?></strong></div>
-                                    <div><span>Released Batch</span><strong><?= (int) ($emrSummary['released'] ?? 0) ?></strong></div>
-                                </div>
+                <div class="col-12 col-xl-8">
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
+                            <div>
+                                <span class="myrep-eyebrow">Target vs Realisasi</span>
+                                <h3>Tren Bulanan MyRep</h3>
                             </div>
+                            <a href="<?= base_url('Monitoring_RFS_MyRep') ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-chart-line"></i> Monitoring RFS
+                            </a>
                         </div>
-                    </a>
+                        <div class="myrep-chart myrep-chart--large">
+                            <canvas id="myrepMonthlyChart"></canvas>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="col-12 col-lg-4">
-                    <a href="<?= base_url('BillingPayment') ?>" class="dashboard-link-card">
-                        <div class="dashboard-card summary-card summary-card--bilco">
-                            <div class="summary-card__icon"><i class="fas fa-file-invoice-dollar"></i></div>
-                            <div class="summary-card__body">
-                                <span class="summary-card__eyebrow">Project BILCO</span>
-                                <h3 class="summary-card__title">Outstanding Invoice</h3>
-                                <div class="summary-card__value"><?= dashboard_compact_money($bilcoSummary['total_invoice'] ?? 0) ?></div>
-                                <p class="summary-card__desc">Akumulasi invoice open dan partial yang masih perlu dimonitor.</p>
-                                <div class="summary-mini-grid">
-                                    <div><span>P1</span><strong><?= dashboard_compact_money($bilcoSummary['p1'] ?? 0) ?></strong></div>
-                                    <div><span>P2</span><strong><?= dashboard_compact_money($bilcoSummary['p2'] ?? 0) ?></strong></div>
-                                    <div><span>P3</span><strong><?= dashboard_compact_money($bilcoSummary['p3'] ?? 0) ?></strong></div>
-                                    <div><span>BJT</span><strong><?= dashboard_compact_money($bilcoSummary['bjt'] ?? 0) ?></strong></div>
-                                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
+                            <div>
+                                <span class="myrep-eyebrow">Status Cluster</span>
+                                <h3>Distribusi Flow</h3>
                             </div>
                         </div>
-                    </a>
-                </div>
-
-                <div class="col-12 col-lg-4">
-                    <a href="<?= base_url('Budget_Report') ?>" class="dashboard-link-card">
-                        <div class="dashboard-card summary-card summary-card--budgeting">
-                            <div class="summary-card__icon"><i class="fas fa-wallet"></i></div>
-                            <div class="summary-card__body">
-                                <span class="summary-card__eyebrow">Budgeting</span>
-                                <h3 class="summary-card__title">Annual Budget Summary</h3>
-                                <div class="summary-card__value"><?= dashboard_compact_money($budgetSummary['annual_budget'] ?? 0) ?></div>
-                                <p class="summary-card__desc">Ringkasan budget tahunan dan realisasi cashflow aktif.</p>
-                                <div class="summary-mini-grid">
-                                    <div><span>Realisasi</span><strong><?= dashboard_compact_money($budgetSummary['realisasi'] ?? 0) ?></strong></div>
-                                    <div><span>Sisa</span><strong><?= dashboard_compact_money($budgetSummary['sisa'] ?? 0) ?></strong></div>
-                                    <div><span>Total Project</span><strong><?= (int) ($budgetSummary['total_project'] ?? 0) ?></strong></div>
-                                    <div><span>TEC</span><strong><?= (int) ($budgetSummary['total_tec'] ?? 0) ?></strong></div>
-                                </div>
-                            </div>
+                        <div class="myrep-chart">
+                            <canvas id="myrepStatusChart"></canvas>
                         </div>
-                    </a>
+                    </div>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-12 col-xl-7">
-                    <div class="dashboard-card dashboard-card--table">
-                        <div class="dashboard-card__header">
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
                             <div>
-                                <span class="dashboard-card__eyebrow">Priority Lens</span>
-                                <h3 class="dashboard-card__title">Fokus Operasional Hari Ini</h3>
+                                <span class="myrep-eyebrow">Homepass</span>
+                                <h3>HP per Stage</h3>
                             </div>
                         </div>
-                        <div class="priority-list">
-                            <div class="priority-list__item">
-                                <div>
-                                    <span class="priority-list__label">Urgent BILCO</span>
-                                    <strong><?= dashboard_compact_money(($bilcoSummary['urgent_total'] ?? 0)) ?></strong>
-                                </div>
-                                <small>P1 + P2 outstanding yang perlu percepatan follow up.</small>
+                        <div class="myrep-chart">
+                            <canvas id="myrepStageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-5">
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
+                            <div>
+                                <span class="myrep-eyebrow">Kota</span>
+                                <h3>Top HP RFS</h3>
                             </div>
-                            <div class="priority-list__item">
-                                <div>
-                                    <span class="priority-list__label">Healthy Pipeline</span>
-                                    <strong><?= dashboard_compact_money(($bilcoSummary['healthy_total'] ?? 0)) ?></strong>
-                                </div>
-                                <small>P3 + BJT yang masih dalam jendela monitor aman.</small>
+                        </div>
+                        <div class="myrep-chart">
+                            <canvas id="myrepCityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 col-xl-4">
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
+                            <div>
+                                <span class="myrep-eyebrow">Batch Approval</span>
+                                <h3>Released vs Waiting</h3>
                             </div>
-                            <div class="priority-list__item">
-                                <div>
-                                    <span class="priority-list__label">Budget Items Overrun</span>
-                                    <strong><?= (int) ($budgetSummary['overbudget_items'] ?? 0) ?></strong>
-                                </div>
-                                <small>Jumlah item annual budget yang sudah melewati pagu.</small>
+                        </div>
+                        <div class="myrep-chart myrep-chart--small">
+                            <canvas id="myrepBatchChart"></canvas>
+                        </div>
+                        <div class="myrep-split">
+                            <div>
+                                <span>Nominal Nego</span>
+                                <strong><?= dashboard_compact_money($batchSummary['nominal_emr'] ?? 0) ?></strong>
                             </div>
-                            <div class="priority-list__item">
-                                <div>
-                                    <span class="priority-list__label">EMR Pending Approval</span>
-                                    <strong><?= (int) ($emrSummary['waiting'] ?? 0) ?></strong>
-                                </div>
-                                <small>Cluster yang masih berada di waiting HO, EMR, atau finance.</small>
+                            <div>
+                                <span>HP Donasi</span>
+                                <strong><?= dashboard_number($batchSummary['hp_donasi'] ?? 0) ?></strong>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-xl-5">
-                    <div class="dashboard-card dashboard-card--actions">
-                        <div class="dashboard-card__header">
+                <div class="col-12 col-xl-8">
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
                             <div>
-                                <span class="dashboard-card__eyebrow">Shortcut</span>
-                                <h3 class="dashboard-card__title">Akses Cepat Modul</h3>
+                                <span class="myrep-eyebrow">Akses Cepat</span>
+                                <h3>Modul My Republik</h3>
                             </div>
                         </div>
-                        <div class="dashboard-action-grid">
-                            <a href="<?= base_url('BillingPayment') ?>" class="dashboard-action-tile">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>Billing Payment</span>
-                            </a>
-                            <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="dashboard-action-tile">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>Batch Approval EMR</span>
-                            </a>
-                            <a href="<?= base_url('Budget_Report') ?>" class="dashboard-action-tile">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>Budget Report</span>
-                            </a>
-                            <a href="<?= base_url('Budget_Cashflow') ?>" class="dashboard-action-tile">
-                                <i class="fas fa-arrow-right"></i>
-                                <span>Budget Cashflow</span>
-                            </a>
+                        <div class="myrep-link-grid">
+                            <a href="<?= base_url('MyRepublik_Project') ?>"><i class="fas fa-project-diagram"></i><span>Project MyRep</span></a>
+                            <a href="<?= base_url('BAK_MyRep') ?>"><i class="fas fa-file-signature"></i><span>BAK</span></a>
+                            <a href="<?= base_url('VALSAL_MyRep') ?>"><i class="fas fa-check-circle"></i><span>VALSAL</span></a>
+                            <a href="<?= base_url('Batch_Approval_MyRep') ?>"><i class="fas fa-layer-group"></i><span>Batch Approval</span></a>
+                            <a href="<?= base_url('DRM_MyRep') ?>"><i class="fas fa-network-wired"></i><span>DRM</span></a>
+                            <a href="<?= base_url('Implementasi_BOQ_MyRep') ?>"><i class="fas fa-tools"></i><span>Implementasi BOQ</span></a>
+                            <a href="<?= base_url('Monitoring_RFS_MyRep') ?>"><i class="fas fa-signal"></i><span>Monitoring RFS</span></a>
+                            <a href="<?= base_url('Checklist_Dokument_MyRep') ?>"><i class="fas fa-clipboard-check"></i><span>Checklist Dokument</span></a>
+                        </div>
+                    </div>
+
+                    <div class="myrep-panel">
+                        <div class="myrep-panel__head">
+                            <div>
+                                <span class="myrep-eyebrow">Ringkasan Kota</span>
+                                <h3>Top 8 Berdasarkan HP RFS</h3>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm myrep-table">
+                                <thead>
+                                    <tr>
+                                        <th>Kota</th>
+                                        <th class="text-right">Cluster</th>
+                                        <th class="text-right">HP RFS</th>
+                                        <th class="text-right">PO</th>
+                                        <th class="text-right">RFS</th>
+                                        <th class="text-right">ATP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($topCities)) : ?>
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">Belum ada data MyRep.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                    <?php foreach ($topCities as $cityRow) : ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars((string) ($cityRow['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong></td>
+                                            <td class="text-right"><?= dashboard_number($cityRow['cluster_count'] ?? 0) ?></td>
+                                            <td class="text-right"><?= dashboard_number($cityRow['hp_rfs_total'] ?? 0) ?></td>
+                                            <td class="text-right"><?= dashboard_compact_money($cityRow['po_total'] ?? 0) ?></td>
+                                            <td class="text-right"><?= dashboard_number($cityRow['rfs_count'] ?? 0) ?></td>
+                                            <td class="text-right"><?= dashboard_number($cityRow['atp_count'] ?? 0) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -259,467 +249,427 @@ $emrSummary = $emrSummary ?? [];
 </div>
 
 <style>
-    .dashboard-premium {
-        background:
-            radial-gradient(circle at top left, rgba(115, 170, 214, 0.18), transparent 28%),
-            linear-gradient(180deg, #f5f9fc 0%, #ecf4f9 100%);
+    .myrep-dashboard {
+        background: #f4f7fb;
+        color: #172033;
     }
 
-    .dashboard-hero {
+    .myrep-hero {
         display: grid;
-        grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
-        gap: 20px;
-        padding: 1.5rem 0 1rem;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+        gap: 16px;
         align-items: stretch;
-    }
-
-    .dashboard-hero__copy,
-    .dashboard-hero__panel,
-    .dashboard-card {
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: 0 22px 46px rgba(15, 40, 61, 0.08);
-        border: 1px solid rgba(205, 225, 238, 0.9);
-    }
-
-    .dashboard-hero__copy {
-        padding: 2rem 2.1rem;
-        background:
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%),
-            linear-gradient(135deg, #103b5a 0%, #1e678f 55%, #5eb1dc 100%);
+        margin: 10px 0 4px;
+        padding: 22px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #123049 0%, #146f7a 58%, #e3a52f 100%);
         color: #fff;
+        box-shadow: 0 16px 34px rgba(18, 48, 73, 0.16);
     }
 
-    .dashboard-hero__eyebrow,
-    .dashboard-card__eyebrow {
-        display: inline-block;
-        margin-bottom: 0.6rem;
-        font-size: 0.78rem;
+    .myrep-hero h1 {
+        margin: 4px 0 8px;
+        font-size: 2.1rem;
         font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        letter-spacing: 0;
     }
 
-    .dashboard-hero__eyebrow {
-        color: rgba(255, 255, 255, 0.78);
-    }
-
-    .dashboard-hero__title {
+    .myrep-hero p {
         margin: 0;
-        font-size: 2.15rem;
-        line-height: 1.15;
-        font-weight: 800;
-    }
-
-    .dashboard-hero__subtitle {
-        max-width: 760px;
-        margin: 0.95rem 0 0;
-        font-size: 1rem;
         color: rgba(255, 255, 255, 0.86);
+        font-size: 1rem;
     }
 
-    .dashboard-hero__panel {
-        padding: 1.6rem;
-    }
-
-    .hero-kpi-label {
-        color: #67839b;
-        font-size: 0.84rem;
+    .myrep-eyebrow {
+        display: block;
+        color: #66758d;
+        font-size: 0.75rem;
         font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
-    .hero-kpi-value {
-        margin-top: 0.5rem;
-        font-size: 2rem;
-        font-weight: 800;
-        color: #113c59;
+    .myrep-hero .myrep-eyebrow {
+        color: rgba(255, 255, 255, 0.76);
     }
 
-    .hero-kpi-meta {
-        margin-top: 0.35rem;
-        color: #6d879b;
-        font-weight: 600;
+    .myrep-hero__metric {
+        padding: 16px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.24);
     }
 
-    .hero-progress {
-        height: 12px;
-        margin: 1rem 0 1.1rem;
-        border-radius: 999px;
-        background: #e6f0f7;
-        overflow: hidden;
-    }
-
-    .hero-progress__bar {
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(135deg, #0f8b72 0%, #30c29e 100%);
-    }
-
-    .hero-kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .hero-kpi-grid div {
-        padding: 0.95rem 1rem;
-        border-radius: 16px;
-        background: linear-gradient(180deg, #f6fbff 0%, #edf5fb 100%);
-        border: 1px solid #dceaf4;
-    }
-
-    .hero-kpi-grid__label {
+    .myrep-hero__metric span,
+    .myrep-hero__metric small {
         display: block;
-        margin-bottom: 0.3rem;
-        color: #6d879b;
-        font-size: 0.82rem;
+        color: rgba(255, 255, 255, 0.82);
         font-weight: 700;
     }
 
-    .hero-kpi-grid strong {
-        color: #163f5b;
-        font-size: 1rem;
+    .myrep-hero__metric strong {
+        display: block;
+        margin: 6px 0 10px;
+        font-size: 2rem;
+        line-height: 1;
     }
 
-    .dashboard-card {
-        padding: 1.3rem 1.35rem;
-        margin-bottom: 20px;
+    .myrep-progress {
+        height: 10px;
+        margin-bottom: 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.22);
+        overflow: hidden;
     }
 
-    .dashboard-card__header {
+    .myrep-progress div {
+        height: 100%;
+        border-radius: inherit;
+        background: #f6c557;
+    }
+
+    .myrep-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .myrep-kpi,
+    .myrep-panel {
+        border-radius: 8px;
+        border: 1px solid #dfe7ef;
+        background: #fff;
+        box-shadow: 0 10px 24px rgba(33, 45, 70, 0.06);
+    }
+
+    .myrep-kpi {
+        display: block;
+        padding: 16px;
+        color: #182236;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .myrep-kpi:hover,
+    .myrep-link-grid a:hover {
+        color: #182236;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(33, 45, 70, 0.1);
+    }
+
+    .myrep-kpi span {
+        display: block;
+        color: #64748b;
+        font-size: 0.84rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .myrep-kpi strong {
+        display: block;
+        margin-top: 7px;
+        font-size: 1.55rem;
+        line-height: 1.1;
+        font-weight: 800;
+    }
+
+    .myrep-kpi small {
+        display: block;
+        margin-top: 8px;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .myrep-kpi--teal { border-top: 4px solid #0f8b72; }
+    .myrep-kpi--indigo { border-top: 4px solid #3554d1; }
+    .myrep-kpi--amber { border-top: 4px solid #d58b16; }
+    .myrep-kpi--rose { border-top: 4px solid #c8465c; }
+
+    .myrep-panel {
+        margin-bottom: 16px;
+        padding: 16px;
+    }
+
+    .myrep-panel__head {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
-        margin-bottom: 1rem;
+        margin-bottom: 12px;
     }
 
-    .dashboard-card__eyebrow {
-        color: #6b879d;
-    }
-
-    .dashboard-card__title {
-        margin: 0;
-        font-size: 1.18rem;
+    .myrep-panel h3 {
+        margin: 3px 0 0;
+        color: #172033;
+        font-size: 1.1rem;
         font-weight: 800;
-        color: #133f5d;
+        letter-spacing: 0;
     }
 
-    .spotlight-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
+    .myrep-chart {
+        position: relative;
+        height: 300px;
+        min-height: 300px;
     }
 
-    .spotlight-item {
-        padding: 1.1rem 1rem;
-        border-radius: 18px;
-        color: #fff;
+    .myrep-chart--large {
+        height: 340px;
     }
 
-    .spotlight-item--invoice {
-        background: linear-gradient(135deg, #0f766e 0%, #22a79c 100%);
+    .myrep-chart--small {
+        height: 230px;
+        min-height: 230px;
     }
 
-    .spotlight-item--budget {
-        background: linear-gradient(135deg, #9a3412 0%, #ea580c 100%);
-    }
-
-    .spotlight-item--emr {
-        background: linear-gradient(135deg, #1d4ed8 0%, #4f8ef7 100%);
-    }
-
-    .spotlight-item__label {
-        display: block;
-        font-size: 0.82rem;
-        font-weight: 800;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        opacity: 0.85;
-    }
-
-    .spotlight-item strong {
-        display: block;
-        margin: 0.6rem 0 0.2rem;
-        font-size: 1.55rem;
-        line-height: 1.1;
-    }
-
-    .spotlight-item small {
-        font-size: 0.88rem;
-        opacity: 0.92;
-    }
-
-    .dashboard-card--target {
-        text-align: center;
-    }
-
-    .target-ring {
-        width: 190px;
-        height: 190px;
-        margin: 0.6rem auto 1rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background:
-            radial-gradient(circle at center, #fff 56%, transparent 57%),
-            conic-gradient(#103b5a 0deg, #26b190 <?= max(min((float) ($portfolioSummary['invoice_progress'] ?? 0), 100), 0) * 3.6 ?>deg, #e5eff6 <?= max(min((float) ($portfolioSummary['invoice_progress'] ?? 0), 100), 0) * 3.6 ?>deg 360deg);
-        box-shadow: inset 0 0 0 12px rgba(255, 255, 255, 0.75);
-    }
-
-    .target-ring__inner {
-        width: 116px;
-        height: 116px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(180deg, #f9fcff 0%, #eff6fb 100%);
-        color: #123d59;
-        font-size: 1.45rem;
-        font-weight: 800;
-    }
-
-    .target-meta {
-        display: grid;
-        gap: 10px;
-    }
-
-    .target-meta div {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 0.85rem 1rem;
-        border-radius: 14px;
-        background: #f5f9fc;
-        border: 1px solid #dceaf4;
-    }
-
-    .target-meta span {
-        color: #6d879b;
-        font-weight: 700;
-    }
-
-    .target-meta strong {
-        color: #173e5b;
-    }
-
-    .dashboard-link-card {
-        display: block;
-        color: inherit;
-    }
-
-    .dashboard-link-card:hover {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    .summary-card {
-        display: flex;
-        gap: 16px;
-        min-height: 100%;
-        transition: transform 0.24s ease, box-shadow 0.24s ease;
-    }
-
-    .summary-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 26px 52px rgba(15, 40, 61, 0.12);
-    }
-
-    .summary-card__icon {
-        width: 64px;
-        min-width: 64px;
-        height: 64px;
-        border-radius: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 1.35rem;
-    }
-
-    .summary-card--emr .summary-card__icon {
-        background: linear-gradient(135deg, #1d4ed8 0%, #5c8fff 100%);
-    }
-
-    .summary-card--bilco .summary-card__icon {
-        background: linear-gradient(135deg, #0f766e 0%, #22a79c 100%);
-    }
-
-    .summary-card--budgeting .summary-card__icon {
-        background: linear-gradient(135deg, #c2410c 0%, #fb923c 100%);
-    }
-
-    .summary-card__body {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .summary-card__eyebrow {
-        display: block;
-        color: #688299;
-        font-size: 0.8rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    .summary-card__title {
-        margin: 0.3rem 0 0;
-        font-size: 1.15rem;
-        font-weight: 800;
-        color: #143d58;
-    }
-
-    .summary-card__value {
-        margin-top: 0.9rem;
-        font-size: 1.7rem;
-        line-height: 1.1;
-        font-weight: 800;
-        color: #123c58;
-    }
-
-    .summary-card__desc {
-        margin: 0.7rem 0 1rem;
-        color: #698399;
-        font-size: 0.92rem;
-    }
-
-    .summary-mini-grid {
+    .myrep-split {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+        margin-top: 12px;
     }
 
-    .summary-mini-grid div {
-        padding: 0.82rem 0.9rem;
-        border-radius: 14px;
-        background: linear-gradient(180deg, #f8fbfe 0%, #edf5fb 100%);
-        border: 1px solid #dceaf4;
+    .myrep-split div,
+    .myrep-link-grid a {
+        border-radius: 8px;
+        border: 1px solid #e3eaf2;
+        background: #f8fafc;
     }
 
-    .summary-mini-grid span {
+    .myrep-split div {
+        padding: 12px;
+    }
+
+    .myrep-split span {
         display: block;
-        margin-bottom: 0.25rem;
-        color: #6c879b;
-        font-size: 0.8rem;
+        color: #64748b;
         font-weight: 700;
+        font-size: 0.82rem;
     }
 
-    .summary-mini-grid strong {
-        color: #173e5b;
-        font-size: 0.94rem;
-    }
-
-    .priority-list {
-        display: grid;
-        gap: 12px;
-    }
-
-    .priority-list__item {
-        padding: 1rem 1.05rem;
-        border-radius: 16px;
-        background: linear-gradient(180deg, #f9fcff 0%, #edf5fb 100%);
-        border: 1px solid #dceaf4;
-    }
-
-    .priority-list__item > div {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 0.35rem;
-    }
-
-    .priority-list__label {
-        color: #173e5b;
-        font-weight: 800;
-    }
-
-    .priority-list__item strong {
-        color: #0d6d64;
+    .myrep-split strong {
+        display: block;
+        margin-top: 4px;
+        color: #182236;
         font-size: 1rem;
     }
 
-    .priority-list__item small {
-        color: #6d879b;
-        font-size: 0.88rem;
-    }
-
-    .dashboard-action-grid {
+    .myrep-link-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
     }
 
-    .dashboard-action-tile {
+    .myrep-link-grid a {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 1rem 1.05rem;
-        border-radius: 16px;
-        border: 1px solid #dceaf4;
-        background: linear-gradient(180deg, #f9fcff 0%, #edf5fb 100%);
-        color: #173e5b;
+        gap: 10px;
+        min-height: 58px;
+        padding: 12px;
+        color: #172033;
         font-weight: 800;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
 
-    .dashboard-action-tile:hover {
-        color: #173e5b;
-        text-decoration: none;
-        transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(15, 40, 61, 0.08);
+    .myrep-link-grid i {
+        width: 28px;
+        min-width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 7px;
+        color: #fff;
+        background: #146f7a;
+        font-size: 0.84rem;
     }
 
-    .dashboard-action-tile i {
-        color: #0d6d64;
+    .myrep-table {
+        margin-bottom: 0;
+    }
+
+    .myrep-table thead th {
+        border-top: 0;
+        border-bottom: 1px solid #dfe7ef;
+        color: #64748b;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+    }
+
+    .myrep-table td {
+        vertical-align: middle;
+        border-color: #eef2f6;
     }
 
     @media (max-width: 1199.98px) {
-        .dashboard-hero {
-            grid-template-columns: 1fr;
+        .myrep-kpi-grid,
+        .myrep-link-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
     @media (max-width: 767.98px) {
-        .dashboard-hero__copy,
-        .dashboard-hero__panel,
-        .dashboard-card {
-            border-radius: 20px;
-        }
-
-        .dashboard-hero__copy,
-        .dashboard-hero__panel,
-        .dashboard-card {
-            padding-left: 1.1rem;
-            padding-right: 1.1rem;
-        }
-
-        .dashboard-hero__title {
-            font-size: 1.75rem;
-        }
-
-        .spotlight-grid,
-        .summary-mini-grid,
-        .dashboard-action-grid,
-        .hero-kpi-grid {
+        .myrep-hero,
+        .myrep-kpi-grid,
+        .myrep-link-grid,
+        .myrep-split {
             grid-template-columns: 1fr;
         }
 
-        .target-ring {
-            width: 160px;
-            height: 160px;
+        .myrep-hero {
+            padding: 16px;
         }
 
-        .target-ring__inner {
-            width: 100px;
-            height: 100px;
-            font-size: 1.2rem;
+        .myrep-hero h1 {
+            font-size: 1.65rem;
+        }
+
+        .myrep-panel__head {
+            flex-direction: column;
+        }
+
+        .myrep-chart,
+        .myrep-chart--large {
+            height: 280px;
+            min-height: 280px;
         }
     }
 </style>
+
+<script>
+    $(function() {
+        var payload = <?= $chartJson ?: '{}' ?> || {};
+        var palette = ['#146f7a', '#3554d1', '#d58b16', '#c8465c', '#6f7b8f', '#0f8b72', '#7c4dff', '#c4681d', '#287c9b', '#9b4d68'];
+
+        function valuesOrFallback(labels, values) {
+            labels = Array.isArray(labels) && labels.length ? labels : ['Belum ada data'];
+            values = Array.isArray(values) && values.length ? values : [0];
+            return { labels: labels, values: values };
+        }
+
+        function axisNumber(value) {
+            value = Number(value || 0);
+            return value.toLocaleString('id-ID');
+        }
+
+        function makeChart(id, config) {
+            var canvas = document.getElementById(id);
+            if (!canvas || typeof Chart === 'undefined') {
+                return null;
+            }
+            return new Chart(canvas.getContext('2d'), config);
+        }
+
+        var monthly = payload.monthly || {};
+        makeChart('myrepMonthlyChart', {
+            type: 'bar',
+            data: {
+                labels: monthly.labels || [],
+                datasets: [{
+                    label: 'Target MyRep',
+                    backgroundColor: 'rgba(20, 111, 122, 0.22)',
+                    borderColor: '#146f7a',
+                    borderWidth: 1,
+                    data: monthly.target_myrep || []
+                }, {
+                    label: 'Realisasi MyRep',
+                    backgroundColor: '#d58b16',
+                    borderColor: '#d58b16',
+                    borderWidth: 1,
+                    data: monthly.realization_myrep || []
+                }, {
+                    label: 'Realisasi TKM',
+                    type: 'line',
+                    fill: false,
+                    borderColor: '#3554d1',
+                    pointBackgroundColor: '#3554d1',
+                    lineTension: 0.25,
+                    data: monthly.realization_tkm || []
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                legend: { position: 'bottom' },
+                scales: {
+                    yAxes: [{ ticks: { beginAtZero: true, callback: axisNumber }, gridLines: { color: '#edf2f7' } }],
+                    xAxes: [{ gridLines: { display: false } }]
+                },
+                tooltips: { callbacks: { label: function(item, data) { return data.datasets[item.datasetIndex].label + ': ' + axisNumber(item.yLabel); } } }
+            }
+        });
+
+        var status = payload.status || {};
+        var statusData = valuesOrFallback(status.labels, status.clusters);
+        makeChart('myrepStatusChart', {
+            type: 'doughnut',
+            data: {
+                labels: statusData.labels,
+                datasets: [{ data: statusData.values, backgroundColor: palette }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                legend: { position: 'bottom' },
+                cutoutPercentage: 62,
+                tooltips: { callbacks: { label: function(item, data) { return data.labels[item.index] + ': ' + axisNumber(data.datasets[0].data[item.index]) + ' cluster'; } } }
+            }
+        });
+
+        var stage = payload.stage || {};
+        makeChart('myrepStageChart', {
+            type: 'bar',
+            data: {
+                labels: stage.labels || [],
+                datasets: [{ label: 'HP', backgroundColor: palette, data: stage.hp || [] }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                legend: { display: false },
+                scales: {
+                    yAxes: [{ ticks: { beginAtZero: true, callback: axisNumber }, gridLines: { color: '#edf2f7' } }],
+                    xAxes: [{ gridLines: { display: false } }]
+                },
+                tooltips: { callbacks: { label: function(item) { return axisNumber(item.yLabel) + ' HP'; } } }
+            }
+        });
+
+        var city = payload.city || {};
+        var cityData = valuesOrFallback(city.labels, city.hp);
+        makeChart('myrepCityChart', {
+            type: 'horizontalBar',
+            data: {
+                labels: cityData.labels,
+                datasets: [{ label: 'HP', backgroundColor: '#146f7a', data: cityData.values }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                legend: { display: false },
+                scales: {
+                    xAxes: [{ ticks: { beginAtZero: true, callback: axisNumber }, gridLines: { color: '#edf2f7' } }],
+                    yAxes: [{ gridLines: { display: false } }]
+                },
+                tooltips: { callbacks: { label: function(item) { return axisNumber(item.xLabel) + ' HP'; } } }
+            }
+        });
+
+        var batch = payload.batch || {};
+        var batchData = valuesOrFallback(batch.labels, batch.clusters);
+        makeChart('myrepBatchChart', {
+            type: 'doughnut',
+            data: {
+                labels: batchData.labels,
+                datasets: [{ data: batchData.values, backgroundColor: ['#0f8b72', '#c8465c'] }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                legend: { position: 'bottom' },
+                cutoutPercentage: 66,
+                tooltips: { callbacks: { label: function(item, data) { return data.labels[item.index] + ': ' + axisNumber(data.datasets[0].data[item.index]) + ' cluster'; } } }
+            }
+        });
+    });
+</script>
