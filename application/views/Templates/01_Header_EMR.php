@@ -139,6 +139,31 @@
       font-weight: 700;
     }
 
+    .emr-fullscreen-btn {
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--emr-line);
+      border-radius: 12px;
+      background: #fff;
+      color: #2563eb;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .06);
+    }
+
+    .emr-fullscreen-btn:hover {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .emr-fullscreen-btn i {
+      font-size: .95rem;
+      line-height: 1;
+    }
+
     .emr-main {
       width: 100%;
       margin: 0;
@@ -206,8 +231,8 @@
       <div class="emr-brand">
         <img src="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>" alt="Zeyn">
         <div>
-          <div class="emr-brand__title">PO EMR - TKM</div>
-          <div class="emr-brand__subtitle">Target PO Monitoring</div>
+          <div class="emr-brand__title">PO EMMR - TKM</div>
+          <div class="emr-brand__subtitle">PO Monitoring</div>
         </div>
       </div>
       <div class="emr-account">
@@ -215,9 +240,74 @@
           <img class="emr-account__logo-ekamora" src="<?= base_url('assets/dist/img/logoweb.png') ?>" alt="MoraRepublic">
           <img class="emr-account__logo-tkm" src="<?= base_url('assets/dist/img/logotkmsolid.png') ?>" alt="TKM">
         </div>
+        <button type="button" class="emr-fullscreen-btn" id="emr-fullscreen-toggle" title="Fullscreen" aria-label="Fullscreen">
+          <i class="fas fa-expand"></i>
+        </button>
         <a href="<?= base_url('Auth/logout') ?>" class="btn btn-outline-danger btn-sm emr-logout-btn">
           <i class="fas fa-sign-out-alt mr-1"></i> Logout
         </a>
       </div>
     </header>
     <main class="emr-main">
+      <script>
+        (function () {
+          var button = document.getElementById('emr-fullscreen-toggle');
+          if (!button) {
+            return;
+          }
+
+          var icon = button.querySelector('i');
+
+          function fullscreenElement() {
+            return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+          }
+
+          function requestFullscreen(element) {
+            if (element.requestFullscreen) {
+              return element.requestFullscreen();
+            }
+            if (element.webkitRequestFullscreen) {
+              return element.webkitRequestFullscreen();
+            }
+            if (element.msRequestFullscreen) {
+              return element.msRequestFullscreen();
+            }
+            return null;
+          }
+
+          function exitFullscreen() {
+            if (document.exitFullscreen) {
+              return document.exitFullscreen();
+            }
+            if (document.webkitExitFullscreen) {
+              return document.webkitExitFullscreen();
+            }
+            if (document.msExitFullscreen) {
+              return document.msExitFullscreen();
+            }
+            return null;
+          }
+
+          function syncFullscreenButton() {
+            var isFullscreen = !!fullscreenElement();
+            button.setAttribute('title', isFullscreen ? 'Exit fullscreen' : 'Fullscreen');
+            button.setAttribute('aria-label', isFullscreen ? 'Exit fullscreen' : 'Fullscreen');
+            if (icon) {
+              icon.className = isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+            }
+          }
+
+          button.addEventListener('click', function () {
+            if (fullscreenElement()) {
+              exitFullscreen();
+            } else {
+              requestFullscreen(document.documentElement);
+            }
+          });
+
+          document.addEventListener('fullscreenchange', syncFullscreenButton);
+          document.addEventListener('webkitfullscreenchange', syncFullscreenButton);
+          document.addEventListener('MSFullscreenChange', syncFullscreenButton);
+          syncFullscreenButton();
+        })();
+      </script>

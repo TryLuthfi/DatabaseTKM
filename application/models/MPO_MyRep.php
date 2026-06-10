@@ -648,7 +648,9 @@ class MPO_MyRep extends CI_Model
                 t.id_po_termin,
                 t.termin_no,
                 t.termin_value,
-                t.status_termin
+                t.status_termin,
+                t.invoice_date,
+                {$this->getEmrTargetTerminSertifikatSelectSql()}
             {$this->getEmrTargetPoFromSql()}
             LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
                 AND t.termin_no BETWEEN 1 AND 5
@@ -667,6 +669,7 @@ class MPO_MyRep extends CI_Model
             }
         }
         $checklistStateMap = $this->getTerminChecklistStateMap($rfsClusterIds);
+        $terminContextMap = $this->buildEmrTargetTerminContextMap($rows);
 
         foreach ($rows as $row) {
             $terminNo = (int) ($row['termin_no'] ?? 0);
@@ -674,6 +677,8 @@ class MPO_MyRep extends CI_Model
                 continue;
             }
 
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $row = array_merge($row, $terminContextMap[$headerId] ?? []);
             $pic = $this->resolveTerminCurrentPic($row, $checklistStateMap);
             if (!isset($summary[$terminNo]['pic'][$pic])) {
                 $summary[$terminNo]['pic'][$pic] = ['count' => 0, 'value' => 0];
@@ -862,6 +867,8 @@ class MPO_MyRep extends CI_Model
                 t.termin_no,
                 t.termin_value,
                 t.status_termin,
+                t.invoice_date,
+                {$this->getEmrTargetTerminSertifikatSelectSql()},
                 COALESCE(tm.termin_total_count, 0) AS termin_total_count,
                 COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
                 COALESCE(tm.termin_paid_count, 0) AS termin_paid_count,
@@ -886,6 +893,7 @@ class MPO_MyRep extends CI_Model
             }
         }
         $checklistStateMap = $this->getTerminChecklistStateMap($rfsClusterIds);
+        $terminContextMap = $this->buildEmrTargetTerminContextMap($rows);
 
         $reportRows = [];
         foreach ($rows as $row) {
@@ -900,6 +908,8 @@ class MPO_MyRep extends CI_Model
 
             $row['po_stage_status'] = $stageLabel;
             $row['current_termin_value'] = (float) ($row['termin_value'] ?? 0);
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $row = array_merge($row, $terminContextMap[$headerId] ?? []);
             $row['current_pic'] = $this->resolveTerminCurrentPic($row, $checklistStateMap);
             $row['current_nro_status'] = $this->resolveTerminNroFlowStatus($row, $checklistStateMap);
 
@@ -1236,6 +1246,13 @@ class MPO_MyRep extends CI_Model
         return $this->supportsEmrTargetAreaColumn()
             ? "COALESCE(area_map.area_number, '') AS area_number"
             : "'' AS area_number";
+    }
+
+    private function getEmrTargetTerminSertifikatSelectSql()
+    {
+        return $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
+            ? 't.sertifikat_invoice_date'
+            : "'' AS sertifikat_invoice_date";
     }
 
     private function getEmrTargetAreaMapSubquery()
@@ -2311,11 +2328,23 @@ class MPO_MyRep extends CI_Model
 
         $terminNo = (int) ($row['termin_no'] ?? 0);
         if ($terminNo === 1) {
-            return 'TKM - HO';
+            return 'TKM - FINANCE';
         }
 
         if ($terminNo === 5) {
             return $this->resolveFacTerminPic($row);
+        }
+
+        if ($this->isTerminPermitDocument($row)) {
+            return 'EMMR - DOKUMEN PERMIT';
+        }
+
+        if ($this->isWaitingCwAtpTermin($row)) {
+            return 'WAITING CW ATP';
+        }
+
+        if ($this->isTerminCertificateReleasedWithoutInvoice($row)) {
+            return 'TKM - FINANCE';
         }
 
         $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
@@ -2341,10 +2370,6 @@ class MPO_MyRep extends CI_Model
             return $this->resolvePicFromClusterAndAtpStage($row);
         }
 
-        if ($this->shouldPrioritizeAtpWaitingPic($row)) {
-            return 'EMR NRO';
-        }
-
         $uploaded = (int) ($state['uploaded'] ?? 0);
         $approved = (int) ($state['approved'] ?? 0);
         $astriApproved = (int) ($state['astri_approved'] ?? 0);
@@ -2353,7 +2378,7 @@ class MPO_MyRep extends CI_Model
             return 'EMMR - AREA';
         }
         if ($approved < $required) {
-            return 'TKM - AREA';
+            return $sowType === 'RFS' ? 'EMMR - WASPANG' : 'TKM - AREA';
         }
         if ($sowType === 'RFS' && !empty($state['has_project_opname_nro_flow'])) {
             $nroPic = $this->mapNroFlowStatusToPic((string) ($state['project_opname_nro_status'] ?? ''));
@@ -2361,7 +2386,7 @@ class MPO_MyRep extends CI_Model
                 return $nroPic;
             }
 
-            return 'EMMR - AREA';
+            return 'EMMR - WASPANG';
         }
         if ($astriApproved >= $required) {
             return 'TKM - HO';
@@ -2389,7 +2414,7 @@ class MPO_MyRep extends CI_Model
             return 'TKM - HO';
         }
         if (in_array($displayStatus, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP', 'WAITING STATUS ATP'], true)) {
-            return 'WAITING CW ATP';
+            return 'EMMR - AREA';
         }
 
         $stageAtp = strtoupper(trim((string) ($row['stage_atp'] ?? '')));
@@ -2403,7 +2428,7 @@ class MPO_MyRep extends CI_Model
         }
 
         if (in_array($stageAtp, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP', 'WAITING STATUS ATP'], true)) {
-            return 'WAITING CW ATP';
+            return 'EMMR - AREA';
         }
 
         return 'EMMR - AREA';
@@ -2411,23 +2436,113 @@ class MPO_MyRep extends CI_Model
 
     private function resolveFacTerminPic(array $row)
     {
-        $statusTermin = strtoupper(trim((string) ($row['status_termin'] ?? 'NOT READY')));
-        if ($statusTermin === 'READY BILLING') {
-            return 'TKM - FINANCE';
+        if ($this->normalizeEmrTargetDateValue((string) ($row['term_4_sertifikat_invoice_date'] ?? '')) === '') {
+            return 'WAITING FAC';
         }
 
-        return 'FAC BELUM JATUH TEMPO';
+        if (!$this->isFacTerminDue($row)) {
+            return 'FAC BELUM JATUH TEMPO';
+        }
+
+        return 'TKM - FINANCE';
     }
 
-    private function shouldPrioritizeAtpWaitingPic(array $row)
+    private function isTerminCertificateReleasedWithoutInvoice(array $row)
     {
-        $displayStatus = $this->resolveClusterDetailedStatus($row);
-        if (in_array($displayStatus, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true)) {
+        $sertifikatDate = $this->normalizeEmrTargetDateValue((string) ($row['sertifikat_invoice_date'] ?? ''));
+        if ($sertifikatDate === '') {
+            return false;
+        }
+
+        return $this->normalizeEmrTargetDateValue((string) ($row['invoice_date'] ?? '')) === '';
+    }
+
+    private function isTerminPermitDocument(array $row)
+    {
+        $terminNo = (int) ($row['termin_no'] ?? 0);
+        if ($terminNo < 2 || $terminNo > 5) {
+            return false;
+        }
+
+        $sertifikatValue = strtoupper(trim((string) ($row['sertifikat_invoice_date'] ?? '')));
+        if (strpos($sertifikatValue, 'PERMIT') !== false) {
             return true;
         }
 
-        $stageAtp = strtoupper(trim((string) ($row['stage_atp'] ?? '')));
-        return in_array($stageAtp, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true);
+        if ($terminNo === 3) {
+            $term2SertifikatValue = strtoupper(trim((string) ($row['term_2_sertifikat_invoice_date'] ?? '')));
+            return strpos($term2SertifikatValue, 'PERMIT') !== false;
+        }
+
+        return false;
+    }
+
+    private function isWaitingCwAtpTermin(array $row)
+    {
+        if ((int) ($row['termin_no'] ?? 0) !== 3) {
+            return false;
+        }
+
+        $term3SertifikatDate = $this->normalizeEmrTargetDateValue((string) ($row['term_3_sertifikat_invoice_date'] ?? ''));
+        if ($term3SertifikatDate === '') {
+            return false;
+        }
+
+        return $this->normalizeEmrTargetDateValue((string) ($row['term_2_invoice_date'] ?? '')) === '';
+    }
+
+    private function buildEmrTargetTerminContextMap(array $rows)
+    {
+        $contextMap = [];
+        foreach ($rows as $row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            if ($headerId <= 0 || $terminNo < 1 || $terminNo > 5) {
+                continue;
+            }
+
+            if (!isset($contextMap[$headerId])) {
+                $contextMap[$headerId] = [];
+            }
+
+            $contextMap[$headerId]['term_' . $terminNo . '_invoice_date'] = (string) ($row['invoice_date'] ?? '');
+            $contextMap[$headerId]['term_' . $terminNo . '_sertifikat_invoice_date'] = (string) ($row['sertifikat_invoice_date'] ?? '');
+        }
+
+        return $contextMap;
+    }
+
+    private function isFacTerminDue(array $row)
+    {
+        $term4Date = $this->normalizeEmrTargetDateValue((string) ($row['term_4_sertifikat_invoice_date'] ?? ''));
+        if ($term4Date === '') {
+            return false;
+        }
+
+        $threshold = date('Y-m-d', strtotime($term4Date . ' +90 days'));
+        return date('Y-m-d') >= $threshold;
+    }
+
+    private function normalizeEmrTargetDateValue($value)
+    {
+        $value = trim((string) $value);
+        if (!$this->isValidEmrTargetDateValue($value)) {
+            return '';
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d', $timestamp) : '';
+    }
+
+    private function isValidEmrTargetDateValue($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || in_array($value, ['0000-00-00', '0000-00-00 00:00:00', '-'], true)) {
+            return false;
+        }
+
+        return (bool) preg_match('/^\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2})?$/', $value)
+            || (bool) preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value);
     }
 
     public function getEmrTargetDetailedStatusLabel(array $row)
@@ -2512,8 +2627,15 @@ class MPO_MyRep extends CI_Model
         $headerIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_po_header')))));
         $terminMap = [];
         if (!empty($headerIds)) {
+            $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date';
+            if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+                $terminSelect .= ', sertifikat_invoice_date';
+            } else {
+                $terminSelect .= ", '' AS sertifikat_invoice_date";
+            }
+
             $this->db
-                ->select('id_po_header, termin_no, termin_value, status_termin')
+                ->select($terminSelect, false)
                 ->from('tb_myrep_po_termin');
             $this->applyIntWhereInChunks('id_po_header', $headerIds);
             $terminRows = $this->db
@@ -2564,6 +2686,13 @@ class MPO_MyRep extends CI_Model
                 'termin_no' => $terminNo,
                 'termin_value' => (float) ($row['current_termin_value'] ?? 0),
                 'status_termin' => (string) ($terminRow['status_termin'] ?? 'NOT READY'),
+                'invoice_date' => (string) ($terminRow['invoice_date'] ?? ''),
+                'sertifikat_invoice_date' => (string) ($terminRow['sertifikat_invoice_date'] ?? ''),
+                'term_2_invoice_date' => (string) ($terminMap[$headerId][2]['invoice_date'] ?? ''),
+                'term_2_sertifikat_invoice_date' => (string) ($terminMap[$headerId][2]['sertifikat_invoice_date'] ?? ''),
+                'term_3_sertifikat_invoice_date' => (string) ($terminMap[$headerId][3]['sertifikat_invoice_date'] ?? ''),
+                'term_4_invoice_date' => (string) ($terminMap[$headerId][4]['invoice_date'] ?? ''),
+                'term_4_sertifikat_invoice_date' => (string) ($terminMap[$headerId][4]['sertifikat_invoice_date'] ?? ''),
             ]), $checklistStateMap);
             $row['current_nro_status'] = $this->resolveTerminNroFlowStatus(array_merge($row, [
                 'termin_no' => $terminNo,

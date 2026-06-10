@@ -59,65 +59,105 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
     .emr-executive-summary {
         display: grid;
-        grid-template-columns: repeat(5, minmax(150px, 1fr));
-        gap: .85rem;
+        grid-template-columns: minmax(220px, .85fr) repeat(2, minmax(260px, 1fr));
+        gap: 1rem;
         margin-bottom: 1rem;
     }
 
     .emr-exec-card {
         position: relative;
-        min-height: 88px;
-        padding: .85rem .9rem .8rem;
-        border: 1px solid #dbe4ef;
-        border-left: 4px solid var(--emr-accent, #2563eb);
+        min-height: 150px;
+        padding: 1.15rem 1.22rem;
+        border: 1px solid var(--emr-border, #dbe4ef);
+        border-top: 4px solid var(--emr-accent, #2563eb);
         border-radius: 8px;
-        background: var(--emr-bg, #f8fbff);
-        box-shadow: 0 8px 18px rgba(15, 23, 42, .05);
+        background: var(--emr-bg, #ffffff);
+        box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
         overflow: hidden;
     }
 
+    .emr-exec-card__top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .75rem;
+        margin-bottom: .75rem;
+    }
+
     .emr-exec-card__label {
-        margin-bottom: .32rem;
-        color: #64748b;
-        font-size: .68rem;
+        color: #475569;
+        font-size: .82rem;
         font-weight: 800;
-        letter-spacing: .08em;
+        letter-spacing: .07em;
         text-transform: uppercase;
+    }
+
+    .emr-exec-card__tag {
+        flex: 0 0 auto;
+        padding: .28rem .6rem;
+        border-radius: 999px;
+        background: var(--emr-chip, #eff6ff);
+        color: var(--emr-accent, #2563eb);
+        font-size: .78rem;
+        font-weight: 900;
+        line-height: 1.1;
     }
 
     .emr-exec-card__value {
         color: #0f172a;
-        font-size: 1.45rem;
+        font-size: 1.8rem;
         font-weight: 900;
         line-height: 1.08;
         overflow-wrap: anywhere;
     }
 
     .emr-exec-card__value--compact {
-        font-size: 1.08rem;
+        font-size: 1.72rem;
     }
 
     .emr-exec-card__meta {
-        margin-top: .28rem;
+        margin-top: .55rem;
         color: #475569;
-        font-size: .73rem;
+        font-size: .9rem;
         font-weight: 600;
         line-height: 1.25;
+    }
+
+    .emr-exec-card__meter {
+        height: 8px;
+        margin-top: 1rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .emr-exec-card__meter span {
+        display: block;
+        height: 100%;
+        width: var(--emr-share, 0%);
+        border-radius: inherit;
+        background: var(--emr-accent, #2563eb);
     }
 
     .emr-exec-card--blue {
         --emr-accent: #2563eb;
         --emr-bg: #f8fbff;
+        --emr-border: #bfdbfe;
+        --emr-chip: #dbeafe;
     }
 
     .emr-exec-card--green {
         --emr-accent: #16a34a;
         --emr-bg: #f6fff9;
+        --emr-border: #bbf7d0;
+        --emr-chip: #dcfce7;
     }
 
     .emr-exec-card--cyan {
         --emr-accent: #0891b2;
         --emr-bg: #f2fdff;
+        --emr-border: #a5f3fc;
+        --emr-chip: #cffafe;
     }
 
     .emr-exec-card--amber {
@@ -135,21 +175,33 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         --emr-bg: #fff7f7;
     }
 
+    .emr-exec-card--emmr {
+        --emr-accent: #7c3aed;
+        --emr-bg: #fff7ed;
+        --emr-border: #fed7aa;
+        --emr-chip: #ede9fe;
+    }
+
     @media (max-width: 1400px) {
         .emr-executive-summary {
-            grid-template-columns: repeat(3, minmax(170px, 1fr));
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
         }
     }
 
     @media (max-width: 768px) {
         .emr-executive-summary {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr;
         }
     }
 
     @media (max-width: 480px) {
         .emr-executive-summary {
             grid-template-columns: 1fr;
+        }
+
+        .emr-exec-card__value,
+        .emr-exec-card__value--compact {
+            font-size: 1.42rem;
         }
     }
 
@@ -175,16 +227,24 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
     .emr-pic-summary-table thead th {
         height: 52px;
-        background: #f8fafc;
+        border-bottom: 2px solid #94a3b8;
+        background: #eef3f8;
         color: #0f172a;
         text-align: center;
-        font-weight: 800;
+        font-weight: 900;
     }
 
-    .emr-pic-summary-table tfoot th,
     .emr-pic-total-cell {
         background: #f8fafc;
         font-weight: 800;
+    }
+
+    .emr-pic-summary-table tfoot th {
+        border-top: 2px solid #334155;
+        border-bottom: 1px solid #334155;
+        background: #e7edf4;
+        color: #0f172a;
+        font-weight: 900;
     }
 
     .emr-pic-summary-table__pic-head,
@@ -198,6 +258,22 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         font-size: .78rem;
         font-weight: 800;
         letter-spacing: 0;
+    }
+
+    .emr-pic-summary-table tbody tr.emr-pic-row--tkm td {
+        background: #fbfefc;
+    }
+
+    .emr-pic-summary-table tbody tr.emr-pic-row--emmr td {
+        background: #f8fbff;
+    }
+
+    .emr-pic-summary-table tbody tr.emr-pic-row--tkm .emr-pic-row-head {
+        border-left: 4px solid #16a34a;
+    }
+
+    .emr-pic-summary-table tbody tr.emr-pic-row--emmr .emr-pic-row-head {
+        border-left: 4px solid #0891b2;
     }
 
     .emr-term-head {
@@ -302,6 +378,10 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         padding: .42rem .55rem !important;
     }
 
+    .emr-pic-summary-table tfoot .emr-pic-total-cell {
+        background: #e7edf4;
+    }
+
     .emr-pic-total-cell .emr-pic-cell__count {
         color: #475569;
     }
@@ -325,6 +405,17 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         font-size: .66rem;
         font-weight: 900;
         line-height: 1.1;
+    }
+
+    .emr-pic-row-badge::before {
+        content: attr(data-owner);
+        margin-right: .34rem;
+        padding: .08rem .25rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .72);
+        font-size: .55rem;
+        font-weight: 900;
+        line-height: 1;
     }
 
     .emr-pic-row-badge--area,
@@ -705,7 +796,6 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         'FAC BELUM JATUH TEMPO' => 'FAC BELUM JATUH TEMPO',
         'TKM - FINANCE' => 'TKM - FINANCE',
     ];
-    $executiveCardClasses = ['green', 'blue', 'red', 'cyan', 'amber', 'mint', 'blue', 'cyan', 'amber', 'mint', 'green', 'blue', 'red'];
     $executivePicTotals = [];
     foreach ($picRows as $picRow) {
         $executivePicTotals[$picRow] = ['count' => 0, 'value' => 0];
@@ -717,23 +807,42 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             $executivePicTotals[$picRow]['value'] += (float) ($picData['value'] ?? 0);
         }
     }
-    $activeOutstandingCount = 0;
-    foreach ($executivePicTotals as $picTotal) {
-        $activeOutstandingCount += (int) ($picTotal['count'] ?? 0);
+    $executiveGroupTotals = [
+        'EMMR' => ['label' => 'EMMR', 'class' => 'emmr', 'count' => 0, 'value' => 0],
+        'TKM' => ['label' => 'TKM', 'class' => 'green', 'count' => 0, 'value' => 0],
+    ];
+    foreach ($executivePicTotals as $picRow => $picTotal) {
+        $groupKey = strpos((string) $picRow, 'TKM -') === 0 ? 'TKM' : 'EMMR';
+        $executiveGroupTotals[$groupKey]['count'] += (int) ($picTotal['count'] ?? 0);
+        $executiveGroupTotals[$groupKey]['value'] += (float) ($picTotal['value'] ?? 0);
     }
+    $activeOutstandingCount = (int) $executiveGroupTotals['TKM']['count'] + (int) $executiveGroupTotals['EMMR']['count'];
+    $activeOutstandingValue = (float) $executiveGroupTotals['TKM']['value'] + (float) $executiveGroupTotals['EMMR']['value'];
     ?>
     <div class="emr-executive-summary" id="po-emr-executive-summary-section">
-        <div class="emr-exec-card emr-exec-card--amber">
-            <div class="emr-exec-card__label">Total Outstanding</div>
-            <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($summary['total_outstanding'] ?? 0)) ?></div>
+        <div class="emr-exec-card emr-exec-card--blue" style="--emr-share: 100%;">
+            <div class="emr-exec-card__top">
+                <div class="emr-exec-card__label">Total Outstanding</div>
+                <div class="emr-exec-card__tag">100%</div>
+            </div>
+            <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber($activeOutstandingValue) ?></div>
             <div class="emr-exec-card__meta"><?= $activeOutstandingCount ?> tagihan aktif</div>
+            <div class="emr-exec-card__meter"><span></span></div>
         </div>
-        <?php foreach ($picRows as $picIndex => $picRow): ?>
-            <?php $cardClass = $executiveCardClasses[$picIndex % count($executiveCardClasses)]; ?>
-            <div class="emr-exec-card emr-exec-card--<?= htmlspecialchars($cardClass, ENT_QUOTES, 'UTF-8') ?>">
-                <div class="emr-exec-card__label"><?= htmlspecialchars($picDisplayLabels[$picRow] ?? $picRow, ENT_QUOTES, 'UTF-8') ?></div>
-                <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber((float) ($executivePicTotals[$picRow]['value'] ?? 0)) ?></div>
-                <div class="emr-exec-card__meta"><?= (int) ($executivePicTotals[$picRow]['count'] ?? 0) ?> tagihan</div>
+        <?php foreach ($executiveGroupTotals as $groupKey => $groupTotal): ?>
+            <?php
+            $groupValue = (float) ($groupTotal['value'] ?? 0);
+            $groupCount = (int) ($groupTotal['count'] ?? 0);
+            $groupShare = $activeOutstandingValue > 0 ? min(100, round(($groupValue / $activeOutstandingValue) * 100, 1)) : 0;
+            ?>
+            <div class="emr-exec-card emr-exec-card--<?= htmlspecialchars((string) ($groupTotal['class'] ?? 'blue'), ENT_QUOTES, 'UTF-8') ?>" style="--emr-share: <?= htmlspecialchars((string) $groupShare, ENT_QUOTES, 'UTF-8') ?>%;">
+                <div class="emr-exec-card__top">
+                    <div class="emr-exec-card__label"><?= htmlspecialchars((string) ($groupTotal['label'] ?? $groupKey), ENT_QUOTES, 'UTF-8') ?> Outstanding</div>
+                    <div class="emr-exec-card__tag"><?= htmlspecialchars((string) $groupShare, ENT_QUOTES, 'UTF-8') ?>%</div>
+                </div>
+                <div class="emr-exec-card__value emr-exec-card__value--compact"><?= poEmrNumber($groupValue) ?></div>
+                <div class="emr-exec-card__meta"><?= $groupCount ?> tagihan dari <?= $activeOutstandingCount ?> total</div>
+                <div class="emr-exec-card__meter"><span></span></div>
             </div>
         <?php endforeach; ?>
     </div>
@@ -783,9 +892,13 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
                     </thead>
                     <tbody>
                         <?php foreach ($picRows as $picRow): ?>
-                            <tr>
+                            <?php
+                            $picOwner = strpos((string) $picRow, 'TKM -') === 0 ? 'TKM' : 'EMMR';
+                            $picOwnerClass = $picOwner === 'TKM' ? 'tkm' : 'emmr';
+                            ?>
+                            <tr class="emr-pic-row--<?= htmlspecialchars($picOwnerClass, ENT_QUOTES, 'UTF-8') ?>">
                                 <td class="emr-pic-row-head">
-                                    <span class="emr-pic-row-badge emr-pic-row-badge--<?= htmlspecialchars((string) ($picLabelClasses[$picRow] ?? 'area'), ENT_QUOTES, 'UTF-8') ?>">
+                                    <span class="emr-pic-row-badge emr-pic-row-badge--<?= htmlspecialchars((string) ($picLabelClasses[$picRow] ?? 'area'), ENT_QUOTES, 'UTF-8') ?>" data-owner="<?= htmlspecialchars($picOwner, ENT_QUOTES, 'UTF-8') ?>">
                                         <?= htmlspecialchars((string) ($picDisplayLabels[$picRow] ?? $picRow), ENT_QUOTES, 'UTF-8') ?>
                                     </span>
                                 </td>
