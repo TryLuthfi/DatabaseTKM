@@ -335,6 +335,7 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
+        $this->ensurePoTerminCertificateColumn();
         $cluster = $this->MMyRepublik_Project->getClusterDetail($clusterId);
         if (empty($cluster)) {
             $this->session->set_flashdata('error', 'Detail cluster MyRep tidak ditemukan.');
@@ -757,15 +758,15 @@ class MyRepublik_Project extends CI_Controller
                 'po_cluster_category' => 'INITIAL', 'po_cluster_status' => 'ISSUED', 'po_cluster_number' => 'PO-MLG-0001', 'po_cluster_date' => '2026-05-22', 'po_cluster_value' => '73000000', 'po_cluster_version_label' => 'FINAL 01', 'po_cluster_remark' => 'Contoh remark PO Cluster 1',
                 'po_subfeeder_category' => 'AMANDMENT', 'po_subfeeder_status' => 'ISSUED', 'po_subfeeder_number' => 'PO-SF-MLG-0001', 'po_subfeeder_date' => '2026-05-23', 'po_subfeeder_value' => '8500000', 'po_subfeeder_version_label' => 'AMANDMENT 01', 'po_subfeeder_remark' => 'Contoh remark PO Subfeeder 1',
                 'po_cluster_termin1_plan_invoice' => '0', 'po_cluster_termin1_submit_invoice' => '2026-05-24', 'po_cluster_termin1_nilai_invoice' => '14600000',
-                'po_cluster_termin2_plan_invoice' => '18250000', 'po_cluster_termin2_submit_invoice' => '', 'po_cluster_termin2_nilai_invoice' => '0',
-                'po_cluster_termin3_plan_invoice' => '0', 'po_cluster_termin3_submit_invoice' => '2026-06-24', 'po_cluster_termin3_nilai_invoice' => '-1095000',
-                'po_cluster_termin4_plan_invoice' => '21900000', 'po_cluster_termin4_submit_invoice' => '', 'po_cluster_termin4_nilai_invoice' => '0',
-                'po_cluster_termin5_plan_invoice' => '7300000', 'po_cluster_termin5_submit_invoice' => '', 'po_cluster_termin5_nilai_invoice' => '0',
+                'po_cluster_termin2_plan_invoice' => '18250000', 'po_cluster_termin2_submit_invoice' => '', 'po_cluster_termin2_sertifikat_invoice' => '2026-06-01', 'po_cluster_termin2_nilai_invoice' => '0',
+                'po_cluster_termin3_plan_invoice' => '0', 'po_cluster_termin3_submit_invoice' => '2026-06-24', 'po_cluster_termin3_sertifikat_invoice' => '2026-06-20', 'po_cluster_termin3_nilai_invoice' => '-1095000',
+                'po_cluster_termin4_plan_invoice' => '21900000', 'po_cluster_termin4_submit_invoice' => '', 'po_cluster_termin4_sertifikat_invoice' => '', 'po_cluster_termin4_nilai_invoice' => '0',
+                'po_cluster_termin5_plan_invoice' => '7300000', 'po_cluster_termin5_submit_invoice' => '', 'po_cluster_termin5_sertifikat_invoice' => '', 'po_cluster_termin5_nilai_invoice' => '0',
                 'po_subfeeder_termin1_plan_invoice' => '0', 'po_subfeeder_termin1_submit_invoice' => '2026-05-25', 'po_subfeeder_termin1_nilai_invoice' => '1700000',
-                'po_subfeeder_termin2_plan_invoice' => '2125000', 'po_subfeeder_termin2_submit_invoice' => '', 'po_subfeeder_termin2_nilai_invoice' => '0',
-                'po_subfeeder_termin3_plan_invoice' => '1275000', 'po_subfeeder_termin3_submit_invoice' => '', 'po_subfeeder_termin3_nilai_invoice' => '0',
-                'po_subfeeder_termin4_plan_invoice' => '0', 'po_subfeeder_termin4_submit_invoice' => '2026-06-30', 'po_subfeeder_termin4_nilai_invoice' => '2550000',
-                'po_subfeeder_termin5_plan_invoice' => '850000', 'po_subfeeder_termin5_submit_invoice' => '', 'po_subfeeder_termin5_nilai_invoice' => '0',
+                'po_subfeeder_termin2_plan_invoice' => '2125000', 'po_subfeeder_termin2_submit_invoice' => '', 'po_subfeeder_termin2_sertifikat_invoice' => '2026-06-02', 'po_subfeeder_termin2_nilai_invoice' => '0',
+                'po_subfeeder_termin3_plan_invoice' => '1275000', 'po_subfeeder_termin3_submit_invoice' => '', 'po_subfeeder_termin3_sertifikat_invoice' => '', 'po_subfeeder_termin3_nilai_invoice' => '0',
+                'po_subfeeder_termin4_plan_invoice' => '0', 'po_subfeeder_termin4_submit_invoice' => '2026-06-30', 'po_subfeeder_termin4_sertifikat_invoice' => '2026-06-28', 'po_subfeeder_termin4_nilai_invoice' => '2550000',
+                'po_subfeeder_termin5_plan_invoice' => '850000', 'po_subfeeder_termin5_submit_invoice' => '', 'po_subfeeder_termin5_sertifikat_invoice' => '', 'po_subfeeder_termin5_nilai_invoice' => '0',
                 'remark_general' => 'Contoh cluster PO 1'
             ],
             [
@@ -807,7 +808,7 @@ class MyRepublik_Project extends CI_Controller
                 'rfs_5_date' => '2026-04-28', 'rfs_5_qty' => '200',
                 'po_cluster_category' => 'INITIAL', 'po_cluster_status' => 'ISSUED', 'po_cluster_number' => 'PO-MLG-RFS1', 'po_cluster_date' => '2026-05-14', 'po_cluster_value' => '73000000',
                 'po_cluster_termin1_plan_invoice' => '0', 'po_cluster_termin1_submit_invoice' => '2026-05-17', 'po_cluster_termin1_nilai_invoice' => '14600000',
-                'po_cluster_termin2_plan_invoice' => '18250000', 'po_cluster_termin2_submit_invoice' => '', 'po_cluster_termin2_nilai_invoice' => '0',
+                'po_cluster_termin2_plan_invoice' => '18250000', 'po_cluster_termin2_submit_invoice' => '', 'po_cluster_termin2_sertifikat_invoice' => '2026-05-28', 'po_cluster_termin2_nilai_invoice' => '0',
                 'remark_general' => 'Contoh cluster RFS 1'
             ],
             [
@@ -838,7 +839,7 @@ class MyRepublik_Project extends CI_Controller
                 'rfs_date' => '2026-05-22', 'email_atp_date' => '2026-05-25', 'actual_atp_date' => '2026-05-29', 'status_rfs' => 'FULL RFS', 'status_atp' => 'DONE', 'status_current' => 'DONE',
                 'po_subfeeder_category' => 'INITIAL', 'po_subfeeder_status' => 'ISSUED', 'po_subfeeder_number' => 'PO-SF-MLG-RFS3', 'po_subfeeder_date' => '2026-05-16', 'po_subfeeder_value' => '9050000',
                 'po_subfeeder_termin1_plan_invoice' => '0', 'po_subfeeder_termin1_submit_invoice' => '2026-05-19', 'po_subfeeder_termin1_nilai_invoice' => '1810000',
-                'po_subfeeder_termin2_plan_invoice' => '2262500', 'po_subfeeder_termin2_submit_invoice' => '', 'po_subfeeder_termin2_nilai_invoice' => '0',
+                'po_subfeeder_termin2_plan_invoice' => '2262500', 'po_subfeeder_termin2_submit_invoice' => '', 'po_subfeeder_termin2_sertifikat_invoice' => '2026-05-30', 'po_subfeeder_termin2_nilai_invoice' => '0',
                 'remark_general' => 'Contoh cluster RFS 3'
             ],
             [
@@ -2682,8 +2683,14 @@ class MyRepublik_Project extends CI_Controller
             return [];
         }
 
+        $this->ensurePoTerminCertificateColumn();
+        $select = 'id_po_header, termin_no, termin_value, status_termin, invoice_date';
+        if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            $select .= ', sertifikat_invoice_date';
+        }
+
         $rows = $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date')
+            ->select($select)
             ->from('tb_myrep_po_termin')
             ->where_in('id_po_header', $poHeaderIds)
             ->where('termin_no >=', 1)
@@ -2715,10 +2722,14 @@ class MyRepublik_Project extends CI_Controller
         for ($terminNo = 1; $terminNo <= 5; $terminNo++) {
             $planKey = $prefix . '_termin' . $terminNo . '_plan_invoice';
             $submitKey = $prefix . '_termin' . $terminNo . '_submit_invoice';
+            $sertifikatKey = $prefix . '_termin' . $terminNo . '_sertifikat_invoice';
             $nilaiKey = $prefix . '_termin' . $terminNo . '_nilai_invoice';
 
             $rowMap[$planKey] = '';
             $rowMap[$submitKey] = '';
+            if ($terminNo >= 2) {
+                $rowMap[$sertifikatKey] = '';
+            }
             $rowMap[$nilaiKey] = '';
 
             if (empty($terminRows[$terminNo])) {
@@ -2729,12 +2740,16 @@ class MyRepublik_Project extends CI_Controller
             $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
             $terminValue = (string) ($termin['termin_value'] ?? '');
             $invoiceDate = (string) ($termin['invoice_date'] ?? '');
+            $sertifikatDate = (string) ($termin['sertifikat_invoice_date'] ?? '');
 
             if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
                 $rowMap[$submitKey] = $invoiceDate;
                 $rowMap[$nilaiKey] = $terminValue;
             } else {
                 $rowMap[$planKey] = $terminValue;
+            }
+            if ($terminNo >= 2) {
+                $rowMap[$sertifikatKey] = $sertifikatDate;
             }
         }
     }
@@ -2746,6 +2761,9 @@ class MyRepublik_Project extends CI_Controller
             for ($i = 1; $i <= 5; $i++) {
                 $headers[] = $prefix . '_termin' . $i . '_plan_invoice';
                 $headers[] = $prefix . '_termin' . $i . '_submit_invoice';
+                if ($i >= 2) {
+                    $headers[] = $prefix . '_termin' . $i . '_sertifikat_invoice';
+                }
                 $headers[] = $prefix . '_termin' . $i . '_nilai_invoice';
             }
         }
@@ -2916,6 +2934,7 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
+        $this->ensurePoTerminCertificateColumn();
         $terminRows = $this->MPO_MyRep->getTerminRowsByPoId((int) $poHeaderId);
         if (empty($terminRows)) {
             return;
@@ -2930,13 +2949,16 @@ class MyRepublik_Project extends CI_Controller
 
             $planKey = $prefix . '_termin' . $terminNo . '_plan_invoice';
             $submitKey = $prefix . '_termin' . $terminNo . '_submit_invoice';
+            $sertifikatKey = $prefix . '_termin' . $terminNo . '_sertifikat_invoice';
             $nilaiKey = $prefix . '_termin' . $terminNo . '_nilai_invoice';
 
             $planRaw = trim((string) ($row[$planKey] ?? ''));
             $submitRaw = trim((string) ($row[$submitKey] ?? ''));
+            $sertifikatRaw = trim((string) ($row[$sertifikatKey] ?? ''));
             $nilaiRaw = trim((string) ($row[$nilaiKey] ?? ''));
 
             $submitDate = $this->normalizeDate($submitRaw);
+            $sertifikatDate = $this->normalizeDate($sertifikatRaw);
             $planInvoice = $planRaw !== '' ? (float) $this->normalizeNumber($planRaw) : 0.0;
             $nilaiInvoice = $nilaiRaw !== '' ? (float) $this->normalizeNumber($nilaiRaw) : 0.0;
             $hasPlanValue = abs($planInvoice) > 0.000001;
@@ -2966,6 +2988,15 @@ class MyRepublik_Project extends CI_Controller
                     ->where('id_po_termin', (int) ($terminRow['id_po_termin'] ?? 0))
                     ->update('tb_myrep_po_termin', [
                         'termin_value' => $nilaiInvoice,
+                        'updated_by' => $userId,
+                    ]);
+            }
+
+            if ($terminNo >= 2 && array_key_exists($sertifikatKey, $row) && $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+                $this->db
+                    ->where('id_po_termin', (int) ($terminRow['id_po_termin'] ?? 0))
+                    ->update('tb_myrep_po_termin', [
+                        'sertifikat_invoice_date' => $sertifikatDate,
                         'updated_by' => $userId,
                     ]);
             }
@@ -3648,6 +3679,22 @@ class MyRepublik_Project extends CI_Controller
         return $filtered;
     }
 
+    private function ensurePoTerminCertificateColumn()
+    {
+        if (!$this->db->table_exists('tb_myrep_po_termin')) {
+            return;
+        }
+        if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            return;
+        }
+
+        try {
+            $this->db->query('ALTER TABLE `tb_myrep_po_termin` ADD COLUMN `sertifikat_invoice_date` DATE NULL AFTER `invoice_date`');
+        } catch (Throwable $e) {
+            log_message('error', 'Failed ensuring tb_myrep_po_termin.sertifikat_invoice_date: ' . $e->getMessage());
+        }
+    }
+
     private function validateCutoffImportRow(array $row)
     {
         $errors = [];
@@ -3696,6 +3743,14 @@ class MyRepublik_Project extends CI_Controller
         foreach (['po_cluster_on_target', 'po_subfeeder_on_target', 'po_on_target'] as $booleanColumn) {
             if (!$this->isValidImportBoolean($row[$booleanColumn] ?? '')) {
                 $errors[] = $booleanColumn . ' harus 1/0, TRUE/FALSE, YES/NO, atau ON/OFF';
+            }
+        }
+        foreach (['po_cluster', 'po_subfeeder'] as $prefix) {
+            for ($terminNo = 2; $terminNo <= 5; $terminNo++) {
+                $sertifikatKey = $prefix . '_termin' . $terminNo . '_sertifikat_invoice';
+                if (trim((string) ($row[$sertifikatKey] ?? '')) !== '' && $this->normalizeDate((string) $row[$sertifikatKey]) === null) {
+                    $errors[] = $sertifikatKey . ' tidak valid';
+                }
             }
         }
         if ($this->resolveTargetByCity((string) ($row['city_name'] ?? '')) === []) {

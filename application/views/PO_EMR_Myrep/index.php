@@ -557,14 +557,19 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     <?php
     $downloadTermOptions = ['DP', 'ATP CW', 'FULL OPM', 'RFS', 'FAC'];
     $downloadPicOptions = [
-        'AREA' => 'TKM - AREA',
-        'HO' => 'TKM - HO',
-        'EMR NRO' => 'EMR - NRO',
-        'WASPANG' => 'WASPANG',
-        'PLANNING' => 'PLANNING',
-        'TL' => 'TEAM LEADER',
-        'LOGISTIK' => 'LOGISTIK',
-        'DC EMR' => 'EMR - DC',
+        'TKM - AREA' => 'TKM - AREA',
+        'TKM - HO' => 'TKM - HO',
+        'EMMR - AREA' => 'EMMR - AREA',
+        'EMMR - DC' => 'EMMR - DC',
+        'EMMR - DOKUMEN PERMIT' => 'EMMR - DOKUMEN PERMIT',
+        'EMMR - LOGISTIK' => 'EMMR - LOGISTIK',
+        'EMMR - PLANNING' => 'EMMR - PLANNING',
+        'EMMR - TEAM LEADER' => 'EMMR - TEAM LEADER',
+        'EMMR - WASPANG' => 'EMMR - WASPANG',
+        'WAITING CW ATP' => 'WAITING CW ATP',
+        'WAITING FAC' => 'WAITING FAC',
+        'FAC BELUM JATUH TEMPO' => 'FAC BELUM JATUH TEMPO',
+        'TKM - FINANCE' => 'TKM - FINANCE',
     ];
     ?>
     <div class="modal fade" id="modal-po-emr-download-report" tabindex="-1" role="dialog" aria-labelledby="modalPoEmrDownloadReportLabel" aria-hidden="true">
@@ -655,28 +660,52 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     <div class="alert alert-warning">Tabel PO MyRep atau kolom on_target belum tersedia. Jalankan patch database terlebih dahulu.</div>
 <?php else: ?>
     <?php
-    $picRows = ['AREA', 'HO', 'EMR NRO', 'WASPANG', 'PLANNING', 'TL', 'LOGISTIK', 'DC EMR'];
+    $picRows = [
+        'TKM - AREA',
+        'TKM - HO',
+        'EMMR - AREA',
+        'EMMR - DC',
+        'EMMR - DOKUMEN PERMIT',
+        'EMMR - LOGISTIK',
+        'EMMR - PLANNING',
+        'EMMR - TEAM LEADER',
+        'EMMR - WASPANG',
+        'WAITING CW ATP',
+        'WAITING FAC',
+        'FAC BELUM JATUH TEMPO',
+        'TKM - FINANCE',
+    ];
     $picLabelClasses = [
-        'AREA' => 'area',
-        'HO' => 'ho',
-        'EMR NRO' => 'flow',
-        'WASPANG' => 'waspang',
-        'PLANNING' => 'planning',
-        'TL' => 'tl',
-        'LOGISTIK' => 'logistik',
-        'DC EMR' => 'dc',
+        'TKM - AREA' => 'area',
+        'TKM - HO' => 'ho',
+        'EMMR - AREA' => 'flow',
+        'EMMR - DC' => 'dc',
+        'EMMR - DOKUMEN PERMIT' => 'dc',
+        'EMMR - LOGISTIK' => 'logistik',
+        'EMMR - PLANNING' => 'planning',
+        'EMMR - TEAM LEADER' => 'tl',
+        'EMMR - WASPANG' => 'waspang',
+        'WAITING CW ATP' => 'flow',
+        'WAITING FAC' => 'closed',
+        'FAC BELUM JATUH TEMPO' => 'tl',
+        'TKM - FINANCE' => 'tkm',
     ];
     $picDisplayLabels = [
-        'AREA' => 'TKM - AREA',
-        'HO' => 'TKM - HO',
-        'EMR NRO' => 'EMR - NRO',
-        'WASPANG' => 'WASPANG',
-        'PLANNING' => 'PLANNING',
-        'TL' => 'TEAM LEADER',
-        'LOGISTIK' => 'LOGISTIK',
-        'DC EMR' => 'EMR - DC',
+        'TKM - AREA' => 'TKM - AREA',
+        'TKM - HO' => 'TKM - HO',
+        'EMMR - AREA' => 'EMMR - AREA',
+        'EMMR - DC' => 'EMMR - DC',
+        'EMMR - DOKUMEN PERMIT' => 'EMMR - DOKUMEN PERMIT',
+        'EMMR - LOGISTIK' => 'EMMR - LOGISTIK',
+        'EMMR - PLANNING' => 'EMMR - PLANNING',
+        'EMMR - TEAM LEADER' => 'EMMR - TEAM LEADER',
+        'EMMR - WASPANG' => 'EMMR - WASPANG',
+        'WAITING CW ATP' => 'WAITING CW ATP',
+        'WAITING FAC' => 'WAITING FAC',
+        'FAC BELUM JATUH TEMPO' => 'FAC BELUM JATUH TEMPO',
+        'TKM - FINANCE' => 'TKM - FINANCE',
     ];
-    $executiveCardClasses = ['green', 'blue', 'red', 'cyan', 'amber', 'mint', 'blue', 'cyan'];
+    $executiveCardClasses = ['green', 'blue', 'red', 'cyan', 'amber', 'mint', 'blue', 'cyan', 'amber', 'mint', 'green', 'blue', 'red'];
     $executivePicTotals = [];
     foreach ($picRows as $picRow) {
         $executivePicTotals[$picRow] = ['count' => 0, 'value' => 0];
@@ -1324,7 +1353,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
             event.preventDefault();
             event.stopPropagation();
 
-            activeDrilldownPic = String($(this).data('pic') || 'EMR NRO');
+            activeDrilldownPic = String($(this).data('pic') || 'EMMR - AREA');
             activeDrilldownPicLabel = String($(this).data('pic-label') || activeDrilldownPic);
             activeDrilldownStage = String($(this).data('stage') || 'RFS');
             activeDrilldownNroStatus = String($(this).data('nro-status') || '');

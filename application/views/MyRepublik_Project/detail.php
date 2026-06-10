@@ -429,6 +429,7 @@ $canQuickUpdate = !empty($canQuickUpdate);
                                                 <th>Nilai</th>
                                                 <th>Status</th>
                                                 <th>Invoice</th>
+                                                <th>Sertifikat</th>
                                                 <th>Paid</th>
                                             </tr>
                                         </thead>
@@ -440,11 +441,12 @@ $canQuickUpdate = !empty($canQuickUpdate);
                                                     <td><?= myrepDetailCurrency((float) ($termin['termin_value'] ?? 0)) ?></td>
                                                     <td><span class="badge <?= myrepStatusBadgeClass($termin['status_termin'] ?? '') ?>"><?= htmlspecialchars((string) ($termin['status_termin'] ?? '-')) ?></span></td>
                                                     <td><?= myrepDetailDate($termin['invoice_date'] ?? null) ?></td>
+                                                    <td><?= ((int) ($termin['termin_no'] ?? 0) >= 2) ? myrepDetailDate($termin['sertifikat_invoice_date'] ?? null) : '-' ?></td>
                                                     <td><?= myrepDetailDate($termin['paid_date'] ?? null) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                             <?php if (empty($header['termin_rows'])): ?>
-                                                <tr><td colspan="6" class="text-center text-muted">Belum ada termin PO.</td></tr>
+                                                <tr><td colspan="7" class="text-center text-muted">Belum ada termin PO.</td></tr>
                                             <?php endif; ?>
                                         </tbody>
                                     </table>

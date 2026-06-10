@@ -371,31 +371,31 @@ class PO_EMR_Myrep extends CI_Controller
     private function picBadgeClass($pic)
     {
         $pic = strtoupper(trim((string) $pic));
-        if ($pic === 'AREA') {
+        if ($pic === 'AREA' || $pic === 'TKM - AREA') {
             return 'warning';
         }
-        if ($pic === 'HO') {
+        if ($pic === 'HO' || $pic === 'TKM - HO') {
             return 'primary';
         }
-        if ($pic === 'DC EMR') {
+        if ($pic === 'DC EMR' || $pic === 'EMMR - DC') {
             return 'info';
         }
-        if ($pic === 'EMR NRO' || $pic === 'NRO' || $pic === 'FLOW NRO') {
+        if ($pic === 'EMR NRO' || $pic === 'NRO' || $pic === 'FLOW NRO' || $pic === 'EMMR - AREA' || $pic === 'WAITING CW ATP') {
             return 'danger';
         }
-        if ($pic === 'WASPANG') {
+        if ($pic === 'WASPANG' || $pic === 'EMMR - WASPANG' || $pic === 'WAITING FAC') {
             return 'warning';
         }
-        if ($pic === 'PLANNING') {
+        if ($pic === 'PLANNING' || $pic === 'EMMR - PLANNING') {
             return 'primary';
         }
-        if ($pic === 'TL') {
+        if ($pic === 'TL' || $pic === 'EMMR - TEAM LEADER' || $pic === 'FAC BELUM JATUH TEMPO') {
             return 'secondary';
         }
-        if ($pic === 'LOGISTIK') {
+        if ($pic === 'LOGISTIK' || $pic === 'EMMR - LOGISTIK' || $pic === 'EMMR - DOKUMEN PERMIT') {
             return 'info';
         }
-        if ($pic === 'TKM') {
+        if ($pic === 'TKM' || $pic === 'TKM - FINANCE') {
             return 'success';
         }
         if ($pic === 'CLOSED') {
@@ -414,13 +414,22 @@ class PO_EMR_Myrep extends CI_Controller
             return 'TKM - HO';
         }
         if ($pic === 'EMR NRO' || $pic === 'NRO') {
-            return 'EMR - NRO';
+            return 'EMMR - AREA';
         }
         if ($pic === 'DC EMR') {
-            return 'EMR - DC';
+            return 'EMMR - DC';
         }
         if ($pic === 'TL') {
-            return 'TEAM LEADER';
+            return 'EMMR - TEAM LEADER';
+        }
+        if ($pic === 'WASPANG') {
+            return 'EMMR - WASPANG';
+        }
+        if ($pic === 'PLANNING') {
+            return 'EMMR - PLANNING';
+        }
+        if ($pic === 'LOGISTIK') {
+            return 'EMMR - LOGISTIK';
         }
         return $pic !== '' ? $pic : '-';
     }

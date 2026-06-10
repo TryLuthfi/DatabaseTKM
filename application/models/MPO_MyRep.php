@@ -2251,7 +2251,22 @@ class MPO_MyRep extends CI_Model
 
     private function buildEmptyTerminPicSummary()
     {
-        $picLabels = ['AREA', 'HO', 'EMR NRO', 'DC EMR', 'WASPANG', 'PLANNING', 'TL', 'LOGISTIK', 'CLOSED'];
+        $picLabels = [
+            'TKM - AREA',
+            'TKM - HO',
+            'EMMR - AREA',
+            'EMMR - DC',
+            'EMMR - DOKUMEN PERMIT',
+            'EMMR - LOGISTIK',
+            'EMMR - PLANNING',
+            'EMMR - TEAM LEADER',
+            'EMMR - WASPANG',
+            'WAITING CW ATP',
+            'WAITING FAC',
+            'FAC BELUM JATUH TEMPO',
+            'TKM - FINANCE',
+            'CLOSED',
+        ];
         $stageLabels = [
             1 => 'DP',
             2 => 'ATP CW',
@@ -2295,8 +2310,17 @@ class MPO_MyRep extends CI_Model
         }
 
         $terminNo = (int) ($row['termin_no'] ?? 0);
-        if ($terminNo === 1 || $terminNo === 5) {
-            return 'HO';
+        if ($terminNo === 1) {
+            return 'TKM - HO';
+        }
+
+        if ($terminNo === 5) {
+            return $this->resolveFacTerminPic($row);
+        }
+
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        if ($terminNo === 4 && !in_array($statusCurrent, ['RFS', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
+            return 'TKM - AREA';
         }
 
         $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
@@ -2322,10 +2346,10 @@ class MPO_MyRep extends CI_Model
         $astriApproved = (int) ($state['astri_approved'] ?? 0);
 
         if ($uploaded < $required) {
-            return 'AREA';
+            return 'EMMR - AREA';
         }
         if ($approved < $required) {
-            return 'HO';
+            return 'TKM - AREA';
         }
         if ($sowType === 'RFS' && !empty($state['has_project_opname_nro_flow'])) {
             $nroPic = $this->mapNroFlowStatusToPic((string) ($state['project_opname_nro_status'] ?? ''));
@@ -2333,46 +2357,62 @@ class MPO_MyRep extends CI_Model
                 return $nroPic;
             }
 
-            return 'EMR NRO';
+            return 'EMMR - AREA';
         }
         if ($astriApproved >= $required) {
-            return 'HO';
+            return 'TKM - HO';
         }
 
-        return 'DC EMR';
+        return 'EMMR - DC';
     }
 
     private function resolvePicFromClusterAndAtpStage(array $row)
     {
+        $terminNo = (int) ($row['termin_no'] ?? 0);
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        if ($terminNo === 4 && !in_array($statusCurrent, ['RFS', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
+            return 'TKM - AREA';
+        }
+
         $displayStatus = $this->resolveClusterDetailedStatus($row);
         if ($displayStatus === 'IMPLEMENTASI') {
-            return 'AREA';
+            return 'EMMR - AREA';
         }
         if (in_array($displayStatus, ['ATP PUNCLIST', 'PUNCLIST'], true)) {
-            return 'AREA';
+            return 'TKM - AREA';
         }
         if ($displayStatus === 'WAITING EMAIL') {
-            return 'HO';
+            return 'TKM - HO';
         }
-        if (in_array($displayStatus, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true)) {
-            return 'EMR NRO';
+        if (in_array($displayStatus, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP', 'WAITING STATUS ATP'], true)) {
+            return 'WAITING CW ATP';
         }
 
         $stageAtp = strtoupper(trim((string) ($row['stage_atp'] ?? '')));
         $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
         if ($statusAtp === 'PUNCLIST' || in_array($stageAtp, ['ATP PUNCLIST', 'PUNCLIST'], true)) {
-            return 'AREA';
+            return 'TKM - AREA';
         }
 
         if ($stageAtp === 'WAITING EMAIL') {
-            return 'HO';
+            return 'TKM - HO';
         }
 
-        if (in_array($stageAtp, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true)) {
-            return 'EMR NRO';
+        if (in_array($stageAtp, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP', 'WAITING STATUS ATP'], true)) {
+            return 'WAITING CW ATP';
         }
 
-        return 'AREA';
+        return 'EMMR - AREA';
+    }
+
+    private function resolveFacTerminPic(array $row)
+    {
+        $statusTermin = strtoupper(trim((string) ($row['status_termin'] ?? 'NOT READY')));
+        if ($statusTermin === 'READY BILLING') {
+            return 'TKM - FINANCE';
+        }
+
+        return 'FAC BELUM JATUH TEMPO';
     }
 
     public function getEmrTargetDetailedStatusLabel(array $row)
@@ -2417,10 +2457,10 @@ class MPO_MyRep extends CI_Model
     private function mapNroFlowStatusToPic($nroStatus)
     {
         $map = [
-            'WAITING WASPANG' => 'WASPANG',
-            'WAITING PLANNING' => 'PLANNING',
-            'WAITING TL' => 'TL',
-            'WAITING LOGISTIK' => 'LOGISTIK',
+            'WAITING WASPANG' => 'EMMR - WASPANG',
+            'WAITING PLANNING' => 'EMMR - PLANNING',
+            'WAITING TL' => 'EMMR - TEAM LEADER',
+            'WAITING LOGISTIK' => 'EMMR - LOGISTIK',
         ];
 
         return $map[strtoupper(trim((string) $nroStatus))] ?? '';
@@ -2497,7 +2537,7 @@ class MPO_MyRep extends CI_Model
 
             $terminNo = $this->getTerminNoFromStage($stage);
             if ($terminNo <= 0) {
-                $row['current_pic'] = 'AREA';
+                $row['current_pic'] = 'TKM - AREA';
                 $row['current_termin_value'] = 0;
                 continue;
             }
