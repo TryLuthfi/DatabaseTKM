@@ -90,6 +90,7 @@
             z-index: 1;
             pointer-events: none;
             opacity: 0.72;
+            animation: floatNetwork 8s ease-in-out infinite;
         }
 
         .form-illustration--top {
@@ -105,6 +106,7 @@
             width: 270px;
             height: 175px;
             opacity: 0.58;
+            animation-delay: -3s;
         }
 
         .form-illustration .line {
@@ -291,6 +293,7 @@
             border: 1px solid #eef2f7;
             border-radius: 22px;
             box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
+            animation: loginCardIn 0.72s ease-out both;
         }
 
         .auth-title {
@@ -300,6 +303,7 @@
             font-weight: 800;
             line-height: 1.2;
             text-align: center;
+            animation: loginItemIn 0.5s ease-out 0.1s both;
         }
 
         .auth-subtitle {
@@ -308,6 +312,7 @@
             font-size: 12px;
             font-weight: 700;
             text-align: center;
+            animation: loginItemIn 0.5s ease-out 0.18s both;
         }
 
         .auth-form-wrap .alert {
@@ -323,20 +328,73 @@
         }
 
         .auth-form-wrap .input-group {
+            position: relative;
+            isolation: isolate;
             min-height: 44px;
             margin-bottom: 13px;
             overflow: hidden;
-            background: #ffffff;
-            border: 1px solid #e5eaf2;
+            background: transparent;
+            border: 0;
             border-radius: 10px;
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+            animation: loginItemIn 0.5s ease-out both;
+        }
+
+        .auth-form-wrap .input-group::before,
+        .auth-form-wrap .input-group::after {
+            content: "";
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .auth-form-wrap .input-group::before {
+            --input-light-angle: 0deg;
+            inset: 0;
+            z-index: -2;
+            border-radius: 10px;
+            background: conic-gradient(
+                from var(--input-light-angle),
+                rgba(229, 234, 242, 1) 0deg,
+                rgba(229, 234, 242, 1) 312deg,
+                rgba(96, 165, 250, 0.2) 326deg,
+                rgba(37, 99, 235, 0.95) 344deg,
+                rgba(125, 211, 252, 0.18) 360deg
+            );
+            opacity: 0;
+            transition: opacity 0.18s ease;
+        }
+
+        .auth-form-wrap .input-group::after {
+            inset: 1px;
+            z-index: -1;
+            border-radius: 9px;
+            background: #ffffff;
+        }
+
+        .auth-form-wrap .input-group:focus-within {
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.13);
+            transform: translateY(-1px);
+        }
+
+        .auth-form-wrap .input-group:focus-within::before {
+            opacity: 1;
+            animation: inputLightOrbit 4.8s linear infinite;
+        }
+
+        .auth-form-wrap form .input-group:nth-of-type(1) {
+            animation-delay: 0.26s;
+        }
+
+        .auth-form-wrap form .input-group:nth-of-type(2) {
+            animation-delay: 0.34s;
         }
 
         .auth-form-wrap .form-control,
         .auth-form-wrap .input-group-text {
             min-height: 42px;
             border: 0;
-            background: #ffffff;
+            background: transparent;
             color: #111827;
             font-size: 13px;
         }
@@ -368,7 +426,8 @@
             font-size: 14px;
             font-weight: 800;
             box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
-            transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+            transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+            animation: loginItemIn 0.5s ease-out 0.42s both;
         }
 
         .auth-submit:hover,
@@ -377,6 +436,12 @@
             background: #111827;
             color: #ffffff;
             transform: translateY(-1px);
+            box-shadow: 0 15px 28px rgba(15, 23, 42, 0.24);
+        }
+
+        .auth-submit:active {
+            transform: translateY(0);
+            box-shadow: 0 9px 18px rgba(15, 23, 42, 0.18);
         }
 
         .password-toggle.input-group-text {
@@ -449,6 +514,65 @@
             font-size: 10px;
             font-weight: 700;
             text-align: center;
+            animation: loginItemIn 0.5s ease-out 0.5s both;
+        }
+
+        @keyframes loginCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes loginItemIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes floatNetwork {
+            0%,
+            100% {
+                transform: translate3d(0, 0, 0);
+            }
+
+            50% {
+                transform: translate3d(0, -10px, 0);
+            }
+        }
+
+        @keyframes inputLightOrbit {
+            to {
+                --input-light-angle: 360deg;
+            }
+        }
+
+        @property --input-light-angle {
+            syntax: "<angle>";
+            inherits: false;
+            initial-value: 0deg;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
