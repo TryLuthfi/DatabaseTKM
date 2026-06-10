@@ -21,14 +21,23 @@
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
         html,
         body {
-            min-height: 100%;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
 
         body.auth-page {
             margin: 0;
-            min-height: 100vh;
+            height: 100vh;
+            height: 100dvh;
             background: #ffffff;
             color: #1f2937;
             font-family: "Source Sans Pro", Arial, sans-serif;
@@ -36,8 +45,21 @@
 
         .auth-shell {
             display: flex;
-            min-height: 100vh;
             width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        @supports (-webkit-touch-callout: none) {
+            body.auth-page,
+            .auth-shell {
+                height: -webkit-fill-available;
+            }
+        }
+
+        html {
+            min-height: -webkit-fill-available;
         }
 
         .auth-brand-panel {
@@ -46,7 +68,8 @@
             align-items: center;
             justify-content: center;
             flex: 0 0 54%;
-            min-height: 100vh;
+            height: 100%;
+            min-height: 0;
             overflow: hidden;
             background:
                 linear-gradient(90deg, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.6)),
@@ -250,7 +273,8 @@
             align-items: center;
             justify-content: center;
             flex: 1 1 auto;
-            min-height: 100vh;
+            height: 100%;
+            min-height: 0;
             overflow: hidden;
             background: #ffffff;
             padding: 48px 40px;
@@ -374,7 +398,8 @@
 
             .auth-brand-panel {
                 flex: 0 0 auto;
-                min-height: 42vh;
+                height: 42%;
+                min-height: 0;
                 padding: 36px 24px;
             }
 
@@ -383,7 +408,8 @@
             }
 
             .auth-form-panel {
-                min-height: 58vh;
+                height: 58%;
+                min-height: 0;
                 padding: 34px 24px;
             }
 
@@ -556,4 +582,3 @@
 </script>
 
 </html>
-
