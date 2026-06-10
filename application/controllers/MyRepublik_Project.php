@@ -2958,7 +2958,7 @@ class MyRepublik_Project extends CI_Controller
             $nilaiRaw = trim((string) ($row[$nilaiKey] ?? ''));
 
             $submitDate = $this->normalizeDate($submitRaw);
-            $sertifikatDate = $this->normalizeDate($sertifikatRaw);
+            $sertifikatValue = $sertifikatRaw !== '' ? $sertifikatRaw : null;
             $planInvoice = $planRaw !== '' ? (float) $this->normalizeNumber($planRaw) : 0.0;
             $nilaiInvoice = $nilaiRaw !== '' ? (float) $this->normalizeNumber($nilaiRaw) : 0.0;
             $hasPlanValue = abs($planInvoice) > 0.000001;
@@ -2996,7 +2996,7 @@ class MyRepublik_Project extends CI_Controller
                 $this->db
                     ->where('id_po_termin', (int) ($terminRow['id_po_termin'] ?? 0))
                     ->update('tb_myrep_po_termin', [
-                        'sertifikat_invoice_date' => $sertifikatDate,
+                        'sertifikat_invoice_date' => $sertifikatValue,
                         'updated_by' => $userId,
                     ]);
             }
@@ -3685,13 +3685,36 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
         if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            $this->ensurePoTerminCertificateColumnType();
             return;
         }
 
         try {
-            $this->db->query('ALTER TABLE `tb_myrep_po_termin` ADD COLUMN `sertifikat_invoice_date` DATE NULL AFTER `invoice_date`');
+            $this->db->query('ALTER TABLE `tb_myrep_po_termin` ADD COLUMN `sertifikat_invoice_date` VARCHAR(150) NULL AFTER `invoice_date`');
         } catch (Throwable $e) {
             log_message('error', 'Failed ensuring tb_myrep_po_termin.sertifikat_invoice_date: ' . $e->getMessage());
+        }
+    }
+
+    private function ensurePoTerminCertificateColumnType()
+    {
+        try {
+            $field = $this->db
+                ->query("
+                    SELECT DATA_TYPE
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'tb_myrep_po_termin'
+                      AND COLUMN_NAME = 'sertifikat_invoice_date'
+                    LIMIT 1
+                ")
+                ->row_array();
+            $dataType = strtolower((string) ($field['DATA_TYPE'] ?? ''));
+            if ($dataType !== '' && !in_array($dataType, ['varchar', 'char', 'text', 'mediumtext', 'longtext'], true)) {
+                $this->db->query('ALTER TABLE `tb_myrep_po_termin` MODIFY COLUMN `sertifikat_invoice_date` VARCHAR(150) NULL');
+            }
+        } catch (Throwable $e) {
+            log_message('error', 'Failed modifying tb_myrep_po_termin.sertifikat_invoice_date type: ' . $e->getMessage());
         }
     }
 
@@ -3743,14 +3766,6 @@ class MyRepublik_Project extends CI_Controller
         foreach (['po_cluster_on_target', 'po_subfeeder_on_target', 'po_on_target'] as $booleanColumn) {
             if (!$this->isValidImportBoolean($row[$booleanColumn] ?? '')) {
                 $errors[] = $booleanColumn . ' harus 1/0, TRUE/FALSE, YES/NO, atau ON/OFF';
-            }
-        }
-        foreach (['po_cluster', 'po_subfeeder'] as $prefix) {
-            for ($terminNo = 2; $terminNo <= 5; $terminNo++) {
-                $sertifikatKey = $prefix . '_termin' . $terminNo . '_sertifikat_invoice';
-                if (trim((string) ($row[$sertifikatKey] ?? '')) !== '' && $this->normalizeDate((string) $row[$sertifikatKey]) === null) {
-                    $errors[] = $sertifikatKey . ' tidak valid';
-                }
             }
         }
         if ($this->resolveTargetByCity((string) ($row['city_name'] ?? '')) === []) {

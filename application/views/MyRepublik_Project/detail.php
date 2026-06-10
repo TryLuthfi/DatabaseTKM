@@ -441,7 +441,7 @@ $canQuickUpdate = !empty($canQuickUpdate);
                                                     <td><?= myrepDetailCurrency((float) ($termin['termin_value'] ?? 0)) ?></td>
                                                     <td><span class="badge <?= myrepStatusBadgeClass($termin['status_termin'] ?? '') ?>"><?= htmlspecialchars((string) ($termin['status_termin'] ?? '-')) ?></span></td>
                                                     <td><?= myrepDetailDate($termin['invoice_date'] ?? null) ?></td>
-                                                    <td><?= ((int) ($termin['termin_no'] ?? 0) >= 2) ? myrepDetailDate($termin['sertifikat_invoice_date'] ?? null) : '-' ?></td>
+                                                    <td><?= ((int) ($termin['termin_no'] ?? 0) >= 2 && trim((string) ($termin['sertifikat_invoice_date'] ?? '')) !== '') ? htmlspecialchars((string) $termin['sertifikat_invoice_date'], ENT_QUOTES, 'UTF-8') : '-' ?></td>
                                                     <td><?= myrepDetailDate($termin['paid_date'] ?? null) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
