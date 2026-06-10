@@ -2341,6 +2341,10 @@ class MPO_MyRep extends CI_Model
             return $this->resolvePicFromClusterAndAtpStage($row);
         }
 
+        if ($this->shouldPrioritizeAtpWaitingPic($row)) {
+            return 'EMR NRO';
+        }
+
         $uploaded = (int) ($state['uploaded'] ?? 0);
         $approved = (int) ($state['approved'] ?? 0);
         $astriApproved = (int) ($state['astri_approved'] ?? 0);
@@ -2413,6 +2417,17 @@ class MPO_MyRep extends CI_Model
         }
 
         return 'FAC BELUM JATUH TEMPO';
+    }
+
+    private function shouldPrioritizeAtpWaitingPic(array $row)
+    {
+        $displayStatus = $this->resolveClusterDetailedStatus($row);
+        if (in_array($displayStatus, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true)) {
+            return true;
+        }
+
+        $stageAtp = strtoupper(trim((string) ($row['stage_atp'] ?? '')));
+        return in_array($stageAtp, ['WAITING JADWAL', 'WAITING JADWAL ATP', 'WAITING ATP', 'PROSES ATP', 'ON PROSES ATP'], true);
     }
 
     public function getEmrTargetDetailedStatusLabel(array $row)
