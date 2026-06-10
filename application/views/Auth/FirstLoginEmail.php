@@ -25,6 +25,14 @@
             height: auto;
         }
 
+        .login-logo .brand-mark-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 40px;
+        }
+
         .login-logo .brand-mark-wrap {
             display: inline-flex;
             align-items: center;
@@ -34,6 +42,10 @@
             background: #ffffff;
             border-radius: 18px;
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .login-logo .brand-mark-wrap-tkm img {
+            width: 96px;
         }
 
         .login-logo .brand-text-custom {
@@ -87,8 +99,13 @@
     <div class="login-box" style="max-width: 520px;">
         <div class="login-logo">
             <a href="<?= site_url('Auth') ?>">
-                <span class="brand-mark-wrap">
-                    <img src="<?= base_url('assets/dist/img/zeyn-logo.png') ?>" alt="ZEYN Logo">
+                <span class="brand-mark-row">
+                    <span class="brand-mark-wrap">
+                        <img src="<?= base_url('assets/dist/img/zeyn-logo.png') ?>" alt="ZEYN Logo">
+                    </span>
+                    <span class="brand-mark-wrap brand-mark-wrap-tkm">
+                        <img src="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>" alt="TKM Logo">
+                    </span>
                 </span>
                 <span class="brand-text-custom">ZEYN</span>
                 <span class="brand-tagline-custom">ZERO-ERROR EXECUTION, YIELDING NETWORKS</span>

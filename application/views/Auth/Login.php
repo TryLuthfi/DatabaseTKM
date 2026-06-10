@@ -21,55 +21,344 @@
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
     <style>
-        .login-logo {
-            margin-bottom: 12px;
-            text-align: center;
+        html,
+        body {
+            min-height: 100%;
         }
 
-        .login-logo img {
-            width: 92px;
+        body.auth-page {
+            margin: 0;
+            min-height: 100vh;
+            background: #ffffff;
+            color: #1f2937;
+            font-family: "Source Sans Pro", Arial, sans-serif;
+        }
+
+        .auth-shell {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .auth-brand-panel {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 54%;
+            min-height: 100vh;
+            overflow: hidden;
+            background:
+                linear-gradient(90deg, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.6)),
+                url('<?= base_url("assets/img/IMG_1247.JPG") ?>') no-repeat center center;
+            background-size: cover;
+            padding: 48px;
+        }
+
+        .auth-brand-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .form-illustration {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.72;
+        }
+
+        .form-illustration--top {
+            top: 74px;
+            right: 42px;
+            width: 250px;
+            height: 160px;
+        }
+
+        .form-illustration--bottom {
+            left: 38px;
+            bottom: 58px;
+            width: 270px;
+            height: 175px;
+            opacity: 0.58;
+        }
+
+        .form-illustration .line {
+            position: absolute;
+            height: 2px;
+            background: rgba(15, 23, 42, 0.12);
+            border-radius: 999px;
+            transform-origin: left center;
+        }
+
+        .form-illustration .node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(37, 99, 235, 0.2);
+            border-radius: 50%;
+            background: rgba(37, 99, 235, 0.05);
+            box-shadow: 0 0 18px rgba(37, 99, 235, 0.08);
+        }
+
+        .form-illustration .node-lg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .form-illustration--top .line-1 {
+            top: 42px;
+            left: 28px;
+            width: 150px;
+            transform: rotate(12deg);
+        }
+
+        .form-illustration--top .line-2 {
+            top: 92px;
+            left: 88px;
+            width: 150px;
+            transform: rotate(-26deg);
+        }
+
+        .form-illustration--top .line-3 {
+            top: 120px;
+            left: 36px;
+            width: 120px;
+            transform: rotate(31deg);
+        }
+
+        .form-illustration--top .node-1 {
+            top: 34px;
+            left: 18px;
+        }
+
+        .form-illustration--top .node-2 {
+            top: 62px;
+            left: 168px;
+        }
+
+        .form-illustration--top .node-3 {
+            top: 106px;
+            left: 30px;
+        }
+
+        .form-illustration--top .node-4 {
+            top: 48px;
+            left: 232px;
+        }
+
+        .form-illustration--bottom .line-1 {
+            top: 54px;
+            left: 40px;
+            width: 170px;
+            transform: rotate(23deg);
+        }
+
+        .form-illustration--bottom .line-2 {
+            top: 124px;
+            left: 84px;
+            width: 160px;
+            transform: rotate(-18deg);
+        }
+
+        .form-illustration--bottom .line-3 {
+            top: 62px;
+            left: 162px;
+            width: 105px;
+            transform: rotate(72deg);
+        }
+
+        .form-illustration--bottom .node-1 {
+            top: 42px;
+            left: 32px;
+        }
+
+        .form-illustration--bottom .node-2 {
+            top: 82px;
+            left: 198px;
+        }
+
+        .form-illustration--bottom .node-3 {
+            top: 132px;
+            left: 78px;
+        }
+
+        .form-illustration--bottom .node-4 {
+            top: 20px;
+            left: 246px;
+        }
+
+        .brand-mark-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .brand-mark-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+        }
+
+        .brand-mark-wrap img {
+            width: 56px;
             max-width: 100%;
             height: auto;
         }
 
-        .login-logo .brand-mark-wrap {
-            display: inline-flex;
+        .brand-mark-wrap-tkm img {
+            width: 60px;
+        }
+
+        .brand-text-custom {
+            display: block;
+            color: #ffffff;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 5px;
+            line-height: 1;
+        }
+
+        .brand-tagline-custom {
+            display: block;
+            margin-top: 12px;
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .brand-company {
+            margin-top: 26px;
+            color: rgba(255, 255, 255, 0.38);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .auth-form-panel {
+            position: relative;
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 106px;
-            height: 106px;
+            flex: 1 1 auto;
+            min-height: 100vh;
+            overflow: hidden;
             background: #ffffff;
-            border-radius: 18px;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            padding: 48px 40px;
         }
 
-        .login-logo .brand-text-custom {
-            display: block;
-            margin-top: 6px;
-            color: #ffffff;
-            font-size: 30px;
+        .auth-form-wrap {
+            position: relative;
+            z-index: 2;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 340px;
+            padding: 44px 38px 34px;
+            background: #ffffff;
+            border: 1px solid #eef2f7;
+            border-radius: 22px;
+            box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
+        }
+
+        .auth-title {
+            margin: 0;
+            color: #111827;
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .auth-subtitle {
+            margin: 6px 0 22px;
+            color: #9ca3af;
+            font-size: 12px;
             font-weight: 700;
-            letter-spacing: 4px;
-            line-height: 1;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+            text-align: center;
         }
 
-        .login-logo .brand-tagline-custom {
+        .auth-form-wrap .alert {
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .auth-form-wrap .text-danger {
             display: block;
-            margin-top: 6px;
+            margin: -4px 0 6px;
+            font-size: 12px;
+        }
+
+        .auth-form-wrap .input-group {
+            min-height: 44px;
+            margin-bottom: 13px;
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid #e5eaf2;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+        }
+
+        .auth-form-wrap .form-control,
+        .auth-form-wrap .input-group-text {
+            min-height: 42px;
+            border: 0;
+            background: #ffffff;
+            color: #111827;
+            font-size: 13px;
+        }
+
+        .auth-form-wrap .form-control {
+            border-radius: 0;
+            font-weight: 700;
+        }
+
+        .auth-form-wrap .form-control::placeholder {
+            color: #a7b0bf;
+            opacity: 1;
+        }
+
+        .auth-form-wrap .input-group-text {
+            width: 42px;
+            justify-content: center;
+            color: #b7c1d0;
+            border-radius: 0;
+        }
+
+        .auth-submit {
+            min-height: 46px;
+            margin-top: 12px;
+            border: 1px solid #0f172a;
+            border-radius: 10px;
+            background: #0f172a;
             color: #ffffff;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 1.4px;
-            text-transform: uppercase;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+            font-size: 14px;
+            font-weight: 800;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+            transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .auth-submit:hover,
+        .auth-submit:focus {
+            border-color: #111827;
+            background: #111827;
+            color: #ffffff;
+            transform: translateY(-1px);
         }
 
         .password-toggle.input-group-text {
-            width: 40px;
+            width: 42px;
             justify-content: center;
-            color: #6c757d;
-            background-color: #fff;
+            color: #b7c1d0;
             cursor: pointer;
         }
 
@@ -78,45 +367,107 @@
             outline: 0;
         }
 
-        .login-page-footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding-bottom: 18px;
-            text-align: center;
-            font-size: 12px;
-            color: #ffffff;
-            font-weight: 600;
-            letter-spacing: 0.4px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-            z-index: 2;
+        @media (max-width: 767.98px) {
+            .auth-shell {
+                flex-direction: column;
+            }
+
+            .auth-brand-panel {
+                flex: 0 0 auto;
+                min-height: 42vh;
+                padding: 36px 24px;
+            }
+
+            .form-illustration {
+                display: none;
+            }
+
+            .auth-form-panel {
+                min-height: 58vh;
+                padding: 34px 24px;
+            }
+
+            .auth-form-wrap {
+                padding: 34px 24px 28px;
+            }
+
+            .brand-mark-wrap {
+                width: 64px;
+                height: 64px;
+            }
+
+            .brand-mark-wrap img {
+                width: 52px;
+            }
+
+            .brand-mark-wrap-tkm img {
+                width: 56px;
+            }
+
+            .brand-text-custom {
+                font-size: 32px;
+            }
+
+            .brand-tagline-custom {
+                font-size: 11px;
+            }
+
+            .auth-title {
+                font-size: 23px;
+            }
         }
 
-        .login-page-footer span {
-            display: inline-block;
-            padding: 7px 12px;
-            background: rgba(0, 0, 0, 0.58);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 999px;
-            backdrop-filter: blur(2px);
+        .auth-card-footer {
+            margin: 34px 0 0;
+            color: #b3bdcc;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
         }
     </style>
 </head>
 
-<body class="hold-transition login-page" style="background: linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.41)), url('<?= base_url("assets/img/IMG_1247.JPG") ?>') no-repeat center center fixed; background-size: cover;">
-    <div class="login-box">
-        <div class="login-logo">
-            <a>
-                <span class="brand-mark-wrap">
-                    <img src="<?= base_url('assets/dist/img/zeyn-logo.png') ?>" alt="ZEYN Logo">
+<body class="hold-transition auth-page">
+    <main class="auth-shell">
+        <section class="auth-brand-panel" aria-label="ZEYN brand">
+            <div class="auth-brand-content">
+                <span class="brand-mark-row">
+                    <span class="brand-mark-wrap">
+                        <img src="<?= base_url('assets/dist/img/zeyn-logo.png') ?>" alt="ZEYN Logo">
+                    </span>
+                    <span class="brand-mark-wrap brand-mark-wrap-tkm">
+                        <img src="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>" alt="TKM Logo">
+                    </span>
                 </span>
                 <span class="brand-text-custom">ZEYN</span>
                 <span class="brand-tagline-custom">ZERO-ERROR EXECUTION, YIELDING NETWORKS</span>
-            </a>
-        </div>
-        <!-- /.login-logo -->
-        <div class="card">
+                <div class="brand-company">PT. Technology Karya Mandiri</div>
+            </div>
+        </section>
+
+        <section class="auth-form-panel" aria-label="Login form">
+            <div class="form-illustration form-illustration--top" aria-hidden="true">
+                <span class="line line-1"></span>
+                <span class="line line-2"></span>
+                <span class="line line-3"></span>
+                <span class="node node-1"></span>
+                <span class="node node-2 node-lg"></span>
+                <span class="node node-3"></span>
+                <span class="node node-4"></span>
+            </div>
+            <div class="form-illustration form-illustration--bottom" aria-hidden="true">
+                <span class="line line-1"></span>
+                <span class="line line-2"></span>
+                <span class="line line-3"></span>
+                <span class="node node-1"></span>
+                <span class="node node-2 node-lg"></span>
+                <span class="node node-3"></span>
+                <span class="node node-4"></span>
+            </div>
+            <div class="auth-form-wrap">
+                <h1 class="auth-title">Selamat datang</h1>
+                <p class="auth-subtitle">Masuk ke akun Anda untuk melanjutkan</p>
+
             <?php if ($this->session->flashdata('error_log') == 'salah'): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <strong>Gagal</strong> Password yang anda masukkan salah
@@ -141,21 +492,24 @@
                     </button>
                 </div>
             <?php endif; ?>
-            <div class="card-body login-card-body">
-                <p class="login-box-msg">Silahkan masuk</p>
 
                 <form action="<?= site_url('Auth') ?>" method="post">
                     <span class="text text-danger"><?= form_error('username') ?></span>
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Username" name="username">
-                        <div class="input-group-append">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
                             <div class="input-group-text">
                                 <span class="fas fa-user"></span>
                             </div>
                         </div>
+                        <input type="text" class="form-control" placeholder="Username" name="username">
                     </div>
                     <span class="text text-danger"><?= form_error('pass') ?></span>
-                    <div class="input-group mb-3">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
+                            </div>
+                        </div>
                         <input id="login_password" type="password" class="form-control" placeholder="Password" name="pass">
                         <div class="input-group-append">
                             <button type="button" class="input-group-text password-toggle js-toggle-password" data-target="#login_password" aria-label="Tampilkan password">
@@ -165,14 +519,14 @@
                     </div>
                     <div class="row">
                         <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+                            <button type="submit" class="btn btn-block auth-submit">Masuk</button>
                         </div>
                     </div>
                 </form>
+                <p class="auth-card-footer">&copy; 2026 PT. Technology Karya Mandiri. All rights reserved.</p>
             </div>
-        </div>
-        <div class="login-page-footer"><span>'A Product of PT. Technology Karya Mandiri'</span></div>
-    </div>
+        </section>
+    </main>
 </body>
 
 <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
