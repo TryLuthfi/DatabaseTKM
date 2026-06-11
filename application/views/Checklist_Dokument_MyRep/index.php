@@ -1762,11 +1762,12 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 "paging": true,
                 "lengthChange": true,
                 "searching": true,
-                "ordering": false,
+                "ordering": true,
                 "info": true,
                 "autoWidth": false,
                 "responsive": false,
                 "scrollX": true,
+                "order": [],
                 "pageLength": 10,
                 "lengthMenu": [
                     [10, 25, 50, 100],
@@ -1790,6 +1791,12 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                         d.quick_value = activeQuickFilter.value || '';
                     }
                 },
+                "columnDefs": [
+                    {
+                        "targets": [0, 16],
+                        "orderable": false
+                    }
+                ],
                 "language": {
                     "emptyTable": "Belum ada item dokumen."
                 }

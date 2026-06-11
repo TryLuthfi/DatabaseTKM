@@ -231,6 +231,15 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 $searchValue = strtoupper(trim((string) $searchPayload['value']));
             }
 
+            $orderPayload = $this->input->post('order');
+            $order = [];
+            if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+                $order = [
+                    'column' => $orderPayload[0]['column'] ?? null,
+                    'dir' => $orderPayload[0]['dir'] ?? 'asc',
+                ];
+            }
+
             $start = max(0, (int) $this->input->post('start'));
             $length = (int) $this->input->post('length');
             if ($length <= 0) {
@@ -254,7 +263,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
                     'search' => $searchValue,
                 ],
                 $start,
-                $length
+                $length,
+                $order
             );
 
             $recordsTotal = (int) ($page['recordsTotal'] ?? 0);

@@ -572,7 +572,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $this->enrichClusterDocumentItemRows($rows);
     }
 
-    public function getClusterDocumentItemPage($city = '', $regional = '', array $filters = [], $start = 0, $length = 10)
+    public function getClusterDocumentItemPage($city = '', $regional = '', array $filters = [], $start = 0, $length = 10, array $order = [])
     {
         $start = max(0, (int) $start);
         $length = (int) $length;
@@ -623,7 +623,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $this->applyClusterDocumentItemFilters($filters);
-        $rows = $this->applyClusterDocumentItemOrder()
+        $rows = $this->applyClusterDocumentItemOrder($order)
             ->limit($length, $start)
             ->get()
             ->result_array();
@@ -691,8 +691,41 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return true;
     }
 
-    private function applyClusterDocumentItemOrder()
+    private function applyClusterDocumentItemOrder(array $order = [])
     {
+        $columnIndex = isset($order['column']) ? (int) $order['column'] : -1;
+        $direction = strtolower((string) ($order['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+        $columns = [
+            1 => ['mt.regional_name'],
+            2 => ['mt.city_name'],
+            3 => ['c.cluster_name'],
+            4 => ['g.scope_type'],
+            5 => ['g.sow_type'],
+            6 => ['i.doc_name'],
+            7 => ['i.verification_team', 'u_ho.nama_karyawan'],
+            8 => [$this->getInternalStatusLabelSql(), false],
+            9 => ['f.remark'],
+            10 => [$this->getAstriStatusLabelSql(), false],
+            11 => ['f.astri_remark'],
+            12 => ['f.uploaded_at'],
+            13 => ['f.reviewed_at'],
+            14 => ['f.approved_at'],
+            15 => ['f.astri_submitted_date'],
+        ];
+
+        if (isset($columns[$columnIndex])) {
+            $orderColumns = $columns[$columnIndex];
+            $escape = true;
+            if (end($orderColumns) === false) {
+                array_pop($orderColumns);
+                $escape = false;
+            }
+
+            foreach ($orderColumns as $orderColumn) {
+                $this->db->order_by($orderColumn, $direction, $escape);
+            }
+        }
+
         return $this->db
             ->order_by('mt.regional_name', 'ASC')
             ->order_by('mt.city_name', 'ASC')
