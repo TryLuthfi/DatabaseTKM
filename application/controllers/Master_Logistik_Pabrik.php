@@ -8,7 +8,9 @@ class Master_Logistik_Pabrik extends CI_Controller
     {
         parent::__construct();
         $this->load->library('form_validation');
+        $this->load->helper('access');
         $this->load->model('MMaster_Logistik_Pabrik');
+        enforce_module_access('Logistik', 'Anda tidak memiliki akses ke menu Master Logistik.');
     }
     
     public function index()

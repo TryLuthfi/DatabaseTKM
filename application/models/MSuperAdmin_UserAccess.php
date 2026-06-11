@@ -1296,35 +1296,20 @@ class MSuperAdmin_UserAccess extends CI_Model
                 $selectedModuleMap[$moduleKey] = true;
             }
 
-            $grantPages = [];
             $revokePages = [];
             foreach ($controlledModules as $controlledModule) {
                 if (!isset($pageKeysByModule[$controlledModule])) {
                     continue;
                 }
                 if (!empty($selectedModuleMap[$controlledModule])) {
-                    $grantPages = array_merge($grantPages, $pageKeysByModule[$controlledModule]);
                     continue;
                 }
                 $revokePages = array_merge($revokePages, $pageKeysByModule[$controlledModule]);
             }
 
-            $grantPages = array_values(array_unique(array_filter($grantPages, static function ($pageKey) {
-                return trim((string) $pageKey) !== '';
-            })));
             $revokePages = array_values(array_unique(array_filter($revokePages, static function ($pageKey) {
                 return trim((string) $pageKey) !== '';
             })));
-
-            if (!empty($grantPages)) {
-                // Modul dicentang => buang override deny VIEW agar kembali baseline modul (checked).
-                $this->db
-                    ->where('id_user', $idUser)
-                    ->where_in('page_key', $grantPages)
-                    ->where('action_key', 'VIEW')
-                    ->where('is_allowed', 0)
-                    ->delete('tb_user_page_permission');
-            }
 
             if (!empty($revokePages)) {
                 // Modul di-uncheck => hapus seluruh override VIEW pada page modul tsb agar baseline jadi unchecked.
