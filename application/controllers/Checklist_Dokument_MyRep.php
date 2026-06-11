@@ -2137,6 +2137,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $uploadedDocNames = [];
         $uploadedFileNames = [];
         $notRequiredCount = 0;
+        $notificationItemId = 0;
 
         foreach ($itemIds as $index => $itemId) {
             $itemId = (int) $itemId;
@@ -2187,6 +2188,9 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ];
 
             $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
+            if ($notificationItemId <= 0) {
+                $notificationItemId = $itemId;
+            }
             $uploadedDocNames[] = $docName !== '' ? $docName : ('Dokumen #' . $itemId);
             $uploadedFileNames[] = $isNoDocumentRequired ? '[Tanpa Dokumen]' : $fileName;
             if ($isNoDocumentRequired) {
@@ -2199,7 +2203,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $notificationTitle = $successCount > 1 ? 'FULL CLUSTER DOCUMENT' : 'NEW DOCUMENT';
             $this->notifyClusterDocumentSubmittedToHo($clusterId, [
                 'package_id' => $packageId,
-                'item_id' => 0,
+                'item_id' => $notificationItemId,
                 'doc_name' => implode(', ', $uploadedDocNames),
                 'file_name' => $successCount . ' file (' . implode(', ', $uploadedFileNames) . ')',
                 'remark' => $successCount > 1
