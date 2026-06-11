@@ -39,6 +39,30 @@ class TargetInvoice extends CI_Controller
         }
     }
 
+    public function revamp()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'TARGET INVOICE REVAMP';
+            $data['judul'] = 'TARGET INVOICE REVAMP';
+            $data['overview'] = $this->MTargetInvoice->getRevampOverview();
+            $data['projectRows'] = $this->MTargetInvoice->getTargetCityFilterBowheer();
+            $data['picRows'] = $this->MTargetInvoice->getTargetAllPIC();
+            $data['regionalRows'] = $this->MTargetInvoice->getTargetAllRegional();
+            $data['cityRows'] = $this->MTargetInvoice->getTargetAllCity();
+            $data['periodRows'] = $this->MTargetInvoice->getRevampPeriodSummary();
+            $data['filterOptions'] = $this->MTargetInvoice->getRevampFilterOptions();
+            $data['invoiceRows'] = $this->MTargetInvoice->getRevampInvoiceRows();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('TargetInvoice/revamp', $data);
+            $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
+    }
+
     public function detailKota()
     {
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain

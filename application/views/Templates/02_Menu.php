@@ -811,7 +811,7 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                     </li>
                     <li class="nav-header">TARGET 110 M</li>
                     <li class="nav-item">
-                        <a href="<?= base_url('TargetInvoice') ?>" class="nav-link<?= $disabledTargetInvoiceLinkClass ?> <?php if ($id_menu == 'TargetInvoice') {
+                        <a href="<?= base_url('TargetInvoice/revamp') ?>" class="nav-link<?= $disabledTargetInvoiceLinkClass ?> <?php if ($id_menu == 'TargetInvoice') {
                               echo "active";
                           } ?>"<?= $disabledTargetInvoiceLinkAttr ?>>
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>

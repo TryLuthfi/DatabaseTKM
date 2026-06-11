@@ -267,6 +267,136 @@ JOIN tb_master_bowheer_invoice tmb
         return $data;
     }
 
+    public function getRevampOverview()
+    {
+        $row = $this->db->query('SELECT
+            COALESCE(SUM(qty_target), 0) AS total_target,
+            COALESCE(SUM(qty_achiev_target), 0) AS total_achieved,
+            GREATEST(COALESCE(SUM(qty_target), 0) - COALESCE(SUM(qty_achiev_target), 0), 0) AS outstanding,
+            ROUND(
+                CASE
+                    WHEN COALESCE(SUM(qty_target), 0) = 0 AND COALESCE(SUM(qty_achiev_target), 0) > 0 THEN 100
+                    WHEN COALESCE(SUM(qty_target), 0) = 0 THEN 0
+                    ELSE (COALESCE(SUM(qty_achiev_target), 0) / COALESCE(SUM(qty_target), 0)) * 100
+                END,
+                1
+            ) AS persen_achieved,
+            COUNT(DISTINCT id_bowheer) AS total_project,
+            COUNT(DISTINCT area_target) AS total_area,
+            COUNT(DISTINCT regional_target) AS total_regional,
+            COUNT(DISTINCT pic_target) AS total_pic_area
+        FROM tb_target_invoice')
+            ->row_array();
+
+        return $row ?: [
+            'total_target' => 0,
+            'total_achieved' => 0,
+            'outstanding' => 0,
+            'persen_achieved' => 0,
+            'total_project' => 0,
+            'total_area' => 0,
+            'total_regional' => 0,
+            'total_pic_area' => 0,
+        ];
+    }
+
+    public function getRevampInvoiceRows()
+    {
+        return $this->db->query('SELECT
+            tti.id_target_invoice,
+            tti.id_bowheer,
+            tmb.nama_bowheer,
+            tmb.pic_user,
+            tti.regional_target,
+            tti.area_target,
+            tti.pic_target,
+            tti.month_target,
+            tti.week_target,
+            COALESCE(tti.qty_target, 0) AS qty_target,
+            COALESCE(tti.qty_achiev_target, 0) AS qty_achiev_target
+        FROM tb_target_invoice tti
+        JOIN tb_master_bowheer_invoice tmb ON tti.id_bowheer = tmb.id_bowheer
+        ORDER BY tmb.nama_bowheer ASC, tti.area_target ASC, tti.month_target ASC, tti.week_target ASC')
+            ->result_array();
+    }
+
+    public function getRevampPeriodSummary()
+    {
+        $monthOrder = 'CASE month_target
+            WHEN "OKTOBER" THEN 1
+            WHEN "NOVEMBER" THEN 2
+            WHEN "DESEMBER" THEN 3
+            WHEN "JANUARI" THEN 4
+            WHEN "FEBRUARI" THEN 5
+            WHEN "MARET" THEN 6
+            WHEN "APRIL" THEN 7
+            WHEN "MEI" THEN 8
+            WHEN "JUNI" THEN 9
+            WHEN "JULI" THEN 10
+            WHEN "AGUSTUS" THEN 11
+            WHEN "SEPTEMBER" THEN 12
+            ELSE 99
+        END';
+
+        return $this->db->query('SELECT
+            month_target,
+            week_target,
+            SUM(qty_target) AS total_target,
+            SUM(qty_achiev_target) AS total_achieved,
+            GREATEST(SUM(qty_target) - SUM(qty_achiev_target), 0) AS outstanding,
+            ROUND(
+                CASE
+                    WHEN SUM(qty_target) = 0 AND SUM(qty_achiev_target) > 0 THEN 100
+                    WHEN SUM(qty_target) = 0 THEN 0
+                    ELSE (SUM(qty_achiev_target) / SUM(qty_target)) * 100
+                END,
+                1
+            ) AS persen_achieved,
+            COUNT(DISTINCT id_bowheer) AS total_project,
+            COUNT(DISTINCT area_target) AS total_area
+        FROM tb_target_invoice
+        GROUP BY month_target, week_target
+        ORDER BY '.$monthOrder.', week_target')
+            ->result_array();
+    }
+
+    public function getRevampFilterOptions()
+    {
+        return [
+            'projects' => $this->db->query('SELECT DISTINCT tmb.id_bowheer, tmb.nama_bowheer
+                FROM tb_target_invoice tti
+                JOIN tb_master_bowheer_invoice tmb ON tti.id_bowheer = tmb.id_bowheer
+                ORDER BY tmb.nama_bowheer ASC')
+                ->result_array(),
+            'pics' => $this->db->query('SELECT DISTINCT tmb.pic_user
+                FROM tb_target_invoice tti
+                JOIN tb_master_bowheer_invoice tmb ON tti.id_bowheer = tmb.id_bowheer
+                WHERE tmb.pic_user IS NOT NULL AND tmb.pic_user <> ""
+                ORDER BY tmb.pic_user ASC')
+                ->result_array(),
+            'regionals' => $this->db->query('SELECT DISTINCT regional_target
+                FROM tb_target_invoice
+                WHERE regional_target IS NOT NULL AND regional_target <> ""
+                ORDER BY regional_target ASC')
+                ->result_array(),
+            'areas' => $this->db->query('SELECT DISTINCT area_target
+                FROM tb_target_invoice
+                WHERE area_target IS NOT NULL AND area_target <> ""
+                ORDER BY area_target ASC')
+                ->result_array(),
+            'months' => $this->db->query('SELECT DISTINCT month_target
+                FROM tb_target_invoice
+                WHERE month_target IS NOT NULL AND month_target <> ""
+                ORDER BY FIELD(month_target, "OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER")')
+                ->result_array(),
+            'weeks' => $this->db->query('SELECT DISTINCT week_target
+                FROM tb_target_invoice
+                WHERE week_target IS NOT NULL AND week_target <> ""
+                ORDER BY week_target ASC')
+                ->result_array(),
+        ];
+    }
+
     public function getTargetCityFilterBowheerDetail()
     {
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
