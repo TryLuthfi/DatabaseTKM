@@ -16,28 +16,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('Checklist_Dokument_MyRep');
-            $this->myrepAccess->enforceByMethod('Checklist_Dokument_MyRep', (string) $this->router->fetch_method(), [
-                'saveTerminCertificate' => 'APPROVAL',
-            ]);
+            $this->myrepAccess->enforceByMethod('Checklist_Dokument_MyRep', (string) $this->router->fetch_method());
         }
     }
 
     public function index()
-    {
-        $this->renderClusterMonitoring(true);
-    }
-
-    public function old()
-    {
-        $this->renderClusterMonitoring(false);
-    }
-
-    public function revamp()
-    {
-        redirect('Checklist_Dokument_MyRep');
-    }
-
-    private function renderClusterMonitoring($isFocusMode)
     {
         if (empty($this->session->userdata('id_user'))) {
             redirect('Auth');
@@ -60,11 +43,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['selectedRegional'] = $selectedRegional;
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
-        $data['clusterList'] = $isFocusMode
-            ? $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional)
-            : [];
-        $data['renderClusterRows'] = (bool) $isFocusMode;
-        $data['isClusterTableFocus'] = (bool) $isFocusMode;
+        $data['clusterList'] = [];
+        $data['renderClusterRows'] = false;
         $data['documentItemList'] = [];
         $data['dashboardSummary'] = $this->buildDashboardSummary([], []);
         $data['itemFilterOptions'] = [];
@@ -1634,10 +1614,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['title'] = 'Checklist Dokument Detail';
         $data['cluster'] = $cluster;
         $data['scopeTabs'] = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId, false);
-        $data['certificateTerms'] = $this->MChecklist_Dokument_MyRep->getCertificateTermRows(
-            $clusterId,
-            (int) ($cluster['id_myrep_cluster'] ?? 0)
-        );
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -1926,7 +1902,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $file = $this->MChecklist_Dokument_MyRep->getMainfeederFileById($fileId);
         if (empty($file)) {
-            $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
+            $this->session->set_flashdata('error', 'Dokum                                                                                                                                                                                                                                                en tidak ditemukan.');
             redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
             return;
         }
@@ -2488,71 +2464,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         ]);
 
         $this->session->set_flashdata('success', 'Status ASTRI berhasil diperbarui.');
-        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
-    }
-
-    public function saveTerminCertificate()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $this->input->post('cluster_id');
-        $terminId = (int) $this->input->post('id_po_termin');
-        $certificateValue = trim((string) $this->input->post('sertifikat_invoice'));
-
-        if (!$this->isApprover()) {
-            $this->session->set_flashdata('error', 'Anda tidak memiliki akses release sertifikat.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
-            return;
-        }
-
-        $cluster = $this->MChecklist_Dokument_MyRep->getClusterDetail($clusterId);
-        if (empty($cluster) || $terminId <= 0) {
-            $this->session->set_flashdata('error', 'Data sertifikat tidak valid.');
-            redirect('Checklist_Dokument_MyRep');
-            return;
-        }
-
-        $termRows = $this->MChecklist_Dokument_MyRep->getCertificateTermRows(
-            $clusterId,
-            (int) ($cluster['id_myrep_cluster'] ?? 0)
-        );
-        $selectedTerm = [];
-        foreach ($termRows as $termRow) {
-            if ((int) ($termRow['id_po_termin'] ?? 0) === $terminId) {
-                $selectedTerm = $termRow;
-                break;
-            }
-        }
-        if (empty($selectedTerm)) {
-            $this->session->set_flashdata('error', 'Term PO tidak ditemukan untuk cluster ini.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
-            return;
-        }
-
-        $terminNo = (int) ($selectedTerm['termin_no'] ?? 0);
-        $isReleaseDateValue = trim((string) ($selectedTerm['sertifikat_release_date'] ?? '')) !== '';
-        if ($certificateValue !== '' && method_exists($this->MChecklist_Dokument_MyRep, 'normalizeCertificateDateForRelease')) {
-            $isReleaseDateValue = $this->MChecklist_Dokument_MyRep->normalizeCertificateDateForRelease($certificateValue) !== '';
-        }
-        if ($certificateValue !== '' && $isReleaseDateValue && $terminNo >= 2 && $terminNo <= 5 && empty($selectedTerm['is_release_ready'])) {
-            $this->session->set_flashdata('error', 'Sertifikat belum bisa direlease. ' . (string) ($selectedTerm['release_note'] ?? ''));
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
-            return;
-        }
-
-        $updated = $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
-            $terminId,
-            $certificateValue,
-            (int) $this->session->userdata('id_user')
-        );
-
-        $this->session->set_flashdata(
-            $updated ? 'success' : 'error',
-            $updated ? 'Sertifikat term PO berhasil diperbarui.' : 'Gagal memperbarui sertifikat term PO.'
-        );
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
