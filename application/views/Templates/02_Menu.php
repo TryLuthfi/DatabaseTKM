@@ -820,16 +820,18 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="<?= base_url('RincianInvoice') ?>" class="nav-link<?= $disabledRincianInvoiceLinkClass ?> <?php if ($id_menu == 'RincianInvoice') {
-                              echo "active";
-                          } ?>"<?= $disabledRincianInvoiceLinkAttr ?>>
-                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                            <p>
-                                Rincian Invoice
-                            </p>
-                        </a>
-                    </li>
+                    <?php if (false): ?>
+                        <li class="nav-item">
+                            <a href="<?= base_url('RincianInvoice/revamp') ?>" class="nav-link<?= $disabledRincianInvoiceLinkClass ?> <?php if ($id_menu == 'RincianInvoice') {
+                                  echo "active";
+                              } ?>"<?= $disabledRincianInvoiceLinkAttr ?>>
+                                <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                <p>
+                                    Rincian Invoice
+                                </p>
+                            </a>
+                        </li>
+                    <?php endif; ?>
 
                     <li class="nav-header">Development</li>
                     <li class="nav-item" style="pointer-events: none">

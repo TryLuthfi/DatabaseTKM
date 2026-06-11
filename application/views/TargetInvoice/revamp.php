@@ -707,6 +707,71 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
         font-weight: 800;
     }
 
+    .invoice-modal .modal-content {
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 34px 80px rgba(15, 23, 42, 0.26);
+    }
+
+    .invoice-modal .modal-header {
+        color: #fff;
+        border-bottom: 0;
+        background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    }
+
+    .invoice-modal .modal-title {
+        font-weight: 900;
+    }
+
+    .invoice-modal-note {
+        padding: 0.85rem 1rem;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-weight: 700;
+        font-size: 0.86rem;
+    }
+
+    .invoice-modal label {
+        margin-bottom: 0.42rem;
+        color: #334155;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .invoice-modal .form-control:not([readonly]):not(:disabled),
+    .invoice-modal select.form-control:not(:disabled) + .select2-container .select2-selection {
+        border-color: rgba(37, 99, 235, 0.42);
+        background: #ffffff;
+        box-shadow: inset 4px 0 0 rgba(37, 99, 235, 0.52);
+    }
+
+    .invoice-modal .form-control[readonly],
+    .invoice-modal .form-control:disabled,
+    .invoice-modal select.form-control:disabled + .select2-container .select2-selection {
+        border-color: rgba(148, 163, 184, 0.24);
+        background: #f1f5f9;
+        color: #64748b;
+        box-shadow: inset 4px 0 0 rgba(100, 116, 139, 0.28);
+    }
+
+    .invoice-field-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.35rem;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 700;
+    }
+
+    .invoice-hidden {
+        display: none !important;
+    }
+
     @media (max-width: 1199.98px) {
         .invoice-kpi-grid,
         .invoice-filter-grid,
@@ -766,10 +831,10 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                             diprioritaskan.
                         </p>
                         <div class="invoice-hero__actions">
-                            <a href="#invoice_report_detail" class="invoice-btn invoice-btn--primary">
-                                <i class="fas fa-chart-line"></i>
-                                Lihat Report
-                            </a>
+                            <button type="button" class="invoice-btn invoice-btn--primary" data-toggle="modal" data-target="#modalTargetTambahInvoice">
+                                <i class="fas fa-plus-circle"></i>
+                                Tambah Invoice
+                            </button>
                             <a href="<?= base_url('TargetInvoice') ?>" class="invoice-btn invoice-btn--light">
                                 <i class="fas fa-table"></i>
                                 Halaman Lama
@@ -1261,6 +1326,109 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
     </div>
 </div>
 
+<form id="formTargetTambahInvoice" action="<?= site_url('RincianInvoice/addInvoice') ?>" method="post">
+    <div class="modal fade invoice-modal" id="modalTargetTambahInvoice" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title"><i class="fas fa-plus-circle mr-2"></i>Tambah Invoice</h4>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="invoice-modal-note mb-3">
+                        Tambah atau perbarui realisasi invoice langsung dari dashboard target. Target dan realisasi saat ini akan dibaca otomatis.
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-6">
+                            <label for="target_add_project">Project / Bowheer</label>
+                            <select id="target_add_project" name="addfilter_bowheer" class="form-control">
+                                <option value="">Pilih Project</option>
+                                <?php foreach (($filterOptions['projects'] ?? []) as $project): ?>
+                                    <option value="<?= htmlspecialchars($project['nama_bowheer'] ?? '', ENT_QUOTES, 'UTF-8') ?>" data-id="<?= (int) ($project['id_bowheer'] ?? 0) ?>"><?= htmlspecialchars($project['nama_bowheer'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="target_add_area">Area Existing</label>
+                            <select id="target_add_area" class="form-control">
+                                <option value="">Pilih Area</option>
+                            </select>
+                            <input type="hidden" name="addfilter_area" id="target_add_area_value">
+                            <button type="button" class="btn btn-link px-0 mt-2" id="target_add_show_new_area">
+                                <i class="fas fa-plus-circle"></i>
+                                Tambah Area Baru
+                            </button>
+                            <button type="button" class="btn btn-link text-danger px-0 mt-2 invoice-hidden" id="target_add_cancel_new_area">
+                                <i class="fas fa-times-circle"></i>
+                                Batal Area Baru
+                            </button>
+                        </div>
+                        <div class="form-group col-md-6 target-new-area-field invoice-hidden">
+                            <label for="target_add_new_area">Area Baru</label>
+                            <input type="text" id="target_add_new_area" class="form-control" autocomplete="off" placeholder="Isi jika area belum ada">
+                        </div>
+                        <div class="form-group col-md-3 target-new-area-field invoice-hidden">
+                            <label for="target_add_regional">Regional</label>
+                            <input type="text" id="target_add_regional" name="inputRegionalBaru" class="form-control" autocomplete="off">
+                        </div>
+                        <div class="form-group col-md-3 target-new-area-field invoice-hidden">
+                            <label for="target_add_pic_area">PIC Area</label>
+                            <input type="text" id="target_add_pic_area" name="inputPICBaru" class="form-control" autocomplete="off">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="target_add_month">Bulan</label>
+                            <select id="target_add_month" name="addfilter_month" class="form-control">
+                                <option value="">Pilih Bulan</option>
+                                <?php foreach (($filterOptions['months'] ?? []) as $month): ?>
+                                    <option value="<?= htmlspecialchars($month['month_target'] ?? '', ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($month['month_target'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="target_add_week">Week</label>
+                            <select id="target_add_week" name="addfilter_week" class="form-control">
+                                <option value="">Pilih Week</option>
+                                <?php foreach (($filterOptions['weeks'] ?? []) as $week): ?>
+                                    <option value="<?= htmlspecialchars($week['week_target'] ?? '', ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($week['week_target'] ?? '', ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Target Invoice</label>
+                            <input type="text" class="form-control" name="target_invoice" readonly value="0">
+                            <span class="invoice-field-note"><i class="fas fa-lock"></i> Dibaca otomatis dari target.</span>
+                        </div>
+                        <div class="form-group col-md-6" id="target_add_achieved_group">
+                            <label>Realisasi Invoice Saat Ini</label>
+                            <input type="text" class="form-control" name="achiev_invoice" autocomplete="off" value="0">
+                            <span class="invoice-field-note"><i class="fas fa-pen"></i> Bisa diedit.</span>
+                        </div>
+                        <div class="form-group col-md-6 invoice-hidden" id="target_add_extra_group">
+                            <label>Tambahan Invoice</label>
+                            <input type="text" class="form-control" name="tambahan_invoice" autocomplete="off" value="0">
+                            <span class="invoice-field-note"><i class="fas fa-pen"></i> Bisa diedit.</span>
+                        </div>
+                        <div class="form-group col-md-6 invoice-hidden" id="target_add_total_group">
+                            <label>Total Invoice</label>
+                            <input type="text" class="form-control" name="total_invoice" autocomplete="off" readonly value="0">
+                            <span class="invoice-field-note"><i class="fas fa-calculator"></i> Dihitung otomatis.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="invoice-btn invoice-btn--light" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="invoice-btn invoice-btn--primary">
+                        <i class="fas fa-save"></i>
+                        Simpan Invoice
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
 <script>
     window.addEventListener('load', function () {
         if (!window.jQuery || !$.fn.DataTable) {
@@ -1331,6 +1499,11 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         if ($.fn.select2) {
             $('.select2').select2({ width: '100%' });
+            $('#target_add_project, #target_add_area, #target_add_month, #target_add_week').select2({
+                width: '100%',
+                theme: 'bootstrap4',
+                dropdownParent: $('#modalTargetTambahInvoice')
+            });
         }
 
         function escapeHtml(value) {
@@ -1351,6 +1524,10 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         function formatNumber(value) {
             return Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        }
+
+        function parseMoney(value) {
+            return Number(String(value || '').replace(/[^\d-]/g, '')) || 0;
         }
 
         function formatPercent(value) {
@@ -1859,6 +2036,223 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         $('a[data-toggle="pill"]').on('shown.bs.tab', function () {
             adjustActiveTable();
+        });
+
+        function updateTargetAddAreaOptions() {
+            const areaSelect = $('#target_add_area');
+            const areas = uniqueOptions(invoiceRows, 'area');
+            areaSelect.empty().append(new Option('Pilih Area', '', true, false));
+            areas.forEach(function (option) {
+                areaSelect.append(new Option(option[1], option[0]));
+            });
+            areaSelect.val('').trigger('change.select2');
+        }
+
+        function syncTargetAddAreaMeta() {
+            const projectId = String($('#target_add_project option:selected').data('id') || '');
+            const area = $('#target_add_area').val() || '';
+            const row = invoiceRows.find(function (item) {
+                return item.project === projectId && item.area === area;
+            });
+
+            if (row) {
+                $('#target_add_regional').val(row.regional);
+                $('#target_add_pic_area').val(row.picArea);
+            }
+        }
+
+        function setTargetNewAreaMode(enabled) {
+            $('.target-new-area-field').toggleClass('invoice-hidden', !enabled);
+            $('#target_add_show_new_area').toggleClass('invoice-hidden', enabled);
+            $('#target_add_cancel_new_area').toggleClass('invoice-hidden', !enabled);
+            $('#target_add_area').prop('disabled', enabled);
+
+            if (enabled) {
+                $('#target_add_area').val('').trigger('change');
+                $('#target_add_area_value').val('');
+                $('#target_add_new_area').focus();
+            } else {
+                $('#target_add_new_area, #target_add_regional, #target_add_pic_area').val('');
+                $('#target_add_area').prop('disabled', false).trigger('change');
+            }
+
+            updateTargetModalStepState();
+        }
+
+        function hasTargetAreaValue() {
+            return Boolean($('#target_add_new_area').val().trim() || $('#target_add_area').val());
+        }
+
+        function updateTargetModalStepState() {
+            const hasProject = Boolean($('#target_add_project').val());
+            const hasArea = hasProject && hasTargetAreaValue();
+            const hasMonth = hasArea && Boolean($('#target_add_month').val());
+            const hasWeek = hasMonth && Boolean($('#target_add_week').val());
+            const isNewAreaMode = !$('.target-new-area-field').first().hasClass('invoice-hidden');
+
+            $('#target_add_area').prop('disabled', !hasProject || isNewAreaMode);
+            $('#target_add_show_new_area').prop('disabled', !hasProject);
+            $('#target_add_new_area, #target_add_regional, #target_add_pic_area').prop('disabled', !hasProject || !isNewAreaMode);
+            $('#target_add_month').prop('disabled', !hasArea);
+            $('#target_add_week').prop('disabled', !hasMonth);
+            $('#formTargetTambahInvoice [name="achiev_invoice"]').prop('disabled', !hasWeek);
+            $('#formTargetTambahInvoice [name="tambahan_invoice"]').prop('disabled', !hasWeek || $('#target_add_extra_group').hasClass('invoice-hidden'));
+            $('#formTargetTambahInvoice button[type="submit"]').prop('disabled', !hasWeek);
+
+            $('#target_add_area, #target_add_month, #target_add_week').trigger('change.select2');
+        }
+
+        function loadTargetInvoiceForModal() {
+            const bowheer = $('#target_add_project').val();
+            const area = $('#target_add_new_area').val().trim() || $('#target_add_area').val();
+            const month = $('#target_add_month').val();
+            const week = $('#target_add_week').val();
+            $('#target_add_area_value').val(area);
+
+            if (!bowheer || !area || !month || !week) {
+                return;
+            }
+
+            $.post("<?= base_url('RincianInvoice/get_target_invoice') ?>", {
+                bowheer: bowheer,
+                area: area,
+                month: month,
+                week: week
+            }, function (res) {
+                const data = typeof res === 'string' ? JSON.parse(res || '{}') : res;
+                const target = Number(data.qty_target || 0);
+                const achieved = Number(data.qty_achiev_target || 0);
+                $('#formTargetTambahInvoice [name="target_invoice"]').val(formatNumber(target));
+                $('#formTargetTambahInvoice [name="achiev_invoice"]').val(formatNumber(achieved));
+                setTargetInvoiceAmountMode(achieved);
+                updateTargetModalStepState();
+            });
+        }
+
+        function updateTargetTotalInput() {
+            const achieved = parseMoney($('#formTargetTambahInvoice [name="achiev_invoice"]').val());
+            const tambahan = parseMoney($('#formTargetTambahInvoice [name="tambahan_invoice"]').val());
+            $('#formTargetTambahInvoice [name="total_invoice"]').val(formatNumber(achieved + tambahan));
+        }
+
+        function setTargetInvoiceAmountMode(existingAchieved) {
+            existingAchieved = Number(existingAchieved || 0);
+            const hasExistingAchieved = existingAchieved > 0;
+
+            $('#target_add_extra_group, #target_add_total_group').toggleClass('invoice-hidden', !hasExistingAchieved);
+            $('#formTargetTambahInvoice [name="achiev_invoice"]').prop('readonly', hasExistingAchieved);
+            $('#formTargetTambahInvoice [name="tambahan_invoice"]').prop('disabled', !hasExistingAchieved);
+
+            if (hasExistingAchieved) {
+                $('#formTargetTambahInvoice [name="tambahan_invoice"]').val('0');
+                $('#formTargetTambahInvoice [name="total_invoice"]').val(formatNumber(existingAchieved));
+            } else {
+                $('#formTargetTambahInvoice [name="tambahan_invoice"]').val('0');
+                $('#formTargetTambahInvoice [name="total_invoice"]').val('0');
+            }
+        }
+
+        $('#target_add_project').on('change', function () {
+            updateTargetAddAreaOptions();
+            $('#target_add_area, #target_add_month, #target_add_week').val('').trigger('change.select2');
+            $('#target_add_new_area, #target_add_regional, #target_add_pic_area').val('');
+            $('#formTargetTambahInvoice [name="target_invoice"], #formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"], #formTargetTambahInvoice [name="total_invoice"]').val('0');
+            setTargetInvoiceAmountMode(0);
+            setTargetNewAreaMode(false);
+            updateTargetModalStepState();
+            loadTargetInvoiceForModal();
+        });
+        $('#target_add_area').on('change', function () {
+            $('#target_add_area_value').val($(this).val());
+            syncTargetAddAreaMeta();
+            $('#target_add_month, #target_add_week').val('').trigger('change.select2');
+            $('#formTargetTambahInvoice [name="target_invoice"], #formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"], #formTargetTambahInvoice [name="total_invoice"]').val('0');
+            setTargetInvoiceAmountMode(0);
+            updateTargetModalStepState();
+            loadTargetInvoiceForModal();
+        });
+        $('#target_add_new_area').on('keyup change', function () {
+            $('#target_add_area_value').val($(this).val().trim());
+            $('#target_add_month, #target_add_week').val('').trigger('change.select2');
+            $('#formTargetTambahInvoice [name="target_invoice"], #formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"], #formTargetTambahInvoice [name="total_invoice"]').val('0');
+            setTargetInvoiceAmountMode(0);
+            updateTargetModalStepState();
+            loadTargetInvoiceForModal();
+        });
+        $('#target_add_month').on('change', function () {
+            $('#target_add_week').val('').trigger('change.select2');
+            $('#formTargetTambahInvoice [name="target_invoice"], #formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"], #formTargetTambahInvoice [name="total_invoice"]').val('0');
+            setTargetInvoiceAmountMode(0);
+            updateTargetModalStepState();
+            loadTargetInvoiceForModal();
+        });
+        $('#target_add_week').on('change', function () {
+            updateTargetModalStepState();
+            loadTargetInvoiceForModal();
+        });
+        $('#formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"]').on('keyup change', updateTargetTotalInput);
+        $('#target_add_show_new_area').on('click', function () {
+            setTargetNewAreaMode(true);
+        });
+        $('#target_add_cancel_new_area').on('click', function () {
+            setTargetNewAreaMode(false);
+            loadTargetInvoiceForModal();
+        });
+
+        $('#modalTargetTambahInvoice').on('show.bs.modal', function () {
+            $('#formTargetTambahInvoice')[0].reset();
+            $('#target_add_project, #target_add_area, #target_add_month, #target_add_week').val('').trigger('change.select2');
+            $('#formTargetTambahInvoice [name="target_invoice"], #formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"], #formTargetTambahInvoice [name="total_invoice"]').val('0');
+            $('#target_add_area_value').val('');
+            updateTargetAddAreaOptions();
+            setTargetInvoiceAmountMode(0);
+            setTargetNewAreaMode(false);
+            updateTargetModalStepState();
+        });
+
+        $('#formTargetTambahInvoice').on('submit', function (event) {
+            event.preventDefault();
+            const area = $('#target_add_new_area').val().trim() || $('#target_add_area').val();
+            $('#target_add_area_value').val(area);
+
+            if (!$('#target_add_project').val() || !area || !$('#target_add_month').val() || !$('#target_add_week').val()) {
+                Swal.fire('Data belum lengkap', 'Project, area, bulan, dan week wajib diisi.', 'warning');
+                return;
+            }
+
+            $.post("<?= base_url('RincianInvoice/addInvoice') ?>", $(this).serialize(), function (res) {
+                const data = typeof res === 'string' ? JSON.parse(res || '{}') : res;
+
+                if (data.status === 'not_found') {
+                    $.post("<?= base_url('RincianInvoice/createNewTargetInvoice') ?>", {
+                        id_bowheer: data.id_bowheer,
+                        area_target: data.area_target,
+                        month: data.month,
+                        week: data.week,
+                        regional: data.regional || $('#target_add_regional').val(),
+                        pic: data.pic || $('#target_add_pic_area').val(),
+                        nilai_update: data.nilai_update
+                    }, function (createRes) {
+                        const createData = typeof createRes === 'string' ? JSON.parse(createRes || '{}') : createRes;
+                        if (createData.status === true) {
+                            Swal.fire('Berhasil', 'Invoice berhasil disimpan.', 'success').then(function () {
+                                window.location.href = "<?= base_url('TargetInvoice/revamp') ?>";
+                            });
+                        } else {
+                            Swal.fire('Gagal', createData.message || 'Gagal menambahkan invoice.', 'error');
+                        }
+                    });
+                    return;
+                }
+
+                if (data.status === true) {
+                    Swal.fire('Berhasil', 'Invoice berhasil disimpan.', 'success').then(function () {
+                        window.location.href = "<?= base_url('TargetInvoice/revamp') ?>";
+                    });
+                } else {
+                    Swal.fire('Gagal', data.message || 'Tidak ada data yang diubah.', 'error');
+                }
+            });
         });
 
         rebuildDescendantFilters('project');

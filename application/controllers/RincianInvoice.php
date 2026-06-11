@@ -30,6 +30,24 @@ class RincianInvoice extends CI_Controller
         }
     }
 
+    public function revamp()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'RINCIAN INVOICE REVAMP';
+            $data['judul'] = 'RINCIAN INVOICE REVAMP';
+            $data['invoiceRows'] = $this->MRincianInvoice->getRevampInvoiceRows();
+            $data['filterOptions'] = $this->MRincianInvoice->getRevampFilterOptions();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('RincianInvoice/revamp', $data);
+            $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
+    }
+
     public function getFilteredRincianInvoiceAjax()
     {
 
