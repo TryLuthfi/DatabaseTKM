@@ -1532,6 +1532,14 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
             week: $('#invoice_filter_week')
         };
 
+        function tableCell(display, sort, filter) {
+            return {
+                display: display,
+                sort: sort,
+                filter: typeof filter === 'undefined' ? $('<div>').html(display).text() : filter
+            };
+        }
+
         tableIds.forEach(function (id) {
             tables[id] = $(id).DataTable({
                 paging: true,
@@ -1542,7 +1550,22 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                 autoWidth: false,
                 responsive: false,
                 dom: 'rt<"row align-items-center mt-2"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                order: []
+                order: [],
+                columnDefs: [{
+                    targets: '_all',
+                    render: function (data, type) {
+                        if (data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'display')) {
+                            if (type === 'sort' || type === 'type') {
+                                return data.sort;
+                            }
+                            if (type === 'filter') {
+                                return data.filter;
+                            }
+                            return data.display;
+                        }
+                        return data;
+                    }
+                }]
             });
         });
 
@@ -1832,13 +1855,13 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
             tables['#invoice_project_table'].clear().rows.add(groups.map(function (row, index) {
                 return [
-                    index + 1,
+                    tableCell(index + 1, index + 1),
                     escapeHtml(row.projectName),
                     escapeHtml(row.pic),
-                    formatMoney(row.target),
-                    formatMoney(row.achieved),
-                    formatMoney(row.outstanding),
-                    progressHtml(row.percent),
+                    tableCell(formatMoney(row.target), row.target),
+                    tableCell(formatMoney(row.achieved), row.achieved),
+                    tableCell(formatMoney(row.outstanding), row.outstanding),
+                    tableCell(progressHtml(row.percent), row.percent, formatPercent(row.percent)),
                     statusHtml(row.percent),
                     '<a href="<?= site_url('TargetInvoice/detailBowheer/') ?>' + encodeURIComponent(row.project) + '" class="invoice-action-btn"><i class="fas fa-eye"></i></a>'
                 ];
@@ -1898,12 +1921,12 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
             tables['#invoice_pic_table'].clear().rows.add(groups.map(function (row, index) {
                 return [
-                    index + 1,
+                    tableCell(index + 1, index + 1),
                     escapeHtml(row.pic),
-                    formatMoney(row.target),
-                    formatMoney(row.achieved),
-                    formatMoney(row.outstanding),
-                    formatPercent(row.percent),
+                    tableCell(formatMoney(row.target), row.target),
+                    tableCell(formatMoney(row.achieved), row.achieved),
+                    tableCell(formatMoney(row.outstanding), row.outstanding),
+                    tableCell(formatPercent(row.percent), row.percent),
                     statusHtml(row.percent)
                 ];
             })).draw();
@@ -1921,12 +1944,12 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
             tables['#invoice_regional_table'].clear().rows.add(groups.map(function (row, index) {
                 return [
-                    index + 1,
+                    tableCell(index + 1, index + 1),
                     escapeHtml(row.regional),
-                    formatMoney(row.target),
-                    formatMoney(row.achieved),
-                    formatMoney(row.outstanding),
-                    formatPercent(row.percent),
+                    tableCell(formatMoney(row.target), row.target),
+                    tableCell(formatMoney(row.achieved), row.achieved),
+                    tableCell(formatMoney(row.outstanding), row.outstanding),
+                    tableCell(formatPercent(row.percent), row.percent),
                     statusHtml(row.percent)
                 ];
             })).draw();
@@ -1948,14 +1971,14 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
             tables['#invoice_city_table'].clear().rows.add(groups.map(function (row, index) {
                 return [
-                    index + 1,
+                    tableCell(index + 1, index + 1),
                     escapeHtml(row.regional),
                     escapeHtml(row.area),
                     escapeHtml(row.picArea),
-                    formatMoney(row.target),
-                    formatMoney(row.achieved),
-                    formatMoney(row.outstanding),
-                    formatPercent(row.percent),
+                    tableCell(formatMoney(row.target), row.target),
+                    tableCell(formatMoney(row.achieved), row.achieved),
+                    tableCell(formatMoney(row.outstanding), row.outstanding),
+                    tableCell(formatPercent(row.percent), row.percent),
                     statusHtml(row.percent),
                     '<a href="<?= site_url('TargetInvoice/detailKota/') ?>' + encodeURIComponent(row.area) + '" class="invoice-action-btn"><i class="fas fa-eye"></i></a>'
                 ];
@@ -1981,15 +2004,15 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
             tables['#invoice_period_table'].clear().rows.add(groups.map(function (row, index) {
                 return [
-                    index + 1,
-                    escapeHtml(row.month),
+                    tableCell(index + 1, index + 1),
+                    tableCell(escapeHtml(row.month), monthOrder[row.month] || 99, row.month),
                     escapeHtml(row.week),
-                    formatMoney(row.target),
-                    formatMoney(row.achieved),
-                    formatMoney(row.outstanding),
-                    formatPercent(row.percent),
-                    formatNumber(row.projectCount),
-                    formatNumber(row.areaCount),
+                    tableCell(formatMoney(row.target), row.target),
+                    tableCell(formatMoney(row.achieved), row.achieved),
+                    tableCell(formatMoney(row.outstanding), row.outstanding),
+                    tableCell(formatPercent(row.percent), row.percent),
+                    tableCell(formatNumber(row.projectCount), row.projectCount),
+                    tableCell(formatNumber(row.areaCount), row.areaCount),
                     statusHtml(row.percent)
                 ];
             })).draw();
