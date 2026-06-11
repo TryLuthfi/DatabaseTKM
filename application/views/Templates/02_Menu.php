@@ -1,12 +1,13 @@
 <?php
 $id_menu = $this->uri->segment('1');
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 $hasLegacyProjectAccess = has_validation_access('Project');
-$canAccessBudgeting = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Budgeting');
-$canAccessKontrak = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Kontrak') || $hasLegacyProjectAccess;
-$canAccessMyRepublik = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('MyRepublik');
-$canAccessFiberstar = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Fiberstar');
+$canAccessBudgeting = $isSuperAdmin || has_validation_access('Budgeting');
+$canAccessKontrak = $isSuperAdmin || has_validation_access('Kontrak') || $hasLegacyProjectAccess;
+$canAccessMyRepublik = $isSuperAdmin || has_validation_access('MyRepublik');
+$canAccessFiberstar = $isSuperAdmin || has_validation_access('Fiberstar');
 $canAccessProjectGroup = $canAccessKontrak || $canAccessMyRepublik || $canAccessFiberstar;
-$canAccessBilco = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('BILCO');
+$canAccessBilco = $isSuperAdmin || has_validation_access('BILCO');
 $currentUserId = (int) $this->session->userdata('id_user');
 $pageAccessControllerMap = [];
 if (function_exists('get_user_page_access_controller_map') && function_exists('has_user_page_access')) {
@@ -833,8 +834,9 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                         </li>
                     <?php endif; ?>
 
+                    <?php if ($isSuperAdmin) { ?>
                     <li class="nav-header">Development</li>
-                    <li class="nav-item" style="pointer-events: none">
+                    <li class="nav-item">
                         <a href="<?= base_url('Backup') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
                               echo "active";
                           } ?>">
@@ -854,7 +856,7 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                         $id_menu == 'GHTenants'
                     ) {
                         echo 'menu-open';
-                    } ?>" style="pointer-events: none">
+                    } ?>">
 
                         <a href="#" class="nav-link <?php if (
                             $id_menu == 'GHDashboard' ||
@@ -956,6 +958,7 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                             </li>
                         </ul>
                     </li>
+                    <?php } ?>
                     <li class="nav-header">Budgeting</li>
                     <li class="nav-item has-treeview <?php if (
                         $id_menu == 'Budget_MasterAkunBiaya' ||
@@ -1088,22 +1091,31 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
             var baseUrl = <?= json_encode(base_url()) ?>;
             var controllerAccess = <?= json_encode($pageAccessControllerMap) ?>;
             if (!controllerAccess || typeof controllerAccess !== 'object') {
-                return;
+                controllerAccess = {};
             }
 
-            function disableLink(linkEl) {
-                if (!linkEl || linkEl.classList.contains('menu-access-disabled')) {
+            function hideMenuLink(linkEl) {
+                if (!linkEl || linkEl.classList.contains('menu-access-hidden')) {
                     return;
                 }
-                linkEl.classList.add('menu-access-disabled');
+                linkEl.classList.add('menu-access-hidden');
                 linkEl.classList.remove('active');
                 linkEl.setAttribute('tabindex', '-1');
                 linkEl.setAttribute('aria-disabled', 'true');
-                linkEl.dataset.pageAccessDisabled = '1';
+                linkEl.dataset.pageAccessHidden = '1';
                 linkEl.addEventListener('click', function (event) {
                     event.preventDefault();
                     return false;
                 });
+
+                var itemEl = linkEl.closest('li.nav-item');
+                if (itemEl) {
+                    itemEl.classList.remove('menu-open');
+                    itemEl.style.display = 'none';
+                    itemEl.dataset.pageAccessHidden = '1';
+                } else {
+                    linkEl.style.display = 'none';
+                }
             }
 
             function extractControllerFromHref(href) {
@@ -1141,50 +1153,101 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                     return;
                 }
                 if (controllerAccess[controllerName] !== true) {
-                    disableLink(linkEl);
+                    hideMenuLink(linkEl);
                 }
             });
 
-            var treeItems = document.querySelectorAll('.main-sidebar .nav-sidebar li.nav-item.has-treeview');
-            treeItems.forEach(function (itemEl) {
-                var childPageLinks = itemEl.querySelectorAll('ul.nav-treeview a.nav-link[data-page-access-disabled]');
-                if (!childPageLinks.length) {
-                    return;
-                }
-                var allChildrenDisabled = true;
-                var allChildLinks = itemEl.querySelectorAll('ul.nav-treeview a.nav-link[href]');
-                allChildLinks.forEach(function (childLink) {
-                    if (!childLink.dataset.pageAccessDisabled) {
-                        allChildrenDisabled = false;
-                    }
-                });
-                if (!allChildrenDisabled) {
-                    return;
-                }
-                var parentLink = null;
-                for (var i = 0; i < itemEl.children.length; i++) {
-                    var childNode = itemEl.children[i];
-                    if (childNode && childNode.tagName === 'A' && childNode.classList.contains('nav-link')) {
-                        parentLink = childNode;
-                        break;
-                    }
-                }
-                disableLink(parentLink);
-                if (parentLink) {
-                    parentLink.classList.remove('active');
-                }
-                itemEl.classList.remove('menu-open');
-            });
-
-            // Normalisasi visual: link disabled tidak boleh terlihat "active".
             var allDisabledLinks = document.querySelectorAll('.main-sidebar .nav-sidebar a.nav-link.menu-access-disabled');
             allDisabledLinks.forEach(function (linkEl) {
+                hideMenuLink(linkEl);
+            });
+
+            function directChildItems(itemEl) {
+                var items = [];
+                Array.prototype.forEach.call(itemEl.children, function (childNode) {
+                    if (!childNode || !childNode.classList || !childNode.classList.contains('nav-treeview')) {
+                        return;
+                    }
+                    Array.prototype.forEach.call(childNode.children, function (maybeItem) {
+                        if (maybeItem && maybeItem.classList && maybeItem.classList.contains('nav-item')) {
+                            items.push(maybeItem);
+                        }
+                    });
+                });
+                return items;
+            }
+
+            function itemIsHidden(itemEl) {
+                return !itemEl || itemEl.dataset.pageAccessHidden === '1' || itemEl.style.display === 'none';
+            }
+
+            var treeItems = Array.prototype.slice.call(
+                document.querySelectorAll('.main-sidebar .nav-sidebar li.nav-item.has-treeview')
+            ).reverse();
+            treeItems.forEach(function (itemEl) {
+                if (itemIsHidden(itemEl)) {
+                    return;
+                }
+                var children = directChildItems(itemEl);
+                if (!children.length) {
+                    return;
+                }
+                var hasVisibleChild = children.some(function (childItem) {
+                    return !itemIsHidden(childItem);
+                });
+                if (!hasVisibleChild) {
+                    itemEl.classList.remove('menu-open');
+                    itemEl.style.display = 'none';
+                    itemEl.dataset.pageAccessHidden = '1';
+                    var parentLink = null;
+                    for (var i = 0; i < itemEl.children.length; i++) {
+                        if (itemEl.children[i].classList && itemEl.children[i].classList.contains('nav-link')) {
+                            parentLink = itemEl.children[i];
+                            break;
+                        }
+                    }
+                    if (parentLink) {
+                        parentLink.classList.remove('active');
+                    }
+                }
+            });
+
+            var sidebarRoot = document.querySelector('.main-sidebar .nav-sidebar');
+            if (sidebarRoot) {
+                var sidebarChildren = Array.prototype.slice.call(sidebarRoot.children);
+                sidebarChildren.forEach(function (childNode, index) {
+                    if (!childNode.classList || !childNode.classList.contains('nav-header')) {
+                        return;
+                    }
+                    var hasVisibleMenuItem = false;
+                    for (var i = index + 1; i < sidebarChildren.length; i++) {
+                        var nextNode = sidebarChildren[i];
+                        if (nextNode.classList && nextNode.classList.contains('nav-header')) {
+                            break;
+                        }
+                        if (nextNode.classList && nextNode.classList.contains('nav-item') && !itemIsHidden(nextNode)) {
+                            hasVisibleMenuItem = true;
+                            break;
+                        }
+                    }
+                    if (!hasVisibleMenuItem) {
+                        childNode.style.display = 'none';
+                    }
+                });
+            }
+
+            var activeHiddenLinks = document.querySelectorAll('.main-sidebar .nav-sidebar a.nav-link.menu-access-hidden.active');
+            activeHiddenLinks.forEach(function (linkEl) {
                 linkEl.classList.remove('active');
             });
         })();
     </script>
 
     <style>
+        .menu-access-hidden {
+            display: none !important;
+        }
+
         .premium-shell .main-header,
         .premium-shell .main-sidebar,
         .premium-shell .brand-link,
