@@ -22,6 +22,21 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
     public function index()
     {
+        $this->renderClusterMonitoring(true);
+    }
+
+    public function old()
+    {
+        $this->renderClusterMonitoring(false);
+    }
+
+    public function revamp()
+    {
+        redirect('Checklist_Dokument_MyRep');
+    }
+
+    private function renderClusterMonitoring($isFocusMode)
+    {
         if (empty($this->session->userdata('id_user'))) {
             redirect('Auth');
             return;
@@ -43,8 +58,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['selectedRegional'] = $selectedRegional;
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
-        $data['clusterList'] = [];
-        $data['renderClusterRows'] = false;
+        $data['clusterList'] = $isFocusMode
+            ? $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional)
+            : [];
+        $data['renderClusterRows'] = (bool) $isFocusMode;
+        $data['isClusterTableFocus'] = (bool) $isFocusMode;
         $data['documentItemList'] = [];
         $data['dashboardSummary'] = $this->buildDashboardSummary([], []);
         $data['itemFilterOptions'] = [];
