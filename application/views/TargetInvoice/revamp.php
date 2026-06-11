@@ -314,6 +314,82 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
         text-align: left;
     }
 
+    .invoice-breakdown-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-top: 0.1rem;
+    }
+
+    .invoice-inline-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #334155;
+        font-size: 0.82rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .invoice-inline-switch__label {
+        user-select: none;
+    }
+
+    .invoice-switch {
+        position: relative;
+        display: inline-block;
+        width: 42px;
+        height: 24px;
+        flex: 0 0 42px;
+    }
+
+    .invoice-switch input {
+        width: 1rem;
+        height: 1rem;
+        margin: 0;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+    }
+
+    .invoice-switch-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #cbd5e1;
+        border-radius: 999px;
+        transition: background-color 0.2s ease;
+    }
+
+    .invoice-switch-slider::before {
+        content: "";
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #fff;
+        border-radius: 50%;
+        transition: transform 0.2s ease;
+    }
+
+    .invoice-switch input:checked + .invoice-switch-slider {
+        background: #2563eb;
+    }
+
+    .invoice-switch input:checked + .invoice-switch-slider::before {
+        transform: translateX(18px);
+    }
+
+    .invoice-switch input:focus + .invoice-switch-slider {
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
     .invoice-panel__title {
         margin: 0;
         color: var(--invoice-ink);
@@ -1063,8 +1139,17 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
             <section class="invoice-table-shell" id="invoice_report_detail">
                 <div class="invoice-table-head">
                     <div class="invoice-table-title-block">
-                        <span class="invoice-chip"><i class="fas fa-layer-group"></i> Report Detail</span>
-                        <h2 class="invoice-panel__title">Breakdown Target Invoice</h2>
+                            <span class="invoice-chip"><i class="fas fa-layer-group"></i> Report Detail</span>
+                        <div class="invoice-breakdown-title-row">
+                            <h2 class="invoice-panel__title">Breakdown Target Invoice</h2>
+                            <div class="invoice-inline-switch">
+                                <span class="invoice-inline-switch__label">Invoiced Only</span>
+                                <label class="invoice-switch">
+                                    <input type="checkbox" id="invoice_only_achieved">
+                                    <span class="invoice-switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
                         <p class="invoice-panel__subtitle">Gunakan tab untuk melihat sudut pandang report yang berbeda.</p>
                         <div class="invoice-active-filters" id="invoice_active_filters">
                             <span class="invoice-active-filter invoice-active-filter--empty">
@@ -1571,7 +1656,9 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         const tableSearchInput = $('#invoice_table_search');
         const tableLimitSelect = $('#invoice_table_limit');
+        const invoiceOnlyAchievedInput = $('#invoice_only_achieved');
         let tableSearchTimer = null;
+        let showOnlyAchieved = false;
 
         function applyTableSearch(searchValue) {
             tableIds.forEach(function (id) {
@@ -1598,6 +1685,11 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                 }
             });
             adjustActiveTable();
+        });
+
+        invoiceOnlyAchievedInput.on('change', function () {
+            showOnlyAchieved = Boolean(this.checked);
+            renderAll(collectFilters());
         });
 
         if ($.fn.select2) {
@@ -1749,7 +1841,9 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                     '<i class="fas fa-filter"></i> Semua data' +
                     '</span>'
                 );
-                return;
+                if (!showOnlyAchieved) {
+                    return;
+                }
             }
 
             activeKeys.forEach(function (key) {
@@ -1760,6 +1854,14 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                     '</span>'
                 );
             });
+
+            if (showOnlyAchieved) {
+                container.append(
+                    '<span class="invoice-active-filter">' +
+                    '<i class="fas fa-check-circle"></i> Invoiced Only' +
+                    '</span>'
+                );
+            }
         }
 
         function matchesFilters(row, filters) {
@@ -1772,6 +1874,12 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
         }
 
         function filterRows(filters) {
+            if (showOnlyAchieved) {
+                return invoiceRows.filter(function (row) {
+                    return Number(row.achieved || 0) > 0 && matchesFilters(row, filters);
+                });
+            }
+
             return invoiceRows.filter(function (row) {
                 return matchesFilters(row, filters);
             });
@@ -2130,6 +2238,8 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
         });
 
         $('#invoice_reset_filter').on('click', function () {
+            showOnlyAchieved = false;
+            invoiceOnlyAchievedInput.prop('checked', false);
             $('#invoice_filter_project, #invoice_filter_pic, #invoice_filter_regional, #invoice_filter_area, #invoice_filter_month, #invoice_filter_week')
                 .val('')
                 .trigger('change.select2');
