@@ -400,9 +400,9 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         display: inline-flex;
         align-items: center;
         max-width: 100%;
-        padding: .13rem .38rem;
+        padding: .2rem .48rem;
         border-radius: 999px;
-        font-size: .66rem;
+        font-size: .78rem;
         font-weight: 900;
         line-height: 1.1;
     }
@@ -410,10 +410,10 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     .emr-pic-row-badge::before {
         content: attr(data-owner);
         margin-right: .34rem;
-        padding: .08rem .25rem;
+        padding: .1rem .28rem;
         border-radius: 999px;
         background: rgba(255, 255, 255, .72);
-        font-size: .55rem;
+        font-size: .62rem;
         font-weight: 900;
         line-height: 1;
     }
