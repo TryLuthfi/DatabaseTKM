@@ -370,6 +370,33 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
         color: #1d4ed8;
     }
 
+    .invoice-table-controls {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) 170px;
+        gap: 0.75rem;
+        width: 100%;
+        margin-top: 0.9rem;
+    }
+
+    .invoice-table-control {
+        position: relative;
+    }
+
+    .invoice-table-control .invoice-control-icon {
+        position: absolute;
+        top: 50%;
+        left: 0.85rem;
+        z-index: 2;
+        color: #64748b;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .invoice-table-control .form-control,
+    .invoice-table-control .custom-select {
+        padding-left: 2.35rem;
+    }
+
     .invoice-panel__body {
         padding: 1rem 1.15rem 1.15rem;
     }
@@ -798,9 +825,15 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         .invoice-panel__head,
         .invoice-table-head,
+        .invoice-table-controls,
         .invoice-actions {
             flex-direction: column;
             align-items: stretch;
+        }
+
+        .invoice-table-controls {
+            display: grid;
+            grid-template-columns: 1fr;
         }
 
         .invoice-active-filters {
@@ -1038,6 +1071,22 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                                 <i class="fas fa-filter"></i>
                                 Semua data
                             </span>
+                        </div>
+                        <div class="invoice-table-controls">
+                            <div class="invoice-table-control">
+                                <i class="fas fa-search invoice-control-icon"></i>
+                                <input type="search" class="form-control" id="invoice_table_search" placeholder="Cari breakdown invoice">
+                            </div>
+                            <div class="invoice-table-control">
+                                <i class="fas fa-list-ol invoice-control-icon"></i>
+                                <select class="custom-select" id="invoice_table_limit">
+                                    <option value="10">10 row</option>
+                                    <option value="25">25 row</option>
+                                    <option value="50">50 row</option>
+                                    <option value="100">100 row</option>
+                                    <option value="-1">Semua row</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1495,6 +1544,37 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                 dom: 'rt<"row align-items-center mt-2"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 order: []
             });
+        });
+
+        const tableSearchInput = $('#invoice_table_search');
+        const tableLimitSelect = $('#invoice_table_limit');
+        let tableSearchTimer = null;
+
+        function applyTableSearch(searchValue) {
+            tableIds.forEach(function (id) {
+                if (tables[id]) {
+                    tables[id].search(searchValue || '').draw();
+                }
+            });
+        }
+
+        tableSearchInput.on('input', function () {
+            const searchValue = this.value;
+            window.clearTimeout(tableSearchTimer);
+            tableSearchTimer = window.setTimeout(function () {
+                applyTableSearch(searchValue);
+                adjustActiveTable();
+            }, 180);
+        });
+
+        tableLimitSelect.on('change', function () {
+            const pageLength = parseInt(this.value, 10);
+            tableIds.forEach(function (id) {
+                if (tables[id]) {
+                    tables[id].page.len(pageLength).draw(false);
+                }
+            });
+            adjustActiveTable();
         });
 
         if ($.fn.select2) {
