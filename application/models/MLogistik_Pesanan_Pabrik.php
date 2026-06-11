@@ -104,7 +104,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 pr.nama_project,
                 pr.id_project,
                 lg.kota_lokasi_gudang,
-                mu.nama_karyawan AS nama_user
+                mu.nama_karyawan
             HAVING total_qty_outstanding_pr > 0
             ORDER BY pr.tanggal_pembuatan DESC, pr.nomor_purchase_request DESC
         ")->result_array();
@@ -602,7 +602,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 mp.jenis_pabrik,
                 mp.pic_pabrik,
                 mp.tlp_pabrik,
-                mu.nama_karyawan AS nama_user
+                mu.nama_karyawan
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran') ? ', p.id_system_pembayaran' : '') . "
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_jenis_pembayaran') ? ', p.id_jenis_pembayaran' : '') . "
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'keterangan_po') ? ', p.keterangan_po' : '') . "
