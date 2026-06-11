@@ -449,11 +449,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 WHERE status_claim = "APPROVED"
                 GROUP BY cluster_id
             ) latest_claim', 'latest_claim.cluster_id = c.id_cluster', 'left')
-            ->where('c.status_rfs', 'FULL RFS')
-            ->group_start()
-                ->where('mc.status_current IS NULL', null, false)
-                ->or_where('UPPER(mc.status_current) <>', 'DONE')
-            ->group_end();
+            ->where('c.status_rfs', 'FULL RFS');
 
         if ($this->supportsAtpColumns()) {
             $this->db
@@ -1084,6 +1080,296 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $scopes;
+    }
+
+    public function getCertificateTermRows($clusterId, $myrepClusterId)
+    {
+        $clusterId = (int) $clusterId;
+        $myrepClusterId = (int) $myrepClusterId;
+        if ($clusterId <= 0 || $myrepClusterId <= 0) {
+            return [];
+        }
+        if (!$this->db->table_exists('tb_myrep_po_header') || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return [];
+        }
+
+        $this->ensurePoTerminCertificateColumn();
+        $readiness = $this->getCertificateReadinessMap($clusterId);
+        $termMap = $this->getCertificateTermMap();
+
+        $select = '
+            h.id_po_header,
+            h.po_type,
+            h.po_category,
+            h.po_number,
+            h.po_date,
+            h.status_po,
+            t.id_po_termin,
+            t.termin_no,
+            t.termin_percent,
+            t.termin_value,
+            t.status_termin,
+            t.invoice_date
+        ';
+        if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            $select .= ', t.sertifikat_invoice_date';
+        }
+
+        $rows = $this->db
+            ->select($select, false)
+            ->from('tb_myrep_po_header h')
+            ->join('tb_myrep_po_termin t', 't.id_po_header = h.id_po_header', 'inner')
+            ->where('h.id_myrep_cluster', $myrepClusterId)
+            ->where('t.termin_no >=', 2)
+            ->where('t.termin_no <=', 5)
+            ->order_by('h.po_type', 'ASC')
+            ->order_by('h.created_at', 'DESC')
+            ->order_by('h.id_po_header', 'DESC')
+            ->order_by('t.termin_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        $term4CertificateByHeader = [];
+        foreach ($rows as $row) {
+            if ((int) ($row['termin_no'] ?? 0) === 4) {
+                $term4CertificateByHeader[(int) ($row['id_po_header'] ?? 0)] = (string) ($row['sertifikat_invoice_date'] ?? '');
+            }
+        }
+
+        $result = [];
+        foreach ($rows as $row) {
+            $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            $map = $termMap[$terminNo] ?? [];
+            $sowType = strtoupper(trim((string) ($map['sow_type'] ?? '')));
+            $readyKey = $poType . '|' . $sowType;
+            $ready = $readiness[$readyKey] ?? [
+                'required_docs' => 0,
+                'submitted_docs' => 0,
+                'approved_docs' => 0,
+                'is_ready' => false,
+            ];
+            if ($terminNo === 5) {
+                $ready = $this->buildFacReadiness((string) ($term4CertificateByHeader[(int) ($row['id_po_header'] ?? 0)] ?? ''));
+            }
+
+            $row['term_label'] = (string) ($map['label'] ?? ('Term ' . $terminNo));
+            $row['sow_type'] = $sowType;
+            $row['required_docs'] = (int) ($ready['required_docs'] ?? 0);
+            $row['astri_submitted_docs'] = (int) ($ready['submitted_docs'] ?? 0);
+            $row['astri_approved_docs'] = (int) ($ready['approved_docs'] ?? 0);
+            $row['is_release_ready'] = !empty($ready['is_ready']);
+            $row['fac_rfs_certificate_date'] = (string) ($ready['rfs_certificate_date'] ?? '');
+            $row['fac_due_date'] = (string) ($ready['due_date'] ?? '');
+            $row['fac_days_remaining'] = (int) ($ready['days_remaining'] ?? 0);
+            $row['fac_days_since_due'] = (int) ($ready['days_since_due'] ?? 0);
+            $row['fac_age_days'] = (int) ($ready['age_days'] ?? 0);
+            $row['release_note'] = (string) $this->buildCertificateReleaseNote($terminNo, $row);
+            $row['sertifikat_invoice_date'] = (string) ($row['sertifikat_invoice_date'] ?? '');
+            $row['sertifikat_release_date'] = $this->normalizeCertificateDateValue((string) ($row['sertifikat_invoice_date'] ?? ''));
+            $row['is_certificate_released'] = $row['sertifikat_release_date'] !== '';
+            $result[] = $row;
+        }
+
+        return $result;
+    }
+
+    public function updateTerminCertificate($terminId, $certificateValue, $userId)
+    {
+        $terminId = (int) $terminId;
+        if ($terminId <= 0 || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return false;
+        }
+
+        $this->ensurePoTerminCertificateColumn();
+        $row = $this->db
+            ->select('t.id_po_termin, mt.city_name')
+            ->from('tb_myrep_po_termin t')
+            ->join('tb_myrep_po_header h', 'h.id_po_header = t.id_po_header', 'inner')
+            ->join('tb_myrep_cluster mc', 'mc.id_myrep_cluster = h.id_myrep_cluster', 'inner')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = mc.rfs_cluster_id', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left')
+            ->where('t.id_po_termin', $terminId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!$row || !$this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''))) {
+            return false;
+        }
+
+        return $this->db
+            ->where('id_po_termin', $terminId)
+            ->update('tb_myrep_po_termin', [
+                'sertifikat_invoice_date' => trim((string) $certificateValue) !== '' ? trim((string) $certificateValue) : null,
+                'updated_by' => (int) $userId,
+            ]);
+    }
+
+    public function normalizeCertificateDateForRelease($value)
+    {
+        return $this->normalizeCertificateDateValue($value);
+    }
+
+    private function getCertificateReadinessMap($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select("
+                g.scope_type,
+                g.sow_type,
+                COUNT(i.id_doc_item) AS required_docs,
+                SUM(CASE WHEN f.astri_submitted_date IS NOT NULL AND f.astri_submitted_date <> '0000-00-00' AND COALESCE(f.astri_status, 'NY') <> 'NY' THEN 1 ELSE 0 END) AS submitted_docs,
+                SUM(CASE WHEN COALESCE(f.astri_status, 'NY') = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
+            ", false)
+            ->from('md_rfs_myrep_doc_group g')
+            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_group = g.id_doc_group AND p.cluster_id = ' . (int) $clusterId, 'left', false)
+            ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
+            ->where('g.is_active', 1)
+            ->where_in('g.scope_type', ['CLUSTER', 'SUBFEEDER'])
+            ->where_in('g.sow_type', ['CW ATP', 'FULL OPM', 'RFS'])
+            ->group_by(['g.scope_type', 'g.sow_type'])
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $required = (int) ($row['required_docs'] ?? 0);
+            $submitted = (int) ($row['submitted_docs'] ?? 0);
+            $approved = (int) ($row['approved_docs'] ?? 0);
+            $key = strtoupper(trim((string) ($row['scope_type'] ?? ''))) . '|' . strtoupper(trim((string) ($row['sow_type'] ?? '')));
+            $map[$key] = [
+                'required_docs' => $required,
+                'submitted_docs' => $submitted,
+                'approved_docs' => $approved,
+                'is_ready' => $required > 0 && $submitted >= $required && $approved >= $required,
+            ];
+        }
+
+        return $map;
+    }
+
+    private function getCertificateTermMap()
+    {
+        return [
+            2 => ['sow_type' => 'CW ATP', 'label' => 'Term 2 - CW ATP'],
+            3 => ['sow_type' => 'FULL OPM', 'label' => 'Term 3 - FULL OPM'],
+            4 => ['sow_type' => 'RFS', 'label' => 'Term 4 - RFS'],
+            5 => ['sow_type' => 'FAC', 'label' => 'Term 5 - FAC'],
+        ];
+    }
+
+    private function buildFacReadiness($rfsCertificateValue)
+    {
+        $rfsCertificateDate = $this->normalizeCertificateDateValue($rfsCertificateValue);
+        if ($rfsCertificateDate === '') {
+            return [
+                'required_docs' => 0,
+                'submitted_docs' => 0,
+                'approved_docs' => 0,
+                'is_ready' => false,
+                'rfs_certificate_date' => '',
+                'due_date' => '',
+                'days_remaining' => 0,
+                'days_since_due' => 0,
+                'age_days' => 0,
+            ];
+        }
+
+        $dueDate = date('Y-m-d', strtotime($rfsCertificateDate . ' +90 days'));
+        $today = date('Y-m-d');
+        $daysRemaining = (int) ceil((strtotime($dueDate) - strtotime($today)) / 86400);
+        $ageDays = max(0, (int) floor((strtotime($today) - strtotime($rfsCertificateDate)) / 86400));
+
+        return [
+            'required_docs' => 0,
+            'submitted_docs' => 0,
+            'approved_docs' => 0,
+            'is_ready' => $daysRemaining <= 0,
+            'rfs_certificate_date' => $rfsCertificateDate,
+            'due_date' => $dueDate,
+            'days_remaining' => max(0, $daysRemaining),
+            'days_since_due' => max(0, abs($daysRemaining)),
+            'age_days' => $ageDays,
+        ];
+    }
+
+    private function buildCertificateReleaseNote($terminNo, array $row)
+    {
+        $terminNo = (int) $terminNo;
+        if ($terminNo === 5) {
+            if ((string) ($row['fac_rfs_certificate_date'] ?? '') === '') {
+                return 'NY FAC. Menunggu tanggal sertifikat RFS term 4 yang valid.';
+            }
+            if (!empty($row['is_release_ready'])) {
+                return 'Ready Release. Lewat BJT ' . (int) ($row['fac_days_since_due'] ?? 0) . ' hari. Umur dari sertifikat RFS: ' . (int) ($row['fac_age_days'] ?? 0) . ' hari.';
+            }
+
+            return 'BJT pada ' . $this->formatCertificateDate((string) ($row['fac_due_date'] ?? '')) . ' (' . (int) ($row['fac_days_remaining'] ?? 0) . ' hari lagi).';
+        }
+
+        $required = (int) ($row['required_docs'] ?? 0);
+        $submitted = (int) ($row['astri_submitted_docs'] ?? 0);
+        $approved = (int) ($row['astri_approved_docs'] ?? 0);
+        if (!empty($row['is_release_ready'])) {
+            return 'Siap release sertifikat.';
+        }
+
+        return 'Menunggu ASTRI submitted ' . $submitted . '/' . $required . ' dan approved ' . $approved . '/' . $required . '.';
+    }
+
+    private function normalizeCertificateDateValue($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return date('Y-m-d', strtotime($value));
+        }
+        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
+            $timestamp = strtotime($value);
+            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        }
+
+        return '';
+    }
+
+    private function formatCertificateDate($date)
+    {
+        $date = $this->normalizeCertificateDateValue($date);
+        return $date !== '' ? date('d/m/Y', strtotime($date)) : '-';
+    }
+
+    private function ensurePoTerminCertificateColumn()
+    {
+        if (!$this->db->table_exists('tb_myrep_po_termin')) {
+            return;
+        }
+        if (!$this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            $this->db->query('ALTER TABLE `tb_myrep_po_termin` ADD COLUMN `sertifikat_invoice_date` VARCHAR(150) NULL AFTER `invoice_date`');
+            return;
+        }
+
+        $field = $this->db
+            ->query("
+                SELECT DATA_TYPE
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'tb_myrep_po_termin'
+                  AND COLUMN_NAME = 'sertifikat_invoice_date'
+                LIMIT 1
+            ")
+            ->row_array();
+        $dataType = strtolower((string) ($field['DATA_TYPE'] ?? ''));
+        if ($dataType !== '' && !in_array($dataType, ['varchar', 'char', 'text', 'mediumtext', 'longtext'], true)) {
+            $this->db->query('ALTER TABLE `tb_myrep_po_termin` MODIFY COLUMN `sertifikat_invoice_date` VARCHAR(150) NULL');
+        }
     }
 
     public function updatePackageTimeline($packageId, $data)

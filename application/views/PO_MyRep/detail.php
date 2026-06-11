@@ -10,6 +10,23 @@ if (!function_exists('poMyRepValue')) {
         return number_format((float) $value, 0, ',', '.');
     }
 }
+if (!function_exists('poMyRepCertificateReleaseDate')) {
+    function poMyRepCertificateReleaseDate($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return date('Y-m-d', strtotime($value));
+        }
+        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
+            $timestamp = strtotime($value);
+            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        }
+        return '';
+    }
+}
 ?>
 
 <style>
@@ -187,6 +204,7 @@ if (!function_exists('poMyRepValue')) {
                                                     <th>%</th>
                                                     <th>Nilai</th>
                                                     <th>Status</th>
+                                                    <th>Sertifikat</th>
                                                     <th>Invoice</th>
                                                     <th>Tgl Invoice</th>
                                                     <th>Tgl BAST</th>
@@ -202,6 +220,24 @@ if (!function_exists('poMyRepValue')) {
                                                         <td class="text-center"><?= poMyRepValue((float) ($termin['termin_percent'] ?? 0)) ?>%</td>
                                                         <td class="text-right"><?= poMyRepValue((float) ($termin['termin_value'] ?? 0)) ?></td>
                                                         <td class="text-center"><span class="badge badge-secondary"><?= htmlspecialchars((string) ($termin['status_termin'] ?? '-')) ?></span></td>
+                                                        <td class="text-center">
+                                                            <?php if ((int) ($termin['termin_no'] ?? 0) >= 2): ?>
+                                                                <?php
+                                                                $terminCertificateValue = trim((string) ($termin['sertifikat_invoice_date'] ?? ''));
+                                                                $terminCertificateReleaseDate = poMyRepCertificateReleaseDate($terminCertificateValue);
+                                                                ?>
+                                                                <?php if ($terminCertificateReleaseDate !== ''): ?>
+                                                                    <span class="badge badge-success"><?= htmlspecialchars($terminCertificateValue, ENT_QUOTES) ?></span>
+                                                                <?php elseif ($terminCertificateValue !== ''): ?>
+                                                                    <span class="badge badge-secondary"><?= htmlspecialchars($terminCertificateValue, ENT_QUOTES) ?></span>
+                                                                    <div class="small text-muted">Text</div>
+                                                                <?php else: ?>
+                                                                    <span class="badge badge-warning">Waiting</span>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                -
+                                                            <?php endif; ?>
+                                                        </td>
                                                         <td><?= !empty($termin['invoice_number']) ? htmlspecialchars((string) $termin['invoice_number']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['invoice_date']) ? htmlspecialchars((string) $termin['invoice_date']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['bast_date']) ? htmlspecialchars((string) $termin['bast_date']) : '-' ?></td>
@@ -222,6 +258,7 @@ if (!function_exists('poMyRepValue')) {
                                                                     data-invoice-date="<?= htmlspecialchars((string) ($termin['invoice_date'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-bast-date="<?= htmlspecialchars((string) ($termin['bast_date'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-payment-date="<?= htmlspecialchars((string) ($termin['payment_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-sertifikat="<?= htmlspecialchars((string) ($termin['sertifikat_invoice_date'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-remark="<?= htmlspecialchars((string) ($termin['remark_termin'] ?? ''), ENT_QUOTES) ?>">
                                                                     Update
                                                                 </button>
@@ -268,7 +305,7 @@ if (!function_exists('poMyRepValue')) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <div class="text-muted small mr-auto">5 termin akan dibuat otomatis: 20%, 25%, 15%, 30%, 10%</div>
+                    <div class="text-muted small mr-auto">5 termin dibuat otomatis dan estimasi mengikuti PO initial/final.</div>
                     <button type="submit" class="btn btn-primary">Simpan PO</button>
                 </div>
             </form>
@@ -288,7 +325,11 @@ if (!function_exists('poMyRepValue')) {
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3"><strong>PO:</strong> <span id="po_termin_po_number">-</span> | <strong>Termin:</strong> <span id="po_termin_no">-</span></div>
+                    <div class="mb-3">
+                        <strong>PO:</strong> <span id="po_termin_po_number">-</span> |
+                        <strong>Termin:</strong> <span id="po_termin_no">-</span> |
+                        <strong>Sertifikat:</strong> <span id="po_termin_sertifikat">-</span>
+                    </div>
                     <div class="row">
                         <div class="col-md-4"><div class="form-group"><label>Status Termin</label><select name="status_termin" id="po_termin_status" class="form-control"><?php foreach ($terminStatusOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
                         <div class="col-md-4"><div class="form-group"><label>Nomor Invoice</label><input type="text" name="invoice_number" id="po_termin_invoice_number" class="form-control"></div></div>
@@ -319,6 +360,7 @@ if (!function_exists('poMyRepValue')) {
             $('#po_termin_invoice_date').val($button.data('invoice-date') || '');
             $('#po_termin_bast_date').val($button.data('bast-date') || '');
             $('#po_termin_payment_date').val($button.data('payment-date') || '');
+            $('#po_termin_sertifikat').text($button.data('sertifikat') || '-');
             $('#po_termin_remark').val($button.data('remark') || '');
         });
     })();

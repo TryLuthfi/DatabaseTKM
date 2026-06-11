@@ -67,6 +67,9 @@ class PO_MyRep extends CI_Controller
             return;
         }
 
+        $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, '', (int) $this->session->userdata('id_user'));
+        $cluster = $this->MPO_MyRep->getClusterById($clusterId);
+
         $poHeaders = $this->MPO_MyRep->getPoHeadersByClusterId($clusterId);
         $poGroups = [
             'CLUSTER' => [],
@@ -183,6 +186,22 @@ class PO_MyRep extends CI_Controller
         if (!in_array($statusTermin, ['NOT READY', 'READY BILLING', 'BILLED', 'PAID'], true)) {
             $statusTermin = 'NOT READY';
         }
+        $terminNo = (int) ($termin['termin_no'] ?? 0);
+        if (
+            $terminNo >= 2
+            && $terminNo <= 5
+            && in_array($statusTermin, ['BILLED', 'PAID'], true)
+            && $this->normalizeCertificateDateValue((string) ($termin['sertifikat_invoice_date'] ?? '')) === ''
+        ) {
+            $this->session->set_flashdata('error', 'Termin ' . $terminNo . ' belum bisa ditagihkan karena sertifikat belum berisi tanggal release yang valid.');
+            redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
+            return;
+        }
+        if ($terminNo === 5 && in_array($statusTermin, ['BILLED', 'PAID'], true) && !$this->isFacTerminDue($termin)) {
+            $this->session->set_flashdata('error', 'Termin 5 FAC belum bisa ditagihkan karena belum BJT 90 hari dari tanggal sertifikat RFS.');
+            redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
+            return;
+        }
 
         $result = $this->MPO_MyRep->updateTermin($terminId, [
             'status_termin' => $statusTermin,
@@ -237,6 +256,49 @@ class PO_MyRep extends CI_Controller
 
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function isFacTerminDue(array $termin)
+    {
+        $headerId = (int) ($termin['id_po_header'] ?? 0);
+        if ($headerId <= 0 || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return false;
+        }
+        if (!$this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            return false;
+        }
+
+        $term4 = $this->db
+            ->select('sertifikat_invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where('id_po_header', $headerId)
+            ->where('termin_no', 4)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $rfsCertificateDate = $this->normalizeCertificateDateValue((string) ($term4['sertifikat_invoice_date'] ?? ''));
+        if ($rfsCertificateDate === '') {
+            return false;
+        }
+
+        return date('Y-m-d') >= date('Y-m-d', strtotime($rfsCertificateDate . ' +90 days'));
+    }
+
+    private function normalizeCertificateDateValue($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return date('Y-m-d', strtotime($value));
+        }
+        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
+            $timestamp = strtotime($value);
+            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        }
+
+        return '';
     }
 
     private function normalizeNumber($value)

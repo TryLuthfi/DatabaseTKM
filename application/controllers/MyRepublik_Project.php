@@ -283,6 +283,7 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
+        $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, '', (int) $this->session->userdata('id_user'));
         $data = $this->buildDetailPayload($cluster, false);
 
         $this->load->view('Templates/01_Header', $data);
@@ -2663,7 +2664,7 @@ class MyRepublik_Project extends CI_Controller
             if ($clusterId <= 0 || !in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
                 continue;
             }
-            if (isset($map[$clusterId][$poType])) {
+            if (isset($map[$clusterId][$poType]) && !$this->isPoSnapshotHeaderPreferred($row, $map[$clusterId][$poType])) {
                 continue;
             }
 
@@ -2674,6 +2675,38 @@ class MyRepublik_Project extends CI_Controller
         }
 
         return $map;
+    }
+
+    private function isPoSnapshotHeaderPreferred(array $candidate, array $current)
+    {
+        $candidateRank = $this->getPoSnapshotCategoryRank((string) ($candidate['po_category'] ?? ''));
+        $currentRank = $this->getPoSnapshotCategoryRank((string) ($current['po_category'] ?? ''));
+        if ($candidateRank !== $currentRank) {
+            return $candidateRank > $currentRank;
+        }
+
+        $candidateDate = (string) ($candidate['po_date'] ?? '');
+        $currentDate = (string) ($current['po_date'] ?? '');
+        if ($candidateDate !== $currentDate) {
+            return $candidateDate > $currentDate;
+        }
+
+        return (int) ($candidate['id_po_header'] ?? 0) > (int) ($current['id_po_header'] ?? 0);
+    }
+
+    private function getPoSnapshotCategoryRank($category)
+    {
+        $category = strtoupper(trim((string) $category));
+        if ($category === 'FINAL') {
+            return 3;
+        }
+        if ($category === 'AMANDMENT') {
+            return 2;
+        }
+        if ($category === 'INITIAL') {
+            return 1;
+        }
+        return 0;
     }
 
     private function getCurrentPoTerminRowsForSnapshot(array $poHeaderIds)
@@ -2860,7 +2893,7 @@ class MyRepublik_Project extends CI_Controller
                 $poPayload['on_target'] = $onTarget;
             }
 
-            $poHeaderId = $this->resolveImportedPoHeaderId($clusterId, $poType, $poNumber);
+            $poHeaderId = $this->resolveImportedPoHeaderId($clusterId, $poType, $poNumber, $poCategory);
             if ($poHeaderId > 0) {
                 $updatePayload = [
                     'parent_po_header_id' => null,
@@ -2886,11 +2919,12 @@ class MyRepublik_Project extends CI_Controller
 
             if ($poHeaderId > 0) {
                 $this->applyImportedPoTerminDataFromRow($poHeaderId, $row, (string) ($poDef['prefix'] ?? 'po_cluster'));
+                $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, $poType, $userId);
             }
         }
     }
 
-    private function resolveImportedPoHeaderId($clusterId, $poType, $poNumber)
+    private function resolveImportedPoHeaderId($clusterId, $poType, $poNumber, $poCategory = '')
     {
         $clusterId = (int) $clusterId;
         $poType = strtoupper(trim((string) $poType));
@@ -2913,6 +2947,25 @@ class MyRepublik_Project extends CI_Controller
             if (!empty($existingByNumber['id_po_header'])) {
                 return (int) $existingByNumber['id_po_header'];
             }
+        }
+
+        $poCategory = strtoupper(trim((string) $poCategory));
+        if ($poCategory !== '') {
+            $existingByTypeCategory = $this->db
+                ->select('id_po_header')
+                ->from('tb_myrep_po_header')
+                ->where('id_myrep_cluster', $clusterId)
+                ->where('po_type', $poType)
+                ->where('po_category', $poCategory)
+                ->order_by('id_po_header', 'DESC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($existingByTypeCategory['id_po_header'])) {
+                return (int) $existingByTypeCategory['id_po_header'];
+            }
+
+            return 0;
         }
 
         $existingByType = $this->db

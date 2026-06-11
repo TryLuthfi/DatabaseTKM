@@ -76,10 +76,21 @@ if (!function_exists('checklist_doc_history_label')) {
 
 $clusterTabRows = isset($scopeTabs['CLUSTER']) ? $scopeTabs['CLUSTER'] : [];
 $subfeederTabRows = isset($scopeTabs['SUBFEEDER']) ? $scopeTabs['SUBFEEDER'] : [];
+$isHomebaseHo = strtoupper(trim((string) $this->session->userdata('homebase'))) === 'HO';
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'TAMBAH') : true;
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'APPROVAL') : true;
+$canReleaseCertificate = $canApprove && $canApprovalAction;
+$certificateTerms = isset($certificateTerms) && is_array($certificateTerms) ? $certificateTerms : [];
+$certificateTermsByType = ['CLUSTER' => [], 'SUBFEEDER' => []];
+foreach ($certificateTerms as $certificateTermRow) {
+    $certificatePoType = strtoupper(trim((string) ($certificateTermRow['po_type'] ?? 'CLUSTER')));
+    if (!isset($certificateTermsByType[$certificatePoType])) {
+        $certificateTermsByType[$certificatePoType] = [];
+    }
+    $certificateTermsByType[$certificatePoType][] = $certificateTermRow;
+}
 $clusterProgressPercent = checklist_doc_percent(
     ((int) $cluster['doc_cw_atp_uploaded']) + ((int) $cluster['doc_full_opm_uploaded']) + ((int) $cluster['doc_rfs_uploaded']),
     ((int) $cluster['doc_cw_atp_required']) + ((int) $cluster['doc_full_opm_required']) + ((int) $cluster['doc_rfs_required'])
@@ -589,6 +600,118 @@ $clusterProgressPercent = checklist_doc_percent(
                             <div class="doc-progress-bar <?= $clusterProgressPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $clusterProgressPercent ?>%"></div>
                         </div>
                     </div>
+                    <?php if ($isHomebaseHo): ?>
+                        <div class="doc-modal-panel mt-3">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap mb-2" style="gap:.75rem;">
+                                <div>
+                                    <div class="doc-modal-title">Sertifikat Claim Invoice</div>
+                                    <p class="doc-modal-subtitle mb-0">Release sertifikat mengikuti status ASTRI per SOW, lalu tersimpan ke term PO terkait.</p>
+                                </div>
+                                <span class="badge badge-info">Term 2-5</span>
+                            </div>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>PO</th>
+                                            <th>Term</th>
+                                            <th>Syarat Release</th>
+                                            <th>Status</th>
+                                            <th>Sertifikat</th>
+                                            <th>Invoice</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach (['CLUSTER' => 'PO Cluster', 'SUBFEEDER' => 'PO Subfeeder'] as $certificatePoType => $certificatePoLabel): ?>
+                                            <?php $typedCertificateTerms = $certificateTermsByType[$certificatePoType] ?? []; ?>
+                                            <tr class="table-secondary">
+                                                <td colspan="7" class="font-weight-bold" style="border-top: 3px solid #111827;">
+                                                    <?= htmlspecialchars($certificatePoLabel, ENT_QUOTES) ?>
+                                                    <span class="badge badge-light border ml-2"><?= count($typedCertificateTerms) ?> term</span>
+                                                </td>
+                                            </tr>
+                                            <?php if (empty($typedCertificateTerms)): ?>
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted">Belum ada term PO 2-5 untuk <?= htmlspecialchars($certificatePoLabel, ENT_QUOTES) ?>.</td>
+                                                </tr>
+                                            <?php else: ?>
+                                                <?php foreach ($typedCertificateTerms as $term): ?>
+                                                <?php
+                                                $termNo = (int) ($term['termin_no'] ?? 0);
+                                                $certValue = trim((string) ($term['sertifikat_invoice_date'] ?? ''));
+                                                $isReleased = !empty($term['is_certificate_released']);
+                                                $isReady = !empty($term['is_release_ready']);
+                                                $isManualTerm = $termNo === 5;
+                                                $hasFacRfsCertificate = !empty($term['fac_rfs_certificate_date']);
+                                                $statusBadge = $isReleased ? 'success' : ($isReady ? 'primary' : 'warning');
+                                                $statusText = $isReleased ? 'Released' : ($isReady ? 'Ready Release' : ($isManualTerm ? ($hasFacRfsCertificate ? 'BJT' : 'NY FAC') : 'Waiting ASTRI'));
+                                                $canSaveCertificate = $canReleaseCertificate && ($isReady || $isReleased);
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <strong><?= htmlspecialchars((string) ($term['po_number'] ?? '-'), ENT_QUOTES) ?></strong>
+                                                        <div class="small text-muted"><?= htmlspecialchars((string) ($term['po_category'] ?? '-'), ENT_QUOTES) ?></div>
+                                                    </td>
+                                                    <td>
+                                                        <strong><?= htmlspecialchars((string) ($term['term_label'] ?? ('Term ' . $termNo)), ENT_QUOTES) ?></strong>
+                                                        <div class="small text-muted"><?= number_format((float) ($term['termin_value'] ?? 0), 0, ',', '.') ?></div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($isManualTerm): ?>
+                                                            <div>RFS Cert <?= !empty($term['fac_rfs_certificate_date']) ? checklist_doc_detail_date($term['fac_rfs_certificate_date']) : '-' ?></div>
+                                                            <div>BJT <?= !empty($term['fac_due_date']) ? checklist_doc_detail_date($term['fac_due_date']) : '-' ?></div>
+                                                            <?php if (!empty($term['fac_rfs_certificate_date'])): ?>
+                                                                <div>Umur <?= (int) ($term['fac_age_days'] ?? 0) ?> hari</div>
+                                                                <?php if ($isReady): ?>
+                                                                    <div>Lewat BJT <?= (int) ($term['fac_days_since_due'] ?? 0) ?> hari</div>
+                                                                <?php else: ?>
+                                                                    <div>Sisa <?= (int) ($term['fac_days_remaining'] ?? 0) ?> hari</div>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            <div>Submit <?= (int) ($term['astri_submitted_docs'] ?? 0) ?>/<?= (int) ($term['required_docs'] ?? 0) ?></div>
+                                                            <div>Approved <?= (int) ($term['astri_approved_docs'] ?? 0) ?>/<?= (int) ($term['required_docs'] ?? 0) ?></div>
+                                                        <?php endif; ?>
+                                                        <div class="small text-muted"><?= htmlspecialchars((string) ($term['release_note'] ?? ''), ENT_QUOTES) ?></div>
+                                                    </td>
+                                                    <td><span class="badge badge-<?= $statusBadge ?>"><?= $statusText ?></span></td>
+                                                    <td>
+                                                        <?php if ($certValue !== ''): ?>
+                                                            <?= htmlspecialchars($certValue, ENT_QUOTES) ?>
+                                                        <?php else: ?>
+                                                            -
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge badge-<?= checklist_doc_status_badge((string) ($term['status_termin'] ?? '')) ?>"><?= htmlspecialchars((string) ($term['status_termin'] ?? '-'), ENT_QUOTES) ?></span>
+                                                        <div class="small text-muted"><?= checklist_doc_detail_date($term['invoice_date'] ?? null) ?></div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($canReleaseCertificate): ?>
+                                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/saveTerminCertificate') ?>" class="mb-0">
+                                                                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
+                                                                <input type="hidden" name="id_po_termin" value="<?= (int) ($term['id_po_termin'] ?? 0) ?>">
+                                                                <div class="input-group input-group-sm">
+                                                                    <input type="text" name="sertifikat_invoice" class="form-control" value="<?= htmlspecialchars($certValue, ENT_QUOTES) ?>" placeholder="No/status sertifikat" <?= $canSaveCertificate ? '' : 'disabled' ?>>
+                                                                    <div class="input-group-append">
+                                                                        <button type="submit" class="btn btn-dark" <?= $canSaveCertificate ? '' : 'disabled' ?>>Simpan</button>
+                                                                    </div>
+                                                                </div>
+                                                            </form>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">Read only</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <div class="d-flex justify-content-end mt-3">
                         <?php if ($canTambah): ?>
                             <button type="button"

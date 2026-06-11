@@ -2048,7 +2048,80 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db->trans_complete();
-        return $this->db->trans_status() ? $poHeaderId : 0;
+        if (!$this->db->trans_status()) {
+            return 0;
+        }
+
+        $this->syncTerminEstimatesForCluster($clusterId, (string) $payload['po_type'], (int) $payload['updated_by']);
+        return $poHeaderId;
+    }
+
+    public function syncTerminEstimatesForCluster($clusterId, $poType = '', $userId = 0)
+    {
+        if (!$this->tablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $poType = strtoupper(trim((string) $poType));
+        $allowedTypes = ['CLUSTER', 'SUBFEEDER'];
+        $targetTypes = in_array($poType, $allowedTypes, true) ? [$poType] : $allowedTypes;
+
+        $this->db
+            ->select('id_po_header, po_type, po_category, po_value, po_date, created_at')
+            ->from('tb_myrep_po_header')
+            ->where('id_myrep_cluster', $clusterId);
+        if (count($targetTypes) === 1) {
+            $this->db->where('UPPER(po_type)', $targetTypes[0]);
+        }
+
+        $headers = $this->db
+            ->order_by('po_type', 'ASC')
+            ->order_by('po_date', 'DESC')
+            ->order_by('id_po_header', 'DESC')
+            ->get()
+            ->result_array();
+
+        if (empty($headers)) {
+            return true;
+        }
+
+        $headersByType = [];
+        foreach ($headers as $header) {
+            $type = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
+            if (!in_array($type, $allowedTypes, true)) {
+                $type = 'CLUSTER';
+            }
+            $headersByType[$type][] = $header;
+        }
+
+        foreach ($headersByType as $typeHeaders) {
+            $initialHeader = $this->pickLatestPoHeaderByCategory($typeHeaders, ['INITIAL']);
+            $finalHeader = $this->pickLatestPoHeaderByCategory($typeHeaders, ['FINAL']);
+            $targetHeader = !empty($finalHeader) ? $finalHeader : $initialHeader;
+            if (empty($targetHeader)) {
+                $targetHeader = $this->pickLatestPoHeaderByCategory($typeHeaders, ['AMANDMENT']);
+            }
+            if (empty($targetHeader)) {
+                continue;
+            }
+
+            if (empty($initialHeader)) {
+                $initialHeader = $targetHeader;
+            }
+
+            $initialValue = (float) ($initialHeader['po_value'] ?? 0);
+            $finalValue = !empty($finalHeader) ? (float) ($finalHeader['po_value'] ?? 0) : null;
+            $estimateValues = $this->calculateTerminEstimateValues($initialValue, $finalValue);
+            $targetTotal = $finalValue !== null && $finalValue > 0 ? $finalValue : $initialValue;
+            $this->applyTerminEstimateValues((int) ($targetHeader['id_po_header'] ?? 0), $estimateValues, (int) $userId, $targetTotal);
+        }
+
+        return true;
     }
 
     public function updateTermin($terminId, $payload)
@@ -2108,6 +2181,132 @@ class MPO_MyRep extends CI_Model
             ->update('tb_myrep_po_header', [
                 'status_po' => $poStatus,
             ]);
+    }
+
+    private function calculateTerminEstimateValues($initialValue, $finalValue = null)
+    {
+        $initialValue = (float) $initialValue;
+        $hasFinal = $finalValue !== null && (float) $finalValue > 0;
+        $finalValue = $hasFinal ? (float) $finalValue : 0.0;
+
+        if (!$hasFinal) {
+            $values = [];
+            foreach ($this->defaultTerminPercents as $index => $percent) {
+                $values[$index + 1] = round(($initialValue * (float) $percent) / 100, 2);
+            }
+            return $values;
+        }
+
+        $term1 = round($initialValue * 0.20, 2);
+        $term2 = round($initialValue * 0.25, 2);
+        $term3 = round($initialValue * 0.15, 2);
+        $term4 = $finalValue >= $initialValue
+            ? round($initialValue * 0.30, 2)
+            : round(($finalValue * 0.90) - ($initialValue * 0.60), 2);
+        $term5 = round($finalValue - ($term1 + $term2 + $term3 + $term4), 2);
+
+        return [
+            1 => $term1,
+            2 => $term2,
+            3 => $term3,
+            4 => $term4,
+            5 => $term5,
+        ];
+    }
+
+    private function applyTerminEstimateValues($poHeaderId, array $estimateValues, $userId = 0, $targetTotal = null)
+    {
+        $poHeaderId = (int) $poHeaderId;
+        if ($poHeaderId <= 0 || empty($estimateValues)) {
+            return;
+        }
+
+        $terminRows = $this->getTerminRowsByPoId($poHeaderId);
+        $terminByNo = [];
+        foreach ($terminRows as $terminRow) {
+            $terminNo = (int) ($terminRow['termin_no'] ?? 0);
+            if ($terminNo >= 1 && $terminNo <= 5) {
+                $terminByNo[$terminNo] = $terminRow;
+            }
+        }
+
+        $targetTotal = $targetTotal !== null ? (float) $targetTotal : null;
+        if ($targetTotal !== null && isset($estimateValues[5])) {
+            $term5Status = strtoupper(trim((string) ($terminByNo[5]['status_termin'] ?? 'NOT READY')));
+            if (!in_array($term5Status, ['BILLED', 'PAID'], true)) {
+                $termOneToFourTotal = 0.0;
+                for ($i = 1; $i <= 4; $i++) {
+                    $status = strtoupper(trim((string) ($terminByNo[$i]['status_termin'] ?? 'NOT READY')));
+                    $termOneToFourTotal += in_array($status, ['BILLED', 'PAID'], true)
+                        ? (float) ($terminByNo[$i]['termin_value'] ?? 0)
+                        : (float) ($estimateValues[$i] ?? 0);
+                }
+                $estimateValues[5] = round($targetTotal - $termOneToFourTotal, 2);
+            }
+        }
+
+        foreach ($estimateValues as $terminNo => $estimateValue) {
+            $terminNo = (int) $terminNo;
+            if ($terminNo < 1 || $terminNo > 5) {
+                continue;
+            }
+
+            if (empty($terminByNo[$terminNo])) {
+                $percent = (float) ($this->defaultTerminPercents[$terminNo - 1] ?? 0);
+                $this->db->insert('tb_myrep_po_termin', [
+                    'id_po_header' => $poHeaderId,
+                    'termin_no' => $terminNo,
+                    'termin_percent' => $percent,
+                    'termin_value' => round((float) $estimateValue, 2),
+                    'status_termin' => 'NOT READY',
+                    'created_by' => (int) $userId,
+                    'updated_by' => (int) $userId,
+                ]);
+                continue;
+            }
+
+            $terminRow = $terminByNo[$terminNo];
+            $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+            if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                continue;
+            }
+
+            $this->db
+                ->where('id_po_termin', (int) ($terminRow['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', [
+                    'termin_value' => round((float) $estimateValue, 2),
+                    'updated_by' => (int) $userId,
+                ]);
+        }
+    }
+
+    private function pickLatestPoHeaderByCategory(array $headers, array $categories)
+    {
+        $categoryMap = array_fill_keys(array_map('strtoupper', $categories), true);
+        $selected = [];
+
+        foreach ($headers as $header) {
+            $category = strtoupper(trim((string) ($header['po_category'] ?? 'INITIAL')));
+            if (!isset($categoryMap[$category])) {
+                continue;
+            }
+            if (empty($selected) || $this->isPoHeaderNewer($header, $selected)) {
+                $selected = $header;
+            }
+        }
+
+        return $selected;
+    }
+
+    private function isPoHeaderNewer(array $candidate, array $current)
+    {
+        $candidateDate = (string) ($candidate['po_date'] ?? '');
+        $currentDate = (string) ($current['po_date'] ?? '');
+        if ($candidateDate !== $currentDate) {
+            return $candidateDate > $currentDate;
+        }
+
+        return (int) ($candidate['id_po_header'] ?? 0) > (int) ($current['id_po_header'] ?? 0);
     }
 
     private function buildEmptyMeta()

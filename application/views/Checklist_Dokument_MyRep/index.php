@@ -73,6 +73,40 @@ if (!function_exists('checklist_doc_progress_theme')) {
     }
 }
 
+if (!function_exists('checklist_doc_focus_progress_class')) {
+    function checklist_doc_focus_progress_class($percent)
+    {
+        $percent = (int) $percent;
+        if ($percent >= 100) {
+            return 'is-complete';
+        }
+
+        if ($percent > 0) {
+            return 'is-progress';
+        }
+
+        return 'is-empty';
+    }
+}
+
+if (!function_exists('checklist_doc_focus_progress_cell')) {
+    function checklist_doc_focus_progress_cell(array $cluster, $doneKey, $requiredKey)
+    {
+        $done = (int) ($cluster[$doneKey] ?? 0);
+        $required = (int) ($cluster[$requiredKey] ?? 0);
+        $percent = checklist_doc_progress_percent($done, $required);
+        $className = checklist_doc_focus_progress_class($percent);
+
+        return '<div class="focus-progress ' . $className . '">'
+            . '<div class="focus-progress-head">'
+            . '<span>' . $percent . '%</span>'
+            . '<small>' . $done . '/' . $required . '</small>'
+            . '</div>'
+            . '<div class="focus-progress-track"><span style="width: ' . $percent . '%;"></span></div>'
+            . '</div>';
+    }
+}
+
 if (!function_exists('checklist_doc_status_badge')) {
     function checklist_doc_status_badge($status)
     {
@@ -117,6 +151,7 @@ if (!function_exists('checklist_doc_status_label')) {
 
 $summary = isset($dashboardSummary) && is_array($dashboardSummary) ? $dashboardSummary : [];
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS') : true;
+$isClusterTableFocus = !empty($isClusterTableFocus);
 $totalCluster = (int) ($summary['totalCluster'] ?? count($clusterList));
 $clusterDoneRfsBelumAtp = (int) ($summary['clusterDoneRfsBelumAtp'] ?? 0);
 $clusterDoneAtpBelumDokument = (int) ($summary['clusterDoneAtpBelumDokument'] ?? 0);
@@ -213,6 +248,133 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
     .checklist-board .table td {
         vertical-align: top;
         font-size: 13px;
+    }
+
+    .checklist-board .cluster-focus-table {
+        min-width: 1040px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .checklist-board .cluster-focus-table thead th {
+        background-color: #f4f2ed;
+        color: #111827;
+        border-color: #d8d8d8;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .checklist-board .cluster-focus-table td {
+        background: #fff;
+        border-color: #e5e7eb;
+        color: #111827;
+        vertical-align: middle;
+    }
+
+    .cluster-focus-table .focus-no {
+        width: 46px;
+        text-align: center;
+    }
+
+    .cluster-focus-table .focus-cluster-cell {
+        min-width: 190px;
+        max-width: 230px;
+    }
+
+    .cluster-focus-table .focus-timeline-cell {
+        min-width: 110px;
+    }
+
+    .cluster-focus-table .focus-progress-cell {
+        min-width: 130px;
+    }
+
+    .cluster-focus-table .cluster-name-link {
+        display: inline-block;
+        color: #111827;
+        font-weight: 700;
+        line-height: 1.22;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .cluster-focus-table .focus-cluster-meta {
+        margin-top: 4px;
+        color: #111827;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .cluster-focus-table .focus-timeline {
+        color: #111827;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .cluster-focus-table .focus-timeline strong {
+        display: inline-block;
+        min-width: 56px;
+        font-weight: 700;
+    }
+
+    .focus-progress {
+        width: 100%;
+        min-width: 105px;
+    }
+
+    .focus-progress-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+        font-weight: 700;
+    }
+
+    .focus-progress-head small {
+        color: #6b7280;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .focus-progress-track {
+        height: 5px;
+        width: 100%;
+        background: #f1f0eb;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .focus-progress-track span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+    }
+
+    .focus-progress.is-complete .focus-progress-head {
+        color: #059669;
+    }
+
+    .focus-progress.is-complete .focus-progress-track span {
+        background: #1f9d6d;
+    }
+
+    .focus-progress.is-progress .focus-progress-head {
+        color: #f59e0b;
+    }
+
+    .focus-progress.is-progress .focus-progress-track span {
+        background: #f59e0b;
+    }
+
+    .focus-progress.is-empty .focus-progress-head {
+        color: #111827;
+    }
+
+    .focus-progress.is-empty .focus-progress-track span {
+        background: #d1d5db;
     }
 
     .cluster-identity {
@@ -635,7 +797,8 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         <div class="container-fluid checklist-board">
             <div class="mb-3">
                 <div class="btn-group">
-                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-dark">Monitoring Cluster</a>
+                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn <?= $isClusterTableFocus ? 'btn-dark' : 'btn-outline-dark' ?>">Monitoring Cluster</a>
+                    <a href="<?= base_url('Checklist_Dokument_MyRep/old') ?>" class="btn <?= $isClusterTableFocus ? 'btn-outline-dark' : 'btn-dark' ?>">Tampilan Lama</a>
                     <a href="<?= base_url('Checklist_Dokument_MyRep/mainfeeder') ?>" class="btn btn-outline-dark">Monitoring Mainfeeder</a>
                 </div>
             </div>
@@ -788,7 +951,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                     </div>
                 </div>
                 <div class="card-body">
-                    <form method="get" action="<?= base_url('Checklist_Dokument_MyRep') ?>" id="cluster-filter-form">
+                    <form method="get" action="<?= base_url($isClusterTableFocus ? 'Checklist_Dokument_MyRep' : 'Checklist_Dokument_MyRep/old') ?>" id="cluster-filter-form">
                         <div class="cluster-filter-bar">
                             <div class="cluster-filter-group">
                                 <label>Regional</label>
@@ -813,10 +976,61 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                 </select>
                             </div>
                             <div class="cluster-filter-actions">
-                                <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default btn-sm">Reset</a>
+                                <a href="<?= base_url($isClusterTableFocus ? 'Checklist_Dokument_MyRep' : 'Checklist_Dokument_MyRep/old') ?>" class="btn btn-default btn-sm">Reset</a>
                             </div>
                         </div>
                     </form>
+                    <?php if ($isClusterTableFocus): ?>
+                        <table id="table-checklist-dokument-focus" class="table table-bordered table-hover cluster-focus-table">
+                            <thead>
+                                <tr>
+                                    <th class="focus-no">No</th>
+                                    <th>Cluster</th>
+                                    <th>Timeline ATP</th>
+                                    <th>CW ATP</th>
+                                    <th>Full OPM</th>
+                                    <th>Full RFS</th>
+                                    <th>ASTRI CW ATP</th>
+                                    <th>ASTRI Full OPM</th>
+                                    <th>ASTRI Full RFS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($clusterList)): ?>
+                                    <?php foreach ($clusterList as $index => $cluster): ?>
+                                        <?php
+                                        $clusterId = (int) ($cluster['id_cluster'] ?? 0);
+                                        $homepass = number_format((float) ($cluster['homepass'] ?? 0), 0, ',', '.');
+                                        ?>
+                                        <tr>
+                                            <td class="focus-no"><?= $index + 1 ?></td>
+                                            <td class="focus-cluster-cell">
+                                                <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . $clusterId) ?>" class="cluster-name-link">
+                                                    <?= html_escape($cluster['cluster_name'] ?? '-') ?>
+                                                </a>
+                                                <div class="focus-cluster-meta">
+                                                    <?= html_escape($cluster['city_name'] ?? '-') ?> - HP <?= html_escape($homepass) ?><br>
+                                                    RFS <?= html_escape(checklist_doc_format_date($cluster['tanggal_rfs'] ?? null)) ?>
+                                                </div>
+                                            </td>
+                                            <td class="focus-timeline-cell">
+                                                <div class="focus-timeline">
+                                                    <div><strong>Plan:</strong> <?= html_escape(checklist_doc_format_date($cluster['plan_atp_date'] ?? null)) ?></div>
+                                                    <div><strong>Realisasi:</strong> <?= html_escape(checklist_doc_format_date($cluster['actual_atp_date'] ?? null)) ?></div>
+                                                </div>
+                                            </td>
+                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'doc_cw_atp_uploaded', 'doc_cw_atp_required') ?></td>
+                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'doc_full_opm_uploaded', 'doc_full_opm_required') ?></td>
+                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'doc_rfs_uploaded', 'doc_rfs_required') ?></td>
+                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_cw_atp_submitted', 'doc_cw_atp_required') ?></td>
+                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_full_opm_submitted', 'doc_full_opm_required') ?></td>
+                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_rfs_submitted', 'doc_rfs_required') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
                     <table id="table-checklist-dokument" class="table table-bordered table-striped table-hover">
                         <thead class="thead-dark">
                             <tr>
@@ -1146,6 +1360,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                             <?php endif; ?>
                         </tbody>
                     </table>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -1467,6 +1682,34 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         if (!$.fn.DataTable) {
             showChecklistContent();
             return;
+        }
+
+        if ($('#table-checklist-dokument-focus').length) {
+            $('#table-checklist-dokument-focus').DataTable({
+                "paging": true,
+                "lengthChange": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": false,
+                "scrollX": true,
+                "order": [],
+                "pageLength": 5,
+                "lengthMenu": [
+                    [5, 10, 25, 50, 100],
+                    [5, 10, 25, 50, 100]
+                ],
+                "columnDefs": [
+                    {
+                        "targets": [2, 3, 4, 5, 6, 7, 8],
+                        "orderable": false
+                    }
+                ],
+                "language": {
+                    "emptyTable": "Belum ada cluster ATP DONE."
+                }
+            });
         }
 
         if ($('#table-checklist-dokument').length) {
