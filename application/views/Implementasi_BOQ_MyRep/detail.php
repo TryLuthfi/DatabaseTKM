@@ -3417,6 +3417,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lightboxItems = [];
         var lightboxIndex = -1;
         var lightboxScale = 1;
+        var lightboxMinScale = 0.5;
         var lightboxRotation = 0;
 
         function escapeAttr(value) {
@@ -3646,12 +3647,44 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxImage.style.transformOrigin = 'center center';
         }
 
+        function calculateLightboxFitScale() {
+            if (!lightboxImage || !lightboxStage) {
+                return 0.5;
+            }
+
+            var naturalWidth = lightboxImage.naturalWidth || 0;
+            var naturalHeight = lightboxImage.naturalHeight || 0;
+            if (!naturalWidth || !naturalHeight) {
+                return 0.5;
+            }
+
+            var normalizedRotation = ((lightboxRotation % 360) + 360) % 360;
+            var isSideways = normalizedRotation === 90 || normalizedRotation === 270;
+            var imageWidth = isSideways ? naturalHeight : naturalWidth;
+            var imageHeight = isSideways ? naturalWidth : naturalHeight;
+            var stageWidth = Math.max((lightboxStage.clientWidth || 0) - 24, 1);
+            var stageHeight = Math.max((lightboxStage.clientHeight || 0) - 24, 1);
+            var fitScale = Math.min(stageWidth / imageWidth, stageHeight / imageHeight, 1);
+
+            return Math.max(0.05, Math.min(1, fitScale));
+        }
+
+        function resetLightboxToFit() {
+            lightboxMinScale = calculateLightboxFitScale();
+            lightboxScale = lightboxMinScale;
+            applyLightboxTransform();
+            if (lightboxStage) {
+                lightboxStage.scrollLeft = 0;
+                lightboxStage.scrollTop = 0;
+            }
+        }
+
         function zoomLightboxTo(nextScale, originEvent) {
             if (!lightbox || !lightboxImage || !lightbox.classList.contains('is-open')) {
                 return;
             }
 
-            var targetScale = Math.max(0.5, Math.min(3, nextScale));
+            var targetScale = Math.max(lightboxMinScale, Math.min(3, nextScale));
             if (targetScale === lightboxScale) {
                 return;
             }
@@ -3749,7 +3782,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
         if (lightboxImage) {
             lightboxImage.addEventListener('load', function () {
-                applyLightboxTransform();
+                resetLightboxToFit();
             });
         }
 
@@ -3759,11 +3792,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
 
             lightboxRotation = ((lightboxRotation + deltaDegrees) % 360 + 360) % 360;
-            applyLightboxTransform();
-            if (lightboxStage) {
-                lightboxStage.scrollLeft = Math.max(0, (lightboxStage.scrollWidth - lightboxStage.clientWidth) / 2);
-                lightboxStage.scrollTop = Math.max(0, (lightboxStage.scrollHeight - lightboxStage.clientHeight) / 2);
-            }
+            resetLightboxToFit();
         }
 
         function renderLightbox(index) {
@@ -3784,6 +3813,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxTitle.textContent = activeItem.title || 'Preview Foto';
             lightboxCaption.textContent = activeItem.caption || '-';
             lightboxScale = 1;
+            lightboxMinScale = 0.5;
             lightboxRotation = 0;
             lightboxImage.style.width = '';
             lightboxImage.style.height = 'auto';
@@ -3794,7 +3824,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 lightboxStage.scrollTop = 0;
             }
             if (lightboxImage.complete) {
-                applyLightboxTransform();
+                resetLightboxToFit();
             }
             syncLightboxButtons();
         }
@@ -3836,9 +3866,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 }
             }
 
-            renderLightbox(foundIndex);
             lightbox.classList.add('is-open');
             document.body.style.overflow = 'hidden';
+            renderLightbox(foundIndex);
         }
 
         function closeLightbox() {
@@ -3856,6 +3886,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxItems = [];
             lightboxIndex = -1;
             lightboxScale = 1;
+            lightboxMinScale = 0.5;
             lightboxRotation = 0;
         }
 
