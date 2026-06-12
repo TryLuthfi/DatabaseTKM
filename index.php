@@ -53,7 +53,129 @@
  *
  * NOTE: If you change these, also change the error_reporting() code below
  */
-	define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'development');
+	if ( ! function_exists('ci_front_env_value'))
+	{
+		function ci_front_env_value($key)
+		{
+			if (isset($_SERVER[$key]) && is_scalar($_SERVER[$key]))
+			{
+				return (string) $_SERVER[$key];
+			}
+
+			if (isset($_ENV[$key]) && is_scalar($_ENV[$key]))
+			{
+				return (string) $_ENV[$key];
+			}
+
+			$value = getenv($key);
+			if ($value !== false && is_scalar($value))
+			{
+				return (string) $value;
+			}
+
+			$envFile = __DIR__.DIRECTORY_SEPARATOR.'.env';
+			if ( ! is_file($envFile))
+			{
+				return null;
+			}
+
+			$lines = @file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+			if ($lines === false)
+			{
+				return null;
+			}
+
+			foreach ($lines as $line)
+			{
+				$line = trim($line);
+				if ($line === '' || $line[0] === '#')
+				{
+					continue;
+				}
+
+				$parts = explode('=', $line, 2);
+				if (count($parts) !== 2 || trim($parts[0]) !== $key)
+				{
+					continue;
+				}
+
+				$envVal = trim($parts[1]);
+				$first = substr($envVal, 0, 1);
+				$last = substr($envVal, -1);
+				if (($first === '"' && $last === '"') || ($first === "'" && $last === "'"))
+				{
+					$envVal = substr($envVal, 1, -1);
+				}
+
+				return $envVal;
+			}
+
+			return null;
+		}
+	}
+
+	if ( ! function_exists('ci_front_is_local_request'))
+	{
+		function ci_front_is_local_request()
+		{
+			$host = '';
+			if (!empty($_SERVER['HTTP_HOST']))
+			{
+				$host = (string) $_SERVER['HTTP_HOST'];
+			}
+			elseif (!empty($_SERVER['SERVER_NAME']))
+			{
+				$host = (string) $_SERVER['SERVER_NAME'];
+			}
+
+			$host = strtolower(trim($host));
+			$host = preg_replace('/:\d+$/', '', $host);
+
+			if ($host === '')
+			{
+				return defined('STDIN');
+			}
+
+			return in_array($host, array('localhost', '127.0.0.1', '::1'), true)
+				|| substr($host, -6) === '.local'
+				|| substr($host, -5) === '.test';
+		}
+	}
+
+	if ( ! function_exists('ci_front_resolve_environment'))
+	{
+		function ci_front_resolve_environment()
+		{
+			$env = ci_front_env_value('CI_ENV');
+			if ($env === null || trim((string) $env) === '')
+			{
+				$env = ci_front_env_value('APP_ENV');
+			}
+
+			$env = strtolower(trim((string) $env));
+			$aliases = array(
+				'dev' => 'development',
+				'local' => 'development',
+				'prod' => 'production',
+				'live' => 'production',
+				'staging' => 'production',
+			);
+
+			if (isset($aliases[$env]))
+			{
+				return $aliases[$env];
+			}
+
+			if (in_array($env, array('development', 'testing', 'production'), true))
+			{
+				return $env;
+			}
+
+			return ci_front_is_local_request() ? 'development' : 'production';
+		}
+	}
+
+	define('ENVIRONMENT', ci_front_resolve_environment());
 
 /*
  *---------------------------------------------------------------
