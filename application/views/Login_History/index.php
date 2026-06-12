@@ -61,6 +61,46 @@ if (!function_exists('login_history_short_url')) {
     }
 }
 
+if (!function_exists('login_history_device_label')) {
+    function login_history_device_label($userAgent)
+    {
+        $ua = (string) $userAgent;
+        if (trim($ua) === '') {
+            return '-';
+        }
+
+        $platform = 'Device';
+        if (stripos($ua, 'Windows NT') !== false) {
+            $platform = 'Windows';
+        } elseif (stripos($ua, 'Android') !== false) {
+            $platform = 'Android';
+        } elseif (stripos($ua, 'iPhone') !== false) {
+            $platform = 'iPhone';
+        } elseif (stripos($ua, 'iPad') !== false) {
+            $platform = 'iPad';
+        } elseif (stripos($ua, 'Mac OS X') !== false || stripos($ua, 'Macintosh') !== false) {
+            $platform = 'macOS';
+        } elseif (stripos($ua, 'Linux') !== false) {
+            $platform = 'Linux';
+        }
+
+        $browser = 'Browser';
+        if (stripos($ua, 'Edg/') !== false || stripos($ua, 'Edge/') !== false) {
+            $browser = 'Edge';
+        } elseif (stripos($ua, 'OPR/') !== false || stripos($ua, 'Opera') !== false) {
+            $browser = 'Opera';
+        } elseif (stripos($ua, 'Firefox/') !== false) {
+            $browser = 'Firefox';
+        } elseif (stripos($ua, 'Chrome/') !== false || stripos($ua, 'CriOS/') !== false) {
+            $browser = 'Chrome';
+        } elseif (stripos($ua, 'Safari/') !== false) {
+            $browser = 'Safari';
+        }
+
+        return $platform . ' - ' . $browser;
+    }
+}
+
 $statusMeta = [
     'online' => ['label' => 'Online', 'class' => 'success'],
     'idle' => ['label' => 'Idle', 'class' => 'warning'],
@@ -241,7 +281,9 @@ $statusMeta = [
                                                 <?php endif; ?>
                                             </td>
                                             <td><?= login_history_escape($row['ip_address'] ?? '-') ?></td>
-                                            <td class="login-history-device"><?= login_history_escape($row['user_agent'] ?? '-') ?></td>
+                                            <td class="login-history-device" title="<?= login_history_escape($row['user_agent'] ?? '-') ?>">
+                                                <?= login_history_escape(login_history_device_label($row['user_agent'] ?? '')) ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
