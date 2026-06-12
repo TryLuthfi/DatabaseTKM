@@ -1502,6 +1502,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         function showChecklistContent() {
             $('#checklistPageContent').addClass('is-ready');
             $('#globalLoader').fadeOut(200);
+            restoreChecklistScroll();
         }
 
         var activeQuickFilter = {
@@ -1526,6 +1527,163 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             sow: 'Semua SOW',
             doc: 'Semua Dokumen'
         };
+        var checklistStatePrefix = 'checklist-dokument-myrep-state:v1:';
+        var checklistStateScope = {
+            regional: <?= json_encode((string) $selectedRegional, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
+            city: <?= json_encode((string) $selectedCity, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>
+        };
+        var checklistStateKey = checklistStatePrefix
+            + window.location.pathname
+            + '|regional=' + checklistStateScope.regional
+            + '|city=' + checklistStateScope.city;
+        var checklistState = readChecklistState();
+        var clusterTable = null;
+        var itemTable = null;
+        var itemFiltersRestored = false;
+        var checklistScrollRestored = false;
+        var isApplyingChecklistState = false;
+        var checklistStateDisabled = false;
+
+        function storageAvailable() {
+            try {
+                return !!window.sessionStorage;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function readChecklistState() {
+            if (!storageAvailable()) {
+                return {};
+            }
+
+            try {
+                var raw = window.sessionStorage.getItem(checklistStateKey);
+                return raw ? (JSON.parse(raw) || {}) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function clearChecklistStates() {
+            if (!storageAvailable()) {
+                return;
+            }
+
+            try {
+                for (var i = window.sessionStorage.length - 1; i >= 0; i--) {
+                    var key = window.sessionStorage.key(i);
+                    if (key.indexOf(checklistStatePrefix) === 0) {
+                        window.sessionStorage.removeItem(key);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function tableState(table) {
+            if (!table) {
+                return {};
+            }
+
+            try {
+                var info = table.page.info();
+                return {
+                    search: table.search() || '',
+                    page: info && info.page ? info.page : 0,
+                    length: info && info.length ? info.length : null,
+                    order: table.order() || []
+                };
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function setTableSearchInput(table, searchValue) {
+            if (!table) {
+                return;
+            }
+
+            try {
+                $(table.table().container()).find('input[type="search"]').val(searchValue || '');
+            } catch (e) {}
+        }
+
+        function applyTableState(table, state) {
+            if (!table || !state) {
+                return;
+            }
+
+            isApplyingChecklistState = true;
+            try {
+                if (state.length) {
+                    table.page.len(parseInt(state.length, 10));
+                }
+                if ($.isArray(state.order)) {
+                    table.order(state.order);
+                }
+                table.search(state.search || '');
+                setTableSearchInput(table, state.search || '');
+                if (typeof state.page !== 'undefined') {
+                    table.page(parseInt(state.page, 10) || 0);
+                }
+                table.draw(false);
+            } catch (e) {}
+            window.setTimeout(function() {
+                isApplyingChecklistState = false;
+                saveChecklistState();
+            }, 0);
+        }
+
+        function itemFilterState() {
+            return {
+                regional: $('#item-filter-regional').val() || '',
+                city: $('#item-filter-city').val() || '',
+                cluster: $('#item-filter-cluster').val() || '',
+                scope: $('#item-filter-scope').val() || '',
+                sow: $('#item-filter-sow').val() || '',
+                doc: $('#item-filter-doc').val() || '',
+                internalStatus: $('#item-filter-internal-status').val() || '',
+                astriStatus: $('#item-filter-astri-status').val() || ''
+            };
+        }
+
+        function saveChecklistState(extraState) {
+            if (checklistStateDisabled || isApplyingChecklistState || !storageAvailable()) {
+                return;
+            }
+
+            var state = $.extend({}, checklistState, {
+                itemFilters: itemFilterState(),
+                quickFilter: {
+                    type: activeQuickFilter.type || '',
+                    value: activeQuickFilter.value || ''
+                },
+                clusterTable: tableState(clusterTable),
+                itemTable: tableState(itemTable),
+                cards: {
+                    clusterCollapsed: $('#cluster-monitor-card').hasClass('collapsed-card'),
+                    itemCollapsed: $('#item-monitor-card').hasClass('collapsed-card')
+                },
+                scrollTop: window.pageYOffset || document.documentElement.scrollTop || 0,
+                savedAt: Date.now()
+            }, extraState || {});
+
+            checklistState = state;
+            try {
+                window.sessionStorage.setItem(checklistStateKey, JSON.stringify(state));
+            } catch (e) {}
+        }
+
+        function restoreChecklistScroll() {
+            if (checklistScrollRestored || !checklistState || typeof checklistState.scrollTop === 'undefined') {
+                return;
+            }
+
+            checklistScrollRestored = true;
+            window.setTimeout(function() {
+                window.scrollTo(0, parseInt(checklistState.scrollTop, 10) || 0);
+            }, 180);
+        }
 
         function itemCascadeValue(value) {
             return (value || '').toString().trim().toUpperCase();
@@ -1603,6 +1761,45 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             });
         }
 
+        function applyItemCascadeFilterState(filterState) {
+            filterState = filterState || {};
+            var selected = {};
+            itemCascadeLevels.forEach(function(level) {
+                selected[level] = itemCascadeValue(filterState[level]);
+            });
+
+            itemCascadeLevels.forEach(function(level) {
+                var values = collectItemCascadeOptions(level, selected);
+                populateItemCascadeSelect(level, values, selected[level]);
+                selected[level] = itemCascadeValue(itemCascadeSelects[level].val());
+            });
+        }
+
+        function restoreItemFilterState() {
+            if (itemFiltersRestored || !checklistState) {
+                return;
+            }
+
+            isApplyingChecklistState = true;
+            if (checklistState.itemFilters) {
+                applyItemCascadeFilterState(checklistState.itemFilters);
+                $('#item-filter-internal-status').val(checklistState.itemFilters.internalStatus || '');
+                $('#item-filter-astri-status').val(checklistState.itemFilters.astriStatus || '');
+            }
+
+            if (checklistState.quickFilter) {
+                activeQuickFilter.type = checklistState.quickFilter.type || '';
+                activeQuickFilter.value = checklistState.quickFilter.value || '';
+            }
+
+            itemFiltersRestored = true;
+            isApplyingChecklistState = false;
+
+            if (itemTable) {
+                applyTableState(itemTable, checklistState.itemTable || {});
+            }
+        }
+
         function dashboardNumber(value) {
             value = parseInt(value, 10);
             return isNaN(value) ? 0 : value;
@@ -1651,7 +1848,10 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 if ($.isArray(response.itemFilterOptions)) {
                     itemFilterOptionRows = response.itemFilterOptions;
                     refreshItemCascadingFilters();
+                    restoreItemFilterState();
                 }
+            }).always(function() {
+                restoreItemFilterState();
             });
         }
 
@@ -1675,8 +1875,42 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             }
         }
 
+        if (checklistState.cards) {
+            setCardCollapsed('#cluster-monitor-card', !!checklistState.cards.clusterCollapsed);
+            setCardCollapsed('#item-monitor-card', !!checklistState.cards.itemCollapsed);
+        }
+
         $('#cluster-filter-regional, #cluster-filter-city').on('change', function() {
             $('#cluster-filter-form').trigger('submit');
+        });
+
+        $('#cluster-filter-form').on('submit', function() {
+            saveChecklistState();
+        });
+
+        $('.cluster-filter-actions a').on('click', function() {
+            checklistStateDisabled = true;
+            clearChecklistStates();
+        });
+
+        $(document).on('click', 'a[href*="Checklist_Dokument_MyRep/detail/"]', function() {
+            saveChecklistState({
+                scrollTop: window.pageYOffset || document.documentElement.scrollTop || 0
+            });
+        });
+
+        $('[data-card-widget="collapse"]').on('click', function() {
+            window.setTimeout(saveChecklistState, 250);
+        });
+
+        $(window).on('pagehide', function() {
+            saveChecklistState();
+        });
+
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                showChecklistContent();
+            }
         });
 
         if (!$.fn.DataTable) {
@@ -1685,7 +1919,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         }
 
         if ($('#table-checklist-dokument-focus').length) {
-            $('#table-checklist-dokument-focus').DataTable({
+            clusterTable = $('#table-checklist-dokument-focus').DataTable({
                 "paging": true,
                 "lengthChange": true,
                 "searching": true,
@@ -1713,7 +1947,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         }
 
         if ($('#table-checklist-dokument').length) {
-            $('#table-checklist-dokument').DataTable({
+            clusterTable = $('#table-checklist-dokument').DataTable({
                 "processing": true,
                 "serverSide": true,
                 "paging": true,
@@ -1754,7 +1988,13 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             });
         }
 
-        var itemTable = null;
+        if (clusterTable) {
+            clusterTable.on('draw.dt search.dt page.dt length.dt order.dt', function() {
+                saveChecklistState();
+            });
+            applyTableState(clusterTable, checklistState.clusterTable || {});
+        }
+
         if ($('#table-checklist-item').length) {
             itemTable = $('#table-checklist-item').DataTable({
                 "processing": true,
@@ -1800,6 +2040,12 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 "language": {
                     "emptyTable": "Belum ada item dokumen."
                 }
+            });
+        }
+
+        if (itemTable) {
+            itemTable.on('draw.dt search.dt page.dt length.dt order.dt', function() {
+                saveChecklistState();
             });
         }
 

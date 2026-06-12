@@ -79,7 +79,6 @@ $subfeederTabRows = isset($scopeTabs['SUBFEEDER']) ? $scopeTabs['SUBFEEDER'] : [
 $isHomebaseHo = strtoupper(trim((string) $this->session->userdata('homebase'))) === 'HO';
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'TAMBAH') : true;
-$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'APPROVAL') : true;
 $canReleaseCertificate = $canApprove && $canApprovalAction;
 $certificateTerms = isset($certificateTerms) && is_array($certificateTerms) ? $certificateTerms : [];
@@ -460,13 +459,7 @@ $clusterProgressPercent = checklist_doc_percent(
                     <h1 class="m-0 text-dark">DETAIL CHECKLIST DOKUMENT</h1>
                 </div>
                 <div class="col-sm-4 text-right">
-                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default">Kembali</a>
-                    <?php if ($canHapus): ?>
-                        <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
-                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_cluster'] ?? 0) ?>">
-                            <button type="submit" class="btn btn-danger">Hapus Cluster</button>
-                        </form>
-                    <?php endif; ?>
+                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default js-checklist-back">Kembali</a>
                 </div>
             </div>
         </div>
@@ -2176,6 +2169,13 @@ $clusterProgressPercent = checklist_doc_percent(
     });
 
     bindDropzone('#upload-dropzone', '#upload-file-input', '#upload-file-name');
+
+    $('.js-checklist-back').on('click', function(e) {
+        if (document.referrer && document.referrer.indexOf('Checklist_Dokument_MyRep') !== -1 && window.history.length > 1) {
+            e.preventDefault();
+            window.history.back();
+        }
+    });
 </script>
 
 
