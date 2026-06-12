@@ -637,7 +637,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
 <div class="emr-page-title">
     <div>
-        <h1>OUTSTANDING TARGET PO EMR</h1>
+        <h1>OUTSTANDING TARGET PO EMMR</h1>
     </div>
     <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-po-emr-download-report">
         <i class="fas fa-file-excel mr-1"></i> Download Report
