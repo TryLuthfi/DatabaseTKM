@@ -905,12 +905,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             </a>
                                                                             <?php if ((int) $item['id_doc_file'] > 0): ?>
                                                                                 <button type="button"
-                                                                                    class="btn btn-sm btn-info btn-history-doc"
+                                                                                    class="btn btn-sm btn-outline-info btn-history-doc"
                                                                                     data-toggle="modal"
                                                                                     data-target="#modalHistoryDocument"
                                                                                     data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                                     data-file-id="<?= (int) $item['id_doc_file'] ?>">
-                                                                                    Detail
+                                                                                    <i class="fas fa-history"></i> History
                                                                                 </button>
                                                                             <?php endif; ?>
                                                                         </div>
@@ -1259,12 +1259,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             </a>
                                                                             <?php if ((int) $item['id_doc_file'] > 0): ?>
                                                                                 <button type="button"
-                                                                                    class="btn btn-sm btn-info btn-history-doc"
+                                                                                    class="btn btn-sm btn-outline-info btn-history-doc"
                                                                                     data-toggle="modal"
                                                                                     data-target="#modalHistoryDocument"
                                                                                     data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                                     data-file-id="<?= (int) $item['id_doc_file'] ?>">
-                                                                                    Detail
+                                                                                    <i class="fas fa-history"></i> History
                                                                                 </button>
                                                                             <?php endif; ?>
                                                                         </div>
