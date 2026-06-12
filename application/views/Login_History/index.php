@@ -18,6 +18,14 @@ if (!function_exists('login_history_datetime')) {
     }
 }
 
+if (!function_exists('login_history_sort_time')) {
+    function login_history_sort_time($value)
+    {
+        $time = strtotime((string) $value);
+        return $time === false ? 0 : $time;
+    }
+}
+
 if (!function_exists('login_history_duration')) {
     function login_history_duration($seconds)
     {
@@ -251,8 +259,8 @@ $statusMeta = [
                                             <td><?= login_history_escape($nama ?: '-') ?></td>
                                             <td><?= login_history_escape($username ?: '-') ?></td>
                                             <td><?= login_history_escape($level ?: '-') ?></td>
-                                            <td><?= login_history_datetime($row['login_at'] ?? '') ?></td>
-                                            <td>
+                                            <td data-order="<?= (int) login_history_sort_time($row['login_at'] ?? '') ?>"><?= login_history_datetime($row['login_at'] ?? '') ?></td>
+                                            <td data-order="<?= (int) login_history_sort_time($row['last_seen_at'] ?? '') ?>">
                                                 <?= login_history_datetime($row['last_seen_at'] ?? '') ?>
                                                 <small class="text-muted d-block"><?= login_history_duration($row['seconds_since_seen'] ?? null) ?> lalu</small>
                                             </td>
@@ -308,7 +316,7 @@ $statusMeta = [
                 autoWidth: false,
                 scrollX: true,
                 pageLength: 25,
-                order: [[6, 'desc']],
+                order: [[7, 'desc']],
                 language: {
                     search: 'Search:',
                     lengthMenu: 'Tampilkan _MENU_ data',

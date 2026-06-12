@@ -169,6 +169,7 @@ class MLogin_History extends CI_Model
         $rows = $this->baseFilteredQuery($filters)
             ->select('h.*')
             ->select('u.nik AS current_nik, u.nama_karyawan AS current_nama_user, u.username_user AS current_username_user, u.homebase, u.lokasi_kantor, u.status_user, l.nama_level AS current_nama_level', false)
+            ->order_by('h.last_seen_at', 'DESC')
             ->order_by('h.login_at', 'DESC')
             ->limit(500)
             ->get()
