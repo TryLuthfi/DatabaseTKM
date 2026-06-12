@@ -903,6 +903,16 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             <a href="<?= base_url('Checklist_Dokument_MyRep/downloadDocument/' . (int) $item['id_doc_file']) ?>" class="btn btn-sm btn-outline-primary">
                                                                                 <i class="fas fa-download"></i> Download
                                                                             </a>
+                                                                            <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                                <button type="button"
+                                                                                    class="btn btn-sm btn-info btn-history-doc"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modalHistoryDocument"
+                                                                                    data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                                    data-file-id="<?= (int) $item['id_doc_file'] ?>">
+                                                                                    Detail
+                                                                                </button>
+                                                                            <?php endif; ?>
                                                                         </div>
                                                                     <?php elseif (!empty($item['linked_source_file_id']) && !empty($item['linked_source_preview_path'])): ?>
                                                                         <a href="<?= base_url($item['linked_source_preview_path']) ?>" target="_blank">
@@ -947,19 +957,6 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         </button>
                                                                     <?php elseif (!empty($item['linked_source_file_id'])): ?>
                                                                         <span class="badge badge-info">Linked Source</span>
-                                                                    <?php endif; ?>
-                                                                    <?php if (!empty($item['file_path'])): ?>
-                                                                        <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
-                                                                    <?php endif; ?>
-                                                                    <?php if ((int) $item['id_doc_file'] > 0): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-info btn-history-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalHistoryDocument"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>">
-                                                                            Detail
-                                                                        </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canTambah && empty($item['linked_source_file_id']) && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
                                                                         <button type="button"
@@ -1260,6 +1257,16 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             <a href="<?= base_url('Checklist_Dokument_MyRep/downloadDocument/' . (int) $item['id_doc_file']) ?>" class="btn btn-sm btn-outline-primary">
                                                                                 <i class="fas fa-download"></i> Download
                                                                             </a>
+                                                                            <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                                <button type="button"
+                                                                                    class="btn btn-sm btn-info btn-history-doc"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modalHistoryDocument"
+                                                                                    data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                                    data-file-id="<?= (int) $item['id_doc_file'] ?>">
+                                                                                    Detail
+                                                                                </button>
+                                                                            <?php endif; ?>
                                                                         </div>
                                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                                         <span class="text-muted">Tanpa file</span>
@@ -1289,19 +1296,6 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-doc-note="<?= htmlspecialchars((string) $item['doc_requirement_note'], ENT_QUOTES) ?>">
                                                                             Upload
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                    <?php if (!empty($item['file_path'])): ?>
-                                                                        <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
-                                                                    <?php endif; ?>
-                                                                    <?php if ((int) $item['id_doc_file'] > 0): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-info btn-history-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalHistoryDocument"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>">
-                                                                            Detail
                                                                         </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canTambah && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
