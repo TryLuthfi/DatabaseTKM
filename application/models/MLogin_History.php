@@ -12,6 +12,7 @@ class MLogin_History extends CI_Model
     public function ensureTable()
     {
         if ($this->db->table_exists($this->table)) {
+            $this->ensurePageColumns();
             return;
         }
 
@@ -28,6 +29,10 @@ class MLogin_History extends CI_Model
             `platform` VARCHAR(20) NOT NULL DEFAULT 'web',
             `login_at` DATETIME NOT NULL,
             `last_seen_at` DATETIME NOT NULL,
+            `last_page_title` VARCHAR(180) DEFAULT NULL,
+            `last_page_url` VARCHAR(500) DEFAULT NULL,
+            `last_page_method` VARCHAR(10) DEFAULT NULL,
+            `last_page_at` DATETIME DEFAULT NULL,
             `logout_at` DATETIME DEFAULT NULL,
             `logout_reason` VARCHAR(40) DEFAULT NULL,
             `created_at` DATETIME NOT NULL,
@@ -35,6 +40,7 @@ class MLogin_History extends CI_Model
             PRIMARY KEY (`id_login_history`),
             KEY `idx_login_history_user` (`user_id`, `login_at`),
             KEY `idx_login_history_seen` (`last_seen_at`),
+            KEY `idx_login_history_page_at` (`last_page_at`),
             KEY `idx_login_history_logout` (`logout_at`),
             KEY `idx_login_history_platform` (`platform`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
@@ -65,7 +71,7 @@ class MLogin_History extends CI_Model
         return (int) $this->db->insert_id();
     }
 
-    public function touchWebSession($historyId, $userId)
+    public function touchWebSession($historyId, $userId, array $pageContext = [])
     {
         $historyId = (int) $historyId;
         $userId = (int) $userId;
@@ -75,17 +81,26 @@ class MLogin_History extends CI_Model
 
         $this->ensureTable();
         $now = date('Y-m-d H:i:s');
+        $payload = [
+            'last_seen_at' => $now,
+            'ip_address' => substr((string) $this->input->ip_address(), 0, 45),
+            'user_agent' => substr((string) $this->input->user_agent(), 0, 255),
+            'updated_at' => $now,
+        ];
+
+        if (!empty($pageContext)) {
+            $payload['last_page_title'] = substr((string) ($pageContext['title'] ?? ''), 0, 180);
+            $payload['last_page_url'] = substr((string) ($pageContext['url'] ?? ''), 0, 500);
+            $payload['last_page_method'] = substr((string) ($pageContext['method'] ?? ''), 0, 10);
+            $payload['last_page_at'] = $now;
+        }
+
         $updated = $this->db
             ->where('id_login_history', $historyId)
             ->where('user_id', $userId)
             ->where('platform', 'web')
             ->where('logout_at IS NULL', null, false)
-            ->update($this->table, [
-                'last_seen_at' => $now,
-                'ip_address' => substr((string) $this->input->ip_address(), 0, 45),
-                'user_agent' => substr((string) $this->input->user_agent(), 0, 255),
-                'updated_at' => $now,
-            ]);
+            ->update($this->table, $payload);
 
         return (bool) $updated;
     }
@@ -236,6 +251,55 @@ class MLogin_History extends CI_Model
         return $this->seenThrottleSeconds;
     }
 
+    public function buildPageContext($class = '', $method = '', $directory = '')
+    {
+        if (isset($this->input) && method_exists($this->input, 'is_ajax_request') && $this->input->is_ajax_request()) {
+            return [];
+        }
+
+        $requestMethod = strtoupper((string) ($this->input->method(true) ?: ($_SERVER['REQUEST_METHOD'] ?? 'GET')));
+        if ($requestMethod !== 'GET') {
+            return [];
+        }
+
+        $class = trim((string) $class);
+        $method = trim((string) $method);
+        $directory = trim((string) $directory, '/\\');
+        $uriString = '';
+        if (isset($this->uri) && method_exists($this->uri, 'uri_string')) {
+            $uriString = trim((string) $this->uri->uri_string(), '/');
+        }
+
+        $pathParts = [];
+        if ($directory !== '') {
+            $pathParts[] = $directory;
+        }
+        if ($class !== '') {
+            $pathParts[] = $class;
+        }
+        if ($method !== '' && strtolower($method) !== 'index') {
+            $pathParts[] = $method;
+        }
+
+        $routeTitle = implode(' / ', array_map([$this, 'humanizeRoutePart'], $pathParts));
+        if ($routeTitle === '') {
+            $routeTitle = 'Dashboard';
+        }
+
+        $url = current_url();
+        $queryString = isset($_SERVER['QUERY_STRING']) ? trim((string) $_SERVER['QUERY_STRING']) : '';
+        if ($queryString !== '') {
+            $url .= '?' . $queryString;
+        }
+
+        return [
+            'title' => $routeTitle,
+            'url' => $url !== '' ? $url : base_url($uriString),
+            'method' => $requestMethod,
+            'key' => ($uriString !== '' ? $uriString : implode('/', $pathParts)) . ($queryString !== '' ? '?' . $queryString : ''),
+        ];
+    }
+
     private function baseFilteredQuery(array $filters)
     {
         $dateFrom = trim((string) ($filters['date_from'] ?? ''));
@@ -263,10 +327,44 @@ class MLogin_History extends CI_Model
                 ->or_like('u.nama_karyawan', $keyword)
                 ->or_like('u.username_user', $keyword)
                 ->or_like('h.ip_address', $keyword)
+                ->or_like('h.last_page_title', $keyword)
+                ->or_like('h.last_page_url', $keyword)
                 ->group_end();
         }
 
         return $query;
+    }
+
+    private function ensurePageColumns()
+    {
+        $columns = [
+            'last_page_title' => "ALTER TABLE `{$this->table}` ADD `last_page_title` VARCHAR(180) DEFAULT NULL AFTER `last_seen_at`",
+            'last_page_url' => "ALTER TABLE `{$this->table}` ADD `last_page_url` VARCHAR(500) DEFAULT NULL AFTER `last_page_title`",
+            'last_page_method' => "ALTER TABLE `{$this->table}` ADD `last_page_method` VARCHAR(10) DEFAULT NULL AFTER `last_page_url`",
+            'last_page_at' => "ALTER TABLE `{$this->table}` ADD `last_page_at` DATETIME DEFAULT NULL AFTER `last_page_method`",
+        ];
+
+        foreach ($columns as $column => $sql) {
+            if (!$this->db->field_exists($column, $this->table)) {
+                $this->db->query($sql);
+            }
+        }
+
+        if (!$this->indexExists('idx_login_history_page_at')) {
+            $this->db->query("ALTER TABLE `{$this->table}` ADD KEY `idx_login_history_page_at` (`last_page_at`)");
+        }
+    }
+
+    private function indexExists($indexName)
+    {
+        $query = $this->db->query('SHOW INDEX FROM `' . $this->table . '` WHERE Key_name = ' . $this->db->escape($indexName));
+        return $query && $query->num_rows() > 0;
+    }
+
+    private function humanizeRoutePart($value)
+    {
+        $value = str_replace(['_', '-'], ' ', (string) $value);
+        return ucwords(trim($value));
     }
 
     private function cleanupOldRows()

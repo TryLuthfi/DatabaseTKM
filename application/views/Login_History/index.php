@@ -41,6 +41,26 @@ if (!function_exists('login_history_duration')) {
     }
 }
 
+if (!function_exists('login_history_short_url')) {
+    function login_history_short_url($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '-';
+        }
+
+        $parts = parse_url($value);
+        if (!is_array($parts)) {
+            return $value;
+        }
+
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+        $query = trim((string) ($parts['query'] ?? ''));
+        $display = $path !== '' ? $path : '/';
+        return $query !== '' ? $display . '?' . $query : $display;
+    }
+}
+
 $statusMeta = [
     'online' => ['label' => 'Online', 'class' => 'success'],
     'idle' => ['label' => 'Idle', 'class' => 'warning'],
@@ -123,7 +143,7 @@ $statusMeta = [
                         </div>
                         <div class="form-group mb-0 login-history-filter__keyword">
                             <label for="keyword">Search</label>
-                            <input type="text" class="form-control" id="keyword" name="keyword" value="<?= login_history_escape($filters['keyword'] ?? '') ?>" placeholder="NIK, nama, username, IP">
+                            <input type="text" class="form-control" id="keyword" name="keyword" value="<?= login_history_escape($filters['keyword'] ?? '') ?>" placeholder="NIK, nama, username, IP, halaman">
                         </div>
                         <div class="login-history-filter__actions">
                             <button type="submit" class="btn btn-primary">
@@ -155,6 +175,7 @@ $statusMeta = [
                                     <th>Level</th>
                                     <th>Login</th>
                                     <th>Last Seen</th>
+                                    <th>Halaman Dibuka</th>
                                     <th>Logout</th>
                                     <th>IP</th>
                                     <th>Device</th>
@@ -163,7 +184,7 @@ $statusMeta = [
                             <tbody>
                                 <?php if (empty($rows)): ?>
                                     <tr>
-                                        <td colspan="11" class="text-center text-muted">Belum ada data login pada filter ini.</td>
+                                        <td colspan="12" class="text-center text-muted">Belum ada data login pada filter ini.</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php $no = 1; ?>
@@ -194,6 +215,24 @@ $statusMeta = [
                                             <td>
                                                 <?= login_history_datetime($row['last_seen_at'] ?? '') ?>
                                                 <small class="text-muted d-block"><?= login_history_duration($row['seconds_since_seen'] ?? null) ?> lalu</small>
+                                            </td>
+                                            <td class="login-history-page-opened">
+                                                <?php if (!empty($row['last_page_url']) || !empty($row['last_page_title'])): ?>
+                                                    <div class="font-weight-bold"><?= login_history_escape($row['last_page_title'] ?? 'Halaman') ?></div>
+                                                    <?php if (!empty($row['last_page_url'])): ?>
+                                                        <a href="<?= login_history_escape($row['last_page_url']) ?>" target="_blank" rel="noopener" class="d-block text-truncate">
+                                                            <?= login_history_escape(login_history_short_url($row['last_page_url'])) ?>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <small class="text-muted d-block">
+                                                        <?= login_history_escape($row['last_page_method'] ?? 'GET') ?>
+                                                        <?php if (!empty($row['last_page_at'])): ?>
+                                                            - <?= login_history_datetime($row['last_page_at']) ?>
+                                                        <?php endif; ?>
+                                                    </small>
+                                                <?php else: ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= !empty($row['logout_at']) ? login_history_datetime($row['logout_at']) : '-' ?>
@@ -276,6 +315,12 @@ $statusMeta = [
     .login-history-device {
         min-width: 260px;
         max-width: 420px;
+        white-space: normal;
+        word-break: break-word;
+    }
+    .login-history-page-opened {
+        min-width: 240px;
+        max-width: 360px;
         white-space: normal;
         word-break: break-word;
     }
