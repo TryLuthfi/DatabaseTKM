@@ -1,6 +1,17 @@
 <?php
 $currentController = (string) $this->uri->segment(1);
-$hideMainFooter = !empty($hideMainFooter);
+$footerlessControllers = [
+  'MyRepublik_Project',
+  'BAK_MyRep',
+  'VALSAL_MyRep',
+  'Batch_Approval_MyRep',
+  'DRM_MyRep',
+  'Implementasi_BOQ_MyRep',
+  'PO_MyRep',
+  'Monitoring_RFS_MyRep',
+  'ATP_MyRep',
+];
+$hideMainFooter = !empty($hideMainFooter) || in_array($currentController, $footerlessControllers, true);
 ?>
 <?php if ($currentController !== 'Dashboard' && !$hideMainFooter) : ?>
   <!-- Main Footer -->
