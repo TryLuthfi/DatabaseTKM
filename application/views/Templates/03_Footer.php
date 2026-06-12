@@ -1,5 +1,8 @@
-<?php $currentController = (string) $this->uri->segment(1); ?>
-<?php if ($currentController !== 'Dashboard') : ?>
+<?php
+$currentController = (string) $this->uri->segment(1);
+$hideMainFooter = !empty($hideMainFooter);
+?>
+<?php if ($currentController !== 'Dashboard' && !$hideMainFooter) : ?>
   <!-- Main Footer -->
   <footer class="main-footer">
     <strong>Copyright &copy; 2025 <a href="https://tkm.co.id/">PT. TKM</a>.</strong>

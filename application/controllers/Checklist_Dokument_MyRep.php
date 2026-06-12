@@ -66,11 +66,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['documentItemList'] = [];
         $data['dashboardSummary'] = $this->buildDashboardSummary([], []);
         $data['itemFilterOptions'] = [];
+        $data['hideMainFooter'] = true;
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Checklist_Dokument_MyRep/index', $data);
-        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/03_Footer', $data);
         $this->load->view('Templates/99_JS');
     }
 
@@ -1642,11 +1643,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['title'] = 'Checklist Dokument Detail';
         $data['cluster'] = $cluster;
         $data['scopeTabs'] = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId, false);
+        $data['hideMainFooter'] = true;
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Checklist_Dokument_MyRep/detail', $data);
-        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/03_Footer', $data);
         $this->load->view('Templates/99_JS');
     }
 
