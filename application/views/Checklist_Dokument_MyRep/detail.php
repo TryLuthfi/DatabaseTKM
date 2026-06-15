@@ -922,6 +922,18 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                                         <span class="text-muted">Tanpa file</span>
                                                                         <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
+                                                                        <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                            <div class="mt-1">
+                                                                                <button type="button"
+                                                                                    class="btn btn-sm btn-outline-info btn-history-doc"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modalHistoryDocument"
+                                                                                    data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                                    data-file-id="<?= (int) $item['id_doc_file'] ?>">
+                                                                                    <i class="fas fa-history"></i> History
+                                                                                </button>
+                                                                            </div>
+                                                                        <?php endif; ?>
                                                                     <?php else: ?>
                                                                         -
                                                                     <?php endif; ?>
@@ -1264,6 +1276,18 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                                         <span class="text-muted">Tanpa file</span>
                                                                         <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
+                                                                        <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                            <div class="mt-1">
+                                                                                <button type="button"
+                                                                                    class="btn btn-sm btn-outline-info btn-history-doc"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modalHistoryDocument"
+                                                                                    data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                                    data-file-id="<?= (int) $item['id_doc_file'] ?>">
+                                                                                    <i class="fas fa-history"></i> History
+                                                                                </button>
+                                                                            </div>
+                                                                        <?php endif; ?>
                                                                     <?php else: ?>
                                                                         -
                                                                     <?php endif; ?>
