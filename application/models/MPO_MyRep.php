@@ -44,8 +44,7 @@ class MPO_MyRep extends CI_Model
 
     public function emrTargetReady()
     {
-        return $this->tablesReady()
-            && $this->db->field_exists('on_target', 'tb_myrep_po_header');
+        return $this->tablesReady();
     }
 
     public function getCityOptions()
@@ -226,7 +225,7 @@ class MPO_MyRep extends CI_Model
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin, remark_termin')
+            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -248,15 +247,15 @@ class MPO_MyRep extends CI_Model
                 ];
             }
             $terminMap[$headerId]['total']++;
-            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
             $terminNo = (int) ($termin['termin_no'] ?? 0);
             $terminValue = (float) ($termin['termin_value'] ?? 0);
+            $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($termin['invoice_date'] ?? '')) !== '';
+            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
 
-            if ($terminNo >= 1 && $terminNo <= 5 && !in_array($statusTermin, ['BILLED', 'PAID'], true)) {
-                // Plan invoice hanya untuk termin yang belum ditagihkan
-                $terminMap[$headerId]['plan_invoice'][$terminNo] = $terminValue;
+            if ($terminNo >= 1 && $terminNo <= 5) {
+                $terminMap[$headerId]['plan_invoice'][$terminNo] = $this->resolvePlanInvoiceValue($termin);
             }
-            if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+            if ($hasInvoiceDate) {
                 $terminMap[$headerId]['progress']++;
                 if ($terminNo >= 1 && $terminNo <= 5) {
                     $terminMap[$headerId]['done_invoice'][$terminNo] = $terminValue;
@@ -308,7 +307,7 @@ class MPO_MyRep extends CI_Model
             ->select('c.city_name')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('p.on_target', 1)
+            ->where($this->getActivePoHeaderCondition('p'), null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC');
@@ -356,7 +355,7 @@ class MPO_MyRep extends CI_Model
             ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('p.on_target', 1)
+            ->where($this->getActivePoHeaderCondition('p'), null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
             ->order_by('c.regional_name', 'ASC');
@@ -402,7 +401,7 @@ class MPO_MyRep extends CI_Model
             ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('p.on_target', 1)
+            ->where($this->getActivePoHeaderCondition('p'), null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
@@ -448,7 +447,7 @@ class MPO_MyRep extends CI_Model
             ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('p.on_target', 1)
+            ->where($this->getActivePoHeaderCondition('p'), null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
@@ -495,7 +494,7 @@ class MPO_MyRep extends CI_Model
                 p.po_date,
                 p.po_value,
                 p.status_po,
-                p.on_target,
+                {$this->getEmrTargetOnTargetSelectSql()},
                 p.po_version_label,
                 p.remark_po,
                 c.cluster_name,
@@ -507,7 +506,7 @@ class MPO_MyRep extends CI_Model
             ')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('p.on_target', 1);
+            ->where($this->getActivePoHeaderCondition('p'), null, false);
 
         if (!empty($city)) {
             $this->applyUpperInFilter($this->db, 'c.city_name', $city);
@@ -650,6 +649,7 @@ class MPO_MyRep extends CI_Model
                 t.termin_value,
                 t.status_termin,
                 t.invoice_date,
+                t.remark_termin,
                 {$this->getEmrTargetTerminSertifikatSelectSql()}
             {$this->getEmrTargetPoFromSql()}
             LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
@@ -684,7 +684,10 @@ class MPO_MyRep extends CI_Model
                 $summary[$terminNo]['pic'][$pic] = ['count' => 0, 'value' => 0];
             }
 
-            $terminValue = (float) ($row['termin_value'] ?? 0);
+            $terminValue = $this->resolvePlanInvoiceValue($row);
+            if (abs($terminValue) < 0.000001) {
+                $terminValue = (float) ($row['termin_value'] ?? 0);
+            }
             $summary[$terminNo]['total_count']++;
             $summary[$terminNo]['total_value'] += $terminValue;
             $summary[$terminNo]['pic'][$pic]['count']++;
@@ -753,7 +756,7 @@ class MPO_MyRep extends CI_Model
                 p.po_date,
                 p.po_value,
                 p.status_po,
-                p.on_target,
+                {$this->getEmrTargetOnTargetSelectSql()},
                 p.po_version_label,
                 p.remark_po,
                 c.cluster_name,
@@ -850,7 +853,7 @@ class MPO_MyRep extends CI_Model
                 p.po_date,
                 p.po_value,
                 p.status_po,
-                p.on_target,
+                {$this->getEmrTargetOnTargetSelectSql()},
                 p.po_version_label,
                 p.remark_po,
                 c.cluster_name,
@@ -868,6 +871,7 @@ class MPO_MyRep extends CI_Model
                 t.termin_value,
                 t.status_termin,
                 t.invoice_date,
+                t.remark_termin,
                 {$this->getEmrTargetTerminSertifikatSelectSql()},
                 COALESCE(tm.termin_total_count, 0) AS termin_total_count,
                 COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
@@ -907,7 +911,10 @@ class MPO_MyRep extends CI_Model
             }
 
             $row['po_stage_status'] = $stageLabel;
-            $row['current_termin_value'] = (float) ($row['termin_value'] ?? 0);
+            $row['current_termin_value'] = $this->resolvePlanInvoiceValue($row);
+            if (abs((float) $row['current_termin_value']) < 0.000001) {
+                $row['current_termin_value'] = (float) ($row['termin_value'] ?? 0);
+            }
             $headerId = (int) ($row['id_po_header'] ?? 0);
             $row = array_merge($row, $terminContextMap[$headerId] ?? []);
             $row['current_pic'] = $this->resolveTerminCurrentPic($row, $checklistStateMap);
@@ -1030,7 +1037,7 @@ class MPO_MyRep extends CI_Model
             ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND p.on_target = 1', 'inner')
+            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND ' . $this->getActivePoHeaderCondition('p'), 'inner', false)
             ->where('c.id_myrep_cluster', $clusterId)
             ->group_by('c.id_myrep_cluster')
             ->get()
@@ -1068,10 +1075,10 @@ class MPO_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('*')
-            ->from('tb_myrep_po_header')
-            ->where('id_myrep_cluster', $clusterId)
-            ->where('on_target', 1)
+            ->select('p.*')
+            ->from('tb_myrep_po_header p')
+            ->where('p.id_myrep_cluster', $clusterId)
+            ->where($this->getActivePoHeaderCondition('p'), null, false)
             ->order_by('po_type', 'ASC')
             ->order_by('po_date', 'DESC')
             ->order_by('po_number', 'ASC')
@@ -1114,20 +1121,21 @@ class MPO_MyRep extends CI_Model
             }
 
             $terminMap[$headerId]['total']++;
-            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
             $terminNo = (int) ($termin['termin_no'] ?? 0);
             $terminValue = (float) ($termin['termin_value'] ?? 0);
+            $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($termin['invoice_date'] ?? '')) !== '';
+            $planInvoiceValue = $this->resolvePlanInvoiceValue($termin);
 
-            if ($terminNo >= 1 && $terminNo <= 5 && !in_array($statusTermin, ['BILLED', 'PAID'], true)) {
-                $terminMap[$headerId]['plan_invoice'][$terminNo] = $terminValue;
+            if ($terminNo >= 1 && $terminNo <= 5) {
+                $terminMap[$headerId]['plan_invoice'][$terminNo] = $planInvoiceValue;
             }
-            if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+            if ($hasInvoiceDate) {
                 $terminMap[$headerId]['progress']++;
                 if ($terminNo >= 1 && $terminNo <= 5) {
                     $terminMap[$headerId]['done_invoice'][$terminNo] = $terminValue;
                 }
             }
-            if ($statusTermin === 'PAID') {
+            if (strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY'))) === 'PAID') {
                 $terminMap[$headerId]['paid']++;
             }
         }
@@ -1241,11 +1249,86 @@ class MPO_MyRep extends CI_Model
         return $sql;
     }
 
+    private function getPoCategoryRankSql($alias)
+    {
+        $categoryColumn = $alias . '.po_category';
+        return "
+            CASE UPPER(TRIM(COALESCE({$categoryColumn}, 'INITIAL')))
+                WHEN 'FINAL' THEN 3
+                WHEN 'INITIAL' THEN 2
+                WHEN 'AMANDMENT' THEN 1
+                WHEN 'AMENDMENT' THEN 1
+                ELSE 0
+            END
+        ";
+    }
+
+    private function getActivePoHeaderCondition($alias = 'p')
+    {
+        $rankCurrent = $this->getPoCategoryRankSql($alias);
+        $rankOther = $this->getPoCategoryRankSql('p_active');
+        $currentOnTargetCondition = $this->getEmrTargetOnTargetCondition($alias);
+        $activeOnTargetCondition = $this->getEmrTargetOnTargetCondition('p_active');
+
+        return "
+            {$currentOnTargetCondition}
+            AND
+            NOT EXISTS (
+                SELECT 1
+                FROM tb_myrep_po_header p_active
+                WHERE p_active.id_myrep_cluster = {$alias}.id_myrep_cluster
+                    AND {$activeOnTargetCondition}
+                    AND UPPER(TRIM(COALESCE(p_active.po_type, 'CLUSTER'))) = UPPER(TRIM(COALESCE({$alias}.po_type, 'CLUSTER')))
+                    AND (
+                        {$rankOther} > {$rankCurrent}
+                        OR (
+                            {$rankOther} = {$rankCurrent}
+                            AND (
+                                COALESCE(p_active.po_date, '0000-00-00') > COALESCE({$alias}.po_date, '0000-00-00')
+                                OR (
+                                    COALESCE(p_active.po_date, '0000-00-00') = COALESCE({$alias}.po_date, '0000-00-00')
+                                    AND p_active.id_po_header > {$alias}.id_po_header
+                                )
+                            )
+                        )
+                    )
+            )
+        ";
+    }
+
+    private function getEmrTargetOnTargetCondition($alias = 'p')
+    {
+        return $this->db->field_exists('on_target', 'tb_myrep_po_header')
+            ? 'COALESCE(' . $alias . '.on_target, 0) = 1'
+            : '1 = 1';
+    }
+
+    private function getEmrTargetPlanInvoiceValueSql($alias = '')
+    {
+        $prefix = $alias !== '' ? rtrim($alias, '.') . '.' : '';
+        $remarkColumn = $prefix . 'remark_termin';
+
+        return "
+            CASE
+                WHEN COALESCE({$remarkColumn}, '') LIKE '%Plan Invoice:%'
+                    THEN CAST(REPLACE(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX({$remarkColumn}, 'Plan Invoice:', -1), ';', 1)), '.', ''), ',', '') AS DECIMAL(18,2))
+                ELSE 0
+            END
+        ";
+    }
+
     private function getEmrTargetAreaSelectSql()
     {
         return $this->supportsEmrTargetAreaColumn()
             ? "COALESCE(area_map.area_number, '') AS area_number"
             : "'' AS area_number";
+    }
+
+    private function getEmrTargetOnTargetSelectSql($alias = 'p')
+    {
+        return $this->db->field_exists('on_target', 'tb_myrep_po_header')
+            ? $alias . '.on_target AS on_target'
+            : '1 AS on_target';
     }
 
     private function getEmrTargetTerminSertifikatSelectSql()
@@ -1360,24 +1443,27 @@ class MPO_MyRep extends CI_Model
 
     private function getEmrTargetTerminAggregateSql()
     {
+        $planInvoiceValueSql = $this->getEmrTargetPlanInvoiceValueSql();
+        $hasInvoiceDateSql = "invoice_date IS NOT NULL AND TRIM(invoice_date) != '' AND invoice_date NOT IN ('0000-00-00', '0000-00-00 00:00:00')";
+
         return "
             SELECT
                 id_po_header,
                 COUNT(*) AS termin_total_count,
-                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS termin_progress_count,
+                SUM(CASE WHEN {$hasInvoiceDateSql} THEN 1 ELSE 0 END) AS termin_progress_count,
                 SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) = 'PAID' THEN 1 ELSE 0 END) AS termin_paid_count,
-                SUM(CASE WHEN termin_no = 1 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_1_done,
-                SUM(CASE WHEN termin_no = 2 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_2_done,
-                SUM(CASE WHEN termin_no = 3 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_3_done,
-                SUM(CASE WHEN termin_no = 4 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_4_done,
-                SUM(CASE WHEN termin_no = 5 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN 1 ELSE 0 END) AS term_5_done,
-                SUM(CASE WHEN termin_no = 1 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_1,
-                SUM(CASE WHEN termin_no = 2 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_2,
-                SUM(CASE WHEN termin_no = 3 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_3,
-                SUM(CASE WHEN termin_no = 4 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_4,
-                SUM(CASE WHEN termin_no = 5 AND UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_5,
-                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) NOT IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS plan_invoice_total,
-                SUM(CASE WHEN UPPER(TRIM(COALESCE(status_termin, 'NOT READY'))) IN ('BILLED', 'PAID') THEN COALESCE(termin_value, 0) ELSE 0 END) AS done_invoice_total
+                SUM(CASE WHEN termin_no = 1 AND {$hasInvoiceDateSql} THEN 1 ELSE 0 END) AS term_1_done,
+                SUM(CASE WHEN termin_no = 2 AND {$hasInvoiceDateSql} THEN 1 ELSE 0 END) AS term_2_done,
+                SUM(CASE WHEN termin_no = 3 AND {$hasInvoiceDateSql} THEN 1 ELSE 0 END) AS term_3_done,
+                SUM(CASE WHEN termin_no = 4 AND {$hasInvoiceDateSql} THEN 1 ELSE 0 END) AS term_4_done,
+                SUM(CASE WHEN termin_no = 5 AND {$hasInvoiceDateSql} THEN 1 ELSE 0 END) AS term_5_done,
+                SUM(CASE WHEN termin_no = 1 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_1,
+                SUM(CASE WHEN termin_no = 2 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_2,
+                SUM(CASE WHEN termin_no = 3 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_3,
+                SUM(CASE WHEN termin_no = 4 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_4,
+                SUM(CASE WHEN termin_no = 5 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_5,
+                SUM({$planInvoiceValueSql}) AS plan_invoice_total,
+                SUM(CASE WHEN {$hasInvoiceDateSql} THEN COALESCE(termin_value, 0) ELSE 0 END) AS done_invoice_total
             FROM tb_myrep_po_termin
             GROUP BY id_po_header
         ";
@@ -1400,7 +1486,7 @@ class MPO_MyRep extends CI_Model
 
     private function buildEmrTargetWhereSql($city = '', $stageStatus = '', $regional = '', array $extraConditions = [])
     {
-        $conditions = ['p.on_target = 1'];
+        $conditions = [$this->getActivePoHeaderCondition('p')];
         $city = $this->normalizeUpperList($city);
         $areaNumbers = $this->resolveEmrTargetAreaNumbers($regional);
         $regional = $this->resolveEmrTargetAreaRegionalValues($regional);
@@ -2905,7 +2991,7 @@ class MPO_MyRep extends CI_Model
         $terminRows = [];
         if (!empty($headerIds)) {
             $this->db
-                ->select('id_po_header, termin_no, status_termin')
+                ->select('id_po_header, termin_no, status_termin, invoice_date')
                 ->from('tb_myrep_po_termin');
             $this->applyIntWhereInChunks('id_po_header', $headerIds);
             $terminRows = $this->db
@@ -2918,6 +3004,7 @@ class MPO_MyRep extends CI_Model
             $terminGrouped[(int) ($terminRow['id_po_header'] ?? 0)][] = [
                 'termin_no' => (int) ($terminRow['termin_no'] ?? 0),
                 'status_termin' => strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY'))),
+                'invoice_date' => (string) ($terminRow['invoice_date'] ?? ''),
             ];
         }
 
@@ -3005,7 +3092,7 @@ class MPO_MyRep extends CI_Model
             if ($no < 1 || $no > 5) {
                 continue;
             }
-            $statusByTermin[$no] = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            $statusByTermin[$no] = $this->normalizeEmrTargetDateValue((string) ($termin['invoice_date'] ?? '')) !== '';
         }
 
         $labels = [
@@ -3017,8 +3104,8 @@ class MPO_MyRep extends CI_Model
         ];
 
         for ($i = 1; $i <= 5; $i++) {
-            $status = $statusByTermin[$i] ?? 'NOT READY';
-            if (!in_array($status, ['BILLED', 'PAID'], true)) {
+            $hasInvoiceDate = $statusByTermin[$i] ?? false;
+            if (!$hasInvoiceDate) {
                 return $labels[$i];
             }
         }
@@ -3082,7 +3169,8 @@ class MPO_MyRep extends CI_Model
     private function resolveTerminCurrentPic(array $row, array $checklistStateMap)
     {
         $statusTermin = strtoupper(trim((string) ($row['status_termin'] ?? 'NOT READY')));
-        if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+        $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($row['invoice_date'] ?? '')) !== '';
+        if ($hasInvoiceDate || $statusTermin === 'PAID') {
             return 'CLOSED';
         }
 
@@ -3387,7 +3475,7 @@ class MPO_MyRep extends CI_Model
         $headerIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_po_header')))));
         $terminMap = [];
         if (!empty($headerIds)) {
-            $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date';
+            $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
             if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
                 $terminSelect .= ', sertifikat_invoice_date';
             } else {
@@ -3441,12 +3529,16 @@ class MPO_MyRep extends CI_Model
 
             $headerId = (int) ($row['id_po_header'] ?? 0);
             $terminRow = $terminMap[$headerId][$terminNo] ?? [];
-            $row['current_termin_value'] = (float) ($terminRow['termin_value'] ?? 0);
+            $row['current_termin_value'] = $this->resolvePlanInvoiceValue($terminRow);
+            if (abs((float) $row['current_termin_value']) < 0.000001) {
+                $row['current_termin_value'] = (float) ($terminRow['termin_value'] ?? 0);
+            }
             $row['current_pic'] = $this->resolveTerminCurrentPic(array_merge($row, [
                 'termin_no' => $terminNo,
                 'termin_value' => (float) ($row['current_termin_value'] ?? 0),
                 'status_termin' => (string) ($terminRow['status_termin'] ?? 'NOT READY'),
                 'invoice_date' => (string) ($terminRow['invoice_date'] ?? ''),
+                'remark_termin' => (string) ($terminRow['remark_termin'] ?? ''),
                 'sertifikat_invoice_date' => (string) ($terminRow['sertifikat_invoice_date'] ?? ''),
                 'term_2_invoice_date' => (string) ($terminMap[$headerId][2]['invoice_date'] ?? ''),
                 'term_2_sertifikat_invoice_date' => (string) ($terminMap[$headerId][2]['sertifikat_invoice_date'] ?? ''),

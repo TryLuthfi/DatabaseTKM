@@ -748,7 +748,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 <?php endif; ?>
 
 <?php if (!$isReady): ?>
-    <div class="alert alert-warning">Tabel PO MyRep atau kolom on_target belum tersedia. Jalankan patch database terlebih dahulu.</div>
+    <div class="alert alert-warning">Tabel PO MyRep belum tersedia. Jalankan patch database terlebih dahulu.</div>
 <?php else: ?>
     <?php
     $picRows = [

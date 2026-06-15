@@ -73,7 +73,7 @@ class PO_EMR_Myrep extends CI_Controller
                 '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
                 '<div>Cluster: ' . (int) ($row['po_cluster_count'] ?? 0) . '</div><div>Subfeeder: ' . (int) ($row['po_subfeeder_count'] ?? 0) . '</div><div><span class="badge badge-' . $this->stageBadgeClass($summaryStatus) . '">' . htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') . '</span></div>',
                 $this->formatNumber((float) ($row['po_total_value'] ?? 0)),
-                '<div class="po-mini-progress"><div class="po-mini-progress__head"><span>Termin Billed/Paid</span><span>' . $terminPercent . '%</span></div><div class="po-mini-progress__track"><span style="width: ' . $terminPercent . '%;"></span></div><div class="po-mini-progress__meta"><span>' . $terminProgress . ' billed/paid</span><span>' . $terminTotal . ' termin</span></div></div>',
+                '<div class="po-mini-progress"><div class="po-mini-progress__head"><span>Termin Invoice</span><span>' . $terminPercent . '%</span></div><div class="po-mini-progress__track"><span style="width: ' . $terminPercent . '%;"></span></div><div class="po-mini-progress__meta"><span>' . $terminProgress . ' invoiced</span><span>' . $terminTotal . ' termin</span></div></div>',
                 !empty($row['last_po_date']) ? htmlspecialchars((string) $row['last_po_date'], ENT_QUOTES, 'UTF-8') : '-',
                 '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '" class="btn btn-sm btn-primary">Detail</a>',
             ];
