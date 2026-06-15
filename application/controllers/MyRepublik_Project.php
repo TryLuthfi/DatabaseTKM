@@ -3247,7 +3247,7 @@ class MyRepublik_Project extends CI_Controller
                 continue;
             }
 
-            $changed += $this->applyPoCertificateTerminData($poHeaderId, $row, (string) ($poDef['prefix'] ?? ''), $userId);
+            $changed += $this->applyPoCertificateTerminData($poHeaderId, $row, (string) ($poDef['term_prefix'] ?? $poDef['prefix'] ?? ''), $userId);
             $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, (string) ($poDef['type'] ?? ''), $userId);
             $changed++;
         }
@@ -3327,6 +3327,7 @@ class MyRepublik_Project extends CI_Controller
                 'version' => (string) ($row['po_cluster_final_version_label'] ?? ''),
                 'remark' => (string) ($row['po_cluster_final_remark'] ?? ''),
                 'prefix' => 'po_cluster_final',
+                'term_prefix' => 'po_cluster',
                 'payload_columns' => array_merge([
                     'po_cluster_value_final',
                     'po_cluster_final_number',
@@ -3362,6 +3363,7 @@ class MyRepublik_Project extends CI_Controller
                 'version' => (string) ($row['po_subfeeder_final_version_label'] ?? ''),
                 'remark' => (string) ($row['po_subfeeder_final_remark'] ?? ''),
                 'prefix' => 'po_subfeeder_final',
+                'term_prefix' => 'po_subfeeder',
                 'payload_columns' => array_merge([
                     'po_subfeeder_value_final',
                     'po_subfeeder_final_number',
@@ -3528,7 +3530,8 @@ class MyRepublik_Project extends CI_Controller
             if ($nilaiRaw !== '') {
                 $updatePayload['termin_value'] = (float) $this->normalizeNumber($nilaiRaw);
                 $updatePayload['status_termin'] = 'BILLED';
-            } elseif ($planRaw !== '') {
+            }
+            if ($planRaw !== '') {
                 $planInvoice = (float) $this->normalizeNumber($planRaw);
                 $updatePayload['remark_termin'] = 'Plan Invoice: ' . $planInvoice;
                 if (empty($updatePayload['status_termin'])) {

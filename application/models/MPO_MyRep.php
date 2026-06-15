@@ -226,7 +226,7 @@ class MPO_MyRep extends CI_Model
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->select('id_po_header, termin_no, termin_value, status_termin, remark_termin')
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -1091,7 +1091,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -1645,7 +1645,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('p.id_po_header, p.po_type, p.po_value')
+            ->select('p.id_po_header, p.id_myrep_cluster, p.po_type, p.po_category, p.po_value, p.po_date')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
 
@@ -1664,6 +1664,10 @@ class MPO_MyRep extends CI_Model
         if (empty($headerRows)) {
             return [];
         }
+        $headerRows = $this->pickActivePoHeadersByClusterType($headerRows);
+        if (empty($headerRows)) {
+            return [];
+        }
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($headerRows, 'id_po_header'))));
         if (empty($headerIds)) {
@@ -1671,7 +1675,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -1724,14 +1728,18 @@ class MPO_MyRep extends CI_Model
             $terminNo = (int) ($terminRow['termin_no'] ?? 0);
             $terminValue = (float) ($terminRow['termin_value'] ?? 0);
             $terminStatus = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+            $planInvoiceValue = $this->resolvePlanInvoiceValue($terminRow);
+            $hasSubmitInvoice = trim((string) ($terminRow['invoice_date'] ?? '')) !== '';
 
-            if (in_array($terminStatus, ['BILLED', 'PAID'], true)) {
+            if ($hasSubmitInvoice) {
                 $result[$type]['term_done_count']++;
                 $result[$type]['total_invoiced_value'] += $terminValue;
-            } elseif ($terminNo >= 1 && $terminNo <= 5) {
-                // Outstanding per termin: hanya yang belum billed/paid.
-                $result[$type]['termin_values'][$terminNo] += $terminValue;
-                $result[$type]['outstanding_value'] += $terminValue;
+            }
+
+            if ($terminNo >= 1 && $terminNo <= 5) {
+                // Outstanding per termin mengikuti kolom plan invoice import.
+                $result[$type]['termin_values'][$terminNo] += $planInvoiceValue;
+                $result[$type]['outstanding_value'] += $planInvoiceValue;
             }
         }
 
@@ -1755,6 +1763,7 @@ class MPO_MyRep extends CI_Model
                 p.po_number,
                 p.po_date,
                 p.po_type,
+                p.po_category,
                 p.po_value,
                 p.status_po,
                 c.id_myrep_cluster,
@@ -1786,6 +1795,10 @@ class MPO_MyRep extends CI_Model
         if (empty($headerRows)) {
             return [];
         }
+        $headerRows = $this->pickActivePoHeadersByClusterType($headerRows);
+        if (empty($headerRows)) {
+            return [];
+        }
 
         $headerMap = [];
         $headerIds = [];
@@ -1796,7 +1809,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -1830,10 +1843,10 @@ class MPO_MyRep extends CI_Model
                 if (!isset($headerMap[$headerId])) {
                     continue;
                 }
-                $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
-                if (!in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                if (trim((string) ($terminRow['invoice_date'] ?? '')) === '') {
                     continue;
                 }
+                $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
                 $headerRow = $headerMap[$headerId];
                 $detailRows[] = [
                     'cluster_name' => (string) ($headerRow['cluster_name'] ?? '-'),
@@ -1853,14 +1866,10 @@ class MPO_MyRep extends CI_Model
             $outstandingPerPo = [];
             foreach ($terminRows as $terminRow) {
                 $headerId = (int) ($terminRow['id_po_header'] ?? 0);
-                $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
-                if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
-                    continue;
-                }
                 if (!isset($outstandingPerPo[$headerId])) {
                     $outstandingPerPo[$headerId] = 0;
                 }
-                $outstandingPerPo[$headerId] += (float) ($terminRow['termin_value'] ?? 0);
+                $outstandingPerPo[$headerId] += $this->resolvePlanInvoiceValue($terminRow);
             }
             foreach ($outstandingPerPo as $headerId => $amount) {
                 if ($amount == 0 || !isset($headerMap[$headerId])) {
@@ -1891,9 +1900,9 @@ class MPO_MyRep extends CI_Model
             $include = false;
 
             if ($metric === 'total_invoiced') {
-                $include = in_array($statusTermin, ['BILLED', 'PAID'], true);
+                $include = trim((string) ($terminRow['invoice_date'] ?? '')) !== '';
             } elseif ($metric === 'outstanding_term' && $termNo >= 1 && $termNo <= 5) {
-                $include = ($terminNoRow === $termNo && !in_array($statusTermin, ['BILLED', 'PAID'], true));
+                $include = ($terminNoRow === $termNo && abs($this->resolvePlanInvoiceValue($terminRow)) > 0.000001);
             }
 
             if (!$include) {
@@ -1909,7 +1918,9 @@ class MPO_MyRep extends CI_Model
                 'po_date' => (string) ($headerRow['po_date'] ?? ''),
                 'termin_no' => $terminNoRow,
                 'status_termin' => $statusTermin,
-                'amount' => (float) ($terminRow['termin_value'] ?? 0),
+                'amount' => $metric === 'outstanding_term'
+                    ? $this->resolvePlanInvoiceValue($terminRow)
+                    : (float) ($terminRow['termin_value'] ?? 0),
             ];
         }
 
@@ -2759,6 +2770,93 @@ class MPO_MyRep extends CI_Model
         }
 
         return $selected;
+    }
+
+    private function pickActivePoHeadersByClusterType(array $headers)
+    {
+        $grouped = [];
+
+        foreach ($headers as $header) {
+            $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+            $type = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
+            if ($clusterId <= 0) {
+                continue;
+            }
+            if (!in_array($type, ['CLUSTER', 'SUBFEEDER'], true)) {
+                $type = 'CLUSTER';
+            }
+            $grouped[$clusterId][$type][] = $header;
+        }
+
+        $active = [];
+        foreach ($grouped as $typeGroups) {
+            foreach ($typeGroups as $typeHeaders) {
+                $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['FINAL']);
+                if (empty($selected)) {
+                    $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['INITIAL']);
+                }
+                if (empty($selected)) {
+                    $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['AMANDMENT']);
+                }
+                if (empty($selected)) {
+                    foreach ($typeHeaders as $header) {
+                        if (empty($selected) || $this->isPoHeaderNewer($header, $selected)) {
+                            $selected = $header;
+                        }
+                    }
+                }
+                if (!empty($selected)) {
+                    $active[] = $selected;
+                }
+            }
+        }
+
+        return $active;
+    }
+
+    private function resolvePlanInvoiceValue(array $terminRow)
+    {
+        $remark = (string) ($terminRow['remark_termin'] ?? '');
+        if (preg_match('/Plan\s+Invoice\s*:\s*([^\r\n;]+)/i', $remark, $matches)) {
+            return (float) $this->normalizeNumericValue($matches[1]);
+        }
+
+        return 0;
+    }
+
+    private function normalizeNumericValue($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $value = preg_replace('/\s+/', '', $value);
+        $negative = false;
+        if (preg_match("/^\('?[-]?([0-9.,]+)\)?$/", $value, $matches)) {
+            $negative = strpos($value, '-') !== false || strpos($value, '(') === 0;
+            $value = $matches[1];
+        }
+
+        $dotPos = strrpos($value, '.');
+        $commaPos = strrpos($value, ',');
+        if ($dotPos !== false && $commaPos !== false) {
+            $value = $dotPos > $commaPos
+                ? str_replace(',', '', $value)
+                : str_replace(',', '.', str_replace('.', '', $value));
+        } elseif ($commaPos !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif ($dotPos !== false && preg_match('/^\d{1,3}(?:\.\d{3})+$/', $value)) {
+            $value = str_replace('.', '', $value);
+        }
+
+        if (!is_numeric($value)) {
+            return 0;
+        }
+
+        $number = (float) $value;
+        return $negative ? -abs($number) : $number;
     }
 
     private function isPoHeaderNewer(array $candidate, array $current)
