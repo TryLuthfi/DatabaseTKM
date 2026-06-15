@@ -210,6 +210,9 @@ if (!empty($summaryRows)) {
                             <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-import-cutoff-myrep">
                                 Import Cutoff CSV
                             </button>
+                            <button type="button" class="btn btn-outline-light btn-sm" data-toggle="modal" data-target="#modal-import-po-certificate-myrep">
+                                Import PO & Certificate CSV
+                            </button>
                         </div>
                     </div>
 
@@ -548,9 +551,47 @@ if (!empty($summaryRows)) {
     </div>
 </div>
 
+<div class="modal fade" id="modal-import-po-certificate-myrep" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import PO & Certificate MyRep</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2">
+                    Mode ini hanya update data PO, termin invoice, dan certificate. Data flow BAK/VALSAL/DRM/RFS/Checklist tidak disentuh.
+                </div>
+                <div class="upload-dropzone" id="myrep-po-certificate-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
+                    <input type="file" id="myrep-po-certificate-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
+                    <div><strong>Drag & drop file CSV/XLSX di sini</strong></div>
+                    <div class="text-muted small">Minimal isi city_name + cluster_name, lalu kolom PO/certificate yang ingin diupdate.</div>
+                    <div id="myrep-po-certificate-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
+                </div>
+                <div class="mt-3">
+                    <a href="<?= base_url('MyRepublik_Project/downloadPoCertificateCurrentSnapshot?' . http_build_query(['city' => $selectedCity, 'status' => $selectedStatus])) ?>" class="btn btn-outline-info btn-sm">
+                        Download Update Sekarang
+                    </a>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-preview-po-certificate-import">Preview Data</button>
+                    <button type="button" class="btn btn-success btn-sm" id="btn-save-po-certificate-import" disabled>Update Semua Data Valid</button>
+                </div>
+                <div class="mt-3 table-responsive">
+                    <table class="table table-bordered table-sm" id="table-preview-po-certificate-import">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     (function initMyrepClusterTable() {
         var importedValidRows = [];
+        var importedPoCertificateValidRows = [];
         var myrepMetricMode = <?= json_encode($metricMode) ?>;
         var myrepSelectedCity = <?= json_encode($selectedCity) ?>;
         var myrepSelectedStatus = <?= json_encode($selectedStatus) ?>;
@@ -747,6 +788,34 @@ if (!empty($summaryRows)) {
             tbody.innerHTML = bodyHtml;
         }
 
+        function renderPoCertificatePreviewTable(headers, rows) {
+            var thead = document.querySelector('#table-preview-po-certificate-import thead');
+            var tbody = document.querySelector('#table-preview-po-certificate-import tbody');
+            if (!thead || !tbody) {
+                return;
+            }
+
+            var headHtml = '<tr><th>No</th><th>Status</th><th>Message</th>';
+            headers.forEach(function (h) { headHtml += '<th>' + escapeHtml(h) + '</th>'; });
+            headHtml += '</tr>';
+            thead.innerHTML = headHtml;
+
+            var bodyHtml = '';
+            rows.forEach(function (row, index) {
+                var badge = row.status === 'valid' ? 'success' : 'danger';
+                bodyHtml += '<tr>';
+                bodyHtml += '<td>' + (index + 1) + '</td>';
+                bodyHtml += '<td><span class="badge badge-' + badge + '">' + escapeHtml(row.status || '') + '</span></td>';
+                bodyHtml += '<td>' + escapeHtml(row.message || '') + '</td>';
+                headers.forEach(function (h) {
+                    var value = row.raw && row.raw[h] ? row.raw[h] : '';
+                    bodyHtml += '<td>' + escapeHtml(value) + '</td>';
+                });
+                bodyHtml += '</tr>';
+            });
+            tbody.innerHTML = bodyHtml;
+        }
+
         function bootDataTable(tryCount) {
             if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
                 if (tryCount < 30) {
@@ -809,6 +878,7 @@ if (!empty($summaryRows)) {
         }
 
         bindDropzone('#myrep-cutoff-dropzone', '#myrep-cutoff-file-input', '#myrep-cutoff-file-name');
+        bindDropzone('#myrep-po-certificate-dropzone', '#myrep-po-certificate-file-input', '#myrep-po-certificate-file-name');
 
         $(document).on('shown.bs.modal', '#modal-delete-myrep-clusters', function () {
             if ($.fn.DataTable && $.fn.DataTable.isDataTable('#table_myrep_delete_cluster_list')) {
@@ -896,6 +966,62 @@ if (!empty($summaryRows)) {
                 window.location.reload();
             }).fail(function () {
                 alert('Import gagal dijalankan.');
+            });
+        });
+
+        $(document).on('click', '#btn-preview-po-certificate-import', function () {
+            var fileInput = document.getElementById('myrep-po-certificate-file-input');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                alert('Pilih file import PO & Certificate terlebih dahulu.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file_excel', fileInput.files[0]);
+
+            $.ajax({
+                url: '<?= base_url("MyRepublik_Project/previewPoCertificateImport") ?>',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json'
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    alert(response && response.message ? response.message : 'Preview PO & Certificate gagal.');
+                    return;
+                }
+                importedPoCertificateValidRows = response.valid_rows || [];
+                renderPoCertificatePreviewTable(response.headers || [], response.rows || []);
+                $('#btn-save-po-certificate-import').prop('disabled', importedPoCertificateValidRows.length === 0);
+            }).fail(function () {
+                alert('Preview PO & Certificate gagal dijalankan.');
+            });
+        });
+
+        $(document).on('click', '#btn-save-po-certificate-import', function () {
+            if (!importedPoCertificateValidRows.length) {
+                alert('Tidak ada data valid untuk diupdate.');
+                return;
+            }
+            if (!confirm('Lanjut update semua data valid? Hanya data PO, termin invoice, dan certificate yang akan diubah.')) {
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("MyRepublik_Project/savePoCertificateImport") ?>',
+                method: 'POST',
+                data: { rows_json: JSON.stringify(importedPoCertificateValidRows) },
+                dataType: 'json'
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    alert(response && response.message ? response.message : 'Update PO & Certificate gagal.');
+                    return;
+                }
+                alert(response.message || 'Update PO & Certificate selesai.');
+                window.location.reload();
+            }).fail(function () {
+                alert('Update PO & Certificate gagal dijalankan.');
             });
         });
 

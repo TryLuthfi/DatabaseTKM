@@ -3,6 +3,19 @@ $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'TAMBAH') : true;
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT') : true;
+$isHomebaseHo = strtoupper(trim((string) $this->session->userdata('homebase'))) === 'HO';
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+$canViewCertificateSection = $isHomebaseHo || $isSuperAdmin;
+$canReleaseCertificate = $canEdit && (strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO' || $isSuperAdmin);
+$certificateTerms = isset($certificateTerms) && is_array($certificateTerms) ? $certificateTerms : [];
+$certificateTermsByType = ['CLUSTER' => [], 'SUBFEEDER' => []];
+foreach ($certificateTerms as $certificateTermRow) {
+    $certificatePoType = strtoupper(trim((string) ($certificateTermRow['po_type'] ?? 'CLUSTER')));
+    if (!isset($certificateTermsByType[$certificatePoType])) {
+        $certificateTermsByType[$certificatePoType] = [];
+    }
+    $certificateTermsByType[$certificatePoType][] = $certificateTermRow;
+}
 
 if (!function_exists('poMyRepValue')) {
     function poMyRepValue($value)
@@ -25,6 +38,33 @@ if (!function_exists('poMyRepCertificateReleaseDate')) {
             return $timestamp ? date('Y-m-d', $timestamp) : '';
         }
         return '';
+    }
+}
+if (!function_exists('poMyRepDate')) {
+    function poMyRepDate($date)
+    {
+        if (empty($date) || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
+            return '-';
+        }
+
+        return date('d/m/Y', strtotime($date));
+    }
+}
+if (!function_exists('poMyRepStatusBadge')) {
+    function poMyRepStatusBadge($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        if (in_array($status, ['APPROVED', 'DONE', 'BILLED', 'PAID'], true)) {
+            return 'success';
+        }
+        if (in_array($status, ['REJECTED'], true)) {
+            return 'danger';
+        }
+        if (in_array($status, ['READY BILLING', 'UPLOADED', 'ON REVIEW', 'ON PROGRESS'], true)) {
+            return 'warning';
+        }
+
+        return 'secondary';
     }
 }
 ?>
@@ -171,6 +211,115 @@ if (!function_exists('poMyRepCertificateReleaseDate')) {
                     </div>
                 </div>
             </div>
+
+            <?php if ($canViewCertificateSection): ?>
+                <div class="po-card mb-4">
+                    <div class="po-card__head">
+                        <div>
+                            <div class="po-card__title">Sertifikat Claim Invoice</div>
+                            <div class="small text-muted">Release sertifikat mengikuti status ASTRI per SOW dan tersimpan ke termin PO terkait.</div>
+                        </div>
+                        <span class="badge badge-info">Term 2-5</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>PO</th>
+                                        <th>Term</th>
+                                        <th>Syarat Release</th>
+                                        <th>Status</th>
+                                        <th>Sertifikat</th>
+                                        <th>Invoice</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach (['CLUSTER' => 'PO Cluster', 'SUBFEEDER' => 'PO Subfeeder'] as $certificatePoType => $certificatePoLabel): ?>
+                                        <?php $typedCertificateTerms = $certificateTermsByType[$certificatePoType] ?? []; ?>
+                                        <tr class="table-secondary">
+                                            <td colspan="7" class="font-weight-bold" style="border-top: 3px solid #111827;">
+                                                <?= htmlspecialchars($certificatePoLabel, ENT_QUOTES) ?>
+                                                <span class="badge badge-light border ml-2"><?= count($typedCertificateTerms) ?> term</span>
+                                            </td>
+                                        </tr>
+                                        <?php if (empty($typedCertificateTerms)): ?>
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted">Belum ada term PO 2-5 untuk <?= htmlspecialchars($certificatePoLabel, ENT_QUOTES) ?>.</td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($typedCertificateTerms as $term): ?>
+                                                <?php
+                                                $termNo = (int) ($term['termin_no'] ?? 0);
+                                                $certValue = trim((string) ($term['sertifikat_invoice_date'] ?? ''));
+                                                $isReleased = !empty($term['is_certificate_released']);
+                                                $isReady = !empty($term['is_release_ready']);
+                                                $isManualTerm = $termNo === 5;
+                                                $hasFacRfsCertificate = !empty($term['fac_rfs_certificate_date']);
+                                                $statusBadge = $isReleased ? 'success' : ($isReady ? 'primary' : 'warning');
+                                                $statusText = $isReleased ? 'Released' : ($isReady ? 'Ready Release' : ($isManualTerm ? ($hasFacRfsCertificate ? 'BJT' : 'NY FAC') : 'Waiting ASTRI'));
+                                                $canSaveCertificate = $canReleaseCertificate && ($isReady || $isReleased);
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <strong><?= htmlspecialchars((string) ($term['po_number'] ?? '-'), ENT_QUOTES) ?></strong>
+                                                        <div class="small text-muted"><?= htmlspecialchars((string) ($term['po_category'] ?? '-'), ENT_QUOTES) ?></div>
+                                                    </td>
+                                                    <td>
+                                                        <strong><?= htmlspecialchars((string) ($term['term_label'] ?? ('Term ' . $termNo)), ENT_QUOTES) ?></strong>
+                                                        <div class="small text-muted"><?= poMyRepValue((float) ($term['termin_value'] ?? 0)) ?></div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($isManualTerm): ?>
+                                                            <div>RFS Cert <?= !empty($term['fac_rfs_certificate_date']) ? poMyRepDate($term['fac_rfs_certificate_date']) : '-' ?></div>
+                                                            <div>BJT <?= !empty($term['fac_due_date']) ? poMyRepDate($term['fac_due_date']) : '-' ?></div>
+                                                            <?php if (!empty($term['fac_rfs_certificate_date'])): ?>
+                                                                <div>Umur <?= (int) ($term['fac_age_days'] ?? 0) ?> hari</div>
+                                                                <?php if ($isReady): ?>
+                                                                    <div>Lewat BJT <?= (int) ($term['fac_days_since_due'] ?? 0) ?> hari</div>
+                                                                <?php else: ?>
+                                                                    <div>Sisa <?= (int) ($term['fac_days_remaining'] ?? 0) ?> hari</div>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            <div>Submit <?= (int) ($term['astri_submitted_docs'] ?? 0) ?>/<?= (int) ($term['required_docs'] ?? 0) ?></div>
+                                                            <div>Approved <?= (int) ($term['astri_approved_docs'] ?? 0) ?>/<?= (int) ($term['required_docs'] ?? 0) ?></div>
+                                                        <?php endif; ?>
+                                                        <div class="small text-muted"><?= htmlspecialchars((string) ($term['release_note'] ?? ''), ENT_QUOTES) ?></div>
+                                                    </td>
+                                                    <td><span class="badge badge-<?= $statusBadge ?>"><?= $statusText ?></span></td>
+                                                    <td><?= $certValue !== '' ? htmlspecialchars($certValue, ENT_QUOTES) : '-' ?></td>
+                                                    <td>
+                                                        <span class="badge badge-<?= poMyRepStatusBadge((string) ($term['status_termin'] ?? '')) ?>"><?= htmlspecialchars((string) ($term['status_termin'] ?? '-'), ENT_QUOTES) ?></span>
+                                                        <div class="small text-muted"><?= poMyRepDate($term['invoice_date'] ?? null) ?></div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($canReleaseCertificate): ?>
+                                                            <form method="post" action="<?= base_url('PO_MyRep/saveTerminCertificate') ?>" class="mb-0">
+                                                                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                                                <input type="hidden" name="id_po_termin" value="<?= (int) ($term['id_po_termin'] ?? 0) ?>">
+                                                                <div class="input-group input-group-sm">
+                                                                    <input type="text" name="sertifikat_invoice" class="form-control" value="<?= htmlspecialchars($certValue, ENT_QUOTES) ?>" placeholder="No/status sertifikat" <?= $canSaveCertificate ? '' : 'disabled' ?>>
+                                                                    <div class="input-group-append">
+                                                                        <button type="submit" class="btn btn-dark" <?= $canSaveCertificate ? '' : 'disabled' ?>>Simpan</button>
+                                                                    </div>
+                                                                </div>
+                                                            </form>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">Read only</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <?php foreach ($poGroups as $groupKey => $groupRows): ?>
                 <div class="po-card mb-4">

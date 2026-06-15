@@ -770,13 +770,6 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="<?= base_url('PO_MyRep') ?>"
-                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'PO_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
-                                            <i class="far fa-dot-circle nav-icon"></i>
-                                            <p>PO MyRep</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
                                         <a href="<?= base_url('Monitoring_RFS_MyRep') ?>"
                                             class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Monitoring_RFS_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
@@ -795,6 +788,13 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                                             class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Checklist_Dokument_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Checklist Dokument</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('PO_MyRep') ?>"
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'PO_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>PO & Certificate</p>
                                         </a>
                                     </li>
                                     <?php if (false && $this->session->userdata('nama_level') == "Super Admin") { ?>

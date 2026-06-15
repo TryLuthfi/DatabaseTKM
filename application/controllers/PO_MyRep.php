@@ -7,10 +7,13 @@ class PO_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MPO_MyRep');
+        $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('PO_MyRep');
-            $this->myrepAccess->enforceByMethod('PO_MyRep', (string) $this->router->fetch_method());
+            $this->myrepAccess->enforceByMethod('PO_MyRep', (string) $this->router->fetch_method(), [
+                'saveTerminCertificate' => 'EDIT',
+            ]);
         }
     }
 
@@ -37,6 +40,9 @@ class PO_MyRep extends CI_Controller
             : [];
         $data['terminBreakdownRows'] = $data['isReady']
             ? $this->MPO_MyRep->getTerminBreakdownByType($selectedCity, $selectedStatus)
+            : [];
+        $data['certificateSummaryRows'] = $data['isReady']
+            ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus)
             : [];
         $data['summary'] = $this->MPO_MyRep->getDashboardSummary($data['clusterRows']);
 
@@ -88,6 +94,10 @@ class PO_MyRep extends CI_Controller
         $data['title'] = 'Detail PO MyRep';
         $data['cluster'] = $cluster;
         $data['poGroups'] = $poGroups;
+        $data['certificateTerms'] = $this->MChecklist_Dokument_MyRep->getCertificateTermRows(
+            (int) ($cluster['rfs_cluster_id'] ?? 0),
+            $clusterId
+        );
         $data['poTypeOptions'] = ['CLUSTER' => 'PO Cluster', 'SUBFEEDER' => 'PO Subfeeder'];
         $data['poCategoryOptions'] = ['INITIAL' => 'PO Initial', 'FINAL' => 'PO Final', 'AMANDMENT' => 'PO Amandement'];
         $data['poStatusOptions'] = ['NOT ISSUED' => 'NOT ISSUED', 'ISSUED' => 'ISSUED', 'PARTIAL PAYMENT' => 'PARTIAL PAYMENT', 'FULLY PAID' => 'FULLY PAID', 'CLOSED' => 'CLOSED'];
@@ -217,6 +227,94 @@ class PO_MyRep extends CI_Controller
         redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
     }
 
+    public function saveTerminCertificate()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $canReleaseCertificate = strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO'
+            || (string) $this->session->userdata('nama_level') === 'Super Admin';
+        if (!$canReleaseCertificate) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk menyimpan sertifikat.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $terminId = (int) $this->input->post('id_po_termin');
+        $certificateValue = trim((string) $this->input->post('sertifikat_invoice'));
+
+        if ($clusterId <= 0 || $terminId <= 0) {
+            $this->session->set_flashdata('error', 'Data sertifikat tidak valid.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $cluster = $this->MPO_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Cluster PO tidak ditemukan.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $termRows = $this->MChecklist_Dokument_MyRep->getCertificateTermRows(
+            (int) ($cluster['rfs_cluster_id'] ?? 0),
+            $clusterId
+        );
+        $selectedTerm = null;
+        foreach ($termRows as $termRow) {
+            if ((int) ($termRow['id_po_termin'] ?? 0) === $terminId) {
+                $selectedTerm = $termRow;
+                break;
+            }
+        }
+
+        if (empty($selectedTerm)) {
+            $this->session->set_flashdata('error', 'Termin sertifikat tidak ditemukan di cluster ini.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $isReady = !empty($selectedTerm['is_release_ready']);
+        $isReleased = !empty($selectedTerm['is_certificate_released']);
+        if (!$isReady && !$isReleased) {
+            $this->session->set_flashdata('error', 'Sertifikat belum bisa disimpan karena syarat release belum terpenuhi.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
+            $terminId,
+            $certificateValue,
+            (int) $this->session->userdata('id_user')
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Sertifikat termin berhasil disimpan.' : 'Sertifikat termin gagal disimpan.');
+        if (trim((string) $this->input->post('redirect_scope')) === 'dashboard') {
+            $query = [];
+            $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
+            $selectedStatus = strtoupper(trim((string) $this->input->post('selected_status')));
+            if ($selectedCity !== '') {
+                $query['city'] = $selectedCity;
+            }
+            if ($selectedStatus !== '') {
+                $query['status'] = $selectedStatus;
+            }
+            $suffix = !empty($query) ? '?' . http_build_query($query) : '';
+            redirect('PO_MyRep' . $suffix);
+            return;
+        }
+        redirect('PO_MyRep/detail/' . $clusterId);
+    }
+
     public function getTerminBreakdownDetail()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -247,6 +345,38 @@ class PO_MyRep extends CI_Controller
             ]));
     }
 
+    public function getCertificateSummaryDetail()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            return $this->output
+                ->set_status_header(401)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['status' => false, 'message' => 'Unauthorized']));
+        }
+
+        $city = strtoupper(trim((string) $this->input->post('city')));
+        $status = strtoupper(trim((string) $this->input->post('status')));
+        $poType = strtoupper(trim((string) $this->input->post('po_type')));
+        $termNo = (int) $this->input->post('term_no');
+        $certificateStatus = strtoupper(trim((string) $this->input->post('certificate_status')));
+
+        $rows = $this->MPO_MyRep->getCertificateDetailRows($city, $status, $poType, $termNo, $certificateStatus);
+        $canReleaseCertificate = $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT')
+            && (
+                strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO'
+                || (string) $this->session->userdata('nama_level') === 'Super Admin'
+            );
+
+        return $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'title' => $this->buildCertificateDetailTitle($poType, $termNo, $certificateStatus),
+                'can_release_certificate' => $canReleaseCertificate,
+                'rows' => $rows,
+            ]));
+    }
+
     private function normalizeDate($value)
     {
         $value = trim((string) $value);
@@ -256,6 +386,27 @@ class PO_MyRep extends CI_Controller
 
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function buildCertificateDetailTitle($poType, $termNo, $certificateStatus)
+    {
+        $labels = [
+            'ALL' => 'Semua Sertifikat',
+            'RELEASED' => 'Released',
+            'READY' => 'Ready Release',
+            'WAITING_ASTRI' => 'Waiting ASTRI',
+            'WAITING_FAC' => 'Waiting FAC/BJT',
+            'BLOCKED_BILLING' => 'Blocked Billing',
+        ];
+        $title = $labels[$certificateStatus] ?? 'Detail Sertifikat';
+        if (in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+            $title .= ' - ' . $poType;
+        }
+        if ($termNo >= 2 && $termNo <= 5) {
+            $title .= ' Term ' . $termNo;
+        }
+
+        return $title;
     }
 
     private function isFacTerminDue(array $termin)

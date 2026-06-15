@@ -254,7 +254,8 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                         <th rowspan="2">No</th>
                                         <th rowspan="2">Tipe PO</th>
                                         <th rowspan="2">PO QTY</th>
-                                        <th rowspan="2">Total PO</th>
+                                        <th rowspan="2">Total PO Value</th>
+                                        <th rowspan="2">Term Done</th>
                                         <th colspan="5" class="text-center">Outstanding</th>
                                         <th rowspan="2">Total Invoiced</th>
                                         <th rowspan="2">Outstanding Total</th>
@@ -269,6 +270,7 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $sumPoQty = 0;
                                     $sumTotalPo = 0;
                                     $sumTermDone = 0;
                                     $sumTotalInvoiced = 0;
@@ -277,6 +279,7 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                     ?>
                                     <?php foreach ($terminBreakdownRows as $index => $row): ?>
                                         <?php
+                                        $sumPoQty += (int) ($row['total_po_count'] ?? 0);
                                         $sumTotalPo += (float) ($row['total_po_value'] ?? 0);
                                         $sumTermDone += (int) ($row['term_done_count'] ?? 0);
                                         $sumTotalInvoiced += (float) ($row['total_invoiced_value'] ?? 0);
@@ -288,7 +291,8 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                         <tr>
                                             <td><?= $index + 1 ?></td>
                                             <td><strong><?= htmlspecialchars((string) ($row['po_type'] ?? '-')) ?></strong></td>
-                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="po_qty"><?= poMyRepNumber((float) ($row['total_po_value'] ?? 0)) ?></span></td>
+                                            <td class="text-center"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="po_qty"><?= (int) ($row['total_po_count'] ?? 0) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="total_po"><?= poMyRepNumber((float) ($row['total_po_value'] ?? 0)) ?></span></td>
                                             <td class="text-center"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="term_done"><?= (int) ($row['term_done_count'] ?? 0) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="1"><?= poMyRepNumber((float) ($row['termin_values'][1] ?? 0)) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="2"><?= poMyRepNumber((float) ($row['termin_values'][2] ?? 0)) ?></span></td>
@@ -301,7 +305,7 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                     <?php endforeach; ?>
                                     <?php if (empty($terminBreakdownRows)): ?>
                                         <tr>
-                                            <td colspan="11" class="text-center text-muted">Belum ada data pembagian termin.</td>
+                                            <td colspan="12" class="text-center text-muted">Belum ada data pembagian termin.</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -309,6 +313,7 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                     <tfoot>
                                         <tr>
                                             <th colspan="2" class="text-right">TOTAL</th>
+                                            <th class="text-center"><?= (int) $sumPoQty ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTotalPo) ?></th>
                                             <th class="text-center"><?= (int) $sumTermDone ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[1]) ?></th>
@@ -318,6 +323,95 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[5]) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTotalInvoiced) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumOutstanding) ?></th>
+                                        </tr>
+                                    </tfoot>
+                                <?php endif; ?>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-outline card-success shadow-sm">
+                    <div class="card-header">
+                        <h3 class="card-title">Summary Sertifikat Claim Invoice</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Tipe PO</th>
+                                        <th>Term</th>
+                                        <th>Total</th>
+                                        <th>Released</th>
+                                        <th>Ready Release</th>
+                                        <th>Waiting ASTRI</th>
+                                        <th>Waiting FAC/BJT</th>
+                                        <th>Blocked Billing</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $certificateTotals = [
+                                        'total_count' => 0,
+                                        'released_count' => 0,
+                                        'ready_count' => 0,
+                                        'waiting_astri_count' => 0,
+                                        'waiting_fac_count' => 0,
+                                        'blocked_billing_count' => 0,
+                                    ];
+                                    ?>
+                                    <?php foreach (($certificateSummaryRows ?? []) as $index => $row): ?>
+                                        <?php
+                                        foreach ($certificateTotals as $key => $value) {
+                                            $certificateTotals[$key] += (int) ($row[$key] ?? 0);
+                                        }
+                                        $certificatePoType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+                                        $certificateTermNo = (int) ($row['termin_no'] ?? 0);
+                                        ?>
+                                        <tr>
+                                            <td><?= $index + 1 ?></td>
+                                            <td><span class="badge badge-<?= $certificatePoType === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?></span></td>
+                                            <td>
+                                                <strong><?= htmlspecialchars((string) ($row['term_label'] ?? ('Term ' . $certificateTermNo)), ENT_QUOTES) ?></strong>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="po-breakdown-link js-open-certificate-detail" data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>" data-term-no="<?= $certificateTermNo ?>" data-certificate-status="ALL"><?= (int) ($row['total_count'] ?? 0) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="po-breakdown-link js-open-certificate-detail" data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>" data-term-no="<?= $certificateTermNo ?>" data-certificate-status="RELEASED"><?= (int) ($row['released_count'] ?? 0) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="po-breakdown-link js-open-certificate-detail" data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>" data-term-no="<?= $certificateTermNo ?>" data-certificate-status="READY"><?= (int) ($row['ready_count'] ?? 0) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="po-breakdown-link js-open-certificate-detail" data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>" data-term-no="<?= $certificateTermNo ?>" data-certificate-status="WAITING_ASTRI"><?= (int) ($row['waiting_astri_count'] ?? 0) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="po-breakdown-link js-open-certificate-detail" data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>" data-term-no="<?= $certificateTermNo ?>" data-certificate-status="WAITING_FAC"><?= (int) ($row['waiting_fac_count'] ?? 0) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="po-breakdown-link js-open-certificate-detail" data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>" data-term-no="<?= $certificateTermNo ?>" data-certificate-status="BLOCKED_BILLING"><?= (int) ($row['blocked_billing_count'] ?? 0) ?></span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($certificateSummaryRows)): ?>
+                                        <tr>
+                                            <td colspan="9" class="text-center text-muted">Belum ada data sertifikat claim invoice.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                                <?php if (!empty($certificateSummaryRows)): ?>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="3" class="text-right">TOTAL</th>
+                                            <th class="text-center"><?= (int) $certificateTotals['total_count'] ?></th>
+                                            <th class="text-center"><?= (int) $certificateTotals['released_count'] ?></th>
+                                            <th class="text-center"><?= (int) $certificateTotals['ready_count'] ?></th>
+                                            <th class="text-center"><?= (int) $certificateTotals['waiting_astri_count'] ?></th>
+                                            <th class="text-center"><?= (int) $certificateTotals['waiting_fac_count'] ?></th>
+                                            <th class="text-center"><?= (int) $certificateTotals['blocked_billing_count'] ?></th>
                                         </tr>
                                     </tfoot>
                                 <?php endif; ?>
@@ -605,11 +699,52 @@ if (!function_exists('poMyRepNumberOrDash')) {
     </div>
 </div>
 
+<div class="modal fade" id="modal-certificate-detail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="certificate-detail-title">Detail Sertifikat</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Cluster</th>
+                                <th>Kota</th>
+                                <th>PO</th>
+                                <th>Term</th>
+                                <th>Syarat</th>
+                                <th>Status</th>
+                                <th>Sertifikat</th>
+                                <th>Invoice</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="certificate-detail-body">
+                            <tr><td colspan="10" class="text-center text-muted">Belum ada data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     (function () {
         var breakdownDetailUrl = "<?= base_url('PO_MyRep/getTerminBreakdownDetail') ?>";
+        var certificateDetailUrl = "<?= base_url('PO_MyRep/getCertificateSummaryDetail') ?>";
+        var certificateSaveUrl = "<?= base_url('PO_MyRep/saveTerminCertificate') ?>";
+        var poDetailBaseUrl = "<?= base_url('PO_MyRep/detail/') ?>";
         var selectedCity = "<?= htmlspecialchars((string) $selectedCity, ENT_QUOTES) ?>";
         var selectedStatus = "<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>";
+
+        function escapeHtml(value) {
+            return $('<div>').text(value == null ? '' : String(value)).html();
+        }
 
         function parseLocaleNumber(value) {
             if (typeof value === 'number') {
@@ -626,6 +761,41 @@ if (!function_exists('poMyRepNumberOrDash')) {
             var regex = new RegExp(label + '\\s*:\\s*([0-9]+)', 'i');
             var match = text.match(regex);
             return match ? parseInt(match[1], 10) : 0;
+        }
+
+        function certificateBadge(status) {
+            status = String(status || '').toUpperCase();
+            if (status === 'RELEASED') {
+                return 'success';
+            }
+            if (status === 'READY') {
+                return 'primary';
+            }
+            if (status === 'WAITING_FAC') {
+                return 'warning';
+            }
+            return 'secondary';
+        }
+
+        function renderCertificateAction(row, canReleaseCertificate) {
+            var detailUrl = poDetailBaseUrl + encodeURIComponent(row.id_myrep_cluster || 0);
+            var detailButton = '<a href="' + detailUrl + '" class="btn btn-sm btn-outline-primary mb-1">Detail PO</a>';
+            if (!canReleaseCertificate || !row.can_update_certificate) {
+                return detailButton + '<div class="small text-muted">Read only</div>';
+            }
+
+            return '<form method="post" action="' + certificateSaveUrl + '" class="mb-0">' +
+                '<input type="hidden" name="cluster_id" value="' + escapeHtml(row.id_myrep_cluster || '') + '">' +
+                '<input type="hidden" name="id_po_termin" value="' + escapeHtml(row.id_po_termin || '') + '">' +
+                '<input type="hidden" name="redirect_scope" value="dashboard">' +
+                '<input type="hidden" name="selected_city" value="' + escapeHtml(selectedCity) + '">' +
+                '<input type="hidden" name="selected_status" value="' + escapeHtml(selectedStatus) + '">' +
+                '<div class="input-group input-group-sm mb-1">' +
+                    '<input type="text" name="sertifikat_invoice" class="form-control" value="' + escapeHtml(row.sertifikat_invoice_date || '') + '" placeholder="No/tanggal sertifikat">' +
+                    '<div class="input-group-append"><button type="submit" class="btn btn-success">Simpan</button></div>' +
+                '</div>' +
+                detailButton +
+            '</form>';
         }
 
         $(function () {
@@ -772,6 +942,66 @@ if (!function_exists('poMyRepNumberOrDash')) {
                     error: function () {
                         $('#breakdown-detail-title').text('Detail Pembagian');
                         $('#breakdown-detail-body').html('<tr><td colspan="9" class="text-center text-danger">Terjadi kesalahan saat memuat detail.</td></tr>');
+                    }
+                });
+            });
+
+            $(document).on('click', '.js-open-certificate-detail', function () {
+                var $btn = $(this);
+                var payload = {
+                    city: selectedCity,
+                    status: selectedStatus,
+                    po_type: String($btn.data('po-type') || 'CLUSTER'),
+                    term_no: Number($btn.data('term-no') || 0),
+                    certificate_status: String($btn.data('certificate-status') || 'ALL')
+                };
+
+                $('#certificate-detail-title').text('Memuat detail sertifikat...');
+                $('#certificate-detail-body').html('<tr><td colspan="10" class="text-center text-muted">Loading...</td></tr>');
+                $('#modal-certificate-detail').modal('show');
+
+                $.ajax({
+                    url: certificateDetailUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: payload,
+                    success: function (response) {
+                        if (!response || !response.status) {
+                            $('#certificate-detail-title').text('Detail Sertifikat');
+                            $('#certificate-detail-body').html('<tr><td colspan="10" class="text-center text-danger">Gagal memuat data.</td></tr>');
+                            return;
+                        }
+                        $('#certificate-detail-title').text(response.title || 'Detail Sertifikat');
+                        var rows = response.rows || [];
+                        if (!rows.length) {
+                            $('#certificate-detail-body').html('<tr><td colspan="10" class="text-center text-muted">Tidak ada detail untuk status ini.</td></tr>');
+                            return;
+                        }
+                        var canReleaseCertificate = !!response.can_release_certificate;
+                        var html = rows.map(function (row, idx) {
+                            var requirement = row.termin_no === 5
+                                ? escapeHtml(row.release_note || '-')
+                                : 'Submit ' + Number(row.astri_submitted_docs || 0) + '/' + Number(row.required_docs || 0) +
+                                    '<br>Approved ' + Number(row.astri_approved_docs || 0) + '/' + Number(row.required_docs || 0) +
+                                    '<div class="small text-muted">' + escapeHtml(row.release_note || '') + '</div>';
+                            return '<tr>' +
+                                '<td>' + (idx + 1) + '</td>' +
+                                '<td><strong>' + escapeHtml(row.cluster_name || '-') + '</strong><div class="small text-muted">' + escapeHtml(row.regional_name || '-') + '</div></td>' +
+                                '<td>' + escapeHtml(row.city_name || '-') + '</td>' +
+                                '<td><strong>' + escapeHtml(row.po_number || '-') + '</strong><div class="small text-muted">' + escapeHtml(row.po_type || '-') + ' / ' + escapeHtml(row.po_category || '-') + '</div></td>' +
+                                '<td><strong>' + escapeHtml(row.term_label || '-') + '</strong><div class="small text-muted">' + Number(row.termin_value || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + '</div></td>' +
+                                '<td>' + requirement + '</td>' +
+                                '<td><span class="badge badge-' + certificateBadge(row.certificate_status) + '">' + escapeHtml(row.certificate_status_label || '-') + '</span>' + (row.is_blocked_billing ? '<div class="small text-danger">Blocked billing</div>' : '') + '</td>' +
+                                '<td>' + escapeHtml(row.sertifikat_invoice_date || '-') + '</td>' +
+                                '<td><span class="badge badge-secondary">' + escapeHtml(row.status_termin || '-') + '</span><div class="small text-muted">' + escapeHtml(row.invoice_date || '-') + '</div></td>' +
+                                '<td>' + renderCertificateAction(row, canReleaseCertificate) + '</td>' +
+                            '</tr>';
+                        }).join('');
+                        $('#certificate-detail-body').html(html);
+                    },
+                    error: function () {
+                        $('#certificate-detail-title').text('Detail Sertifikat');
+                        $('#certificate-detail-body').html('<tr><td colspan="10" class="text-center text-danger">Terjadi kesalahan saat memuat detail.</td></tr>');
                     }
                 });
             });

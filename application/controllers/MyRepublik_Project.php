@@ -34,6 +34,7 @@ class MyRepublik_Project extends CI_Controller
             $this->myrepAccess->enforceView('MyRepublik_Project');
             $this->myrepAccess->enforceByMethod('MyRepublik_Project', (string) $this->router->fetch_method(), [
                 'previewCutoffImport' => 'TAMBAH',
+                'previewPoCertificateImport' => 'TAMBAH',
             ]);
         }
     }
@@ -635,6 +636,286 @@ class MyRepublik_Project extends CI_Controller
         ]);
     }
 
+    public function previewPoCertificateImport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+
+        $config['upload_path'] = './uploads/';
+        $config['allowed_types'] = 'xls|xlsx|csv';
+        $config['max_size'] = 10240;
+        $config['encrypt_name'] = true;
+
+        if (!is_dir($config['upload_path'])) {
+            @mkdir($config['upload_path'], 0777, true);
+        }
+
+        $this->load->library('upload');
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload('file_excel')) {
+            $this->jsonResponse(false, strip_tags($this->upload->display_errors('', '')));
+            return;
+        }
+
+        $fileData = $this->upload->data();
+        $filePath = $fileData['full_path'];
+
+        try {
+            $extension = strtolower(pathinfo($fileData['file_name'], PATHINFO_EXTENSION));
+            if ($extension === 'csv') {
+                $sheetData = $this->readCsvSheetData($filePath);
+            } else {
+                $this->loadPHPExcel();
+                $objPHPExcel = PHPExcel_IOFactory::load($filePath);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            }
+        } catch (Exception $e) {
+            @unlink($filePath);
+            $this->jsonResponse(false, 'File import PO & Certificate tidak bisa dibaca.');
+            return;
+        }
+        @unlink($filePath);
+
+        if (count($sheetData) < 2) {
+            $this->jsonResponse(false, 'File import tidak memiliki data.');
+            return;
+        }
+
+        $headerRow = reset($sheetData);
+        $headers = [];
+        foreach ($headerRow as $col => $headerText) {
+            $headerText = trim((string) $headerText);
+            if ($headerText !== '') {
+                $headers[$col] = $headerText;
+            }
+        }
+
+        $normalizedHeaderMap = [];
+        foreach ($headers as $col => $headerText) {
+            $normalizedHeaderMap[$col] = $this->normalizeHeaderName($headerText);
+        }
+
+        if (!in_array('city_name', $normalizedHeaderMap, true) || !in_array('cluster_name', $normalizedHeaderMap, true)) {
+            $this->jsonResponse(false, 'Header wajib memuat city_name dan cluster_name.');
+            return;
+        }
+
+        $previewRows = [];
+        $validRows = [];
+        $errorRows = [];
+
+        foreach ($sheetData as $rowIndex => $excelRow) {
+            if ($rowIndex === 1) {
+                continue;
+            }
+
+            $rowRaw = [];
+            $rowNormalized = [];
+            foreach ($headers as $col => $headerText) {
+                $value = isset($excelRow[$col]) ? trim((string) $excelRow[$col]) : '';
+                $rowRaw[$headerText] = $value;
+                $rowNormalized[$this->normalizeHeaderName($headerText)] = $value;
+            }
+
+            $isBlank = true;
+            foreach ($rowNormalized as $value) {
+                if (trim((string) $value) !== '') {
+                    $isBlank = false;
+                    break;
+                }
+            }
+            if ($isBlank) {
+                continue;
+            }
+
+            $errors = $this->validatePoCertificateImportRow($rowNormalized);
+            $previewRows[] = [
+                'row_number' => $rowIndex,
+                'status' => empty($errors) ? 'valid' : 'invalid',
+                'message' => empty($errors) ? 'Siap update PO & Certificate' : implode(', ', $errors),
+                'raw' => $rowRaw,
+            ];
+
+            if (empty($errors)) {
+                $validRows[] = $rowNormalized;
+            } else {
+                $errorRows[] = ['row_number' => $rowIndex, 'errors' => $errors];
+            }
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'message' => count($validRows) . ' data valid dari ' . count($previewRows) . ' baris',
+                'headers' => array_values($headers),
+                'rows' => $previewRows,
+                'valid_rows' => $validRows,
+                'error_rows' => $errorRows,
+            ]));
+    }
+
+    public function savePoCertificateImport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+
+        $rows = json_decode((string) $this->input->post('rows_json'), true);
+        if (empty($rows) || !is_array($rows)) {
+            $this->jsonResponse(false, 'Tidak ada data valid untuk disimpan.');
+            return;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        $updated = 0;
+        $skipped = 0;
+        $errorDetails = [];
+
+        foreach ($rows as $index => $row) {
+            try {
+                $errors = $this->validatePoCertificateImportRow($row);
+                if (!empty($errors)) {
+                    $skipped++;
+                    $errorDetails[] = [
+                        'row_number' => $index + 1,
+                        'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                        'message' => implode(', ', $errors),
+                    ];
+                    continue;
+                }
+
+                $saveResult = $this->saveOnePoCertificateImportRow($row, $userId);
+                if (!empty($saveResult['updated'])) {
+                    $updated++;
+                } else {
+                    $skipped++;
+                    $errorDetails[] = [
+                        'row_number' => $index + 1,
+                        'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                        'message' => (string) ($saveResult['message'] ?? 'Tidak ada PO/sertifikat yang berubah.'),
+                    ];
+                }
+            } catch (Throwable $e) {
+                $skipped++;
+                log_message('error', 'PO certificate import row failed: row=' . ($index + 1) . ' cluster=' . (string) ($row['cluster_name'] ?? '-') . ' error=' . $e->getMessage());
+                $errorDetails[] = [
+                    'row_number' => $index + 1,
+                    'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        if ($updated <= 0) {
+            $this->jsonResponse(false, 'Tidak ada data PO/Certificate yang berhasil diupdate.', [
+                'updated' => $updated,
+                'skipped' => $skipped,
+                'error_rows' => $errorDetails,
+            ]);
+            return;
+        }
+
+        $this->jsonResponse(true, $updated . ' baris PO/Certificate berhasil diupdate. ' . $skipped . ' baris dilewati.', [
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'error_rows' => $errorDetails,
+        ]);
+    }
+
+    public function downloadPoCertificateImportTemplate()
+    {
+        $filename = 'template_import_po_certificate_myrep_' . date('Ymd_His') . '.csv';
+        $headers = $this->getPoCertificateImportHeaders();
+        $exampleRows = [
+            [
+                'city_name' => 'MALANG',
+                'cluster_name' => 'Cluster A',
+                'po_cluster_number' => 'PO-MLG-0001',
+                'po_cluster_category' => 'INITIAL',
+                'po_cluster_status' => 'ISSUED',
+                'po_cluster_date' => '2026-06-01',
+                'po_cluster_value' => '100000000',
+                'po_cluster_value_final' => '120000000',
+                'po_cluster_termin2_sertifikat_invoice' => '2026-06-10',
+                'po_cluster_termin3_sertifikat_invoice' => '2026-06-20',
+            ],
+            [
+                'city_name' => 'MALANG',
+                'cluster_name' => 'Cluster B',
+                'po_subfeeder_number' => 'PO-SF-MLG-0002',
+                'po_subfeeder_category' => 'INITIAL',
+                'po_subfeeder_status' => 'ISSUED',
+                'po_subfeeder_date' => '2026-06-02',
+                'po_subfeeder_value' => '9000000',
+                'po_subfeeder_value_final' => '11000000',
+                'po_subfeeder_termin2_submit_invoice' => '2026-06-15',
+                'po_subfeeder_termin2_sertifikat_invoice' => '2026-06-12',
+            ],
+        ];
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        foreach ($exampleRows as $rowMap) {
+            $line = [];
+            foreach ($headers as $header) {
+                $line[] = isset($rowMap[$header]) ? (string) $rowMap[$header] : '';
+            }
+            fputcsv($output, $line);
+        }
+        fclose($output);
+        exit;
+    }
+
+    public function downloadPoCertificateCurrentSnapshot()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $headers = $this->getPoCertificateImportHeaders();
+        $rows = $this->getCutoffCurrentSnapshotRows($selectedCity, $selectedStatus, 'po_certificate');
+        $filename = 'update_po_certificate_myrep_current_' . date('Ymd_His') . '.csv';
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        foreach ($rows as $rowMap) {
+            $line = [];
+            foreach ($headers as $header) {
+                $line[] = isset($rowMap[$header]) ? (string) $rowMap[$header] : '';
+            }
+            fputcsv($output, $line);
+        }
+        fclose($output);
+        exit;
+    }
+
     private function logCutoffImportSummary($userId, $username, $totalRows, $inserted, $skipped, array $errorDetails, $updated = 0)
     {
         $summary = [
@@ -1128,7 +1409,7 @@ class MyRepublik_Project extends CI_Controller
         return array_merge($headers, $this->buildPoTerminImportHeaders());
     }
 
-    private function getCutoffCurrentSnapshotRows($selectedCity = '', $selectedStatus = '')
+    private function getCutoffCurrentSnapshotRows($selectedCity = '', $selectedStatus = '', $snapshotMode = 'cutoff')
     {
         if (!$this->db->table_exists('tb_myrep_cluster')) {
             return [];
@@ -1226,7 +1507,8 @@ class MyRepublik_Project extends CI_Controller
         $myrepClusterIds = array_values(array_filter(array_map(static function ($row) {
             return (int) ($row['id_myrep_cluster'] ?? 0);
         }, $rows)));
-        $poMap = $this->getCurrentPoHeadersForSnapshot($myrepClusterIds);
+        $isPoCertificateSnapshot = $snapshotMode === 'po_certificate';
+        $poMap = $this->getCurrentPoHeadersForSnapshot($myrepClusterIds, $isPoCertificateSnapshot);
         $poHeaderIds = [];
         foreach ($poMap as $poByType) {
             foreach ($poByType as $poRow) {
@@ -1242,8 +1524,14 @@ class MyRepublik_Project extends CI_Controller
             $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
             $myrepClusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $checklistStatuses = $rfsClusterId > 0 ? $this->getCurrentChecklistImportStatuses($rfsClusterId) : [];
-            $clusterPo = $poMap[$myrepClusterId]['CLUSTER'] ?? [];
-            $subfeederPo = $poMap[$myrepClusterId]['SUBFEEDER'] ?? [];
+            $clusterPo = $isPoCertificateSnapshot
+                ? ($poMap[$myrepClusterId]['CLUSTER_INITIAL'] ?? ($poMap[$myrepClusterId]['CLUSTER'] ?? []))
+                : ($poMap[$myrepClusterId]['CLUSTER'] ?? []);
+            $subfeederPo = $isPoCertificateSnapshot
+                ? ($poMap[$myrepClusterId]['SUBFEEDER_INITIAL'] ?? ($poMap[$myrepClusterId]['SUBFEEDER'] ?? []))
+                : ($poMap[$myrepClusterId]['SUBFEEDER'] ?? []);
+            $clusterFinalPo = $isPoCertificateSnapshot ? ($poMap[$myrepClusterId]['CLUSTER_FINAL'] ?? []) : [];
+            $subfeederFinalPo = $isPoCertificateSnapshot ? ($poMap[$myrepClusterId]['SUBFEEDER_FINAL'] ?? []) : [];
             $rowMap = [
                 'status_current' => (string) ($row['status_current'] ?? ''),
                 'city_name' => (string) ($row['city_name'] ?? ''),
@@ -1294,19 +1582,37 @@ class MyRepublik_Project extends CI_Controller
                 'po_cluster_number' => (string) ($clusterPo['po_number'] ?? ''),
                 'po_cluster_date' => (string) ($clusterPo['po_date'] ?? ''),
                 'po_cluster_value' => (string) ($clusterPo['po_value'] ?? ''),
+                'po_cluster_value_final' => (string) ($clusterFinalPo['po_value'] ?? ''),
                 'po_cluster_version_label' => (string) ($clusterPo['po_version_label'] ?? ''),
                 'po_cluster_remark' => (string) ($clusterPo['remark_po'] ?? ''),
+                'po_cluster_final_status' => (string) ($clusterFinalPo['status_po'] ?? ''),
+                'po_cluster_final_on_target' => $this->formatImportBoolean($clusterFinalPo['on_target'] ?? ''),
+                'po_cluster_final_number' => (string) ($clusterFinalPo['po_number'] ?? ''),
+                'po_cluster_final_date' => (string) ($clusterFinalPo['po_date'] ?? ''),
+                'po_cluster_final_value' => (string) ($clusterFinalPo['po_value'] ?? ''),
+                'po_cluster_final_version_label' => (string) ($clusterFinalPo['po_version_label'] ?? ''),
+                'po_cluster_final_remark' => (string) ($clusterFinalPo['remark_po'] ?? ''),
                 'po_subfeeder_category' => (string) ($subfeederPo['po_category'] ?? ''),
                 'po_subfeeder_status' => (string) ($subfeederPo['status_po'] ?? ''),
                 'po_subfeeder_on_target' => $this->formatImportBoolean($subfeederPo['on_target'] ?? ''),
                 'po_subfeeder_number' => (string) ($subfeederPo['po_number'] ?? ''),
                 'po_subfeeder_date' => (string) ($subfeederPo['po_date'] ?? ''),
                 'po_subfeeder_value' => (string) ($subfeederPo['po_value'] ?? ''),
+                'po_subfeeder_value_final' => (string) ($subfeederFinalPo['po_value'] ?? ''),
                 'po_subfeeder_version_label' => (string) ($subfeederPo['po_version_label'] ?? ''),
                 'po_subfeeder_remark' => (string) ($subfeederPo['remark_po'] ?? ''),
+                'po_subfeeder_final_status' => (string) ($subfeederFinalPo['status_po'] ?? ''),
+                'po_subfeeder_final_on_target' => $this->formatImportBoolean($subfeederFinalPo['on_target'] ?? ''),
+                'po_subfeeder_final_number' => (string) ($subfeederFinalPo['po_number'] ?? ''),
+                'po_subfeeder_final_date' => (string) ($subfeederFinalPo['po_date'] ?? ''),
+                'po_subfeeder_final_value' => (string) ($subfeederFinalPo['po_value'] ?? ''),
+                'po_subfeeder_final_version_label' => (string) ($subfeederFinalPo['po_version_label'] ?? ''),
+                'po_subfeeder_final_remark' => (string) ($subfeederFinalPo['remark_po'] ?? ''),
             ];
             $this->appendPoTerminSnapshotColumns($rowMap, 'po_cluster', $clusterPo, $poTerminMap);
+            $this->appendPoTerminSnapshotColumns($rowMap, 'po_cluster_final', $clusterFinalPo, $poTerminMap);
             $this->appendPoTerminSnapshotColumns($rowMap, 'po_subfeeder', $subfeederPo, $poTerminMap);
+            $this->appendPoTerminSnapshotColumns($rowMap, 'po_subfeeder_final', $subfeederFinalPo, $poTerminMap);
 
             foreach (array_keys($this->getChecklistImportColumnMap()) as $column) {
                 $rowMap[$column] = (string) ($checklistStatuses[$column] ?? '');
@@ -2624,7 +2930,7 @@ class MyRepublik_Project extends CI_Controller
         return $claims;
     }
 
-    private function getCurrentPoHeadersForSnapshot(array $myrepClusterIds)
+    private function getCurrentPoHeadersForSnapshot(array $myrepClusterIds, $includeCategoryRows = false)
     {
         $myrepClusterIds = array_values(array_unique(array_filter(array_map('intval', $myrepClusterIds))));
         if (empty($myrepClusterIds) || !$this->db->table_exists('tb_myrep_po_header')) {
@@ -2664,13 +2970,24 @@ class MyRepublik_Project extends CI_Controller
             if ($clusterId <= 0 || !in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
                 continue;
             }
+            if (!array_key_exists('on_target', $row)) {
+                $row['on_target'] = '';
+            }
+
+            if ($includeCategoryRows) {
+                $poCategory = strtoupper(trim((string) ($row['po_category'] ?? '')));
+                if (in_array($poCategory, ['INITIAL', 'FINAL', 'AMANDMENT'], true)) {
+                    $categoryKey = $poType . '_' . $poCategory;
+                    if (!isset($map[$clusterId][$categoryKey]) || $this->isPoSnapshotHeaderPreferred($row, $map[$clusterId][$categoryKey])) {
+                        $map[$clusterId][$categoryKey] = $row;
+                    }
+                }
+            }
+
             if (isset($map[$clusterId][$poType]) && !$this->isPoSnapshotHeaderPreferred($row, $map[$clusterId][$poType])) {
                 continue;
             }
 
-            if (!array_key_exists('on_target', $row)) {
-                $row['on_target'] = '';
-            }
             $map[$clusterId][$poType] = $row;
         }
 
@@ -2787,10 +3104,13 @@ class MyRepublik_Project extends CI_Controller
         }
     }
 
-    private function buildPoTerminImportHeaders()
+    private function buildPoTerminImportHeaders($prefixes = null)
     {
         $headers = [];
-        foreach (['po_cluster', 'po_subfeeder'] as $prefix) {
+        if ($prefixes === null) {
+            $prefixes = ['po_cluster', 'po_subfeeder'];
+        }
+        foreach ($prefixes as $prefix) {
             for ($i = 1; $i <= 5; $i++) {
                 $headers[] = $prefix . '_termin' . $i . '_plan_invoice';
                 $headers[] = $prefix . '_termin' . $i . '_submit_invoice';
@@ -2801,6 +3121,435 @@ class MyRepublik_Project extends CI_Controller
             }
         }
         return $headers;
+    }
+
+    private function getPoCertificateImportHeaders()
+    {
+        $headers = [
+            'city_name',
+            'cluster_name',
+            'po_cluster_number',
+            'po_cluster_category',
+            'po_cluster_status',
+            'po_cluster_on_target',
+            'po_cluster_date',
+            'po_cluster_value',
+            'po_cluster_value_final',
+            'po_cluster_version_label',
+            'po_cluster_remark',
+            'po_subfeeder_number',
+            'po_subfeeder_category',
+            'po_subfeeder_status',
+            'po_subfeeder_on_target',
+            'po_subfeeder_date',
+            'po_subfeeder_value',
+            'po_subfeeder_value_final',
+            'po_subfeeder_version_label',
+            'po_subfeeder_remark',
+        ];
+
+        return array_merge($headers, $this->buildPoTerminImportHeaders());
+    }
+
+    private function validatePoCertificateImportRow(array $row)
+    {
+        $errors = [];
+        if (!$this->db->table_exists('tb_myrep_cluster') || !$this->db->table_exists('tb_myrep_po_header') || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return ['Tabel PO MyRep belum tersedia'];
+        }
+
+        if (!$this->hasPoCertificateImportPayload($row)) {
+            $errors[] = 'Tidak ada kolom PO/Certificate yang diisi';
+        }
+
+        $cluster = $this->resolvePoCertificateImportCluster($row);
+        if (empty($cluster)) {
+            $errors[] = 'Cluster existing tidak ditemukan. Isi city_name + cluster_name yang valid';
+        }
+
+        foreach (['po_cluster_on_target', 'po_cluster_final_on_target', 'po_subfeeder_on_target', 'po_subfeeder_final_on_target', 'po_on_target'] as $booleanColumn) {
+            if (!$this->isValidImportBoolean($row[$booleanColumn] ?? '')) {
+                $errors[] = $booleanColumn . ' harus 1/0, TRUE/FALSE, YES/NO, atau ON/OFF';
+            }
+        }
+
+        foreach ($this->getPoCertificateDefinitions($row) as $poDef) {
+            $prefix = (string) ($poDef['prefix'] ?? '');
+            $poNumber = trim((string) ($poDef['number'] ?? ''));
+            $hasPayload = $this->hasPoDefinitionPayload($poDef, $row);
+            if (!$hasPayload) {
+                continue;
+            }
+
+            if ($poNumber === '') {
+                $errors[] = $prefix . '_number wajib diisi jika ada update untuk ' . $prefix;
+                continue;
+            }
+
+            $poCategory = strtoupper(trim((string) ($poDef['category'] ?? '')));
+            if ($poCategory !== '' && !in_array($poCategory, ['INITIAL', 'FINAL', 'AMANDMENT'], true)) {
+                $errors[] = $prefix . '_category harus INITIAL, FINAL, atau AMANDMENT';
+            }
+
+            $statusPo = strtoupper(trim((string) ($poDef['status'] ?? '')));
+            if ($statusPo !== '' && !in_array($statusPo, ['NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED'], true)) {
+                $errors[] = $prefix . '_status tidak valid';
+            }
+
+            if (trim((string) ($poDef['date'] ?? '')) !== '' && $this->normalizeDate((string) ($poDef['date'] ?? '')) === null) {
+                $errors[] = $prefix . '_date tidak valid';
+            }
+
+            if (!empty($cluster)) {
+                $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+                $existingHeaderId = $this->resolveImportedPoHeaderId($clusterId, (string) ($poDef['type'] ?? 'CLUSTER'), $poNumber, $poCategory);
+                if ($existingHeaderId <= 0) {
+                    $poDate = $this->normalizeDate((string) ($poDef['date'] ?? ''));
+                    $poValue = (float) $this->normalizeNumber($poDef['value'] ?? 0);
+                    if ($poDate === null || $poValue <= 0) {
+                        $errors[] = $prefix . ' belum ada. Untuk membuat PO baru, isi number, date, value';
+                    }
+                }
+            }
+
+            for ($termNo = 1; $termNo <= 5; $termNo++) {
+                $submitKey = $prefix . '_termin' . $termNo . '_submit_invoice';
+                if (trim((string) ($row[$submitKey] ?? '')) !== '' && $this->normalizeDate((string) ($row[$submitKey] ?? '')) === null) {
+                    $errors[] = $submitKey . ' tidak valid';
+                }
+            }
+        }
+
+        return array_values(array_unique($errors));
+    }
+
+    private function saveOnePoCertificateImportRow(array $row, $userId)
+    {
+        $cluster = $this->resolvePoCertificateImportCluster($row);
+        if (empty($cluster)) {
+            return ['updated' => false, 'message' => 'Cluster existing tidak ditemukan.'];
+        }
+
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        if ($clusterId <= 0) {
+            return ['updated' => false, 'message' => 'Cluster ID tidak valid.'];
+        }
+
+        $this->db->trans_start();
+        $changed = 0;
+        foreach ($this->getPoCertificateDefinitions($row) as $poDef) {
+            if (!$this->hasPoDefinitionPayload($poDef, $row)) {
+                continue;
+            }
+
+            $poHeaderId = $this->upsertPoCertificateHeader($clusterId, $poDef, $userId);
+            if ($poHeaderId <= 0) {
+                continue;
+            }
+
+            $changed += $this->applyPoCertificateTerminData($poHeaderId, $row, (string) ($poDef['prefix'] ?? ''), $userId);
+            $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, (string) ($poDef['type'] ?? ''), $userId);
+            $changed++;
+        }
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return ['updated' => false, 'message' => 'Transaksi update PO/Certificate gagal.'];
+        }
+
+        return [
+            'updated' => $changed > 0,
+            'cluster_id' => $clusterId,
+            'message' => $changed > 0 ? 'OK' : 'Tidak ada payload PO/Certificate.',
+        ];
+    }
+
+    private function resolvePoCertificateImportCluster(array $row)
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster')) {
+            return [];
+        }
+
+        $clusterName = trim((string) ($row['cluster_name'] ?? ''));
+        $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+        if ($clusterName === '' || $cityName === '') {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_myrep_cluster')
+            ->where('UPPER(city_name)', $cityName)
+            ->where('UPPER(cluster_name)', strtoupper($clusterName))
+            ->order_by('id_myrep_cluster', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array() ?: [];
+    }
+
+    private function hasPoCertificateImportPayload(array $row)
+    {
+        foreach ($row as $header => $value) {
+            if (in_array($header, ['city_name', 'cluster_name'], true)) {
+                continue;
+            }
+            if (trim((string) $value) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getPoCertificateDefinitions(array $row)
+    {
+        return [
+            [
+                'type' => 'CLUSTER',
+                'category' => (string) ($row['po_cluster_category'] ?? ''),
+                'status' => (string) ($row['po_cluster_status'] ?? ''),
+                'number' => (string) ($row['po_cluster_number'] ?? ''),
+                'date' => (string) ($row['po_cluster_date'] ?? ''),
+                'value' => $row['po_cluster_value'] ?? '',
+                'on_target' => $row['po_cluster_on_target'] ?? '',
+                'version' => (string) ($row['po_cluster_version_label'] ?? ''),
+                'remark' => (string) ($row['po_cluster_remark'] ?? ''),
+                'prefix' => 'po_cluster',
+            ],
+            [
+                'type' => 'CLUSTER',
+                'category' => 'FINAL',
+                'fixed_category' => true,
+                'status' => (string) ($row['po_cluster_final_status'] ?? $row['po_cluster_status'] ?? ''),
+                'number' => (string) ($row['po_cluster_final_number'] ?? $row['po_cluster_number'] ?? ''),
+                'date' => (string) ($row['po_cluster_final_date'] ?? $row['po_cluster_date'] ?? ''),
+                'value' => $row['po_cluster_value_final'] ?? ($row['po_cluster_final_value'] ?? ''),
+                'on_target' => $row['po_cluster_final_on_target'] ?? ($row['po_cluster_on_target'] ?? ''),
+                'version' => (string) ($row['po_cluster_final_version_label'] ?? ''),
+                'remark' => (string) ($row['po_cluster_final_remark'] ?? ''),
+                'prefix' => 'po_cluster_final',
+                'payload_columns' => array_merge([
+                    'po_cluster_value_final',
+                    'po_cluster_final_number',
+                    'po_cluster_final_status',
+                    'po_cluster_final_on_target',
+                    'po_cluster_final_date',
+                    'po_cluster_final_value',
+                    'po_cluster_final_version_label',
+                    'po_cluster_final_remark',
+                ], $this->buildPoTerminImportHeaders(['po_cluster_final'])),
+            ],
+            [
+                'type' => 'SUBFEEDER',
+                'category' => (string) ($row['po_subfeeder_category'] ?? ''),
+                'status' => (string) ($row['po_subfeeder_status'] ?? ''),
+                'number' => (string) ($row['po_subfeeder_number'] ?? ''),
+                'date' => (string) ($row['po_subfeeder_date'] ?? ''),
+                'value' => $row['po_subfeeder_value'] ?? '',
+                'on_target' => $row['po_subfeeder_on_target'] ?? '',
+                'version' => (string) ($row['po_subfeeder_version_label'] ?? ''),
+                'remark' => (string) ($row['po_subfeeder_remark'] ?? ''),
+                'prefix' => 'po_subfeeder',
+            ],
+            [
+                'type' => 'SUBFEEDER',
+                'category' => 'FINAL',
+                'fixed_category' => true,
+                'status' => (string) ($row['po_subfeeder_final_status'] ?? $row['po_subfeeder_status'] ?? ''),
+                'number' => (string) ($row['po_subfeeder_final_number'] ?? $row['po_subfeeder_number'] ?? ''),
+                'date' => (string) ($row['po_subfeeder_final_date'] ?? $row['po_subfeeder_date'] ?? ''),
+                'value' => $row['po_subfeeder_value_final'] ?? ($row['po_subfeeder_final_value'] ?? ''),
+                'on_target' => $row['po_subfeeder_final_on_target'] ?? ($row['po_subfeeder_on_target'] ?? ''),
+                'version' => (string) ($row['po_subfeeder_final_version_label'] ?? ''),
+                'remark' => (string) ($row['po_subfeeder_final_remark'] ?? ''),
+                'prefix' => 'po_subfeeder_final',
+                'payload_columns' => array_merge([
+                    'po_subfeeder_value_final',
+                    'po_subfeeder_final_number',
+                    'po_subfeeder_final_status',
+                    'po_subfeeder_final_on_target',
+                    'po_subfeeder_final_date',
+                    'po_subfeeder_final_value',
+                    'po_subfeeder_final_version_label',
+                    'po_subfeeder_final_remark',
+                ], $this->buildPoTerminImportHeaders(['po_subfeeder_final'])),
+            ],
+        ];
+    }
+
+    private function hasPoDefinitionPayload(array $poDef, array $row)
+    {
+        if (!empty($poDef['payload_columns']) && is_array($poDef['payload_columns'])) {
+            foreach ($poDef['payload_columns'] as $column) {
+                if (trim((string) ($row[$column] ?? '')) !== '') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        foreach (['number', 'category', 'status', 'date', 'value', 'on_target', 'version', 'remark'] as $key) {
+            if ($key === 'category' && !empty($poDef['fixed_category'])) {
+                continue;
+            }
+            if (trim((string) ($poDef[$key] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        $prefix = (string) ($poDef['prefix'] ?? '');
+        for ($termNo = 1; $termNo <= 5; $termNo++) {
+            foreach ([
+                $prefix . '_termin' . $termNo . '_plan_invoice',
+                $prefix . '_termin' . $termNo . '_submit_invoice',
+                $prefix . '_termin' . $termNo . '_nilai_invoice',
+                $prefix . '_termin' . $termNo . '_sertifikat_invoice',
+            ] as $column) {
+                if (trim((string) ($row[$column] ?? '')) !== '') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function upsertPoCertificateHeader($clusterId, array $poDef, $userId)
+    {
+        $poType = strtoupper(trim((string) ($poDef['type'] ?? 'CLUSTER')));
+        $poType = $poType === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $poNumber = trim((string) ($poDef['number'] ?? ''));
+        $poCategory = strtoupper(trim((string) ($poDef['category'] ?? '')));
+        if (!in_array($poCategory, ['INITIAL', 'FINAL', 'AMANDMENT'], true)) {
+            $poCategory = 'INITIAL';
+        }
+
+        $poHeaderId = $this->resolveImportedPoHeaderId($clusterId, $poType, $poNumber, $poCategory);
+        $poDate = $this->normalizeDate((string) ($poDef['date'] ?? ''));
+        $poValue = trim((string) ($poDef['value'] ?? '')) !== '' ? (float) $this->normalizeNumber($poDef['value']) : 0;
+        $statusPo = strtoupper(trim((string) ($poDef['status'] ?? '')));
+        if ($statusPo !== '' && !in_array($statusPo, ['NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED'], true)) {
+            $statusPo = 'ISSUED';
+        }
+        $onTarget = $this->normalizeImportBoolean($poDef['on_target'] ?? '');
+
+        if ($poHeaderId > 0) {
+            $updatePayload = ['updated_by' => (int) $userId];
+            if ($poCategory !== '') {
+                $updatePayload['po_category'] = $poCategory;
+            }
+            if ($poNumber !== '') {
+                $updatePayload['po_number'] = $poNumber;
+            }
+            if ($poDate !== null) {
+                $updatePayload['po_date'] = $poDate;
+            }
+            if ($poValue > 0) {
+                $updatePayload['po_value'] = $poValue;
+            }
+            if ($statusPo !== '') {
+                $updatePayload['status_po'] = $statusPo;
+            }
+            if (trim((string) ($poDef['version'] ?? '')) !== '') {
+                $updatePayload['po_version_label'] = trim((string) ($poDef['version'] ?? ''));
+            }
+            if (trim((string) ($poDef['remark'] ?? '')) !== '') {
+                $updatePayload['remark_po'] = trim((string) ($poDef['remark'] ?? ''));
+            }
+            if ($onTarget !== null) {
+                $updatePayload['on_target'] = $onTarget;
+            }
+            $this->db
+                ->where('id_po_header', (int) $poHeaderId)
+                ->update('tb_myrep_po_header', $this->filterPayloadByTableFields('tb_myrep_po_header', $updatePayload));
+            return $poHeaderId;
+        }
+
+        if ($poNumber === '' || $poDate === null || $poValue <= 0) {
+            return 0;
+        }
+
+        $parentPoHeaderId = null;
+        if (in_array($poCategory, ['FINAL', 'AMANDMENT'], true)) {
+            $parentPoHeaderId = $this->resolveImportedPoHeaderId($clusterId, $poType, '', 'INITIAL') ?: null;
+        }
+
+        return (int) $this->MPO_MyRep->createPoHeader($clusterId, [
+            'parent_po_header_id' => $parentPoHeaderId,
+            'po_type' => $poType,
+            'po_category' => $poCategory,
+            'po_number' => $poNumber,
+            'po_date' => $poDate,
+            'po_value' => $poValue,
+            'status_po' => $statusPo !== '' ? $statusPo : 'ISSUED',
+            'po_version_label' => trim((string) ($poDef['version'] ?? '')),
+            'remark_po' => trim((string) ($poDef['remark'] ?? '')),
+            'on_target' => $onTarget !== null ? $onTarget : 1,
+            'created_by' => (int) $userId,
+            'updated_by' => (int) $userId,
+        ]);
+    }
+
+    private function applyPoCertificateTerminData($poHeaderId, array $row, $prefix, $userId)
+    {
+        $poHeaderId = (int) $poHeaderId;
+        if ($poHeaderId <= 0) {
+            return 0;
+        }
+
+        $this->ensurePoTerminCertificateColumn();
+        $terminRows = $this->MPO_MyRep->getTerminRowsByPoId($poHeaderId);
+        if (empty($terminRows)) {
+            return 0;
+        }
+
+        $changed = 0;
+        foreach ($terminRows as $terminRow) {
+            $terminNo = (int) ($terminRow['termin_no'] ?? 0);
+            if ($terminNo < 1 || $terminNo > 5) {
+                continue;
+            }
+
+            $planKey = $prefix . '_termin' . $terminNo . '_plan_invoice';
+            $submitKey = $prefix . '_termin' . $terminNo . '_submit_invoice';
+            $sertifikatKey = $prefix . '_termin' . $terminNo . '_sertifikat_invoice';
+            $nilaiKey = $prefix . '_termin' . $terminNo . '_nilai_invoice';
+
+            $planRaw = trim((string) ($row[$planKey] ?? ''));
+            $submitRaw = trim((string) ($row[$submitKey] ?? ''));
+            $sertifikatRaw = trim((string) ($row[$sertifikatKey] ?? ''));
+            $nilaiRaw = trim((string) ($row[$nilaiKey] ?? ''));
+
+            $updatePayload = ['updated_by' => (int) $userId];
+            if ($submitRaw !== '') {
+                $updatePayload['invoice_date'] = $this->normalizeDate($submitRaw);
+                $updatePayload['status_termin'] = 'BILLED';
+            }
+            if ($nilaiRaw !== '') {
+                $updatePayload['termin_value'] = (float) $this->normalizeNumber($nilaiRaw);
+                $updatePayload['status_termin'] = 'BILLED';
+            } elseif ($planRaw !== '') {
+                $planInvoice = (float) $this->normalizeNumber($planRaw);
+                $updatePayload['remark_termin'] = 'Plan Invoice: ' . $planInvoice;
+                if (empty($updatePayload['status_termin'])) {
+                    $updatePayload['status_termin'] = abs($planInvoice) > 0.000001 ? 'READY BILLING' : 'NOT READY';
+                }
+            }
+            if ($terminNo >= 2 && $sertifikatRaw !== '' && $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+                $updatePayload['sertifikat_invoice_date'] = $sertifikatRaw;
+            }
+
+            if (count($updatePayload) <= 1) {
+                continue;
+            }
+
+            $this->db
+                ->where('id_po_termin', (int) ($terminRow['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', $this->filterPayloadByTableFields('tb_myrep_po_termin', $updatePayload));
+            $changed++;
+        }
+
+        return $changed;
     }
 
     private function upsertImportedPo($clusterId, array $row, $userId)
@@ -2929,17 +3678,22 @@ class MyRepublik_Project extends CI_Controller
         $clusterId = (int) $clusterId;
         $poType = strtoupper(trim((string) $poType));
         $poNumber = trim((string) $poNumber);
+        $poCategory = strtoupper(trim((string) $poCategory));
         if ($clusterId <= 0 || $poType === '' || !$this->db->table_exists('tb_myrep_po_header')) {
             return 0;
         }
 
         if ($poNumber !== '') {
-            $existingByNumber = $this->db
+            $numberQuery = $this->db
                 ->select('id_po_header')
                 ->from('tb_myrep_po_header')
                 ->where('id_myrep_cluster', $clusterId)
                 ->where('po_type', $poType)
-                ->where('po_number', $poNumber)
+                ->where('po_number', $poNumber);
+            if ($poCategory !== '') {
+                $numberQuery->where('po_category', $poCategory);
+            }
+            $existingByNumber = $numberQuery
                 ->order_by('id_po_header', 'DESC')
                 ->limit(1)
                 ->get()
@@ -2949,7 +3703,6 @@ class MyRepublik_Project extends CI_Controller
             }
         }
 
-        $poCategory = strtoupper(trim((string) $poCategory));
         if ($poCategory !== '') {
             $existingByTypeCategory = $this->db
                 ->select('id_po_header')
