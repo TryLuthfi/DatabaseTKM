@@ -10,6 +10,7 @@ class BAK_MyRep extends CI_Controller
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
+        $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('BAK_MyRep');
@@ -929,6 +930,7 @@ class BAK_MyRep extends CI_Controller
 
         if ($result) {
             $this->MBAK_MyRep->syncBakStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
+            $this->myrepRejectEmail->enqueueReject('BAK_MyRep', $fileId);
         }
 
         $docName = (string) ($file['doc_name'] ?? 'BAK');

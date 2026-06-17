@@ -14,6 +14,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->model('MMyRep_Cleanup');
         $this->load->model('MPO_MyRep');
         $this->load->library('upload');
+        $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('Checklist_Dokument_MyRep');
@@ -2107,11 +2108,16 @@ class Checklist_Dokument_MyRep extends CI_Controller
             redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
             return;
         }
-        $this->MChecklist_Dokument_MyRep->updateMainfeederFileStatus($fileId, [
+        $updated = $this->MChecklist_Dokument_MyRep->updateMainfeederFileStatus($fileId, [
             'status_file' => 'REJECTED',
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+        if ($updated) {
+            $this->myrepRejectEmail->enqueueReject('Checklist_Dokument_MyRep', $fileId, [
+                'source_type' => 'CHECKLIST_MAINFEEDER',
+            ]);
+        }
         $this->session->set_flashdata('success', 'Dokumen berhasil di-reject.');
         redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
     }
@@ -2612,6 +2618,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'remark' => $remark,
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($updated) {
+            $this->myrepRejectEmail->enqueueReject('Checklist_Dokument_MyRep', $fileId, [
+                'source_type' => 'CHECKLIST_CLUSTER',
+            ]);
+        }
 
         if ($this->isAjaxRequest()) {
             $this->jsonResponse((bool) $updated, $updated ? 'Dokumen berhasil di-reject.' : 'Gagal reject dokumen.', base_url('Checklist_Dokument_MyRep/detail/' . $clusterId));

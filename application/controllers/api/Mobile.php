@@ -11,6 +11,7 @@ class Mobile extends CI_Controller
     {
         parent::__construct();
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
         $this->ensureTokenTable();
     }
 
@@ -1469,6 +1470,7 @@ class Mobile extends CI_Controller
             return;
         }
         $this->syncFlowStatus($flow, $model, (int) $file['id_myrep_cluster'], (int) $user['id']);
+        $this->enqueueRejectEmailForFlow($flow, $status, $fileId);
 
         $this->json(true, $status === 'APPROVED' ? 'Dokumen berhasil di-approve.' : 'Dokumen berhasil di-reject.');
     }
@@ -1775,6 +1777,12 @@ class Mobile extends CI_Controller
             return;
         }
 
+        if ($status === 'REJECTED') {
+            $this->myrepRejectEmail->enqueueReject('Checklist_Dokument_MyRep', $fileId, [
+                'source_type' => 'CHECKLIST_CLUSTER',
+            ]);
+        }
+
         $this->json(true, $status === 'APPROVED' ? 'Dokumen berhasil di-approve.' : 'Dokumen berhasil di-reject.');
     }
 
@@ -1831,7 +1839,30 @@ class Mobile extends CI_Controller
         }
 
         $this->MBAK_MyRep->syncBakStatusByCluster((int) $file['id_myrep_cluster'], (int) $user['id']);
+        if ($status === 'REJECTED') {
+            $this->myrepRejectEmail->enqueueReject('BAK_MyRep', $fileId);
+        }
         $this->json(true, $status === 'APPROVED' ? 'Dokumen BAK berhasil di-approve.' : 'Dokumen BAK berhasil di-reject.');
+    }
+
+    private function enqueueRejectEmailForFlow($flow, $status, $fileId)
+    {
+        if ($status !== 'REJECTED') {
+            return;
+        }
+
+        $moduleMap = [
+            'VALSAL' => 'VALSAL_MyRep',
+            'POST_DONASI' => 'Post_Donasi_MyRep',
+            'BATCH' => 'Batch_Approval_MyRep',
+            'DRM' => 'DRM_MyRep',
+        ];
+
+        if (!isset($moduleMap[$flow])) {
+            return;
+        }
+
+        $this->myrepRejectEmail->enqueueReject($moduleMap[$flow], (int) $fileId);
     }
 
     private function handleChecklistFileUpload($clusterId, $packageId, $itemId, $docName)

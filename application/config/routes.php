@@ -87,6 +87,7 @@ $route['SuperAdmin_MyRep_Config/deleteNotificationRoute/(:num)'] = 'SuperAdmin_M
 $route['SuperAdmin_MyRep_CityMapping'] = 'SuperAdmin_MyRep_CityMapping/index';
 $route['SuperAdmin_MyRep_CityMapping/saveBulk'] = 'SuperAdmin_MyRep_CityMapping/saveBulk';
 $route['SuperAdmin_MyRep_CityMapping/userOptions'] = 'SuperAdmin_MyRep_CityMapping/userOptions';
+$route['MyRep_Email_Queue/processRejectQueue'] = 'MyRep_Email_Queue/processRejectQueue';
 $route['Checklist_Dokument_MyRep/exportItemRefreshData'] = 'Checklist_Dokument_MyRep/exportItemRefreshData';
 $route['Checklist_Dokument_MyRep/refreshitemdata'] = 'Checklist_Dokument_MyRep/refreshitemdata';
 $route['Checklist_Dokument_MyRep/refreshPurchaseOrderData'] = 'Checklist_Dokument_MyRep/refreshPurchaseOrderData';

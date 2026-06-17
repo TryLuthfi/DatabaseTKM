@@ -10,6 +10,7 @@ class DRM_MyRep extends CI_Controller
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
+        $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('DRM_MyRep');
@@ -800,6 +801,10 @@ class DRM_MyRep extends CI_Controller
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($result) {
+            $this->myrepRejectEmail->enqueueReject('DRM_MyRep', $fileId);
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen DRM berhasil di-reject.' : 'Gagal reject dokumen DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);

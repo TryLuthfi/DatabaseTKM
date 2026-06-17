@@ -10,6 +10,7 @@ class Post_Donasi_MyRep extends CI_Controller
         $this->load->model('MBatch_Approval_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
+        $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
     }
 
     public function index()
@@ -313,6 +314,7 @@ class Post_Donasi_MyRep extends CI_Controller
         $remark = trim((string) $this->input->post('remark'));
         $approvedBy = (int) $this->session->userdata('id_user');
         $result = false;
+        $rejectedFileId = 0;
 
         if ($fileId > 0) {
             $result = $this->MPost_Donasi_MyRep->updateFileStatus($fileId, [
@@ -320,13 +322,19 @@ class Post_Donasi_MyRep extends CI_Controller
                 'remark' => $remark,
                 'approved_by' => $approvedBy,
             ]);
+            $rejectedFileId = $result ? $fileId : 0;
         } elseif ($docItemId > 0) {
-            $result = $this->MPost_Donasi_MyRep->saveLinkedReviewDecision($clusterId, $docItemId, [
+            $rejectedFileId = $this->MPost_Donasi_MyRep->saveLinkedReviewDecision($clusterId, $docItemId, [
                 'status_file' => 'REJECTED',
                 'remark' => $remark,
                 'approved_by' => $approvedBy,
                 'file_name' => trim((string) $this->input->post('linked_file_name')),
-            ]) > 0;
+            ]);
+            $result = $rejectedFileId > 0;
+        }
+
+        if ($result && $rejectedFileId > 0) {
+            $this->myrepRejectEmail->enqueueReject('Post_Donasi_MyRep', $rejectedFileId);
         }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen berhasil di-reject.' : 'Gagal reject dokumen.');
