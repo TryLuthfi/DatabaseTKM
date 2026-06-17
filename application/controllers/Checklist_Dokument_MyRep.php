@@ -913,10 +913,23 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $output = fopen('php://output', 'w');
         fwrite($output, "\xEF\xBB\xBF");
         foreach ($rows as $row) {
-            fputcsv($output, $row);
+            fputcsv($output, $this->sanitizeCsvRowForExcel($row));
         }
         fclose($output);
         exit;
+    }
+
+    private function sanitizeCsvRowForExcel(array $row)
+    {
+        return array_map([$this, 'sanitizeCsvCellForExcel'], $row);
+    }
+
+    private function sanitizeCsvCellForExcel($value)
+    {
+        $value = (string) $value;
+        $value = preg_replace('/[\r\n\t]+/', ' ', $value);
+        $value = preg_replace('/ {2,}/', ' ', $value);
+        return trim($value);
     }
 
     private function outputChecklistItemXmlWorkbook(array $rows, $filename)
