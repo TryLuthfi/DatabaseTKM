@@ -949,10 +949,37 @@ class MPO_MyRep extends CI_Model
         $fromSql = $this->getEmrTargetPoFromSql();
         $whereSql = $this->buildEmrTargetWhereSql($city, '', $regional);
         $onTargetSql = $this->getEmrTargetOnTargetSelectSql('p');
+        $baseOnTargetSql = $this->getEmrTargetOnTargetCondition('p_base');
+        $finalOnTargetSql = $this->getEmrTargetOnTargetCondition('p_final');
         $planInvoiceSql = $this->getEmrTargetPlanInvoiceValueSql('t');
         $sertifikatSelectSql = $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
             ? 't.sertifikat_invoice_date'
             : "''";
+        $poTypeMatchSql = "UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER')))";
+        $basePoValueSql = "
+            COALESCE((
+                SELECT p_base.po_value
+                FROM tb_myrep_po_header p_base
+                WHERE p_base.id_myrep_cluster = p.id_myrep_cluster
+                    AND UPPER(TRIM(COALESCE(p_base.po_type, 'CLUSTER'))) = {$poTypeMatchSql}
+                    AND {$baseOnTargetSql}
+                    AND UPPER(TRIM(COALESCE(p_base.po_category, 'INITIAL'))) = 'INITIAL'
+                ORDER BY p_base.po_date DESC, p_base.id_po_header DESC
+                LIMIT 1
+            ), p.po_value)
+        ";
+        $finalPoValueSql = "
+            (
+                SELECT p_final.po_value
+                FROM tb_myrep_po_header p_final
+                WHERE p_final.id_myrep_cluster = p.id_myrep_cluster
+                    AND UPPER(TRIM(COALESCE(p_final.po_type, 'CLUSTER'))) = {$poTypeMatchSql}
+                    AND {$finalOnTargetSql}
+                    AND UPPER(TRIM(COALESCE(p_final.po_category, ''))) = 'FINAL'
+                ORDER BY p_final.po_date DESC, p_final.id_po_header DESC
+                LIMIT 1
+            )
+        ";
 
         $rows = $this->db->query("
             SELECT
@@ -962,6 +989,8 @@ class MPO_MyRep extends CI_Model
                 p.po_number,
                 p.po_date,
                 p.po_value,
+                {$basePoValueSql} AS po_value_base,
+                {$finalPoValueSql} AS po_value_final,
                 p.remark_po,
                 {$onTargetSql},
                 c.regional_name,
@@ -971,7 +1000,9 @@ class MPO_MyRep extends CI_Model
                 t.termin_value,
                 t.invoice_date,
                 {$sertifikatSelectSql} AS sertifikat_invoice_date,
-                {$planInvoiceSql} AS plan_invoice_value
+                {$planInvoiceSql} AS plan_invoice_value,
+                COALESCE(tm.plan_invoice_total, 0) AS outstanding_total,
+                COALESCE(tm.done_invoice_total, 0) AS total_invoiced
             {$fromSql}
             LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
                 AND t.termin_no BETWEEN 1 AND 5
@@ -1008,8 +1039,10 @@ class MPO_MyRep extends CI_Model
                     'po_category' => (string) ($row['po_category'] ?? ''),
                     'on_target' => (int) ($row['on_target'] ?? 0),
                     'po_date' => (string) ($row['po_date'] ?? ''),
-                    'po_value' => (float) ($row['po_value'] ?? 0),
-                    'po_value_final' => (float) ($row['po_value'] ?? 0),
+                    'po_value' => (float) ($row['po_value_base'] ?? ($row['po_value'] ?? 0)),
+                    'po_value_final' => (float) ($row['po_value_final'] ?? 0),
+                    'outstanding_total' => (float) ($row['outstanding_total'] ?? 0),
+                    'total_invoiced' => (float) ($row['total_invoiced'] ?? 0),
                     'remark_po' => (string) ($row['remark_po'] ?? ''),
                     'terms' => [],
                 ];

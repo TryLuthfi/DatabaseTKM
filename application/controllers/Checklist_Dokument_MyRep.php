@@ -417,11 +417,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'Cluster',
             'Scope',
             'PO Number',
-            'Category',
-            'On Target',
-            'PO Date',
-            'PO Value',
-            'PO Value Final',
+            '',
+            '',
+            '',
+            '',
+            '',
             'Remark',
             'SERTIFIKAT INVOICE',
             '',
@@ -442,6 +442,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             '',
             '',
             '',
+            'SUMMARY INVOICE',
+            '',
         ];
         $csvRows[] = [
             '',
@@ -449,12 +451,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
             '',
             '',
             '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
+            'PO Number',
+            'Category',
+            'On Target',
+            'PO Date',
+            'PO Value',
+            'PO Value Final',
             '',
             'TOP2 25%(CIVIL WORK)',
             'TOP3 15% FULL OPM',
@@ -475,6 +477,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'TOP5 10%(FAC)',
             '',
             '',
+            'Sisa Invoice',
+            'Done Invoice',
         ];
         $csvRows[] = [
             '',
@@ -508,7 +512,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'PLAN INV',
             'SUBMIT',
             'NILAI',
+            '',
+            '',
         ];
+        $csvRows[] = array_fill(0, 33, '');
 
         $no = 1;
         foreach ($rows as $row) {
@@ -537,6 +544,9 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 $line[] = $this->formatPurchaseOrderRefreshDate($terms[$termNo]['submit_invoice_date'] ?? '');
                 $line[] = $this->formatPurchaseOrderRefreshNumber($terms[$termNo]['nilai_invoice'] ?? 0);
             }
+
+            $line[] = $this->formatPurchaseOrderRefreshNumber($row['outstanding_total'] ?? 0);
+            $line[] = $this->formatPurchaseOrderRefreshNumber($row['total_invoiced'] ?? 0);
 
             $csvRows[] = $line;
         }
