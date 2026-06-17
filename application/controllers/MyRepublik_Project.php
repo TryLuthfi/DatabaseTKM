@@ -916,6 +916,117 @@ class MyRepublik_Project extends CI_Controller
         exit;
     }
 
+    public function refreshListClusterData()
+    {
+        if (!$this->isMyRepRefreshAuthorized()) {
+            $this->output
+                ->set_status_header(401)
+                ->set_content_type('text/plain')
+                ->set_output('Unauthorized');
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->get('selected_status')));
+        $headers = $this->getListClusterRefreshHeaders();
+        $rows = $this->getCutoffCurrentSnapshotRows($selectedCity, $selectedStatus, 'po_certificate');
+
+        $csvRows = [array_map([$this, 'formatListClusterRefreshHeader'], $headers)];
+        foreach ($rows as $rowMap) {
+            $line = [];
+            foreach ($headers as $header) {
+                $line[] = isset($rowMap[$header]) ? (string) $rowMap[$header] : '';
+            }
+            $csvRows[] = $line;
+        }
+
+        $this->outputListClusterCsvRows($csvRows, 'list_cluster_myrep_' . date('Y-m-d') . '.csv');
+    }
+
+    private function isMyRepRefreshAuthorized()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            return true;
+        }
+
+        $expectedKey = trim((string) $this->config->item('checklist_doc_refresh_key'));
+        $providedKey = trim((string) $this->input->get('refresh_key'));
+        if ($expectedKey === '' || $providedKey === '') {
+            return false;
+        }
+
+        return function_exists('hash_equals')
+            ? hash_equals($expectedKey, $providedKey)
+            : $expectedKey === $providedKey;
+    }
+
+    private function getListClusterRefreshHeaders()
+    {
+        $leadingHeaders = [
+            'regional_name',
+            'province_name',
+            'city_name',
+            'district_name',
+            'village_name',
+            'cluster_name',
+            'cluster_code',
+            'status_current',
+        ];
+
+        return array_merge(
+            $leadingHeaders,
+            array_values(array_diff($this->getCutoffImportHeaders(), $leadingHeaders))
+        );
+    }
+
+    private function formatListClusterRefreshHeader($header)
+    {
+        $labels = [
+            'regional_name' => 'REGIONAL',
+            'province_name' => 'PROVINSI',
+            'city_name' => 'KOTA',
+            'district_name' => 'KECAMATAN',
+            'village_name' => 'KELURAHAN',
+            'cluster_name' => 'CLUSTER NAME',
+            'cluster_code' => 'CLUSTER CODE',
+            'status_current' => 'STATUS PROJECT',
+            'remark_general' => 'REMARK GENERAL',
+        ];
+
+        $header = (string) $header;
+        if (isset($labels[$header])) {
+            return $labels[$header];
+        }
+
+        return strtoupper(str_replace('_', ' ', $header));
+    }
+
+    private function outputListClusterCsvRows(array $rows, $filename)
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+        foreach ($rows as $row) {
+            fputcsv($output, $row);
+        }
+        fclose($output);
+        exit;
+    }
+
     private function logCutoffImportSummary($userId, $username, $totalRows, $inserted, $skipped, array $errorDetails, $updated = 0)
     {
         $summary = [
@@ -1420,6 +1531,8 @@ class MyRepublik_Project extends CI_Controller
                 c.id_myrep_cluster,
                 c.rfs_cluster_id,
                 c.status_current,
+                c.regional_name,
+                c.province_name,
                 c.city_name,
                 c.district_name,
                 c.village_name,
@@ -1534,6 +1647,8 @@ class MyRepublik_Project extends CI_Controller
             $subfeederFinalPo = $isPoCertificateSnapshot ? ($poMap[$myrepClusterId]['SUBFEEDER_FINAL'] ?? []) : [];
             $rowMap = [
                 'status_current' => (string) ($row['status_current'] ?? ''),
+                'regional_name' => (string) ($row['regional_name'] ?? ''),
+                'province_name' => (string) ($row['province_name'] ?? ''),
                 'city_name' => (string) ($row['city_name'] ?? ''),
                 'district_name' => (string) ($row['district_name'] ?? ''),
                 'village_name' => (string) ($row['village_name'] ?? ''),
