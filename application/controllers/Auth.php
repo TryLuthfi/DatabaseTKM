@@ -146,7 +146,7 @@ class Auth extends CI_Controller
         ]);
 
         $resetLink = site_url('Auth/resetPassword?token=' . urlencode($token));
-        $subject = 'Change Your Password Account - Database Project TKM';
+        $subject = 'Change Your Password Account - Database Project TKM - ZEYN';
         $logoUrl = base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png');
 
         $messageHtml = ''
@@ -295,6 +295,7 @@ class Auth extends CI_Controller
         $smtpCrypto = strtolower(trim($this->readEnvValue('SMTP_CRYPTO', 'tls')));
         $fromEmail = $this->readEnvValue('SMTP_FROM_EMAIL', $smtpUser !== '' ? $smtpUser : 'no-reply@tkm.co.id');
         $fromName = $this->readEnvValue('SMTP_FROM_NAME', 'Database Project TKM');
+        $bccEmail = trim($this->readEnvValue('SMTP_BCC_EMAIL', ''));
 
         if ($smtpHost !== '' && $smtpUser !== '') {
             $config = [
@@ -316,6 +317,9 @@ class Auth extends CI_Controller
         $this->email->clear(true);
         $this->email->from($fromEmail, $fromName);
         $this->email->to($to);
+        if ($bccEmail !== '') {
+            $this->email->bcc($bccEmail);
+        }
         $this->email->subject($subject);
         $this->email->message($messageHtml);
         $this->email->set_mailtype('html');

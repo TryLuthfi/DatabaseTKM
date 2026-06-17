@@ -73,6 +73,24 @@ if (!function_exists('checklist_doc_progress_theme')) {
     }
 }
 
+if (!function_exists('checklist_doc_progress_bucket')) {
+    function checklist_doc_progress_bucket($uploaded, $required)
+    {
+        $required = (int) $required;
+        $uploaded = (int) $uploaded;
+
+        if ($required <= 0 || $uploaded <= 0) {
+            return 'empty';
+        }
+
+        if ($uploaded >= $required) {
+            return 'full';
+        }
+
+        return 'partial';
+    }
+}
+
 if (!function_exists('checklist_doc_focus_progress_class')) {
     function checklist_doc_focus_progress_class($percent)
     {
@@ -975,6 +993,62 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <?php if ($isClusterTableFocus): ?>
+                                <div class="cluster-filter-group">
+                                    <label>CW ATP</label>
+                                    <select id="cluster-filter-cw-progress" class="form-control form-control-sm">
+                                        <option value="">Semua Progress</option>
+                                        <option value="full">Full</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="empty">Belum</option>
+                                    </select>
+                                </div>
+                                <div class="cluster-filter-group">
+                                    <label>Full OPM</label>
+                                    <select id="cluster-filter-opm-progress" class="form-control form-control-sm">
+                                        <option value="">Semua Progress</option>
+                                        <option value="full">Full</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="empty">Belum</option>
+                                    </select>
+                                </div>
+                                <div class="cluster-filter-group">
+                                    <label>Full RFS</label>
+                                    <select id="cluster-filter-rfs-progress" class="form-control form-control-sm">
+                                        <option value="">Semua Progress</option>
+                                        <option value="full">Full</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="empty">Belum</option>
+                                    </select>
+                                </div>
+                                <div class="cluster-filter-group">
+                                    <label>ASTRI CW ATP</label>
+                                    <select id="cluster-filter-astri-cw-progress" class="form-control form-control-sm">
+                                        <option value="">Semua Progress</option>
+                                        <option value="full">Full</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="empty">Belum</option>
+                                    </select>
+                                </div>
+                                <div class="cluster-filter-group">
+                                    <label>ASTRI Full OPM</label>
+                                    <select id="cluster-filter-astri-opm-progress" class="form-control form-control-sm">
+                                        <option value="">Semua Progress</option>
+                                        <option value="full">Full</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="empty">Belum</option>
+                                    </select>
+                                </div>
+                                <div class="cluster-filter-group">
+                                    <label>ASTRI Full RFS</label>
+                                    <select id="cluster-filter-astri-rfs-progress" class="form-control form-control-sm">
+                                        <option value="">Semua Progress</option>
+                                        <option value="full">Full</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="empty">Belum</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
                             <div class="cluster-filter-actions">
                                 <a href="<?= base_url($isClusterTableFocus ? 'Checklist_Dokument_MyRep' : 'Checklist_Dokument_MyRep/old') ?>" class="btn btn-default btn-sm">Reset</a>
                             </div>
@@ -1002,7 +1076,13 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                         $clusterId = (int) ($cluster['id_cluster'] ?? 0);
                                         $homepass = number_format((float) ($cluster['homepass'] ?? 0), 0, ',', '.');
                                         ?>
-                                        <tr>
+                                        <tr
+                                            data-cw-progress="<?= checklist_doc_progress_bucket($cluster['doc_cw_atp_uploaded'] ?? 0, $cluster['doc_cw_atp_required'] ?? 0) ?>"
+                                            data-opm-progress="<?= checklist_doc_progress_bucket($cluster['doc_full_opm_uploaded'] ?? 0, $cluster['doc_full_opm_required'] ?? 0) ?>"
+                                            data-rfs-progress="<?= checklist_doc_progress_bucket($cluster['doc_rfs_uploaded'] ?? 0, $cluster['doc_rfs_required'] ?? 0) ?>"
+                                            data-astri-cw-progress="<?= checklist_doc_progress_bucket($cluster['astri_doc_cw_atp_submitted'] ?? 0, $cluster['doc_cw_atp_required'] ?? 0) ?>"
+                                            data-astri-opm-progress="<?= checklist_doc_progress_bucket($cluster['astri_doc_full_opm_submitted'] ?? 0, $cluster['doc_full_opm_required'] ?? 0) ?>"
+                                            data-astri-rfs-progress="<?= checklist_doc_progress_bucket($cluster['astri_doc_rfs_submitted'] ?? 0, $cluster['doc_rfs_required'] ?? 0) ?>">
                                             <td class="focus-no"><?= $index + 1 ?></td>
                                             <td class="focus-cluster-cell">
                                                 <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . $clusterId) ?>" class="cluster-name-link">
@@ -1647,6 +1727,17 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             };
         }
 
+        function clusterProgressFilterState() {
+            return {
+                cwProgress: $('#cluster-filter-cw-progress').val() || '',
+                opmProgress: $('#cluster-filter-opm-progress').val() || '',
+                rfsProgress: $('#cluster-filter-rfs-progress').val() || '',
+                astriCwProgress: $('#cluster-filter-astri-cw-progress').val() || '',
+                astriOpmProgress: $('#cluster-filter-astri-opm-progress').val() || '',
+                astriRfsProgress: $('#cluster-filter-astri-rfs-progress').val() || ''
+            };
+        }
+
         function saveChecklistState(extraState) {
             if (checklistStateDisabled || isApplyingChecklistState || !storageAvailable()) {
                 return;
@@ -1654,6 +1745,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
 
             var state = $.extend({}, checklistState, {
                 itemFilters: itemFilterState(),
+                clusterProgressFilters: clusterProgressFilterState(),
                 quickFilter: {
                     type: activeQuickFilter.type || '',
                     value: activeQuickFilter.value || ''
@@ -1917,6 +2009,51 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             showChecklistContent();
             return;
         }
+
+        if (checklistState.clusterProgressFilters) {
+            $('#cluster-filter-cw-progress').val(checklistState.clusterProgressFilters.cwProgress || '');
+            $('#cluster-filter-opm-progress').val(checklistState.clusterProgressFilters.opmProgress || '');
+            $('#cluster-filter-rfs-progress').val(checklistState.clusterProgressFilters.rfsProgress || '');
+            $('#cluster-filter-astri-cw-progress').val(checklistState.clusterProgressFilters.astriCwProgress || '');
+            $('#cluster-filter-astri-opm-progress').val(checklistState.clusterProgressFilters.astriOpmProgress || '');
+            $('#cluster-filter-astri-rfs-progress').val(checklistState.clusterProgressFilters.astriRfsProgress || '');
+        }
+
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            if (!settings || !settings.nTable || settings.nTable.id !== 'table-checklist-dokument-focus') {
+                return true;
+            }
+
+            var row = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex].nTr : null;
+            if (!row) {
+                return true;
+            }
+
+            var filters = [
+                ['#cluster-filter-cw-progress', 'data-cw-progress'],
+                ['#cluster-filter-opm-progress', 'data-opm-progress'],
+                ['#cluster-filter-rfs-progress', 'data-rfs-progress'],
+                ['#cluster-filter-astri-cw-progress', 'data-astri-cw-progress'],
+                ['#cluster-filter-astri-opm-progress', 'data-astri-opm-progress'],
+                ['#cluster-filter-astri-rfs-progress', 'data-astri-rfs-progress']
+            ];
+
+            for (var i = 0; i < filters.length; i++) {
+                var selectedValue = $(filters[i][0]).val() || '';
+                if (selectedValue && (row.getAttribute(filters[i][1]) || '') !== selectedValue) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        $('#cluster-filter-cw-progress, #cluster-filter-opm-progress, #cluster-filter-rfs-progress, #cluster-filter-astri-cw-progress, #cluster-filter-astri-opm-progress, #cluster-filter-astri-rfs-progress').on('change', function() {
+            if (clusterTable) {
+                clusterTable.draw();
+            }
+            saveChecklistState();
+        });
 
         if ($('#table-checklist-dokument-focus').length) {
             clusterTable = $('#table-checklist-dokument-focus').DataTable({
