@@ -940,6 +940,95 @@ class MPO_MyRep extends CI_Model
         return $reportRows;
     }
 
+    public function getEmrTargetPurchaseOrderRefreshRows($city = '', $regional = '')
+    {
+        if (!$this->emrTargetReady()) {
+            return [];
+        }
+
+        $fromSql = $this->getEmrTargetPoFromSql();
+        $whereSql = $this->buildEmrTargetWhereSql($city, '', $regional);
+        $onTargetSql = $this->getEmrTargetOnTargetSelectSql('p');
+        $planInvoiceSql = $this->getEmrTargetPlanInvoiceValueSql('t');
+        $sertifikatSelectSql = $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
+            ? 't.sertifikat_invoice_date'
+            : "''";
+
+        $rows = $this->db->query("
+            SELECT
+                p.id_po_header,
+                p.po_type,
+                p.po_category,
+                p.po_number,
+                p.po_date,
+                p.po_value,
+                p.remark_po,
+                {$onTargetSql},
+                c.regional_name,
+                c.city_name,
+                c.cluster_name,
+                t.termin_no,
+                t.termin_value,
+                t.invoice_date,
+                {$sertifikatSelectSql} AS sertifikat_invoice_date,
+                {$planInvoiceSql} AS plan_invoice_value
+            {$fromSql}
+            LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
+                AND t.termin_no BETWEEN 1 AND 5
+            {$whereSql}
+            ORDER BY c.regional_name ASC, c.city_name ASC, c.cluster_name ASC,
+                CASE UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER')))
+                    WHEN 'CLUSTER' THEN 1
+                    WHEN 'SUBFEEDER' THEN 2
+                    ELSE 3
+                END,
+                p.po_date ASC,
+                p.id_po_header ASC,
+                t.termin_no ASC
+        ")->result_array();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $groupedRows = [];
+        foreach ($rows as $row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            if ($headerId <= 0) {
+                continue;
+            }
+
+            if (!isset($groupedRows[$headerId])) {
+                $groupedRows[$headerId] = [
+                    'regional_name' => (string) ($row['regional_name'] ?? ''),
+                    'city_name' => (string) ($row['city_name'] ?? ''),
+                    'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                    'scope' => strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) ?: 'CLUSTER',
+                    'po_number' => (string) ($row['po_number'] ?? ''),
+                    'po_category' => (string) ($row['po_category'] ?? ''),
+                    'on_target' => (int) ($row['on_target'] ?? 0),
+                    'po_date' => (string) ($row['po_date'] ?? ''),
+                    'po_value' => (float) ($row['po_value'] ?? 0),
+                    'po_value_final' => (float) ($row['po_value'] ?? 0),
+                    'remark_po' => (string) ($row['remark_po'] ?? ''),
+                    'terms' => [],
+                ];
+            }
+
+            $termNo = (int) ($row['termin_no'] ?? 0);
+            if ($termNo >= 1 && $termNo <= 5) {
+                $groupedRows[$headerId]['terms'][$termNo] = [
+                    'sertifikat_invoice_date' => (string) ($row['sertifikat_invoice_date'] ?? ''),
+                    'plan_invoice_value' => (float) ($row['plan_invoice_value'] ?? 0),
+                    'submit_invoice_date' => (string) ($row['invoice_date'] ?? ''),
+                    'nilai_invoice' => (float) ($row['termin_value'] ?? 0),
+                ];
+            }
+        }
+
+        return array_values($groupedRows);
+    }
+
     public function getEmrTargetClusterDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc')
     {
         if (!$this->emrTargetReady()) {

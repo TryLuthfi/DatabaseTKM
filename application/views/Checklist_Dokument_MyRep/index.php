@@ -1019,12 +1019,12 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                                     <div><strong>Realisasi:</strong> <?= html_escape(checklist_doc_format_date($cluster['actual_atp_date'] ?? null)) ?></div>
                                                 </div>
                                             </td>
-                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'doc_cw_atp_uploaded', 'doc_cw_atp_required') ?></td>
-                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'doc_full_opm_uploaded', 'doc_full_opm_required') ?></td>
-                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'doc_rfs_uploaded', 'doc_rfs_required') ?></td>
-                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_cw_atp_submitted', 'doc_cw_atp_required') ?></td>
-                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_full_opm_submitted', 'doc_full_opm_required') ?></td>
-                                            <td class="focus-progress-cell"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_rfs_submitted', 'doc_rfs_required') ?></td>
+                                            <td class="focus-progress-cell" data-order="<?= checklist_doc_progress_percent($cluster['doc_cw_atp_uploaded'] ?? 0, $cluster['doc_cw_atp_required'] ?? 0) ?>"><?= checklist_doc_focus_progress_cell($cluster, 'doc_cw_atp_uploaded', 'doc_cw_atp_required') ?></td>
+                                            <td class="focus-progress-cell" data-order="<?= checklist_doc_progress_percent($cluster['doc_full_opm_uploaded'] ?? 0, $cluster['doc_full_opm_required'] ?? 0) ?>"><?= checklist_doc_focus_progress_cell($cluster, 'doc_full_opm_uploaded', 'doc_full_opm_required') ?></td>
+                                            <td class="focus-progress-cell" data-order="<?= checklist_doc_progress_percent($cluster['doc_rfs_uploaded'] ?? 0, $cluster['doc_rfs_required'] ?? 0) ?>"><?= checklist_doc_focus_progress_cell($cluster, 'doc_rfs_uploaded', 'doc_rfs_required') ?></td>
+                                            <td class="focus-progress-cell" data-order="<?= checklist_doc_progress_percent($cluster['astri_doc_cw_atp_submitted'] ?? 0, $cluster['doc_cw_atp_required'] ?? 0) ?>"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_cw_atp_submitted', 'doc_cw_atp_required') ?></td>
+                                            <td class="focus-progress-cell" data-order="<?= checklist_doc_progress_percent($cluster['astri_doc_full_opm_submitted'] ?? 0, $cluster['doc_full_opm_required'] ?? 0) ?>"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_full_opm_submitted', 'doc_full_opm_required') ?></td>
+                                            <td class="focus-progress-cell" data-order="<?= checklist_doc_progress_percent($cluster['astri_doc_rfs_submitted'] ?? 0, $cluster['doc_rfs_required'] ?? 0) ?>"><?= checklist_doc_focus_progress_cell($cluster, 'astri_doc_rfs_submitted', 'doc_rfs_required') ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -1936,7 +1936,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 ],
                 "columnDefs": [
                     {
-                        "targets": [2, 3, 4, 5, 6, 7, 8],
+                        "targets": [2],
                         "orderable": false
                     }
                 ],

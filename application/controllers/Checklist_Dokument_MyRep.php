@@ -12,6 +12,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->model('MMonitoring_RFS_MyRep');
         $this->load->model('MMyRep_Cleanup');
+        $this->load->model('MPO_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
@@ -371,6 +372,24 @@ class Checklist_Dokument_MyRep extends CI_Controller
         return $this->exportItemRefreshData();
     }
 
+    public function refreshPurchaseOrderData()
+    {
+        if (!$this->isChecklistRefreshAuthorized()) {
+            $this->output
+                ->set_status_header(401)
+                ->set_content_type('text/plain')
+                ->set_output('Unauthorized');
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
+        $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
+        $rows = $this->MPO_MyRep->getEmrTargetPurchaseOrderRefreshRows($selectedCity, $selectedRegional);
+        $csvRows = $this->buildPurchaseOrderRefreshCsvRows($rows);
+
+        $this->outputChecklistCsvRows($csvRows, 'purchase_order_myrep_' . date('Y-m-d') . '.csv');
+    }
+
     private function isChecklistRefreshAuthorized()
     {
         if (!empty($this->session->userdata('id_user'))) {
@@ -386,6 +405,168 @@ class Checklist_Dokument_MyRep extends CI_Controller
         return function_exists('hash_equals')
             ? hash_equals($expectedKey, $providedKey)
             : $expectedKey === $providedKey;
+    }
+
+    private function buildPurchaseOrderRefreshCsvRows(array $rows)
+    {
+        $csvRows = [];
+        $csvRows[] = [
+            'No',
+            'Regional',
+            'Kota',
+            'Cluster',
+            'Scope',
+            'PO Number',
+            'Category',
+            'On Target',
+            'PO Date',
+            'PO Value',
+            'PO Value Final',
+            'Remark',
+            'SERTIFIKAT INVOICE',
+            '',
+            '',
+            '',
+            'PROGRESS INVOICE',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+        ];
+        $csvRows[] = [
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            'TOP2 25%(CIVIL WORK)',
+            'TOP3 15% FULL OPM',
+            'TOP4 30% RFS (READY FOR SERVICE)',
+            'TOP5 10%(FAC)',
+            'TOP1 20%(DP)',
+            '',
+            '',
+            'TOP2 25%(CIVIL WORK)',
+            '',
+            '',
+            'TOP3 15% FULL OPM',
+            '',
+            '',
+            'TOP4 30% RFS (READY FOR SERVICE)',
+            '',
+            '',
+            'TOP5 10%(FAC)',
+            '',
+            '',
+        ];
+        $csvRows[] = [
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            'SERTIFIKAT INV',
+            'SERTIFIKAT INV',
+            'SERTIFIKAT INV',
+            'SERTIFIKAT INV',
+            'PLAN INV',
+            'SUBMIT',
+            'NILAI',
+            'PLAN INV',
+            'SUBMIT',
+            'NILAI',
+            'PLAN INV',
+            'SUBMIT',
+            'NILAI',
+            'PLAN INV',
+            'SUBMIT',
+            'NILAI',
+            'PLAN INV',
+            'SUBMIT',
+            'NILAI',
+        ];
+
+        $no = 1;
+        foreach ($rows as $row) {
+            $terms = isset($row['terms']) && is_array($row['terms']) ? $row['terms'] : [];
+            $line = [
+                $no++,
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['scope'] ?? ''),
+                (string) ($row['po_number'] ?? ''),
+                (string) ($row['po_category'] ?? ''),
+                (int) ($row['on_target'] ?? 0),
+                $this->formatPurchaseOrderRefreshDate($row['po_date'] ?? ''),
+                $this->formatPurchaseOrderRefreshNumber($row['po_value'] ?? 0),
+                $this->formatPurchaseOrderRefreshNumber($row['po_value_final'] ?? 0),
+                (string) ($row['remark_po'] ?? ''),
+            ];
+
+            foreach ([2, 3, 4, 5] as $termNo) {
+                $line[] = $this->formatPurchaseOrderRefreshDate($terms[$termNo]['sertifikat_invoice_date'] ?? '');
+            }
+
+            foreach ([1, 2, 3, 4, 5] as $termNo) {
+                $line[] = $this->formatPurchaseOrderRefreshNumber($terms[$termNo]['plan_invoice_value'] ?? 0);
+                $line[] = $this->formatPurchaseOrderRefreshDate($terms[$termNo]['submit_invoice_date'] ?? '');
+                $line[] = $this->formatPurchaseOrderRefreshNumber($terms[$termNo]['nilai_invoice'] ?? 0);
+            }
+
+            $csvRows[] = $line;
+        }
+
+        return $csvRows;
+    }
+
+    private function formatPurchaseOrderRefreshDate($date)
+    {
+        $date = trim((string) $date);
+        if ($date === '' || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') {
+            return '';
+        }
+
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            return $date;
+        }
+
+        return date('n/j/Y', $timestamp);
+    }
+
+    private function formatPurchaseOrderRefreshNumber($number)
+    {
+        $number = (float) $number;
+        if (abs($number - round($number)) < 0.000001) {
+            return (string) (int) round($number);
+        }
+
+        return rtrim(rtrim(number_format($number, 6, '.', ''), '0'), '.');
     }
 
     private function getChecklistItemExportRowsFromRequest()
