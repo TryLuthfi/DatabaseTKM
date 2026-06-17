@@ -183,9 +183,9 @@ class Myrep_reject_email_service
 
         $subject = $this->buildSubject($queue, count($items));
         $message = $this->buildMessage($queue, $items);
-        $sent = $this->sendEmail($recipients['to'], $recipients['cc'], $subject, $message);
+        $sendResult = $this->sendEmail($recipients['to'], $recipients['cc'], $subject, $message);
 
-        if ($sent) {
+        if (!empty($sendResult['sent'])) {
             $this->ci->db
                 ->where('id_queue', (int) $queueId)
                 ->update('tb_myrep_reject_email_queue', [
@@ -197,7 +197,7 @@ class Myrep_reject_email_service
             return ['sent' => true];
         }
 
-        $this->rescheduleFailedQueue($queueId, 'SMTP gagal mengirim email.');
+        $this->rescheduleFailedQueue($queueId, (string) ($sendResult['error'] ?? 'SMTP gagal mengirim email.'));
         return ['sent' => false];
     }
 
@@ -551,6 +551,17 @@ class Myrep_reject_email_service
         $smtpCrypto = strtolower(trim($this->envValue('SMTP_CRYPTO', 'tls')));
         $fromEmail = $this->envValue('SMTP_FROM_EMAIL', $smtpUser !== '' ? $smtpUser : 'no-reply@tkm.co.id');
         $fromName = $this->envValue('SMTP_FROM_NAME', 'Database TKM');
+        $allowInvalidTls = $this->normalizeBoolean($this->envValue('MYREP_REJECT_EMAIL_ALLOW_INVALID_TLS', 'false'));
+
+        if ($allowInvalidTls) {
+            stream_context_set_default([
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ],
+            ]);
+        }
 
         if ($smtpHost !== '' && $smtpUser !== '') {
             $this->ci->email->initialize([
@@ -579,11 +590,26 @@ class Myrep_reject_email_service
         $this->ci->email->set_mailtype('html');
 
         $sent = (bool) $this->ci->email->send();
+        $debugger = strip_tags((string) $this->ci->email->print_debugger(['headers', 'subject', 'body']));
         if (!$sent) {
-            log_message('error', 'MyRep reject email failed: ' . strip_tags((string) $this->ci->email->print_debugger(['headers'])));
+            $debugger = $this->normalizeEmailError($debugger);
+            log_message('error', 'MyRep reject email failed: ' . $debugger);
         }
 
-        return $sent;
+        return [
+            'sent' => $sent,
+            'error' => $sent ? '' : ($debugger !== '' ? $debugger : 'SMTP gagal mengirim email.'),
+        ];
+    }
+
+    private function normalizeEmailError($message)
+    {
+        $message = trim(preg_replace('/\s+/', ' ', (string) $message));
+        if ($message === '') {
+            return '';
+        }
+
+        return mb_substr($message, 0, 1000);
     }
 
     private function lockQueue($queueId)
