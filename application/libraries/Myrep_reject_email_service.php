@@ -482,7 +482,7 @@ class Myrep_reject_email_service
         $countLabel = $docCount > 1 ? ($docCount . ' Dokumen - ') : '';
         $locationLabel = $cityName !== '' ? (' - ' . $cityName) : '';
 
-        return '[DITOLAK] ' . $moduleLabel . ' - ' . $countLabel . 'Cluster ' . $clusterName . $locationLabel;
+        return '[DOC REJECTED] ' . $moduleLabel . ' - ' . $countLabel . 'Cluster ' . $clusterName . $locationLabel;
     }
 
     private function buildMessage(array $queue, array $items)
@@ -516,8 +516,29 @@ class Myrep_reject_email_service
         $html .= '<p>Silakan melakukan revisi yang diperlukan dan submit kembali dokumen tersebut melalui aplikasi Database TKM.</p>';
         $html .= '<p>Jika ada pertanyaan terkait request ini, silakan menghubungi reviewer/rejecter yang tercantum dalam email ini.</p>';
         $html .= '<p>Terima kasih.</p>';
+        $html .= $this->buildCompanyFooterHtml();
 
         return $html;
+    }
+
+    private function buildCompanyFooterHtml()
+    {
+        $logoUrl = base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png');
+
+        return ''
+            . '<br>'
+            . '<p style="margin:0;">Thanks &amp; Regards</p>'
+            . '<p style="margin:10px 0 8px 0;">'
+            . '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="Logo TKM" style="max-width:220px;height:auto;">'
+            . '</p>'
+            . '<p style="margin:0;"><strong>PT. TECHNOLOGY KARYA MANDIRI</strong></p>'
+            . '<p style="margin:0;">Rukan Puri Botanical Blok H.9 / No.22-23</p>'
+            . '<p style="margin:0;">Jl. Raya Meruya Selatan - Joglo</p>'
+            . '<p style="margin:0;">Jakarta 11640</p>'
+            . '<p style="margin:0;"><strong>Telp</strong>: 021 - 5855552 (Hunting) / <strong>Fax</strong>: 021 - 5852896</p>'
+            . '<p style="margin:0;"><strong>Mobile</strong>: +62 8953 3675 0905</p>'
+            . '<p style="margin:0;"><a href="mailto:lutfi@tkm.co.id" style="color:#2563eb;">Email : lutfi@tkm.co.id</a></p>'
+            . '<p style="margin:0;"><a href="https://www.tkm.co.id" style="color:#2563eb;">www.tkm.co.id</a></p>';
     }
 
     private function sendEmail(array $to, array $cc, $subject, $messageHtml)
