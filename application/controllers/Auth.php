@@ -158,7 +158,6 @@ class Auth extends CI_Controller
             . '<p>Jika Anda tidak meminta ini, abaikan email ini.</p>'
             . '<br>'
             . '<p style="margin:0;">Thanks &amp; Regards</p>'
-            . '<p style="margin:0;"><strong><em>Try Luthfi Sasmito</em></strong></p>'
             . '<p style="margin:10px 0 8px 0;">'
             . '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" alt="Logo TKM" style="max-width:220px;height:auto;">'
             . '</p>'
