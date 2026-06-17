@@ -355,6 +355,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                     <th>Status</th>
                                                     <th>Sertifikat</th>
                                                     <th>Invoice</th>
+                                                    <th>Nilai Invoice</th>
                                                     <th>Tgl Invoice</th>
                                                     <th>Tgl BAST</th>
                                                     <th>Tgl Payment</th>
@@ -388,6 +389,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                             <?php endif; ?>
                                                         </td>
                                                         <td><?= !empty($termin['invoice_number']) ? htmlspecialchars((string) $termin['invoice_number']) : '-' ?></td>
+                                                        <td class="text-right"><?= isset($termin['invoice_value']) && $termin['invoice_value'] !== null && $termin['invoice_value'] !== '' ? poMyRepValue((float) $termin['invoice_value']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['invoice_date']) ? htmlspecialchars((string) $termin['invoice_date']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['bast_date']) ? htmlspecialchars((string) $termin['bast_date']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['payment_date']) ? htmlspecialchars((string) $termin['payment_date']) : '-' ?></td>
@@ -404,6 +406,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                                     data-termin-no="<?= (int) ($termin['termin_no'] ?? 0) ?>"
                                                                     data-status="<?= htmlspecialchars((string) ($termin['status_termin'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-invoice-number="<?= htmlspecialchars((string) ($termin['invoice_number'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-invoice-value="<?= htmlspecialchars((string) ($termin['invoice_value'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-invoice-date="<?= htmlspecialchars((string) ($termin['invoice_date'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-bast-date="<?= htmlspecialchars((string) ($termin['bast_date'] ?? ''), ENT_QUOTES) ?>"
                                                                     data-payment-date="<?= htmlspecialchars((string) ($termin['payment_date'] ?? ''), ENT_QUOTES) ?>"
@@ -482,6 +485,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                     <div class="row">
                         <div class="col-md-4"><div class="form-group"><label>Status Termin</label><select name="status_termin" id="po_termin_status" class="form-control"><?php foreach ($terminStatusOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
                         <div class="col-md-4"><div class="form-group"><label>Nomor Invoice</label><input type="text" name="invoice_number" id="po_termin_invoice_number" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Nilai Invoice</label><input type="text" name="invoice_value" id="po_termin_invoice_value" class="form-control"></div></div>
                         <div class="col-md-4"><div class="form-group"><label>Tanggal Invoice</label><input type="date" name="invoice_date" id="po_termin_invoice_date" class="form-control"></div></div>
                         <div class="col-md-6"><div class="form-group"><label>Tanggal BAST</label><input type="date" name="bast_date" id="po_termin_bast_date" class="form-control"></div></div>
                         <div class="col-md-6"><div class="form-group"><label>Tanggal Payment</label><input type="date" name="payment_date" id="po_termin_payment_date" class="form-control"></div></div>
@@ -506,6 +510,7 @@ if (!function_exists('poMyRepStatusBadge')) {
             $('#po_termin_no').text($button.data('termin-no') || '-');
             $('#po_termin_status').val($button.data('status') || 'NOT READY');
             $('#po_termin_invoice_number').val($button.data('invoice-number') || '');
+            $('#po_termin_invoice_value').val($button.data('invoice-value') || '');
             $('#po_termin_invoice_date').val($button.data('invoice-date') || '');
             $('#po_termin_bast_date').val($button.data('bast-date') || '');
             $('#po_termin_payment_date').val($button.data('payment-date') || '');

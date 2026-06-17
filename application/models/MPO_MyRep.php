@@ -224,8 +224,12 @@ class MPO_MyRep extends CI_Model
         }
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
+        $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
+        if ($this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
+            $terminSelect .= ', invoice_value';
+        }
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
+            ->select($terminSelect)
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -248,7 +252,7 @@ class MPO_MyRep extends CI_Model
             }
             $terminMap[$headerId]['total']++;
             $terminNo = (int) ($termin['termin_no'] ?? 0);
-            $terminValue = (float) ($termin['termin_value'] ?? 0);
+            $terminValue = $this->resolveDoneInvoiceValue($termin);
             $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($termin['invoice_date'] ?? '')) !== '';
             $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
 
@@ -1097,8 +1101,12 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
+        $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
+        if ($this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
+            $terminSelect .= ', invoice_value';
+        }
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
+            ->select($terminSelect)
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -1122,7 +1130,7 @@ class MPO_MyRep extends CI_Model
 
             $terminMap[$headerId]['total']++;
             $terminNo = (int) ($termin['termin_no'] ?? 0);
-            $terminValue = (float) ($termin['termin_value'] ?? 0);
+            $terminValue = $this->resolveDoneInvoiceValue($termin);
             $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($termin['invoice_date'] ?? '')) !== '';
             $planInvoiceValue = $this->resolvePlanInvoiceValue($termin);
 
@@ -1444,6 +1452,9 @@ class MPO_MyRep extends CI_Model
     private function getEmrTargetTerminAggregateSql()
     {
         $planInvoiceValueSql = $this->getEmrTargetPlanInvoiceValueSql();
+        $doneInvoiceValueSql = $this->db->field_exists('invoice_value', 'tb_myrep_po_termin')
+            ? 'COALESCE(invoice_value, termin_value, 0)'
+            : 'COALESCE(termin_value, 0)';
         $hasInvoiceDateSql = "invoice_date IS NOT NULL AND TRIM(invoice_date) != '' AND invoice_date NOT IN ('0000-00-00', '0000-00-00 00:00:00')";
 
         return "
@@ -1463,7 +1474,7 @@ class MPO_MyRep extends CI_Model
                 SUM(CASE WHEN termin_no = 4 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_4,
                 SUM(CASE WHEN termin_no = 5 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_5,
                 SUM({$planInvoiceValueSql}) AS plan_invoice_total,
-                SUM(CASE WHEN {$hasInvoiceDateSql} THEN COALESCE(termin_value, 0) ELSE 0 END) AS done_invoice_total
+                SUM(CASE WHEN {$hasInvoiceDateSql} THEN {$doneInvoiceValueSql} ELSE 0 END) AS done_invoice_total
             FROM tb_myrep_po_termin
             GROUP BY id_po_header
         ";
@@ -1760,8 +1771,12 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
+        $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
+        if ($this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
+            $terminSelect .= ', invoice_value';
+        }
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
+            ->select($terminSelect)
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -1812,7 +1827,7 @@ class MPO_MyRep extends CI_Model
 
             $type = $headerMeta[$headerId]['po_type'] === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
             $terminNo = (int) ($terminRow['termin_no'] ?? 0);
-            $terminValue = (float) ($terminRow['termin_value'] ?? 0);
+            $terminValue = $this->resolveDoneInvoiceValue($terminRow);
             $terminStatus = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
             $planInvoiceValue = $this->resolvePlanInvoiceValue($terminRow);
             $hasSubmitInvoice = trim((string) ($terminRow['invoice_date'] ?? '')) !== '';
@@ -1894,8 +1909,12 @@ class MPO_MyRep extends CI_Model
             $headerMap[$headerId] = $headerRow;
         }
 
+        $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
+        if ($this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
+            $terminSelect .= ', invoice_value';
+        }
         $this->db
-            ->select('id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin')
+            ->select($terminSelect)
             ->from('tb_myrep_po_termin');
         $this->applyIntWhereInChunks('id_po_header', $headerIds);
         $terminRows = $this->db
@@ -2006,7 +2025,7 @@ class MPO_MyRep extends CI_Model
                 'status_termin' => $statusTermin,
                 'amount' => $metric === 'outstanding_term'
                     ? $this->resolvePlanInvoiceValue($terminRow)
-                    : (float) ($terminRow['termin_value'] ?? 0),
+                    : $this->resolveDoneInvoiceValue($terminRow),
             ];
         }
 
@@ -2473,6 +2492,60 @@ class MPO_MyRep extends CI_Model
         }
     }
 
+    public function ensurePoTerminInvoiceValueColumn()
+    {
+        if (!$this->db->table_exists('tb_myrep_po_termin')) {
+            return false;
+        }
+        if (!$this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
+            $afterColumn = $this->db->field_exists('invoice_number', 'tb_myrep_po_termin') ? ' AFTER `invoice_number`' : ' AFTER `termin_value`';
+            $this->db->query('ALTER TABLE `tb_myrep_po_termin` ADD COLUMN `invoice_value` DECIMAL(18,2) NULL' . $afterColumn);
+        }
+
+        return $this->db->field_exists('invoice_value', 'tb_myrep_po_termin');
+    }
+
+    public function getTerminByPoNumberAndTerm($poNumber, $terminNo)
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $poNumber = trim((string) $poNumber);
+        $terminNo = (int) $terminNo;
+        if ($poNumber === '' || $terminNo < 1 || $terminNo > 5) {
+            return [];
+        }
+
+        $this->ensurePoTerminCertificateColumnForDashboard();
+
+        $this->db
+            ->select('
+                t.*,
+                p.id_myrep_cluster,
+                p.po_number,
+                p.po_type,
+                p.po_category,
+                c.cluster_name,
+                c.city_name,
+                c.regional_name
+            ')
+            ->from('tb_myrep_po_termin t')
+            ->join('tb_myrep_po_header p', 'p.id_po_header = t.id_po_header', 'inner')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('UPPER(TRIM(p.po_number))', strtoupper($poNumber))
+            ->where('t.termin_no', $terminNo)
+            ->order_by('p.po_date', 'DESC')
+            ->order_by('p.id_po_header', 'DESC')
+            ->limit(1);
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        return $this->db->get()->row_array();
+    }
+
     public function getClusterById($clusterId)
     {
         if (!$this->tablesReady()) {
@@ -2690,17 +2763,22 @@ class MPO_MyRep extends CI_Model
             return false;
         }
 
+        $updatePayload = [
+            'status_termin' => (string) $payload['status_termin'],
+            'invoice_number' => $payload['invoice_number'] !== '' ? (string) $payload['invoice_number'] : null,
+            'invoice_date' => $payload['invoice_date'],
+            'bast_date' => $payload['bast_date'],
+            'payment_date' => $payload['payment_date'],
+            'remark_termin' => $payload['remark_termin'] !== '' ? (string) $payload['remark_termin'] : null,
+            'updated_by' => (int) $payload['updated_by'],
+        ];
+        if (array_key_exists('invoice_value', $payload) && $this->ensurePoTerminInvoiceValueColumn()) {
+            $updatePayload['invoice_value'] = $payload['invoice_value'] !== null ? (float) $payload['invoice_value'] : null;
+        }
+
         $this->db
             ->where('id_po_termin', (int) $terminId)
-            ->update('tb_myrep_po_termin', [
-                'status_termin' => (string) $payload['status_termin'],
-                'invoice_number' => $payload['invoice_number'] !== '' ? (string) $payload['invoice_number'] : null,
-                'invoice_date' => $payload['invoice_date'],
-                'bast_date' => $payload['bast_date'],
-                'payment_date' => $payload['payment_date'],
-                'remark_termin' => $payload['remark_termin'] !== '' ? (string) $payload['remark_termin'] : null,
-                'updated_by' => (int) $payload['updated_by'],
-            ]);
+            ->update('tb_myrep_po_termin', $updatePayload);
 
         $termin = $this->getTerminById((int) $terminId);
         if (!empty($termin['id_po_header'])) {
@@ -2908,6 +2986,15 @@ class MPO_MyRep extends CI_Model
         }
 
         return 0;
+    }
+
+    private function resolveDoneInvoiceValue(array $terminRow)
+    {
+        if (array_key_exists('invoice_value', $terminRow) && $terminRow['invoice_value'] !== null && $terminRow['invoice_value'] !== '') {
+            return (float) $terminRow['invoice_value'];
+        }
+
+        return (float) ($terminRow['termin_value'] ?? 0);
     }
 
     private function normalizeNumericValue($value)

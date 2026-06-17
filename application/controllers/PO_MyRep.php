@@ -13,6 +13,7 @@ class PO_MyRep extends CI_Controller
             $this->myrepAccess->enforceView('PO_MyRep');
             $this->myrepAccess->enforceByMethod('PO_MyRep', (string) $this->router->fetch_method(), [
                 'saveTerminCertificate' => 'EDIT',
+                'batchInvoiceTermin' => 'EDIT',
             ]);
         }
     }
@@ -44,6 +45,7 @@ class PO_MyRep extends CI_Controller
         $data['certificateSummaryRows'] = $data['isReady']
             ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus)
             : [];
+        $data['canBatchInvoice'] = $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT');
         $data['summary'] = $this->MPO_MyRep->getDashboardSummary($data['clusterRows']);
 
         $this->load->view('Templates/01_Header', $data);
@@ -217,6 +219,7 @@ class PO_MyRep extends CI_Controller
             'status_termin' => $statusTermin,
             'invoice_number' => trim((string) $this->input->post('invoice_number')),
             'invoice_date' => $this->normalizeDate($this->input->post('invoice_date')),
+            'invoice_value' => $this->normalizeNumber($this->input->post('invoice_value')) ?: null,
             'bast_date' => $this->normalizeDate($this->input->post('bast_date')),
             'payment_date' => $this->normalizeDate($this->input->post('payment_date')),
             'remark_termin' => trim((string) $this->input->post('remark_termin')),
@@ -225,6 +228,116 @@ class PO_MyRep extends CI_Controller
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Termin berhasil diupdate.' : 'Termin gagal diupdate.');
         redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
+    }
+
+    public function batchInvoiceTermin()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $invoiceDate = $this->normalizeDate($this->input->post('invoice_date'));
+        $poNumbers = (array) $this->input->post('po_number');
+        $termInputs = (array) $this->input->post('term_no');
+        $invoiceValues = (array) $this->input->post('invoice_value');
+
+        if ($invoiceDate === null) {
+            $this->session->set_flashdata('error', 'Tanggal invoice general wajib diisi.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->ensurePoTerminInvoiceValueColumn()) {
+            $this->session->set_flashdata('error', 'Kolom nilai invoice belum tersedia dan gagal dibuat.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $updatedCount = 0;
+        $skippedMessages = [];
+        $seenKeys = [];
+        foreach ($poNumbers as $index => $poNumber) {
+            $poNumber = trim((string) $poNumber);
+            $termNo = $this->normalizeTerminNoInput($termInputs[$index] ?? '');
+            $invoiceValue = $this->normalizeNumber($invoiceValues[$index] ?? '');
+
+            if ($poNumber === '' && $termNo <= 0 && $invoiceValue <= 0) {
+                continue;
+            }
+
+            $rowLabel = $poNumber !== '' ? $poNumber . ' T' . ($termNo > 0 ? $termNo : '?') : 'Baris ' . ($index + 1);
+            if ($poNumber === '' || $termNo < 1 || $termNo > 5) {
+                $skippedMessages[] = $rowLabel . ': nomor PO atau term tidak valid.';
+                continue;
+            }
+            if ($invoiceValue <= 0) {
+                $skippedMessages[] = $rowLabel . ': nilai invoice wajib lebih dari 0.';
+                continue;
+            }
+
+            $dedupeKey = strtoupper($poNumber) . '|' . $termNo;
+            if (isset($seenKeys[$dedupeKey])) {
+                $skippedMessages[] = $rowLabel . ': duplikat dalam batch.';
+                continue;
+            }
+            $seenKeys[$dedupeKey] = true;
+
+            $termin = $this->MPO_MyRep->getTerminByPoNumberAndTerm($poNumber, $termNo);
+            if (empty($termin)) {
+                $skippedMessages[] = $rowLabel . ': termin PO tidak ditemukan.';
+                continue;
+            }
+
+            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            if ($statusTermin === 'PAID') {
+                $skippedMessages[] = $rowLabel . ': termin sudah PAID.';
+                continue;
+            }
+            if ($termNo >= 2 && $termNo <= 5 && $this->normalizeCertificateDateValue((string) ($termin['sertifikat_invoice_date'] ?? '')) === '') {
+                $skippedMessages[] = $rowLabel . ': sertifikat belum release.';
+                continue;
+            }
+            if ($termNo === 5 && !$this->isFacTerminDue($termin)) {
+                $skippedMessages[] = $rowLabel . ': FAC belum BJT 90 hari.';
+                continue;
+            }
+
+            $updated = $this->MPO_MyRep->updateTermin((int) ($termin['id_po_termin'] ?? 0), [
+                'status_termin' => 'BILLED',
+                'invoice_number' => '',
+                'invoice_date' => $invoiceDate,
+                'invoice_value' => $invoiceValue,
+                'bast_date' => $termin['bast_date'] ?? null,
+                'payment_date' => $termin['payment_date'] ?? null,
+                'remark_termin' => trim((string) ($termin['remark_termin'] ?? '')),
+                'updated_by' => (int) $this->session->userdata('id_user'),
+            ]);
+
+            if ($updated) {
+                $updatedCount++;
+            } else {
+                $skippedMessages[] = $rowLabel . ': gagal disimpan.';
+            }
+        }
+
+        if ($updatedCount > 0) {
+            $message = $updatedCount . ' invoice termin berhasil disimpan.';
+            if (!empty($skippedMessages)) {
+                $message .= ' ' . count($skippedMessages) . ' baris dilewati: ' . implode('; ', array_slice($skippedMessages, 0, 5));
+            }
+            $this->session->set_flashdata('success', $message);
+        } else {
+            $this->session->set_flashdata('error', 'Tidak ada invoice termin yang berhasil disimpan. ' . implode('; ', array_slice($skippedMessages, 0, 5)));
+        }
+
+        redirect('PO_MyRep');
     }
 
     public function saveTerminCertificate()
@@ -470,5 +583,19 @@ class PO_MyRep extends CI_Controller
         }
 
         return (float) $normalized;
+    }
+
+    private function normalizeTerminNoInput($value)
+    {
+        $value = strtoupper(trim((string) $value));
+        if ($value === '') {
+            return 0;
+        }
+
+        if (preg_match('/([1-5])/', $value, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return 0;
     }
 }

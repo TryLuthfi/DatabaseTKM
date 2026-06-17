@@ -1,6 +1,7 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$canBatchInvoice = isset($canBatchInvoice) ? (bool) $canBatchInvoice : false;
 
 if (!function_exists('poMyRepNumber')) {
     function poMyRepNumber($value)
@@ -122,6 +123,30 @@ if (!function_exists('poMyRepNumberOrDash')) {
         border-color: #9db8d6;
         box-shadow: 0 0 0 0.16rem rgba(29, 126, 214, 0.12);
     }
+
+    .po-batch-invoice__toolbar {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.4fr) 120px minmax(160px, 1fr) auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .po-batch-invoice__paste {
+        min-height: 116px;
+        font-family: Consolas, monospace;
+        font-size: .86rem;
+    }
+
+    #po-batch-invoice-table th,
+    #po-batch-invoice-table td {
+        vertical-align: middle;
+    }
+
+    @media (max-width: 768px) {
+        .po-batch-invoice__toolbar {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <div class="content-wrapper">
@@ -184,6 +209,96 @@ if (!function_exists('poMyRepNumberOrDash')) {
                         </form>
                     </div>
                 </div>
+
+                <?php if ($canBatchInvoice): ?>
+                    <div class="card card-outline card-dark shadow-sm">
+                        <div class="card-header">
+                            <h3 class="card-title">Batch Input Invoice Termin</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="<?= base_url('PO_MyRep/batchInvoiceTermin') ?>" id="po-batch-invoice-form">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Tanggal Invoice General</label>
+                                            <input type="date" name="invoice_date" id="po-batch-invoice-date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="form-group">
+                                            <label>Paste dari Excel</label>
+                                            <textarea id="po-batch-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO-001[TAB]1[TAB]1000000&#10;PO-002[TAB]Term 2[TAB]2500000"></textarea>
+                                            <small class="form-text text-muted">Term cukup isi angka 1-5. Variasi seperti Term 1, Termin 1, atau T1 juga terbaca.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <datalist id="po-batch-po-options">
+                                    <?php
+                                    $poBatchSeen = [];
+                                    foreach (($poListRows ?? []) as $poBatchRow):
+                                        $poBatchNumber = trim((string) ($poBatchRow['po_number'] ?? ''));
+                                        if ($poBatchNumber === '' || isset($poBatchSeen[strtoupper($poBatchNumber)])) {
+                                            continue;
+                                        }
+                                        $poBatchSeen[strtoupper($poBatchNumber)] = true;
+                                    ?>
+                                        <option value="<?= htmlspecialchars($poBatchNumber, ENT_QUOTES) ?>"></option>
+                                    <?php endforeach; ?>
+                                </datalist>
+
+                                <div class="po-batch-invoice__toolbar mb-3">
+                                    <div>
+                                        <label class="mb-1">Nomor PO</label>
+                                        <input type="text" id="po-batch-po-number" class="form-control" list="po-batch-po-options" placeholder="Pilih / ketik nomor PO">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Term</label>
+                                        <select id="po-batch-term-no" class="form-control">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Nilai Invoice</label>
+                                        <input type="text" id="po-batch-invoice-value" class="form-control" placeholder="Contoh: 1.000.000">
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary" id="po-batch-add-row">Tambah Row</button>
+                                        <button type="button" class="btn btn-outline-secondary" id="po-batch-parse-paste">Tambah dari Paste</button>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm mb-0" id="po-batch-invoice-table">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th style="width:60px;">No</th>
+                                                <th>Nomor PO</th>
+                                                <th style="width:110px;">Term</th>
+                                                <th style="width:220px;">Nilai Invoice</th>
+                                                <th style="width:90px;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="po-batch-empty-row">
+                                                <td colspan="5" class="text-center text-muted">Belum ada row invoice.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="text-muted small">Submit akan mengubah term menjadi BILLED dan memakai tanggal invoice general.</div>
+                                    <button type="submit" class="btn btn-dark" id="po-batch-submit" disabled>Simpan Batch Invoice</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <div class="row">
                     <div class="col-md-2">
@@ -755,6 +870,115 @@ if (!function_exists('poMyRepNumberOrDash')) {
             var parsed = parseFloat(cleaned);
             return isNaN(parsed) ? 0 : parsed;
         }
+
+        function normalizeTermInput(value) {
+            var match = String(value || '').toUpperCase().match(/[1-5]/);
+            return match ? match[0] : '';
+        }
+
+        function formatBatchValue(value) {
+            var parsed = parseLocaleNumber(value);
+            return parsed > 0 ? parsed.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '';
+        }
+
+        function updateBatchInvoiceState() {
+            var $rows = $('#po-batch-invoice-table tbody tr.po-batch-row');
+            $('#po-batch-invoice-table tbody .po-batch-empty-row').toggle($rows.length === 0);
+            $('#po-batch-submit').prop('disabled', $rows.length === 0);
+            $rows.each(function (idx) {
+                $(this).find('.po-batch-row-no').text(idx + 1);
+            });
+        }
+
+        function addBatchInvoiceRow(poNumber, termNo, invoiceValue) {
+            poNumber = String(poNumber || '').trim();
+            termNo = normalizeTermInput(termNo);
+            invoiceValue = formatBatchValue(invoiceValue);
+
+            if (!poNumber || !termNo || !invoiceValue) {
+                return false;
+            }
+
+            var key = poNumber.toUpperCase() + '|' + termNo;
+            var exists = false;
+            $('#po-batch-invoice-table tbody tr.po-batch-row').each(function () {
+                if ($(this).data('key') === key) {
+                    exists = true;
+                    return false;
+                }
+            });
+            if (exists) {
+                return false;
+            }
+
+            var html = '<tr class="po-batch-row" data-key="' + escapeHtml(key) + '">' +
+                '<td class="text-center po-batch-row-no"></td>' +
+                '<td>' + escapeHtml(poNumber) + '<input type="hidden" name="po_number[]" value="' + escapeHtml(poNumber) + '"></td>' +
+                '<td class="text-center">' + escapeHtml(termNo) + '<input type="hidden" name="term_no[]" value="' + escapeHtml(termNo) + '"></td>' +
+                '<td class="text-right">' + escapeHtml(invoiceValue) + '<input type="hidden" name="invoice_value[]" value="' + escapeHtml(invoiceValue) + '"></td>' +
+                '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-batch-remove-row">Hapus</button></td>' +
+            '</tr>';
+
+            $('#po-batch-invoice-table tbody').append(html);
+            updateBatchInvoiceState();
+            return true;
+        }
+
+        $('#po-batch-add-row').on('click', function () {
+            var added = addBatchInvoiceRow(
+                $('#po-batch-po-number').val(),
+                $('#po-batch-term-no').val(),
+                $('#po-batch-invoice-value').val()
+            );
+            if (added) {
+                $('#po-batch-po-number').val('').focus();
+                $('#po-batch-invoice-value').val('');
+            }
+        });
+
+        $('#po-batch-parse-paste').on('click', function () {
+            var lines = String($('#po-batch-paste').val() || '').split(/\r?\n/);
+            var addedCount = 0;
+            lines.forEach(function (line) {
+                line = String(line || '').trim();
+                if (!line) {
+                    return;
+                }
+
+                var columns = line.split('\t');
+                if (columns.length < 3) {
+                    columns = line.split(';');
+                }
+                if (columns.length < 3) {
+                    columns = line.split(',');
+                }
+                if (columns.length < 3) {
+                    columns = line.split(/\s{2,}/);
+                }
+                if (columns.length < 3) {
+                    return;
+                }
+
+                if (addBatchInvoiceRow(columns[0], columns[1], columns.slice(2).join(' '))) {
+                    addedCount++;
+                }
+            });
+            if (addedCount > 0) {
+                $('#po-batch-paste').val('');
+            }
+        });
+
+        $(document).on('click', '.po-batch-remove-row', function () {
+            $(this).closest('tr').remove();
+            updateBatchInvoiceState();
+        });
+
+        $('#po-batch-invoice-form').on('submit', function (e) {
+            if ($('#po-batch-invoice-table tbody tr.po-batch-row').length === 0) {
+                e.preventDefault();
+                alert('Belum ada row invoice.');
+            }
+        });
 
         function extractPoCount(value, label) {
             var text = $('<div>').html(value || '').text();

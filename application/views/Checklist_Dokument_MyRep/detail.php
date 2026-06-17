@@ -85,8 +85,18 @@ if (!function_exists('checklist_doc_input_date')) {
     }
 }
 
-if (!function_exists('checklist_doc_astri_bulk_options')) {
-    function checklist_doc_astri_bulk_options($isSpecialProjectOpname)
+if (!function_exists('checklist_doc_can_show_astri_action')) {
+    function checklist_doc_can_show_astri_action(array $item, $canTambah)
+    {
+        return (bool) $canTambah
+            && empty($item['linked_source_file_id'])
+            && (int) ($item['id_doc_file'] ?? 0) > 0
+            && (string) ($item['status_file'] ?? '') === 'APPROVED';
+    }
+}
+
+if (!function_exists('checklist_doc_astri_options')) {
+    function checklist_doc_astri_options($isSpecialProjectOpname)
     {
         if ((int) $isSpecialProjectOpname === 1) {
             return ['NY', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'REJECTED', 'APPROVED'];
@@ -97,42 +107,42 @@ if (!function_exists('checklist_doc_astri_bulk_options')) {
 }
 
 if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
-    function checklist_doc_render_bulk_astri_modal(array $cluster, array $group)
+    function checklist_doc_render_bulk_astri_modal(array $cluster, array $group, $canTambah)
     {
         $eligibleItems = [];
         foreach (($group['items'] ?? []) as $item) {
-            if (!empty($item['linked_source_file_id'])) {
-                continue;
+            if (checklist_doc_can_show_astri_action($item, $canTambah)) {
+                $eligibleItems[] = $item;
             }
-            if ((int) ($item['id_doc_file'] ?? 0) <= 0 || (string) ($item['status_file'] ?? '') !== 'APPROVED') {
-                continue;
-            }
-            $eligibleItems[] = $item;
         }
         ?>
         <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkAstri-<?= (int) $group['id_doc_package'] ?>">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkEditAstriStatus') ?>">
-                        <div class="modal-header">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #374151, #111827);">
                             <div>
-                                <h4 class="modal-title mb-1">Edit ASTRI Bulk <?= htmlspecialchars((string) $group['group_label'], ENT_QUOTES) ?></h4>
-                                <p class="mb-0" style="opacity:.9;">Update status ASTRI beberapa dokumen approved dalam satu submit.</p>
+                                <h4 class="modal-title mb-1">Bulk ASTRI <?= htmlspecialchars((string) $group['group_label'], ENT_QUOTES) ?></h4>
+                                <p class="mb-0" style="opacity:.9;">Update status ASTRI untuk dokumen yang sudah APPROVED.</p>
                             </div>
                             <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                         </div>
                         <div class="modal-body">
                             <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
                             <?php if (empty($eligibleItems)): ?>
-                                <div class="doc-modal-panel mb-0 text-muted">Belum ada dokumen approved yang bisa diedit ASTRI.</div>
+                                <div class="doc-modal-panel mb-0 text-muted">Belum ada dokumen yang bisa diupdate ASTRI.</div>
                             <?php else: ?>
+                                <div class="doc-modal-panel">
+                                    <div class="doc-modal-title">Sinkronisasi Submit ke ASTRI</div>
+                                    <p class="doc-modal-subtitle mb-0">Isi tanggal submit saat status bukan NY, lalu pilih status review ASTRI untuk tiap dokumen.</p>
+                                </div>
                                 <div class="table-responsive doc-modal-panel mb-0">
                                     <table class="table table-bordered doc-bulk-table mb-0">
                                         <thead>
                                             <tr>
                                                 <th>No</th>
                                                 <th>Dokumen</th>
-                                                <th>Submit ASTRI</th>
+                                                <th>Tanggal Submit ASTRI</th>
                                                 <th>Status ASTRI</th>
                                                 <th>Remark ASTRI</th>
                                             </tr>
@@ -144,7 +154,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                 $fileId = (int) $item['id_doc_file'];
                                                 $currentAstriStatus = strtoupper(trim((string) ($item['astri_status'] ?? 'NY')));
                                                 $currentAstriStatus = $currentAstriStatus !== '' ? $currentAstriStatus : 'NY';
-                                                $astriOptions = checklist_doc_astri_bulk_options($item['is_special_project_opname'] ?? 0);
+                                                $astriOptions = checklist_doc_astri_options($item['is_special_project_opname'] ?? 0);
                                                 if (!in_array($currentAstriStatus, $astriOptions, true)) {
                                                     $astriOptions[] = $currentAstriStatus;
                                                 }
@@ -182,7 +192,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                         </select>
                                                     </td>
                                                     <td>
-                                                        <textarea name="astri_remark[<?= $fileId ?>]" class="form-control" rows="2" maxlength="500"><?= htmlspecialchars((string) ($item['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea>
+                                                        <textarea name="astri_remark[<?= $fileId ?>]" class="form-control" rows="2" placeholder="Catatan submit / review ASTRI jika diperlukan"><?= htmlspecialchars((string) ($item['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -193,7 +203,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-dark" <?= empty($eligibleItems) ? 'disabled' : '' ?>>Simpan ASTRI Bulk</button>
+                            <button type="submit" class="btn btn-dark" <?= empty($eligibleItems) ? 'disabled' : '' ?>>Simpan Bulk ASTRI</button>
                         </div>
                     </form>
                 </div>
@@ -208,7 +218,6 @@ $subfeederTabRows = isset($scopeTabs['SUBFEEDER']) ? $scopeTabs['SUBFEEDER'] : [
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'TAMBAH') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'APPROVAL') : true;
-$canBulkEditAstri = isset($canBulkEditAstri) ? (bool) $canBulkEditAstri : false;
 $clusterProgressPercent = checklist_doc_percent(
     ((int) $cluster['doc_cw_atp_uploaded']) + ((int) $cluster['doc_full_opm_uploaded']) + ((int) $cluster['doc_rfs_uploaded']),
     ((int) $cluster['doc_cw_atp_required']) + ((int) $cluster['doc_full_opm_required']) + ((int) $cluster['doc_rfs_required'])
@@ -799,9 +808,15 @@ $clusterProgressPercent = checklist_doc_percent(
                             <?php foreach ($clusterTabRows as $group): ?>
                                 <?php
                                 $groupHasApprovalItems = false;
+                                $groupHasAstriItems = false;
                                 foreach ($group['items'] as $groupItem) {
                                     if (empty($groupItem['linked_source_file_id']) && (int) $groupItem['id_doc_file'] > 0 && in_array($groupItem['status_file'], ['UPLOADED', 'REJECTED'], true)) {
                                         $groupHasApprovalItems = true;
+                                    }
+                                    if (checklist_doc_can_show_astri_action($groupItem, $canTambah)) {
+                                        $groupHasAstriItems = true;
+                                    }
+                                    if ($groupHasApprovalItems && $groupHasAstriItems) {
                                         break;
                                     }
                                 }
@@ -836,12 +851,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                         Bulk Upload
                                                     </button>
                                                 <?php endif; ?>
-                                                <?php if ($canBulkEditAstri): ?>
+                                                <?php if ($groupHasAstriItems): ?>
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-dark"
                                                         data-toggle="modal"
                                                         data-target="#modalBulkAstri-<?= (int) $group['id_doc_package'] ?>">
-                                                        Edit ASTRI Bulk
+                                                        Bulk ASTRI
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
@@ -978,7 +993,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php elseif (!empty($item['linked_source_file_id'])): ?>
                                                                         <span class="badge badge-info">Linked Source</span>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canTambah && empty($item['linked_source_file_id']) && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                    <?php if (checklist_doc_can_show_astri_action($item, $canTambah)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-secondary btn-astri-doc"
                                                                             data-toggle="modal"
@@ -1024,6 +1039,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                         </div>
                                     </div>
                                 </div>
+                                <?php if ($groupHasAstriItems) checklist_doc_render_bulk_astri_modal($cluster, $group, $canTambah); ?>
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -1114,7 +1130,6 @@ $clusterProgressPercent = checklist_doc_percent(
                                         </div>
                                     </div>
                                 </div>
-                                <?php if ($canBulkEditAstri) checklist_doc_render_bulk_astri_modal($cluster, $group); ?>
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -1174,9 +1189,15 @@ $clusterProgressPercent = checklist_doc_percent(
                             <?php foreach ($subfeederTabRows as $group): ?>
                                 <?php
                                 $groupHasApprovalItems = false;
+                                $groupHasAstriItems = false;
                                 foreach ($group['items'] as $groupItem) {
                                     if ((int) $groupItem['id_doc_file'] > 0 && in_array($groupItem['status_file'], ['UPLOADED', 'REJECTED'], true)) {
                                         $groupHasApprovalItems = true;
+                                    }
+                                    if (checklist_doc_can_show_astri_action($groupItem, $canTambah)) {
+                                        $groupHasAstriItems = true;
+                                    }
+                                    if ($groupHasApprovalItems && $groupHasAstriItems) {
                                         break;
                                     }
                                 }
@@ -1211,12 +1232,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                         Bulk Upload
                                                     </button>
                                                 <?php endif; ?>
-                                                <?php if ($canBulkEditAstri): ?>
+                                                <?php if ($groupHasAstriItems): ?>
                                                     <button type="button"
                                                         class="btn btn-sm btn-outline-dark"
                                                         data-toggle="modal"
                                                         data-target="#modalBulkAstri-<?= (int) $group['id_doc_package'] ?>">
-                                                        Edit ASTRI Bulk
+                                                        Bulk ASTRI
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
@@ -1339,7 +1360,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Upload
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canTambah && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                    <?php if (checklist_doc_can_show_astri_action($item, $canTambah)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-secondary btn-astri-doc"
                                                                             data-toggle="modal"
@@ -1385,6 +1406,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                         </div>
                                     </div>
                                 </div>
+                                <?php if ($groupHasAstriItems) checklist_doc_render_bulk_astri_modal($cluster, $group, $canTambah); ?>
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -1475,7 +1497,6 @@ $clusterProgressPercent = checklist_doc_percent(
                                         </div>
                                     </div>
                                 </div>
-                                <?php if ($canBulkEditAstri) checklist_doc_render_bulk_astri_modal($cluster, $group); ?>
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -2029,11 +2050,11 @@ $clusterProgressPercent = checklist_doc_percent(
     });
 
     $(document).on('change', '.bulk-astri-status', function() {
-        var $dateInput = $($(this).data('date-input'));
+        var dateInput = $($(this).data('date-input'));
         var isNy = $(this).val() === 'NY';
-        $dateInput.prop('required', !isNy);
+        dateInput.prop('required', !isNy);
         if (isNy) {
-            $dateInput.val('');
+            dateInput.val('');
         }
     });
 

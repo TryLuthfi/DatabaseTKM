@@ -1643,7 +1643,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['title'] = 'Checklist Dokument Detail';
         $data['cluster'] = $cluster;
         $data['scopeTabs'] = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId, false);
-        $data['canBulkEditAstri'] = $this->canBulkEditAstri();
         $data['hideMainFooter'] = true;
 
         $this->load->view('Templates/01_Header', $data);
@@ -2515,14 +2514,14 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $astriStatuses = (array) $this->input->post('astri_status');
         $astriRemarks = (array) $this->input->post('astri_remark');
 
-        if (!$this->canBulkEditAstri()) {
-            $this->session->set_flashdata('error', 'Anda tidak memiliki akses edit ASTRI bulk.');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses update status ASTRI.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
         if ($clusterId <= 0 || empty($fileIds)) {
-            $this->session->set_flashdata('error', 'Data edit ASTRI bulk tidak valid.');
+            $this->session->set_flashdata('error', 'Data bulk ASTRI tidak valid.');
             redirect($clusterId > 0 ? 'Checklist_Dokument_MyRep/detail/' . $clusterId : 'Checklist_Dokument_MyRep');
             return;
         }
@@ -2547,11 +2546,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
             }
 
             $astriStatus = strtoupper(trim((string) ($astriStatuses[$fileId] ?? 'NY')));
+            $astriStatus = $astriStatus !== '' ? $astriStatus : 'NY';
             $astriSubmittedDate = $this->normalizeDateInput($astriSubmittedDates[$fileId] ?? null);
             $astriRemark = trim((string) ($astriRemarks[$fileId] ?? ''));
 
             $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
-            $docName = trim((string) ($file['doc_name'] ?? ('Dokumen #' . $fileId)));
+            $docName = !empty($file['doc_name']) ? trim((string) $file['doc_name']) : ('Dokumen #' . $fileId);
             if (empty($file) || (int) ($file['cluster_id'] ?? 0) !== $clusterId) {
                 $skippedMessages[] = $docName . ' tidak ditemukan.';
                 continue;
@@ -2559,11 +2559,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
             if (!in_array($astriStatus, $allowedStatuses, true)) {
                 $skippedMessages[] = $docName . ' punya status ASTRI tidak dikenali.';
-                continue;
-            }
-
-            if (strlen($astriRemark) > 500) {
-                $skippedMessages[] = $docName . ' punya remark lebih dari 500 karakter.';
                 continue;
             }
 
@@ -2610,7 +2605,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        $this->session->set_flashdata('error', 'Tidak ada status ASTRI yang berhasil diperbarui. ' . implode('; ', array_slice($skippedMessages, 0, 3)));
+        $message = 'Tidak ada status ASTRI yang berhasil diperbarui.';
+        if (!empty($skippedMessages)) {
+            $message .= ' ' . implode('; ', array_slice($skippedMessages, 0, 3));
+        }
+        $this->session->set_flashdata('error', $message);
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
@@ -2853,66 +2852,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
     {
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
-    }
-
-    private function canBulkEditAstri()
-    {
-        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
-            return true;
-        }
-
-        $userId = (int) $this->session->userdata('id_user');
-        if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
-            return false;
-        }
-
-        $user = (array) $this->db
-            ->select('nik')
-            ->from('tb_master_user_new')
-            ->where('id', $userId)
-            ->limit(1)
-            ->get()
-            ->row_array();
-        $nik = trim((string) ($user['nik'] ?? ''));
-        if ($nik === '') {
-            return false;
-        }
-
-        $roleColumns = [
-            'rpm_area',
-            'sm_area',
-            'spv_area',
-            'snd_area',
-            'admin_area',
-            'snd_ho',
-            'atp_ho',
-            'rfs_ho',
-            'sitac_ho',
-            'dc_ho',
-            'qa_ho',
-        ];
-        $whereParts = [];
-        foreach ($roleColumns as $columnName) {
-            if (!$this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
-                continue;
-            }
-            $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik);
-        }
-
-        if (empty($whereParts)) {
-            return false;
-        }
-
-        $this->db
-            ->select('1 AS hit', false)
-            ->from('tb_myrep_pic_mapping_city')
-            ->where('(' . implode(' OR ', $whereParts) . ')', null, false)
-            ->limit(1);
-        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
-            $this->db->where('is_active', 1);
-        }
-
-        return !empty($this->db->get()->row_array());
     }
 
     private function isAjaxRequest()
