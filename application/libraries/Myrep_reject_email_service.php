@@ -552,6 +552,7 @@ class Myrep_reject_email_service
         $fromEmail = $this->envValue('SMTP_FROM_EMAIL', $smtpUser !== '' ? $smtpUser : 'no-reply@tkm.co.id');
         $fromName = $this->envValue('SMTP_FROM_NAME', 'Database TKM');
         $allowInvalidTls = $this->normalizeBoolean($this->envValue('MYREP_REJECT_EMAIL_ALLOW_INVALID_TLS', 'false'));
+        $smtpTimeout = max(5, min(60, (int) $this->envValue('MYREP_REJECT_EMAIL_SMTP_TIMEOUT', '15')));
 
         if ($allowInvalidTls) {
             stream_context_set_default([
@@ -575,7 +576,7 @@ class Myrep_reject_email_service
                 'charset' => 'utf-8',
                 'newline' => "\r\n",
                 'crlf' => "\r\n",
-                'smtp_timeout' => 15,
+                'smtp_timeout' => $smtpTimeout,
             ]);
         }
 
@@ -630,7 +631,10 @@ class Myrep_reject_email_service
         $cutoff = date('Y-m-d H:i:s', time() - ($minutes * 60));
         $this->ci->db
             ->where('status_queue', 'PROCESSING')
+            ->group_start()
             ->where('locked_at <', $cutoff)
+            ->or_where('locked_at IS NULL', null, false)
+            ->group_end()
             ->update('tb_myrep_reject_email_queue', [
                 'status_queue' => 'PENDING',
                 'locked_at' => null,

@@ -16,6 +16,9 @@ class MyRep_Email_Queue extends CI_Controller
             return;
         }
 
+        ignore_user_abort(true);
+        @set_time_limit(300);
+
         $limit = (int) $this->input->get('limit');
         $result = $this->myrepRejectEmail->processDueQueues($limit > 0 ? $limit : null);
 
