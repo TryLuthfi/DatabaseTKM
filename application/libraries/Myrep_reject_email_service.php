@@ -513,7 +513,7 @@ class Myrep_reject_email_service
             $safeUrl = htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8');
             $html .= '<p>Link Detail: <a href="' . $safeUrl . '">' . $safeUrl . '</a></p>';
         }
-        $html .= '<p>Silakan melakukan revisi yang diperlukan dan submit kembali dokumen tersebut melalui aplikasi Database TKM.</p>';
+        $html .= '<p>Silakan melakukan revisi yang diperlukan dan submit kembali dokumen tersebut melalui aplikasi ZEYN.</p>';
         $html .= '<p>Jika ada pertanyaan terkait request ini, silakan menghubungi reviewer/rejecter yang tercantum dalam email ini.</p>';
         $html .= '<p>Terima kasih.</p>';
         $html .= $this->buildCompanyFooterHtml();
