@@ -930,7 +930,6 @@ class BAK_MyRep extends CI_Controller
 
         if ($result) {
             $this->MBAK_MyRep->syncBakStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
-            $this->myrepRejectEmail->enqueueReject('BAK_MyRep', $fileId);
         }
 
         $docName = (string) ($file['doc_name'] ?? 'BAK');
@@ -1007,6 +1006,7 @@ class BAK_MyRep extends CI_Controller
 
         if ($result) {
             $this->MBAK_MyRep->syncBakStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
+            $this->myrepRejectEmail->enqueueReject('BAK_MyRep', $fileId);
         }
 
         $docName = (string) ($file['doc_name'] ?? 'BAK');
