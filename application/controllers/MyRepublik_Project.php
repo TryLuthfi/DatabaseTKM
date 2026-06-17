@@ -1751,7 +1751,7 @@ class MyRepublik_Project extends CI_Controller
 
     private function normalizeCutoffSnapshotRowForExport(array $rowMap)
     {
-        $normalized = [];
+        $normalized = $rowMap;
         foreach ($this->getCutoffImportHeaders() as $header) {
             $normalized[$header] = isset($rowMap[$header]) ? (string) $rowMap[$header] : '';
         }
