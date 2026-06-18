@@ -66,6 +66,53 @@ if (!function_exists('poMyRepTerminInvoiceValue')) {
         return (float) ($termin['termin_value'] ?? 0);
     }
 }
+if (!function_exists('poMyRepNormalizeNumber')) {
+    function poMyRepNormalizeNumber($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $value = preg_replace('/\s+/', '', $value);
+        $negative = false;
+        if (preg_match("/^\('?[-]?([0-9.,]+)\)?$/", $value, $matches)) {
+            $negative = strpos($value, '-') !== false || strpos($value, '(') === 0;
+            $value = $matches[1];
+        }
+
+        $dotPos = strrpos($value, '.');
+        $commaPos = strrpos($value, ',');
+        if ($dotPos !== false && $commaPos !== false) {
+            $value = $dotPos > $commaPos
+                ? str_replace(',', '', $value)
+                : str_replace(',', '.', str_replace('.', '', $value));
+        } elseif ($commaPos !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif ($dotPos !== false && preg_match('/^\d{1,3}(?:\.\d{3})+$/', $value)) {
+            $value = str_replace('.', '', $value);
+        }
+
+        if (!is_numeric($value)) {
+            return 0;
+        }
+
+        $number = (float) $value;
+        return $negative ? -abs($number) : $number;
+    }
+}
+if (!function_exists('poMyRepTerminPlanInvoiceValue')) {
+    function poMyRepTerminPlanInvoiceValue($termin)
+    {
+        $remark = (string) ($termin['remark_termin'] ?? '');
+        if (preg_match('/Plan\s+Invoice\s*:\s*([^\r\n;]+)/i', $remark, $matches)) {
+            return (float) poMyRepNormalizeNumber($matches[1]);
+        }
+
+        return (float) ($termin['termin_value'] ?? 0);
+    }
+}
 if (!function_exists('poMyRepStatusBadge')) {
     function poMyRepStatusBadge($status)
     {
@@ -388,7 +435,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                     <?php
                                                     $hasInvoiceDate = poMyRepHasInvoiceDate($termin['invoice_date'] ?? null);
                                                     $terminInvoiceValue = $hasInvoiceDate ? poMyRepTerminInvoiceValue($termin) : 0;
-                                                    $terminOutstandingValue = $hasInvoiceDate ? 0 : (float) ($termin['termin_value'] ?? 0);
+                                                    $terminOutstandingValue = $hasInvoiceDate ? 0 : poMyRepTerminPlanInvoiceValue($termin);
                                                     $terminInvoiceTotal += $terminInvoiceValue;
                                                     $terminOutstandingTotal += $terminOutstandingValue;
                                                     ?>

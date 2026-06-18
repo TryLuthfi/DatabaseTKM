@@ -447,6 +447,13 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         overflow-wrap: anywhere;
     }
 
+    .po-batch-summary-card--total {
+        grid-column: 1 / -1;
+        min-height: 72px;
+        background: linear-gradient(135deg, #eff6ff, #ffffff);
+        border-color: rgba(37, 99, 235, 0.22);
+    }
+
     @media (max-width: 768px) {
         .po-batch-invoice__toolbar {
             grid-template-columns: 1fr;
@@ -1155,10 +1162,13 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                             <div class="tab-pane fade" id="po-batch-paste-pane" role="tabpanel" aria-labelledby="po-batch-paste-tab">
                                 <div class="form-group">
                                     <label>Data Invoice</label>
-                                    <textarea id="po-batch-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO-001[TAB]1[TAB]1000000&#10;PO-002[TAB]Term 2[TAB]2500000"></textarea>
-                                    <small class="form-text text-muted">Term cukup isi angka 1-5. Variasi seperti Term 1, Termin 1, atau T1 juga terbaca.</small>
+                                    <textarea id="po-batch-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO-001[TAB]1[TAB]1000000&#10;PO-002[TAB]Term 2"></textarea>
+                                    <small class="form-text text-muted">Nilai invoice boleh kosong jika memakai estimasi PO dan term.</small>
                                 </div>
-                                <button type="button" class="btn btn-outline-secondary" id="po-batch-parse-paste">Cek PO</button>
+                                <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                    <button type="button" class="btn btn-outline-secondary" id="po-batch-parse-paste">Cek PO</button>
+                                    <button type="button" class="btn btn-outline-danger" id="po-batch-clear-list" disabled>Hapus List</button>
+                                </div>
                             </div>
                         </div>
 
@@ -1172,6 +1182,13 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                     <span class="po-batch-summary-card__value" id="po-batch-summary-term-<?= $poBatchTermSummary ?>">0</span>
                                 </div>
                             <?php endfor; ?>
+                            <div class="po-batch-summary-card po-batch-summary-card--total">
+                                <span class="po-batch-summary-card__label">
+                                    Total Invoice
+                                    <span class="po-batch-summary-card__count" id="po-batch-summary-total-count">0</span>
+                                </span>
+                                <span class="po-batch-summary-card__value" id="po-batch-summary-total-value">0</span>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
@@ -1406,6 +1423,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                     'termin_status' => $poBatchRow['termin_status_per_termin'] ?? [],
                     'termin_invoice_date' => $poBatchRow['termin_invoice_date_per_termin'] ?? [],
                     'termin_certificate' => $poBatchRow['termin_certificate_per_termin'] ?? [],
+                    'plan_invoice' => $poBatchRow['plan_invoice_per_termin'] ?? [],
                 ];
             }
             echo json_encode($poBatchTerminLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
@@ -1436,6 +1454,70 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
             return parsed > 0 ? parsed.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '';
         }
 
+        function formatBatchInvoiceInput($input) {
+            var raw = String($input.val() || '');
+            var digits = raw.replace(/\D/g, '');
+            var selectionStart = $input[0] && typeof $input[0].selectionStart === 'number'
+                ? $input[0].selectionStart
+                : raw.length;
+            var digitsBeforeCaret = raw.slice(0, selectionStart).replace(/\D/g, '').length;
+
+            if (digits === '') {
+                $input.val('');
+                return;
+            }
+
+            var formatted = Number(digits).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+            $input.val(formatted);
+
+            if (!$input[0] || typeof $input[0].setSelectionRange !== 'function') {
+                return;
+            }
+
+            var caret = formatted.length;
+            var digitCount = 0;
+            for (var i = 0; i < formatted.length; i++) {
+                if (/\d/.test(formatted.charAt(i))) {
+                    digitCount++;
+                }
+                if (digitCount >= digitsBeforeCaret) {
+                    caret = i + 1;
+                    break;
+                }
+            }
+            $input[0].setSelectionRange(caret, caret);
+        }
+
+        function getBatchPlanInvoiceValue(poNumber, termNo) {
+            var poKey = String(poNumber || '').trim().toUpperCase();
+            var lookup = poBatchTerminLookup[poKey] || null;
+            if (!lookup) {
+                return 0;
+            }
+
+            var planMap = lookup.plan_invoice || {};
+            return parseLocaleNumber(planMap[termNo] || 0);
+        }
+
+        function updateBatchEstimateHint() {
+            var poNumber = $('#po-batch-po-number').val();
+            var termNo = normalizeTermInput($('#po-batch-term-no').val());
+            var estimate = getBatchPlanInvoiceValue(poNumber, termNo);
+            var formatted = formatBatchValue(estimate);
+            var $input = $('#po-batch-invoice-value');
+            var currentValue = String($input.val() || '').trim();
+            var previousAutoValue = String($input.data('auto-estimate-value') || '');
+
+            if (estimate > 0 && (currentValue === '' || currentValue === previousAutoValue)) {
+                $input.val(formatted);
+                $input.data('auto-estimate-value', formatted);
+            } else if (estimate <= 0 && currentValue === previousAutoValue) {
+                $input.val('');
+                $input.data('auto-estimate-value', '');
+            }
+
+        }
+
         function updateBatchInvoiceState() {
             var $rows = $('#po-batch-invoice-table tbody tr.po-batch-row');
             var $validRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="1"]');
@@ -1461,9 +1543,12 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
 
             $('#po-batch-invoice-table tbody .po-batch-empty-row').toggle($rows.length === 0);
             $('#po-batch-submit').prop('disabled', $validRows.length === 0);
+            $('#po-batch-clear-list').prop('disabled', $rows.length === 0);
             $('#po-batch-total-valid').text($validRows.length);
             $('#po-batch-total-invalid').text($invalidRows.length);
             $('#po-batch-total-value').text(totalValue > 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-summary-total-count').text($validRows.length);
+            $('#po-batch-summary-total-value').text(totalValue > 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
             Object.keys(termSummary).forEach(function (termNo) {
                 var summary = termSummary[termNo];
                 $('#po-batch-summary-count-' + termNo).text(summary.count);
@@ -1523,6 +1608,9 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         function addBatchInvoiceRow(poNumber, termNo, invoiceValue) {
             poNumber = String(poNumber || '').trim();
             termNo = normalizeTermInput(termNo);
+            if (String(invoiceValue || '').trim() === '') {
+                invoiceValue = getBatchPlanInvoiceValue(poNumber, termNo);
+            }
             var invoiceValueRaw = parseLocaleNumber(invoiceValue);
             invoiceValue = formatBatchValue(invoiceValueRaw);
 
@@ -1584,6 +1672,17 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
             }
         });
 
+        $('#po-batch-po-number, #po-batch-term-no').on('input change', function () {
+            updateBatchEstimateHint();
+        });
+
+        $('#po-batch-invoice-value').on('input', function () {
+            formatBatchInvoiceInput($(this));
+            if (String($(this).val() || '').trim() !== String($(this).data('auto-estimate-value') || '')) {
+                $(this).data('auto-estimate-value', '');
+            }
+        });
+
         $('#po-batch-parse-paste').on('click', function () {
             var lines = String($('#po-batch-paste').val() || '').split(/\r?\n/);
             var checkedCount = 0;
@@ -1594,20 +1693,23 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                 }
 
                 var columns = line.split('\t');
-                if (columns.length < 3) {
+                if (columns.length < 2) {
                     columns = line.split(';');
                 }
-                if (columns.length < 3) {
+                if (columns.length < 2) {
                     columns = line.split(',');
                 }
-                if (columns.length < 3) {
+                if (columns.length < 2) {
                     columns = line.split(/\s{2,}/);
                 }
-                if (columns.length < 3) {
+                if (columns.length < 2) {
+                    columns = line.split(/\s+/);
+                }
+                if (columns.length < 2) {
                     return;
                 }
 
-                addBatchInvoiceRow(columns[0], columns[1], columns.slice(2).join(' '));
+                addBatchInvoiceRow(columns[0], columns[1], columns.length >= 3 ? columns.slice(2).join(' ') : '');
                 checkedCount++;
             });
             if (checkedCount > 0) {
@@ -1617,6 +1719,11 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
 
         $(document).on('click', '.po-batch-remove-row', function () {
             $(this).closest('tr').remove();
+            updateBatchInvoiceState();
+        });
+
+        $('#po-batch-clear-list').on('click', function () {
+            $('#po-batch-invoice-table tbody tr.po-batch-row').remove();
             updateBatchInvoiceState();
         });
 
