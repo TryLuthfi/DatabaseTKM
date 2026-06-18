@@ -14,6 +14,7 @@ class PO_MyRep extends CI_Controller
             $this->myrepAccess->enforceByMethod('PO_MyRep', (string) $this->router->fetch_method(), [
                 'saveTerminCertificate' => 'EDIT',
                 'batchInvoiceTermin' => 'EDIT',
+                'batchTerminCertificate' => 'EDIT',
             ]);
         }
     }
@@ -46,6 +47,11 @@ class PO_MyRep extends CI_Controller
             ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus)
             : [];
         $data['canBatchInvoice'] = $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT');
+        $data['canBatchCertificate'] = $data['canBatchInvoice']
+            && (
+                strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO'
+                || (string) $this->session->userdata('nama_level') === 'Super Admin'
+            );
         $data['summary'] = $this->MPO_MyRep->getDashboardSummary($data['clusterRows']);
 
         $this->load->view('Templates/01_Header', $data);
@@ -435,6 +441,127 @@ class PO_MyRep extends CI_Controller
         redirect('PO_MyRep/detail/' . $clusterId);
     }
 
+    public function batchTerminCertificate()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $canReleaseCertificate = strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO'
+            || (string) $this->session->userdata('nama_level') === 'Super Admin';
+        if (!$canReleaseCertificate) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk batch update status/tanggal sertifikat.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $poNumbers = (array) $this->input->post('certificate_po_number');
+        $termInputs = (array) $this->input->post('certificate_term_no');
+        $certificateValues = (array) $this->input->post('certificate_value');
+        $allowedStatuses = $this->getAllowedCertificateStatusValues();
+
+        $updatedCount = 0;
+        $skippedMessages = [];
+        $seenKeys = [];
+        $termRowsCache = [];
+        foreach ($poNumbers as $index => $poNumber) {
+            $poNumber = trim((string) $poNumber);
+            $termNo = $this->normalizeTerminNoInput($termInputs[$index] ?? '');
+            $certificateValue = trim((string) ($certificateValues[$index] ?? ''));
+            $rowLabel = $poNumber !== '' ? $poNumber . ' T' . ($termNo > 0 ? $termNo : '?') : 'Baris ' . ($index + 1);
+
+            if ($poNumber === '' && $termNo <= 0 && $certificateValue === '') {
+                continue;
+            }
+            if ($poNumber === '' || $termNo < 2 || $termNo > 5) {
+                $skippedMessages[] = $rowLabel . ': nomor PO wajib dan term sertifikat harus 2-5.';
+                continue;
+            }
+            if ($certificateValue === '') {
+                $skippedMessages[] = $rowLabel . ': status/tanggal sertifikat wajib diisi.';
+                continue;
+            }
+
+            $dedupeKey = strtoupper($poNumber) . '|' . $termNo;
+            if (isset($seenKeys[$dedupeKey])) {
+                $skippedMessages[] = $rowLabel . ': duplikat dalam batch.';
+                continue;
+            }
+            $seenKeys[$dedupeKey] = true;
+
+            $normalizedDate = $this->normalizeCertificateDateValue($certificateValue);
+            $normalizedStatus = strtoupper(preg_replace('/\s+/', ' ', $certificateValue));
+            $isDateValue = $normalizedDate !== '';
+            $isStatusValue = in_array($normalizedStatus, $allowedStatuses, true);
+            if (!$isDateValue && !$isStatusValue) {
+                $skippedMessages[] = $rowLabel . ': isi bukan tanggal valid atau status sertifikat yang dikenal.';
+                continue;
+            }
+
+            $termin = $this->MPO_MyRep->getTerminByPoNumberAndTerm($poNumber, $termNo);
+            if (empty($termin)) {
+                $skippedMessages[] = $rowLabel . ': termin PO tidak ditemukan.';
+                continue;
+            }
+
+            if ($isDateValue) {
+                $clusterId = (int) ($termin['id_myrep_cluster'] ?? 0);
+                if (!isset($termRowsCache[$clusterId])) {
+                    $cluster = $this->MPO_MyRep->getClusterById($clusterId);
+                    $termRowsCache[$clusterId] = !empty($cluster)
+                        ? $this->MChecklist_Dokument_MyRep->getCertificateTermRows((int) ($cluster['rfs_cluster_id'] ?? 0), $clusterId)
+                        : [];
+                }
+
+                $selectedTerm = null;
+                foreach ($termRowsCache[$clusterId] as $termRow) {
+                    if ((int) ($termRow['id_po_termin'] ?? 0) === (int) ($termin['id_po_termin'] ?? 0)) {
+                        $selectedTerm = $termRow;
+                        break;
+                    }
+                }
+                if (empty($selectedTerm) || (empty($selectedTerm['is_release_ready']) && empty($selectedTerm['is_certificate_released']))) {
+                    $skippedMessages[] = $rowLabel . ': tanggal sertifikat belum bisa disimpan karena syarat release belum terpenuhi.';
+                    continue;
+                }
+                $saveValue = $normalizedDate;
+            } else {
+                $saveValue = $normalizedStatus;
+            }
+
+            $updated = $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
+                (int) ($termin['id_po_termin'] ?? 0),
+                $saveValue,
+                (int) $this->session->userdata('id_user')
+            );
+
+            if ($updated) {
+                $updatedCount++;
+            } else {
+                $skippedMessages[] = $rowLabel . ': gagal disimpan.';
+            }
+        }
+
+        if ($updatedCount > 0) {
+            $message = $updatedCount . ' status/tanggal sertifikat berhasil disimpan.';
+            if (!empty($skippedMessages)) {
+                $message .= ' ' . count($skippedMessages) . ' baris dilewati: ' . implode('; ', array_slice($skippedMessages, 0, 5));
+            }
+            $this->session->set_flashdata('success', $message);
+        } else {
+            $this->session->set_flashdata('error', 'Tidak ada status/tanggal sertifikat yang berhasil disimpan. ' . implode('; ', array_slice($skippedMessages, 0, 5)));
+        }
+
+        redirect('PO_MyRep');
+    }
+
     public function getTerminBreakdownDetail()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -570,6 +697,20 @@ class PO_MyRep extends CI_Controller
         }
 
         return '';
+    }
+
+    private function getAllowedCertificateStatusValues()
+    {
+        return [
+            'REVISI',
+            'FULL UPLOAD',
+            'APPROVED 1',
+            'LOGISTIK',
+            'PLANNING',
+            'TEAM LEADER',
+            'WASPANG',
+            'PERMIT',
+        ];
     }
 
     private function normalizeNumber($value)

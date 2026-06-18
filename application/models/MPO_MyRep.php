@@ -225,6 +225,9 @@ class MPO_MyRep extends CI_Model
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
         $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
+        if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            $terminSelect .= ', sertifikat_invoice_date';
+        }
         if ($this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
             $terminSelect .= ', invoice_value';
         }
@@ -251,6 +254,7 @@ class MPO_MyRep extends CI_Model
                     'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                     'status_per_termin' => [1 => 'NOT READY', 2 => 'NOT READY', 3 => 'NOT READY', 4 => 'NOT READY', 5 => 'NOT READY'],
                     'invoice_date_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
+                    'certificate_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
                 ];
             }
             $terminMap[$headerId]['total']++;
@@ -264,6 +268,7 @@ class MPO_MyRep extends CI_Model
                 $terminMap[$headerId]['plan_invoice'][$terminNo] = $planInvoiceValue;
                 $terminMap[$headerId]['status_per_termin'][$terminNo] = $statusTermin;
                 $terminMap[$headerId]['invoice_date_per_termin'][$terminNo] = (string) ($termin['invoice_date'] ?? '');
+                $terminMap[$headerId]['certificate_per_termin'][$terminNo] = (string) ($termin['sertifikat_invoice_date'] ?? '');
                 if (!$hasInvoiceDate) {
                     $terminMap[$headerId]['outstanding_invoice'][$terminNo] = $planInvoiceValue;
                 }
@@ -290,6 +295,7 @@ class MPO_MyRep extends CI_Model
                 'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'status_per_termin' => [1 => 'NOT READY', 2 => 'NOT READY', 3 => 'NOT READY', 4 => 'NOT READY', 5 => 'NOT READY'],
                 'invoice_date_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
+                'certificate_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
             ];
             $row['termin_total_count'] = (int) $meta['total'];
             $row['termin_progress_count'] = (int) $meta['progress'];
@@ -299,6 +305,7 @@ class MPO_MyRep extends CI_Model
             $row['outstanding_invoice_per_termin'] = $meta['outstanding_invoice'];
             $row['termin_status_per_termin'] = $meta['status_per_termin'];
             $row['termin_invoice_date_per_termin'] = $meta['invoice_date_per_termin'];
+            $row['termin_certificate_per_termin'] = $meta['certificate_per_termin'];
             $row['plan_invoice_total'] = array_sum($meta['plan_invoice']);
             $row['done_invoice_total'] = array_sum($meta['done_invoice']);
             $row['total_invoiced'] = $row['done_invoice_total'];

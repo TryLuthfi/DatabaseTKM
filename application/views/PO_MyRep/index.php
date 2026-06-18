@@ -2,6 +2,7 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $canBatchInvoice = isset($canBatchInvoice) ? (bool) $canBatchInvoice : false;
+$canBatchCertificate = isset($canBatchCertificate) ? (bool) $canBatchCertificate : false;
 
 if (!function_exists('poMyRepNumber')) {
     function poMyRepNumber($value)
@@ -494,6 +495,12 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                     <i class="fas fa-file-invoice-dollar"></i>
                                     Batch Input Invoice Termin
                                 </button>
+                                <?php if ($canBatchCertificate): ?>
+                                    <button type="button" class="po-btn po-btn--light" data-toggle="modal" data-target="#modal-batch-certificate-termin">
+                                        <i class="fas fa-certificate"></i>
+                                        Batch Status/Tanggal Sertifikat
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -1210,6 +1217,107 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
     </div>
 <?php endif; ?>
 
+<?php if ($isReady && $canBatchCertificate): ?>
+    <div class="modal fade" id="modal-batch-certificate-termin" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <form method="post" action="<?= base_url('PO_MyRep/batchTerminCertificate') ?>" id="po-batch-certificate-form">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Batch Update Status/Tanggal Sertifikat Termin</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>Nomor PO</label>
+                                    <input type="text" id="po-cert-po-number" class="form-control" list="po-batch-po-options" placeholder="Pilih / ketik nomor PO">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Term</label>
+                                    <select id="po-cert-term-no" class="form-control">
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>Status/Tanggal Sertifikat</label>
+                                    <input type="text" id="po-cert-value" class="form-control" placeholder="Contoh: FULL UPLOAD / APPROVED 1 / 2026-06-18">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary mb-3" id="po-cert-add-row">Tambah Row</button>
+
+                        <div class="form-group">
+                            <label>Paste dari Excel</label>
+                            <textarea id="po-cert-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Status/Tanggal Sertifikat&#10;7400127996[TAB]2[TAB]FULL UPLOAD&#10;7400127996[TAB]4[TAB]2026-06-18"></textarea>
+                            <small class="form-text text-muted">Status valid: REVISI, FULL UPLOAD, APPROVED 1, LOGISTIK, PLANNING, TEAM LEADER, WASPANG, PERMIT. Tanggal bisa YYYY-MM-DD atau DD/MM/YYYY.</small>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary mb-3" id="po-cert-parse-paste">Cek Status/Tanggal</button>
+
+                        <div class="po-batch-summary">
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Tanggal <span class="po-batch-summary-card__count" id="po-cert-summary-date-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-cert-summary-date">0</span>
+                            </div>
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Status <span class="po-batch-summary-card__count" id="po-cert-summary-status-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-cert-summary-status">0</span>
+                            </div>
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Valid <span class="po-batch-summary-card__count" id="po-cert-summary-valid-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-cert-summary-valid">0</span>
+                            </div>
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Invalid <span class="po-batch-summary-card__count" id="po-cert-summary-invalid-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-cert-summary-invalid">0</span>
+                            </div>
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Total Row <span class="po-batch-summary-card__count" id="po-cert-summary-total-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-cert-summary-total">0</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0" id="po-batch-certificate-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width:60px;">No</th>
+                                        <th>Nomor PO</th>
+                                        <th style="width:110px;">Term</th>
+                                        <th>Status/Tanggal</th>
+                                        <th style="width:120px;">Tipe</th>
+                                        <th style="width:220px;">Status Cek</th>
+                                        <th style="width:90px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="po-cert-empty-row">
+                                        <td colspan="7" class="text-center text-muted">Belum ada row status/tanggal sertifikat.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <div class="text-muted small">Tanggal valid akan dianggap release date. Status teks hanya status proses sertifikat.</div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-primary" id="po-cert-submit" disabled>Simpan Batch Sertifikat</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div class="modal fade" id="modal-breakdown-detail" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -1297,10 +1405,12 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                     'po_number' => $poBatchNumber,
                     'termin_status' => $poBatchRow['termin_status_per_termin'] ?? [],
                     'termin_invoice_date' => $poBatchRow['termin_invoice_date_per_termin'] ?? [],
+                    'termin_certificate' => $poBatchRow['termin_certificate_per_termin'] ?? [],
                 ];
             }
             echo json_encode($poBatchTerminLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
+        var poAllowedCertificateStatuses = ['REVISI', 'FULL UPLOAD', 'APPROVED 1', 'LOGISTIK', 'PLANNING', 'TEAM LEADER', 'WASPANG', 'PERMIT'];
 
         function escapeHtml(value) {
             return $('<div>').text(value == null ? '' : String(value)).html();
@@ -1514,6 +1624,207 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
             if ($('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="1"]').length === 0) {
                 e.preventDefault();
                 alert('Belum ada row invoice yang valid.');
+            }
+        });
+
+        function normalizeCertificateStatus(value) {
+            return String(value || '').trim().replace(/\s+/g, ' ').toUpperCase();
+        }
+
+        function normalizeCertificateDateInput(value) {
+            var text = String(value || '').trim();
+            var match;
+            var year;
+            var month;
+            var day;
+            var date;
+
+            match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (match) {
+                year = Number(match[1]);
+                month = Number(match[2]);
+                day = Number(match[3]);
+            } else {
+                match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+                if (!match) {
+                    return '';
+                }
+                day = Number(match[1]);
+                month = Number(match[2]);
+                year = Number(match[3]);
+                if (year < 100) {
+                    year += 2000;
+                }
+            }
+
+            date = new Date(year, month - 1, day);
+            if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+                return '';
+            }
+
+            return String(year).padStart(4, '0') + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        }
+
+        function classifyCertificateValue(value) {
+            var normalizedDate = normalizeCertificateDateInput(value);
+            var normalizedStatus = normalizeCertificateStatus(value);
+
+            if (normalizedDate) {
+                return {
+                    valid: true,
+                    type: 'Tanggal',
+                    value: normalizedDate,
+                    message: 'Tanggal valid; syarat release dicek saat submit.'
+                };
+            }
+
+            if (poAllowedCertificateStatuses.indexOf(normalizedStatus) !== -1) {
+                return {
+                    valid: true,
+                    type: 'Status',
+                    value: normalizedStatus,
+                    message: 'Status proses sertifikat valid.'
+                };
+            }
+
+            return {
+                valid: false,
+                type: 'Invalid',
+                value: String(value || '').trim(),
+                message: 'Isi bukan tanggal valid atau status yang dikenal.'
+            };
+        }
+
+        function updateCertificateBatchState() {
+            var $rows = $('#po-batch-certificate-table tbody tr.po-cert-row');
+            var $validRows = $('#po-batch-certificate-table tbody tr.po-cert-row[data-valid="1"]');
+            var $invalidRows = $('#po-batch-certificate-table tbody tr.po-cert-row[data-valid="0"]');
+            var dateCount = $('#po-batch-certificate-table tbody tr.po-cert-row[data-valid="1"][data-cert-type="Tanggal"]').length;
+            var statusCount = $('#po-batch-certificate-table tbody tr.po-cert-row[data-valid="1"][data-cert-type="Status"]').length;
+
+            $('#po-batch-certificate-table tbody .po-cert-empty-row').toggle($rows.length === 0);
+            $('#po-cert-submit').prop('disabled', $validRows.length === 0);
+            $('#po-cert-summary-date-count, #po-cert-summary-date').text(dateCount);
+            $('#po-cert-summary-status-count, #po-cert-summary-status').text(statusCount);
+            $('#po-cert-summary-valid-count, #po-cert-summary-valid').text($validRows.length);
+            $('#po-cert-summary-invalid-count, #po-cert-summary-invalid').text($invalidRows.length);
+            $('#po-cert-summary-total-count, #po-cert-summary-total').text($rows.length);
+            $rows.each(function (idx) {
+                $(this).find('.po-cert-row-no').text(idx + 1);
+            });
+        }
+
+        function addCertificateBatchRow(poNumber, termNo, certificateValue) {
+            poNumber = String(poNumber || '').trim();
+            termNo = normalizeTermInput(termNo);
+            certificateValue = String(certificateValue || '').trim();
+
+            var key = poNumber.toUpperCase() + '|' + termNo;
+            var exists = false;
+            $('#po-batch-certificate-table tbody tr.po-cert-row').each(function () {
+                if ($(this).data('key') === key) {
+                    exists = true;
+                    return false;
+                }
+            });
+
+            var lookup = poBatchTerminLookup[String(poNumber || '').trim().toUpperCase()] || null;
+            var certClass = classifyCertificateValue(certificateValue);
+            var valid = true;
+            var message = certClass.message;
+            var type = certClass.type;
+            var saveValue = certClass.value;
+
+            if (!poNumber || !termNo || termNo < 2 || termNo > 5 || !certificateValue) {
+                valid = false;
+                message = 'Nomor PO, term 2-5, dan status/tanggal wajib diisi.';
+                type = 'Invalid';
+            } else if (exists) {
+                valid = false;
+                message = 'Duplikat dalam batch.';
+                type = 'Invalid';
+            } else if (!lookup) {
+                valid = false;
+                message = 'PO tidak ditemukan.';
+                type = 'Invalid';
+            } else if (!certClass.valid) {
+                valid = false;
+            }
+
+            var rowClass = valid ? 'table-success' : 'table-danger';
+            var badgeClass = valid ? 'badge-success' : 'badge-danger';
+            var hiddenInputs = valid
+                ? '<input type="hidden" name="certificate_po_number[]" value="' + escapeHtml(lookup.po_number || poNumber) + '">' +
+                  '<input type="hidden" name="certificate_term_no[]" value="' + escapeHtml(termNo) + '">' +
+                  '<input type="hidden" name="certificate_value[]" value="' + escapeHtml(saveValue) + '">'
+                : '';
+            var html = '<tr class="po-cert-row ' + rowClass + '" data-valid="' + (valid ? '1' : '0') + '" data-key="' + escapeHtml(key) + '" data-cert-type="' + escapeHtml(type) + '">' +
+                '<td class="text-center po-cert-row-no"></td>' +
+                '<td>' + escapeHtml((lookup && lookup.po_number) || poNumber || '-') + hiddenInputs + '</td>' +
+                '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
+                '<td>' + escapeHtml(certificateValue || '-') + '</td>' +
+                '<td class="text-center"><span class="badge badge-secondary">' + escapeHtml(type) + '</span></td>' +
+                '<td><span class="badge ' + badgeClass + '">' + (valid ? 'Sukses' : 'Invalid') + '</span><div class="small text-muted">' + escapeHtml(message) + '</div></td>' +
+                '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-cert-remove-row">Hapus</button></td>' +
+            '</tr>';
+
+            $('#po-batch-certificate-table tbody').append(html);
+            updateCertificateBatchState();
+            return valid;
+        }
+
+        $('#po-cert-add-row').on('click', function () {
+            var added = addCertificateBatchRow(
+                $('#po-cert-po-number').val(),
+                $('#po-cert-term-no').val(),
+                $('#po-cert-value').val()
+            );
+            if (added) {
+                $('#po-cert-po-number').val('').focus();
+                $('#po-cert-value').val('');
+            }
+        });
+
+        $('#po-cert-parse-paste').on('click', function () {
+            var lines = String($('#po-cert-paste').val() || '').split(/\r?\n/);
+            var checkedCount = 0;
+            lines.forEach(function (line) {
+                line = String(line || '').trim();
+                if (!line) {
+                    return;
+                }
+
+                var columns = line.split('\t');
+                if (columns.length < 3) {
+                    columns = line.split(';');
+                }
+                if (columns.length < 3) {
+                    columns = line.split(',');
+                }
+                if (columns.length < 3) {
+                    columns = line.split(/\s{2,}/);
+                }
+                if (columns.length < 3) {
+                    return;
+                }
+
+                addCertificateBatchRow(columns[0], columns[1], columns.slice(2).join(' '));
+                checkedCount++;
+            });
+            if (checkedCount > 0) {
+                $('#po-cert-paste').val('');
+            }
+        });
+
+        $(document).on('click', '.po-cert-remove-row', function () {
+            $(this).closest('tr').remove();
+            updateCertificateBatchState();
+        });
+
+        $('#po-batch-certificate-form').on('submit', function (e) {
+            if ($('#po-batch-certificate-table tbody tr.po-cert-row[data-valid="1"]').length === 0) {
+                e.preventDefault();
+                alert('Belum ada row status/tanggal sertifikat yang valid.');
             }
         });
 
