@@ -15,6 +15,11 @@ class Auth extends CI_Controller
     public function index()
     {
         if ($this->session->userdata('id_user') != null) {
+            if ((int) $this->session->userdata('first_login_required') === 1) {
+                redirect('Auth/firstLoginEmail');
+                return;
+            }
+
             if (strtoupper(trim((string) $this->session->userdata('homebase'))) === 'EMR' || strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'EMR') {
                 redirect('PO_EMR_Myrep');
                 return;
@@ -25,6 +30,12 @@ class Auth extends CI_Controller
             $this->form_validation->set_rules('pass', 'Password', 'required|trim');
 
             if ($this->form_validation->run() == false) {
+                $this->output
+                    ->set_header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
+                    ->set_header('Cache-Control: post-check=0, pre-check=0', false)
+                    ->set_header('Pragma: no-cache')
+                    ->set_header('Expires: 0');
+
                 $this->load->view('Auth/Login');
             } else {
                 $this->MAuth->login();

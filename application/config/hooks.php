@@ -21,6 +21,14 @@ $hook['post_controller_constructor'][] = array(
 );
 
 $hook['post_controller_constructor'][] = array(
+	'class'    => 'First_login_guard_hook',
+	'function' => 'enforce',
+	'filename' => 'First_login_guard_hook.php',
+	'filepath' => 'hooks',
+	'params'   => array()
+);
+
+$hook['post_controller_constructor'][] = array(
 	'class'    => 'ModuleAccess_hook',
 	'function' => 'enforce',
 	'filename' => 'ModuleAccess_hook.php',
