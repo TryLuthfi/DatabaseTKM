@@ -198,7 +198,14 @@ class PO_MyRep extends CI_Controller
         if (!in_array($statusTermin, ['NOT READY', 'READY BILLING', 'BILLED', 'PAID'], true)) {
             $statusTermin = 'NOT READY';
         }
+        $invoiceDate = $this->normalizeDate($this->input->post('invoice_date'));
+        $invoiceValue = $this->normalizeNumber($this->input->post('invoice_value')) ?: null;
         $terminNo = (int) ($termin['termin_no'] ?? 0);
+        if (in_array($statusTermin, ['BILLED', 'PAID'], true) && $invoiceDate === null) {
+            $this->session->set_flashdata('error', 'Termin belum bisa berstatus ' . $statusTermin . ' karena tanggal invoice wajib diisi.');
+            redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
+            return;
+        }
         if (
             $terminNo >= 2
             && $terminNo <= 5
@@ -218,8 +225,8 @@ class PO_MyRep extends CI_Controller
         $result = $this->MPO_MyRep->updateTermin($terminId, [
             'status_termin' => $statusTermin,
             'invoice_number' => trim((string) $this->input->post('invoice_number')),
-            'invoice_date' => $this->normalizeDate($this->input->post('invoice_date')),
-            'invoice_value' => $this->normalizeNumber($this->input->post('invoice_value')) ?: null,
+            'invoice_date' => $invoiceDate,
+            'invoice_value' => $invoiceValue,
             'bast_date' => $this->normalizeDate($this->input->post('bast_date')),
             'payment_date' => $this->normalizeDate($this->input->post('payment_date')),
             'remark_termin' => trim((string) $this->input->post('remark_termin')),

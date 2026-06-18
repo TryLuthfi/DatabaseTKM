@@ -6,6 +6,8 @@ class MDRM_MyRep extends CI_Model
 {
     /** @var array<string,bool>|null */
     private $currentUserAllowedCitySet = null;
+    /** @var array<string,bool>|null */
+    private $drmStatusEnumSet = null;
 
     public function __construct()
     {
@@ -712,6 +714,8 @@ class MDRM_MyRep extends CI_Model
 
     public function createDrm($clusterId, $drmPayload, $clusterPayload)
     {
+        $drmPayload = $this->normalizeDrmPayloadForStorage($drmPayload);
+
         $this->db->trans_start();
         $this->db->where('id_myrep_cluster', (int) $clusterId)->update('tb_myrep_cluster', $clusterPayload);
         $drmPayload['id_myrep_cluster'] = (int) $clusterId;
@@ -960,6 +964,7 @@ class MDRM_MyRep extends CI_Model
         }
 
         $clusterPayload['status_current'] = $this->resolveSafeCurrentStatus((string) ($existing['status_current'] ?? ''), (string) ($clusterPayload['status_current'] ?? 'RELEASED'));
+        $drmPayload = $this->normalizeDrmPayloadForStorage($drmPayload);
 
         $this->db->trans_start();
         $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', $clusterPayload);
@@ -1896,6 +1901,68 @@ class MDRM_MyRep extends CI_Model
     private function resolveDrmDocumentFlowType($scopeType)
     {
         return $this->normalizeDrmScopeType($scopeType) === 'SUBFEEDER' ? 'DRM_SUBFEEDER' : 'DRM';
+    }
+
+    private function normalizeDrmPayloadForStorage(array $payload)
+    {
+        if (array_key_exists('status_drm', $payload)) {
+            $payload['status_drm'] = $this->normalizeStoredDrmStatus($payload['status_drm']);
+        }
+
+        return $payload;
+    }
+
+    private function normalizeStoredDrmStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $enumSet = $this->getDrmStatusEnumSet();
+        if ($status !== '' && (empty($enumSet) || isset($enumSet[$status]))) {
+            return $status;
+        }
+
+        $displayToStored = [
+            'WAITING DOC' => 'DRAFT',
+            'WAITING APPROVE' => 'ON REVIEW',
+            'WAITING APPROVAL' => 'ON REVIEW',
+            'COMPLETE' => 'APPROVED',
+            'COMPLETED' => 'APPROVED',
+        ];
+        $mappedStatus = $displayToStored[$status] ?? $status;
+        if ($mappedStatus !== '' && (empty($enumSet) || isset($enumSet[$mappedStatus]))) {
+            return $mappedStatus;
+        }
+
+        foreach (['DRAFT', 'ON REVIEW', 'SUBMITTED', 'APPROVED', 'DONE', 'REJECTED'] as $fallbackStatus) {
+            if (isset($enumSet[$fallbackStatus])) {
+                return $fallbackStatus;
+            }
+        }
+
+        return $status !== '' ? $status : 'DRAFT';
+    }
+
+    private function getDrmStatusEnumSet()
+    {
+        if ($this->drmStatusEnumSet !== null) {
+            return $this->drmStatusEnumSet;
+        }
+
+        $this->drmStatusEnumSet = [];
+        if (!$this->db->table_exists('tb_myrep_drm') || !$this->db->field_exists('status_drm', 'tb_myrep_drm')) {
+            return $this->drmStatusEnumSet;
+        }
+
+        $row = $this->db->query(
+            "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tb_myrep_drm' AND COLUMN_NAME = 'status_drm' LIMIT 1"
+        )->row_array();
+        $columnType = (string) ($row['COLUMN_TYPE'] ?? '');
+        if (preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'/", $columnType, $matches)) {
+            foreach ($matches[1] as $option) {
+                $this->drmStatusEnumSet[strtoupper(stripslashes($option))] = true;
+            }
+        }
+
+        return $this->drmStatusEnumSet;
     }
 
     private function resolveSafeCurrentStatus($existingStatus, $requestedStatus)

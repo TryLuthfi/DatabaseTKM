@@ -16,9 +16,260 @@ if (!function_exists('poMyRepNumberOrDash')) {
         return (float) $value == 0.0 ? '-' : poMyRepNumber($value);
     }
 }
+
+$poTotalRows = is_array($poListRows ?? null) ? count($poListRows) : 0;
+$poRegionalSeen = [];
+foreach (($poListRows ?? []) as $poStatRow) {
+    $poRegional = strtoupper(trim((string) ($poStatRow['regional_name'] ?? '')));
+    if ($poRegional !== '') {
+        $poRegionalSeen[$poRegional] = true;
+    }
+}
+$poTotalRegional = count($poRegionalSeen);
+$poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
 ?>
 
 <style>
+    .po-myrep-revamp {
+        --po-ink: #0f172a;
+        --po-muted: #64748b;
+        --po-line: rgba(148, 163, 184, 0.22);
+        --po-surface: rgba(255, 255, 255, 0.96);
+        --po-shadow: 0 24px 48px rgba(15, 23, 42, 0.10);
+        --po-blue: #2563eb;
+        background: linear-gradient(180deg, #f8fafc 0%, #eef4fb 100%);
+    }
+
+    .po-myrep-revamp .content-header {
+        padding-bottom: 0;
+    }
+
+    .po-shell {
+        padding: 1rem;
+    }
+
+    .po-hero {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.20);
+        border-radius: 18px;
+        background:
+            radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 30%),
+            linear-gradient(135deg, #0f2c49 0%, #102f50 48%, #27588d 100%);
+        box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18);
+        color: #f8fafc;
+    }
+
+    .po-hero__grid {
+        display: grid;
+        grid-template-columns: 1.55fr 1fr;
+        gap: 1.2rem;
+        padding: 1.25rem;
+    }
+
+    .po-hero__eyebrow,
+    .po-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .po-hero__eyebrow {
+        padding: 0.35rem 0.7rem;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+    }
+
+    .po-hero h1 {
+        margin: 0.9rem 0 0.55rem;
+        color: #fff;
+        font-size: 1.72rem;
+        font-weight: 900;
+        line-height: 1.2;
+    }
+
+    .po-hero p {
+        max-width: 48rem;
+        margin: 0;
+        color: rgba(226, 232, 240, 0.9);
+        font-size: 0.92rem;
+        line-height: 1.65;
+    }
+
+    .po-hero__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+        margin-top: 1.05rem;
+    }
+
+    .po-hero__stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+        align-content: start;
+    }
+
+    .po-hero-stat {
+        min-height: 90px;
+        padding: 0.9rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.11);
+        backdrop-filter: blur(8px);
+    }
+
+    .po-hero-stat__label {
+        display: block;
+        color: rgba(226, 232, 240, 0.72);
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .po-hero-stat__value {
+        display: block;
+        margin-top: 0.3rem;
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .po-hero-stat__hint {
+        display: block;
+        margin-top: 0.5rem;
+        color: rgba(226, 232, 240, 0.72);
+        font-size: 0.76rem;
+        line-height: 1.45;
+    }
+
+    .po-panel {
+        margin-top: 1rem;
+        border: 1px solid var(--po-line);
+        border-radius: 12px;
+        background: var(--po-surface);
+        box-shadow: var(--po-shadow);
+        overflow: hidden;
+    }
+
+    .po-panel__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.05rem 1.15rem 0;
+    }
+
+    .po-panel__title {
+        margin: 0;
+        color: var(--po-ink);
+        font-size: 1rem;
+        font-weight: 900;
+    }
+
+    .po-panel__subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--po-muted);
+        font-size: 0.88rem;
+    }
+
+    .po-panel__body {
+        padding: 1rem 1.15rem 1.15rem;
+    }
+
+    .po-chip {
+        margin-bottom: 0.45rem;
+        padding: 0.33rem 0.68rem;
+        background: rgba(37, 99, 235, 0.1);
+        color: #1d4ed8;
+        font-weight: 800;
+    }
+
+    .po-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .po-filter-grid .form-group {
+        margin-bottom: 0;
+    }
+
+    .po-filter-grid label {
+        margin-bottom: 0.42rem;
+        color: #334155;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .po-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+        margin-top: 0.85rem;
+    }
+
+    .po-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 38px;
+        padding: 0.6rem 0.9rem;
+        border: 0;
+        border-radius: 8px;
+        font-weight: 800;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .po-btn:hover {
+        color: inherit;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+
+    .po-btn--primary {
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+    }
+
+    .po-btn--primary:hover {
+        color: #fff;
+    }
+
+    .po-btn--light {
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+    }
+
+    .po-myrep-revamp .form-control,
+    .po-myrep-revamp .custom-select {
+        min-height: 42px;
+        border-radius: 10px;
+        border-color: rgba(148, 163, 184, 0.34);
+        background-color: rgba(255, 255, 255, 0.94);
+        color: #0f172a;
+        font-size: 0.9rem;
+        box-shadow: none;
+    }
+
+    .po-myrep-revamp .form-control:focus,
+    .po-myrep-revamp .custom-select:focus {
+        border-color: rgba(37, 99, 235, 0.46);
+        box-shadow: 0 0 0 0.18rem rgba(37, 99, 235, 0.12) !important;
+    }
+
     .po-mini-progress__head {
         display: flex;
         justify-content: space-between;
@@ -142,26 +393,140 @@ if (!function_exists('poMyRepNumberOrDash')) {
         vertical-align: middle;
     }
 
+    .po-batch-summary {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .po-batch-summary-card {
+        min-height: 88px;
+        padding: 0.85rem;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 8px;
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
+    }
+
+    .po-batch-summary-card__label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .po-batch-summary-card__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 22px;
+        padding: 0 0.42rem;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.1);
+        color: #1d4ed8;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0;
+    }
+
+    .po-batch-summary-card__value {
+        display: block;
+        margin-top: 0.65rem;
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
     @media (max-width: 768px) {
         .po-batch-invoice__toolbar {
             grid-template-columns: 1fr;
         }
+
+        .po-batch-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .po-shell {
+            padding: 0.75rem;
+        }
+
+        .po-hero__grid,
+        .po-hero__stats,
+        .po-filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .po-panel__head,
+        .po-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
     }
 </style>
 
-<div class="content-wrapper">
+<div class="content-wrapper po-myrep-revamp">
     <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0 text-dark">PO MyRep</h1>
+        <div class="container-fluid po-shell">
+            <section class="po-hero">
+                <div class="po-hero__grid">
+                    <div>
+                        <span class="po-hero__eyebrow">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            PO MyRep Intelligence
+                        </span>
+                        <h1>Dashboard monitoring PO dan invoice termin MyRep</h1>
+                        <p>
+                            Pantau status PO cluster dan subfeeder, progress invoice termin, nilai outstanding, serta kesiapan
+                            sertifikat billing dalam satu dashboard operasional.
+                        </p>
+                        <?php if ($canBatchInvoice): ?>
+                            <div class="po-hero__actions">
+                                <button type="button" class="po-btn po-btn--primary" data-toggle="modal" data-target="#modal-batch-invoice-termin">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    Batch Input Invoice Termin
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="po-hero__stats">
+                        <div class="po-hero-stat">
+                            <span class="po-hero-stat__label">Total Cluster</span>
+                            <span class="po-hero-stat__value"><?= poMyRepNumber((int) ($summary['total_cluster'] ?? 0)) ?></span>
+                            <span class="po-hero-stat__hint">Cluster MyRep dalam cakupan filter.</span>
+                        </div>
+                        <div class="po-hero-stat">
+                            <span class="po-hero-stat__label">PO Aktif</span>
+                            <span class="po-hero-stat__value"><?= poMyRepNumber($poTotalRows) ?></span>
+                            <span class="po-hero-stat__hint">Baris PO cluster dan subfeeder tersedia.</span>
+                        </div>
+                        <div class="po-hero-stat">
+                            <span class="po-hero-stat__label">Regional</span>
+                            <span class="po-hero-stat__value"><?= poMyRepNumber($poTotalRegional) ?></span>
+                            <span class="po-hero-stat__hint">Regional yang masuk pemantauan PO.</span>
+                        </div>
+                        <div class="po-hero-stat">
+                            <span class="po-hero-stat__label">Area / Kota</span>
+                            <span class="po-hero-stat__value"><?= poMyRepNumber($poTotalCity) ?></span>
+                            <span class="po-hero-stat__hint">Kota yang tersedia untuk filter PO.</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </section>
 
     <section class="content">
-        <div class="container-fluid">
+        <div class="container-fluid po-shell pt-0">
             <?php if (!empty($flashSuccess)): ?>
                 <div class="alert alert-success"><?= $flashSuccess ?></div>
             <?php endif; ?>
@@ -172,27 +537,29 @@ if (!function_exists('poMyRepNumberOrDash')) {
             <?php if (!$isReady): ?>
                 <div class="alert alert-warning">Tabel PO MyRep belum tersedia.</div>
             <?php else: ?>
-                <div class="card card-outline card-primary shadow-sm">
-                    <div class="card-header">
-                        <h3 class="card-title">Filter PO MyRep</h3>
+                <section class="po-panel">
+                    <div class="po-panel__head">
+                        <div>
+                            <span class="po-chip"><i class="fas fa-sliders-h"></i> Kontrol Data</span>
+                            <h1 class="po-panel__title">Filter Data</h1>
+                            <p class="po-panel__subtitle">Pilih kota dan status PO untuk membaca report sesuai kebutuhan.</p>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <form method="get" class="row">
-                            <div class="col-md-4">
+                    <div class="po-panel__body">
+                        <form method="get">
+                            <div class="po-filter-grid">
                                 <div class="form-group">
-                                    <label>Kota</label>
-                                    <select name="city" class="form-control">
+                                    <label for="po_filter_city">Kota</label>
+                                    <select name="city" id="po_filter_city" class="form-control">
                                         <option value="">Semua Kota</option>
                                         <?php foreach ($cityOptions as $city): ?>
                                             <option value="<?= htmlspecialchars($city) ?>" <?= strtoupper((string) $selectedCity) === strtoupper((string) $city) ? 'selected' : '' ?>><?= htmlspecialchars($city) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Status PO</label>
-                                    <select name="status" class="form-control">
+                                    <label for="po_filter_status">Status PO</label>
+                                    <select name="status" id="po_filter_status" class="form-control">
                                         <option value="">Semua Status</option>
                                         <?php foreach (['DP', 'ATP CW', 'FULL OPM', 'RFS', 'FAC'] as $statusOption): ?>
                                             <option value="<?= htmlspecialchars($statusOption) ?>" <?= strtoupper((string) $selectedStatus) === $statusOption ? 'selected' : '' ?>><?= htmlspecialchars($statusOption) ?></option>
@@ -200,105 +567,19 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <div class="form-group mb-0">
-                                    <button type="submit" class="btn btn-primary">Terapkan Filter</button>
-                                    <a href="<?= base_url('PO_MyRep') ?>" class="btn btn-outline-secondary">Reset</a>
-                                </div>
+                            <div class="po-actions">
+                                <a href="<?= base_url('PO_MyRep') ?>" class="po-btn po-btn--light">
+                                    <i class="fas fa-undo-alt"></i>
+                                    Reset
+                                </a>
+                                <button type="submit" class="po-btn po-btn--primary">
+                                    <i class="fas fa-search"></i>
+                                    Terapkan
+                                </button>
                             </div>
                         </form>
                     </div>
-                </div>
-
-                <?php if ($canBatchInvoice): ?>
-                    <div class="card card-outline card-dark shadow-sm">
-                        <div class="card-header">
-                            <h3 class="card-title">Batch Input Invoice Termin</h3>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" action="<?= base_url('PO_MyRep/batchInvoiceTermin') ?>" id="po-batch-invoice-form">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label>Tanggal Invoice General</label>
-                                            <input type="date" name="invoice_date" id="po-batch-invoice-date" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-9">
-                                        <div class="form-group">
-                                            <label>Paste dari Excel</label>
-                                            <textarea id="po-batch-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO-001[TAB]1[TAB]1000000&#10;PO-002[TAB]Term 2[TAB]2500000"></textarea>
-                                            <small class="form-text text-muted">Term cukup isi angka 1-5. Variasi seperti Term 1, Termin 1, atau T1 juga terbaca.</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <datalist id="po-batch-po-options">
-                                    <?php
-                                    $poBatchSeen = [];
-                                    foreach (($poListRows ?? []) as $poBatchRow):
-                                        $poBatchNumber = trim((string) ($poBatchRow['po_number'] ?? ''));
-                                        if ($poBatchNumber === '' || isset($poBatchSeen[strtoupper($poBatchNumber)])) {
-                                            continue;
-                                        }
-                                        $poBatchSeen[strtoupper($poBatchNumber)] = true;
-                                    ?>
-                                        <option value="<?= htmlspecialchars($poBatchNumber, ENT_QUOTES) ?>"></option>
-                                    <?php endforeach; ?>
-                                </datalist>
-
-                                <div class="po-batch-invoice__toolbar mb-3">
-                                    <div>
-                                        <label class="mb-1">Nomor PO</label>
-                                        <input type="text" id="po-batch-po-number" class="form-control" list="po-batch-po-options" placeholder="Pilih / ketik nomor PO">
-                                    </div>
-                                    <div>
-                                        <label class="mb-1">Term</label>
-                                        <select id="po-batch-term-no" class="form-control">
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                            <option value="4">4</option>
-                                            <option value="5">5</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="mb-1">Nilai Invoice</label>
-                                        <input type="text" id="po-batch-invoice-value" class="form-control" placeholder="Contoh: 1.000.000">
-                                    </div>
-                                    <div>
-                                        <button type="button" class="btn btn-outline-primary" id="po-batch-add-row">Tambah Row</button>
-                                        <button type="button" class="btn btn-outline-secondary" id="po-batch-parse-paste">Tambah dari Paste</button>
-                                    </div>
-                                </div>
-
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-sm mb-0" id="po-batch-invoice-table">
-                                        <thead class="thead-light">
-                                            <tr>
-                                                <th style="width:60px;">No</th>
-                                                <th>Nomor PO</th>
-                                                <th style="width:110px;">Term</th>
-                                                <th style="width:220px;">Nilai Invoice</th>
-                                                <th style="width:90px;">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr class="po-batch-empty-row">
-                                                <td colspan="5" class="text-center text-muted">Belum ada row invoice.</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div class="text-muted small">Submit akan mengubah term menjadi BILLED dan memakai tanggal invoice general.</div>
-                                    <button type="submit" class="btn btn-dark" id="po-batch-submit" disabled>Simpan Batch Invoice</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                <?php endif; ?>
+                </section>
 
                 <div class="row">
                     <div class="col-md-2">
@@ -676,29 +957,34 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                                 <th rowspan="3">Status PO</th>
                                                 <th rowspan="3">Nilai PO</th>
                                                 <th rowspan="3">Termin</th>
-                                                <th colspan="10" class="text-center">PROGRESS INVOICE</th>
+                                                <th colspan="15" class="text-center">PROGRESS INVOICE</th>
                                                 <th rowspan="3">Total Invoiced</th>
                                                 <th rowspan="3">Outstanding Total</th>
                                                 <th rowspan="3">Aksi</th>
                                             </tr>
                                             <tr>
-                                                <th colspan="2" class="text-center">TOP 1<br>20%(DP)</th>
-                                                <th colspan="2" class="text-center">TOP 2<br>25%(CW)</th>
-                                                <th colspan="2" class="text-center">TOP 3<br>15%(FULL OPM)</th>
-                                                <th colspan="2" class="text-center">TOP 4<br>30%(RFS)</th>
-                                                <th colspan="2" class="text-center">TOP 5<br>10%(FAC)</th>
+                                                <th colspan="3" class="text-center">TOP 1<br>20%(DP)</th>
+                                                <th colspan="3" class="text-center">TOP 2<br>25%(CW)</th>
+                                                <th colspan="3" class="text-center">TOP 3<br>15%(FULL OPM)</th>
+                                                <th colspan="3" class="text-center">TOP 4<br>30%(RFS)</th>
+                                                <th colspan="3" class="text-center">TOP 5<br>10%(FAC)</th>
                                             </tr>
                                             <tr>
                                                 <th class="text-center">PLAN INV</th>
-                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">INVOICE</th>
+                                                <th class="text-center">OUTSTANDING</th>
                                                 <th class="text-center">PLAN INV</th>
-                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">INVOICE</th>
+                                                <th class="text-center">OUTSTANDING</th>
                                                 <th class="text-center">PLAN INV</th>
-                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">INVOICE</th>
+                                                <th class="text-center">OUTSTANDING</th>
                                                 <th class="text-center">PLAN INV</th>
-                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">INVOICE</th>
+                                                <th class="text-center">OUTSTANDING</th>
                                                 <th class="text-center">PLAN INV</th>
-                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">INVOICE</th>
+                                                <th class="text-center">OUTSTANDING</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -733,21 +1019,26 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                                     <td class="text-center"><?= $terminProgress ?>/<?= $terminTotal ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][1] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][1] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][1] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][2] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][2] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][2] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][3] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][3] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][3] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][4] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][4] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][4] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][5] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][5] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][5] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['total_invoiced'] ?? 0)) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['outstanding_total'] ?? 0)) ?></td>
                                                     <td><a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-primary">Detail</a></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                             <?php if (empty($poListRows)): ?>
-                                                <tr><td colspan="25" class="text-center text-muted">Belum ada data PO.</td></tr>
+                                                <tr><td colspan="28" class="text-center text-muted">Belum ada data PO.</td></tr>
                                             <?php endif; ?>
                                         </tbody>
                                         <tfoot>
@@ -757,14 +1048,19 @@ if (!function_exists('poMyRepNumberOrDash')) {
                                                 <th></th>
                                                 <th class="text-right po-list-footer-plan-1" id="po-list-footer-plan-1">-</th>
                                                 <th class="text-right po-list-footer-done-1" id="po-list-footer-done-1">-</th>
+                                                <th class="text-right po-list-footer-outstanding-1" id="po-list-footer-outstanding-1">-</th>
                                                 <th class="text-right po-list-footer-plan-2" id="po-list-footer-plan-2">-</th>
                                                 <th class="text-right po-list-footer-done-2" id="po-list-footer-done-2">-</th>
+                                                <th class="text-right po-list-footer-outstanding-2" id="po-list-footer-outstanding-2">-</th>
                                                 <th class="text-right po-list-footer-plan-3" id="po-list-footer-plan-3">-</th>
                                                 <th class="text-right po-list-footer-done-3" id="po-list-footer-done-3">-</th>
+                                                <th class="text-right po-list-footer-outstanding-3" id="po-list-footer-outstanding-3">-</th>
                                                 <th class="text-right po-list-footer-plan-4" id="po-list-footer-plan-4">-</th>
                                                 <th class="text-right po-list-footer-done-4" id="po-list-footer-done-4">-</th>
+                                                <th class="text-right po-list-footer-outstanding-4" id="po-list-footer-outstanding-4">-</th>
                                                 <th class="text-right po-list-footer-plan-5" id="po-list-footer-plan-5">-</th>
                                                 <th class="text-right po-list-footer-done-5" id="po-list-footer-done-5">-</th>
+                                                <th class="text-right po-list-footer-outstanding-5" id="po-list-footer-outstanding-5">-</th>
                                                 <th class="text-right po-list-footer-total-invoiced" id="po-list-footer-total-invoiced">-</th>
                                                 <th class="text-right po-list-footer-outstanding-total" id="po-list-footer-outstanding-total">-</th>
                                                 <th></th>
@@ -780,6 +1076,139 @@ if (!function_exists('poMyRepNumberOrDash')) {
         </div>
     </section>
 </div>
+
+<?php if ($isReady && $canBatchInvoice): ?>
+    <div class="modal fade" id="modal-batch-invoice-termin" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <form method="post" action="<?= base_url('PO_MyRep/batchInvoiceTermin') ?>" id="po-batch-invoice-form">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title">Batch Input Invoice Termin</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Tanggal Invoice General</label>
+                                    <input type="date" name="invoice_date" id="po-batch-invoice-date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <datalist id="po-batch-po-options">
+                            <?php
+                            $poBatchSeen = [];
+                            foreach (($poListRows ?? []) as $poBatchRow):
+                                $poBatchNumber = trim((string) ($poBatchRow['po_number'] ?? ''));
+                                if ($poBatchNumber === '' || isset($poBatchSeen[strtoupper($poBatchNumber)])) {
+                                    continue;
+                                }
+                                $poBatchSeen[strtoupper($poBatchNumber)] = true;
+                            ?>
+                                <option value="<?= htmlspecialchars($poBatchNumber, ENT_QUOTES) ?>"></option>
+                            <?php endforeach; ?>
+                        </datalist>
+
+                        <ul class="nav nav-tabs" id="po-batch-invoice-tabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="po-batch-manual-tab" data-toggle="pill" href="#po-batch-manual-pane" role="tab" aria-controls="po-batch-manual-pane" aria-selected="true">Input Manual</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="po-batch-paste-tab" data-toggle="pill" href="#po-batch-paste-pane" role="tab" aria-controls="po-batch-paste-pane" aria-selected="false">Paste dari Excel</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content border-left border-right border-bottom p-3 mb-3" id="po-batch-invoice-tab-content">
+                            <div class="tab-pane fade show active" id="po-batch-manual-pane" role="tabpanel" aria-labelledby="po-batch-manual-tab">
+                                <div class="po-batch-invoice__toolbar">
+                                    <div>
+                                        <label class="mb-1">Nomor PO</label>
+                                        <input type="text" id="po-batch-po-number" class="form-control" list="po-batch-po-options" placeholder="Pilih / ketik nomor PO">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Term</label>
+                                        <select id="po-batch-term-no" class="form-control">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Nilai Invoice</label>
+                                        <input type="text" id="po-batch-invoice-value" class="form-control" placeholder="Contoh: 1.000.000">
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary" id="po-batch-add-row">Tambah Row</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="po-batch-paste-pane" role="tabpanel" aria-labelledby="po-batch-paste-tab">
+                                <div class="form-group">
+                                    <label>Data Invoice</label>
+                                    <textarea id="po-batch-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO-001[TAB]1[TAB]1000000&#10;PO-002[TAB]Term 2[TAB]2500000"></textarea>
+                                    <small class="form-text text-muted">Term cukup isi angka 1-5. Variasi seperti Term 1, Termin 1, atau T1 juga terbaca.</small>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary" id="po-batch-parse-paste">Cek PO</button>
+                            </div>
+                        </div>
+
+                        <div class="po-batch-summary" id="po-batch-summary">
+                            <?php for ($poBatchTermSummary = 1; $poBatchTermSummary <= 5; $poBatchTermSummary++): ?>
+                                <div class="po-batch-summary-card">
+                                    <span class="po-batch-summary-card__label">
+                                        Termin <?= $poBatchTermSummary ?>
+                                        <span class="po-batch-summary-card__count" id="po-batch-summary-count-<?= $poBatchTermSummary ?>">0</span>
+                                    </span>
+                                    <span class="po-batch-summary-card__value" id="po-batch-summary-term-<?= $poBatchTermSummary ?>">0</span>
+                                </div>
+                            <?php endfor; ?>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0" id="po-batch-invoice-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width:60px;">No</th>
+                                        <th>Nomor PO</th>
+                                        <th style="width:110px;">Term</th>
+                                        <th style="width:220px;">Nilai Invoice</th>
+                                        <th style="width:190px;">Status</th>
+                                        <th style="width:90px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="po-batch-empty-row">
+                                        <td colspan="6" class="text-center text-muted">Belum ada row invoice.</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3" class="text-right">TOTAL INVOICE VALID</th>
+                                        <th class="text-right" id="po-batch-total-value">0</th>
+                                        <th colspan="2">
+                                            <span class="text-success">Sukses: <span id="po-batch-total-valid">0</span></span>
+                                            <span class="text-danger ml-3">Invalid: <span id="po-batch-total-invalid">0</span></span>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <div class="text-muted small">Submit akan mengubah term menjadi BILLED dan memakai tanggal invoice general.</div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-dark" id="po-batch-submit" disabled>Simpan Batch Invoice</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="modal fade" id="modal-breakdown-detail" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
@@ -856,6 +1285,22 @@ if (!function_exists('poMyRepNumberOrDash')) {
         var poDetailBaseUrl = "<?= base_url('PO_MyRep/detail/') ?>";
         var selectedCity = "<?= htmlspecialchars((string) $selectedCity, ENT_QUOTES) ?>";
         var selectedStatus = "<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>";
+        var poBatchTerminLookup = <?php
+            $poBatchTerminLookup = [];
+            foreach (($poListRows ?? []) as $poBatchRow) {
+                $poBatchNumber = trim((string) ($poBatchRow['po_number'] ?? ''));
+                if ($poBatchNumber === '') {
+                    continue;
+                }
+
+                $poBatchTerminLookup[strtoupper($poBatchNumber)] = [
+                    'po_number' => $poBatchNumber,
+                    'termin_status' => $poBatchRow['termin_status_per_termin'] ?? [],
+                    'termin_invoice_date' => $poBatchRow['termin_invoice_date_per_termin'] ?? [],
+                ];
+            }
+            echo json_encode($poBatchTerminLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
 
         function escapeHtml(value) {
             return $('<div>').text(value == null ? '' : String(value)).html();
@@ -883,21 +1328,93 @@ if (!function_exists('poMyRepNumberOrDash')) {
 
         function updateBatchInvoiceState() {
             var $rows = $('#po-batch-invoice-table tbody tr.po-batch-row');
+            var $validRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="1"]');
+            var $invalidRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="0"]');
+            var totalValue = 0;
+            var termSummary = {
+                1: { count: 0, total: 0 },
+                2: { count: 0, total: 0 },
+                3: { count: 0, total: 0 },
+                4: { count: 0, total: 0 },
+                5: { count: 0, total: 0 }
+            };
+
+            $validRows.each(function () {
+                var invoiceValue = parseLocaleNumber($(this).data('invoice-value'));
+                var termNo = Number($(this).data('term-no') || 0);
+                totalValue += invoiceValue;
+                if (termSummary[termNo]) {
+                    termSummary[termNo].count++;
+                    termSummary[termNo].total += invoiceValue;
+                }
+            });
+
             $('#po-batch-invoice-table tbody .po-batch-empty-row').toggle($rows.length === 0);
-            $('#po-batch-submit').prop('disabled', $rows.length === 0);
+            $('#po-batch-submit').prop('disabled', $validRows.length === 0);
+            $('#po-batch-total-valid').text($validRows.length);
+            $('#po-batch-total-invalid').text($invalidRows.length);
+            $('#po-batch-total-value').text(totalValue > 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            Object.keys(termSummary).forEach(function (termNo) {
+                var summary = termSummary[termNo];
+                $('#po-batch-summary-count-' + termNo).text(summary.count);
+                $('#po-batch-summary-term-' + termNo).text(summary.total > 0 ? summary.total.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            });
             $rows.each(function (idx) {
                 $(this).find('.po-batch-row-no').text(idx + 1);
             });
         }
 
+        function hasBatchInvoiceDate(value) {
+            var text = String(value || '').trim();
+            return text !== '' && text !== '0000-00-00' && text !== '0000-00-00 00:00:00';
+        }
+
+        function getBatchInvoiceCheck(poNumber, termNo, invoiceValue) {
+            var poKey = String(poNumber || '').trim().toUpperCase();
+            var lookup = poBatchTerminLookup[poKey] || null;
+
+            if (!poKey || !termNo || !invoiceValue) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    message: 'Nomor PO, term, dan nilai invoice wajib diisi.'
+                };
+            }
+
+            if (!lookup) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    message: 'PO tidak ditemukan.'
+                };
+            }
+
+            var statusMap = lookup.termin_status || {};
+            var invoiceDateMap = lookup.termin_invoice_date || {};
+            var status = String(statusMap[termNo] || 'NOT READY').toUpperCase();
+            var invoiceDate = invoiceDateMap[termNo] || '';
+
+            if (status === 'BILLED' || status === 'PAID' || hasBatchInvoiceDate(invoiceDate)) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    message: 'Termin sudah ditagih' + (status ? ' (' + status + ')' : '') + '.'
+                };
+            }
+
+            return {
+                valid: true,
+                label: 'Sukses',
+                message: 'PO ditemukan dan termin belum ditagih.',
+                poNumber: lookup.po_number || poNumber
+            };
+        }
+
         function addBatchInvoiceRow(poNumber, termNo, invoiceValue) {
             poNumber = String(poNumber || '').trim();
             termNo = normalizeTermInput(termNo);
-            invoiceValue = formatBatchValue(invoiceValue);
-
-            if (!poNumber || !termNo || !invoiceValue) {
-                return false;
-            }
+            var invoiceValueRaw = parseLocaleNumber(invoiceValue);
+            invoiceValue = formatBatchValue(invoiceValueRaw);
 
             var key = poNumber.toUpperCase() + '|' + termNo;
             var exists = false;
@@ -908,14 +1425,35 @@ if (!function_exists('poMyRepNumberOrDash')) {
                 }
             });
             if (exists) {
+                var duplicateHtml = '<tr class="po-batch-row table-danger" data-valid="0" data-key="' + escapeHtml(key) + '">' +
+                    '<td class="text-center po-batch-row-no"></td>' +
+                    '<td>' + escapeHtml(poNumber || '-') + '</td>' +
+                    '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
+                    '<td class="text-right">' + escapeHtml(invoiceValue || '-') + '</td>' +
+                    '<td><span class="badge badge-danger">Invalid</span><div class="small text-muted">Duplikat dalam batch.</div></td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-batch-remove-row">Hapus</button></td>' +
+                '</tr>';
+                $('#po-batch-invoice-table tbody').append(duplicateHtml);
+                updateBatchInvoiceState();
                 return false;
             }
 
-            var html = '<tr class="po-batch-row" data-key="' + escapeHtml(key) + '">' +
+            var check = getBatchInvoiceCheck(poNumber, termNo, invoiceValue);
+            var rowClass = check.valid ? 'table-success' : 'table-danger';
+            var badgeClass = check.valid ? 'badge-success' : 'badge-danger';
+            var effectivePoNumber = check.poNumber || poNumber;
+            var hiddenInputs = check.valid
+                ? '<input type="hidden" name="po_number[]" value="' + escapeHtml(effectivePoNumber) + '">' +
+                  '<input type="hidden" name="term_no[]" value="' + escapeHtml(termNo) + '">' +
+                  '<input type="hidden" name="invoice_value[]" value="' + escapeHtml(invoiceValue) + '">'
+                : '';
+
+            var html = '<tr class="po-batch-row ' + rowClass + '" data-valid="' + (check.valid ? '1' : '0') + '" data-key="' + escapeHtml(key) + '" data-term-no="' + escapeHtml(termNo) + '" data-invoice-value="' + escapeHtml(invoiceValueRaw) + '">' +
                 '<td class="text-center po-batch-row-no"></td>' +
-                '<td>' + escapeHtml(poNumber) + '<input type="hidden" name="po_number[]" value="' + escapeHtml(poNumber) + '"></td>' +
-                '<td class="text-center">' + escapeHtml(termNo) + '<input type="hidden" name="term_no[]" value="' + escapeHtml(termNo) + '"></td>' +
-                '<td class="text-right">' + escapeHtml(invoiceValue) + '<input type="hidden" name="invoice_value[]" value="' + escapeHtml(invoiceValue) + '"></td>' +
+                '<td>' + escapeHtml(effectivePoNumber || '-') + hiddenInputs + '</td>' +
+                '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
+                '<td class="text-right">' + escapeHtml(invoiceValue || '-') + '</td>' +
+                '<td><span class="badge ' + badgeClass + '">' + escapeHtml(check.label) + '</span><div class="small text-muted">' + escapeHtml(check.message) + '</div></td>' +
                 '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-batch-remove-row">Hapus</button></td>' +
             '</tr>';
 
@@ -938,7 +1476,7 @@ if (!function_exists('poMyRepNumberOrDash')) {
 
         $('#po-batch-parse-paste').on('click', function () {
             var lines = String($('#po-batch-paste').val() || '').split(/\r?\n/);
-            var addedCount = 0;
+            var checkedCount = 0;
             lines.forEach(function (line) {
                 line = String(line || '').trim();
                 if (!line) {
@@ -959,11 +1497,10 @@ if (!function_exists('poMyRepNumberOrDash')) {
                     return;
                 }
 
-                if (addBatchInvoiceRow(columns[0], columns[1], columns.slice(2).join(' '))) {
-                    addedCount++;
-                }
+                addBatchInvoiceRow(columns[0], columns[1], columns.slice(2).join(' '));
+                checkedCount++;
             });
-            if (addedCount > 0) {
+            if (checkedCount > 0) {
                 $('#po-batch-paste').val('');
             }
         });
@@ -974,9 +1511,9 @@ if (!function_exists('poMyRepNumberOrDash')) {
         });
 
         $('#po-batch-invoice-form').on('submit', function (e) {
-            if ($('#po-batch-invoice-table tbody tr.po-batch-row').length === 0) {
+            if ($('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="1"]').length === 0) {
                 e.preventDefault();
-                alert('Belum ada row invoice.');
+                alert('Belum ada row invoice yang valid.');
             }
         });
 
@@ -1063,27 +1600,37 @@ if (!function_exists('poMyRepNumberOrDash')) {
                     }, 0);
                     var totalPlan1 = api.column(10, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
                     var totalDone1 = api.column(11, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan2 = api.column(12, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone2 = api.column(13, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan3 = api.column(14, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone3 = api.column(15, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan4 = api.column(16, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone4 = api.column(17, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan5 = api.column(18, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone5 = api.column(19, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalInvoiced = api.column(20, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding = api.column(21, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding1 = api.column(12, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan2 = api.column(13, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone2 = api.column(14, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding2 = api.column(15, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan3 = api.column(16, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone3 = api.column(17, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding3 = api.column(18, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan4 = api.column(19, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone4 = api.column(20, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding4 = api.column(21, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan5 = api.column(22, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone5 = api.column(23, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding5 = api.column(24, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalInvoiced = api.column(25, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding = api.column(26, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
                     $('.po-list-footer-nilai-po').text(totalNilaiPo.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-plan-1').text(totalPlan1 === 0 ? '-' : totalPlan1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-1').text(totalDone1 === 0 ? '-' : totalDone1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-outstanding-1').text(totalOutstanding1 === 0 ? '-' : totalOutstanding1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-plan-2').text(totalPlan2 === 0 ? '-' : totalPlan2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-2').text(totalDone2 === 0 ? '-' : totalDone2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-outstanding-2').text(totalOutstanding2 === 0 ? '-' : totalOutstanding2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-plan-3').text(totalPlan3 === 0 ? '-' : totalPlan3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-3').text(totalDone3 === 0 ? '-' : totalDone3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-outstanding-3').text(totalOutstanding3 === 0 ? '-' : totalOutstanding3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-plan-4').text(totalPlan4 === 0 ? '-' : totalPlan4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-4').text(totalDone4 === 0 ? '-' : totalDone4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-outstanding-4').text(totalOutstanding4 === 0 ? '-' : totalOutstanding4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-plan-5').text(totalPlan5 === 0 ? '-' : totalPlan5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-5').text(totalDone5 === 0 ? '-' : totalDone5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-outstanding-5').text(totalOutstanding5 === 0 ? '-' : totalOutstanding5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-total-invoiced').text(totalInvoiced === 0 ? '-' : totalInvoiced.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-outstanding-total').text(totalOutstanding === 0 ? '-' : totalOutstanding.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                 }

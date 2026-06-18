@@ -837,7 +837,7 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                     <?php if ($isSuperAdmin) { ?>
                     <li class="nav-header">Development</li>
                     <li class="nav-item">
-                        <a href="<?= base_url('Backup') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
+                        <a href="<?= base_url('Backup') ?>" class="nav-link <?php if ($id_menu == 'Backup') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>

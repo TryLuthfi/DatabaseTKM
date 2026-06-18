@@ -248,6 +248,9 @@ class MPO_MyRep extends CI_Model
                     'paid' => 0,
                     'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                     'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'status_per_termin' => [1 => 'NOT READY', 2 => 'NOT READY', 3 => 'NOT READY', 4 => 'NOT READY', 5 => 'NOT READY'],
+                    'invoice_date_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
                 ];
             }
             $terminMap[$headerId]['total']++;
@@ -255,9 +258,15 @@ class MPO_MyRep extends CI_Model
             $terminValue = $this->resolveDoneInvoiceValue($termin);
             $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($termin['invoice_date'] ?? '')) !== '';
             $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            $planInvoiceValue = $this->resolvePlanInvoiceValue($termin);
 
             if ($terminNo >= 1 && $terminNo <= 5) {
-                $terminMap[$headerId]['plan_invoice'][$terminNo] = $this->resolvePlanInvoiceValue($termin);
+                $terminMap[$headerId]['plan_invoice'][$terminNo] = $planInvoiceValue;
+                $terminMap[$headerId]['status_per_termin'][$terminNo] = $statusTermin;
+                $terminMap[$headerId]['invoice_date_per_termin'][$terminNo] = (string) ($termin['invoice_date'] ?? '');
+                if (!$hasInvoiceDate) {
+                    $terminMap[$headerId]['outstanding_invoice'][$terminNo] = $planInvoiceValue;
+                }
             }
             if ($hasInvoiceDate) {
                 $terminMap[$headerId]['progress']++;
@@ -278,18 +287,22 @@ class MPO_MyRep extends CI_Model
                 'paid' => 0,
                 'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'status_per_termin' => [1 => 'NOT READY', 2 => 'NOT READY', 3 => 'NOT READY', 4 => 'NOT READY', 5 => 'NOT READY'],
+                'invoice_date_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
             ];
             $row['termin_total_count'] = (int) $meta['total'];
             $row['termin_progress_count'] = (int) $meta['progress'];
             $row['termin_paid_count'] = (int) $meta['paid'];
             $row['plan_invoice_per_termin'] = $meta['plan_invoice'];
             $row['done_invoice_per_termin'] = $meta['done_invoice'];
+            $row['outstanding_invoice_per_termin'] = $meta['outstanding_invoice'];
+            $row['termin_status_per_termin'] = $meta['status_per_termin'];
+            $row['termin_invoice_date_per_termin'] = $meta['invoice_date_per_termin'];
             $row['plan_invoice_total'] = array_sum($meta['plan_invoice']);
             $row['done_invoice_total'] = array_sum($meta['done_invoice']);
             $row['total_invoiced'] = $row['done_invoice_total'];
-            // Samakan definisi dengan modal breakdown:
-            // Outstanding Total = total termin yang belum BILLED/PAID.
-            $row['outstanding_total'] = (float) $row['plan_invoice_total'];
+            $row['outstanding_total'] = array_sum($meta['outstanding_invoice']);
             $terminsForHeader = $terminByHeader[$headerId] ?? [];
             $row['po_stage_status'] = $this->resolveStageStatus($terminsForHeader);
         }
@@ -1247,6 +1260,7 @@ class MPO_MyRep extends CI_Model
                     'paid' => 0,
                     'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                     'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 ];
             }
 
@@ -1258,6 +1272,9 @@ class MPO_MyRep extends CI_Model
 
             if ($terminNo >= 1 && $terminNo <= 5) {
                 $terminMap[$headerId]['plan_invoice'][$terminNo] = $planInvoiceValue;
+                if (!$hasInvoiceDate) {
+                    $terminMap[$headerId]['outstanding_invoice'][$terminNo] = $planInvoiceValue;
+                }
             }
             if ($hasInvoiceDate) {
                 $terminMap[$headerId]['progress']++;
@@ -1280,16 +1297,18 @@ class MPO_MyRep extends CI_Model
                 'paid' => 0,
                 'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
             ];
             $row['termin_total_count'] = (int) $meta['total'];
             $row['termin_progress_count'] = (int) $meta['progress'];
             $row['termin_paid_count'] = (int) $meta['paid'];
             $row['plan_invoice_per_termin'] = $meta['plan_invoice'];
             $row['done_invoice_per_termin'] = $meta['done_invoice'];
+            $row['outstanding_invoice_per_termin'] = $meta['outstanding_invoice'];
             $row['plan_invoice_total'] = array_sum($meta['plan_invoice']);
             $row['done_invoice_total'] = array_sum($meta['done_invoice']);
             $row['total_invoiced'] = $row['done_invoice_total'];
-            $row['outstanding_total'] = (float) $row['plan_invoice_total'];
+            $row['outstanding_total'] = array_sum($meta['outstanding_invoice']);
             $row['po_stage_status'] = $this->resolveStageStatus($terminByHeader[$headerId] ?? []);
 
             if (!empty($stageStatuses) && !in_array(strtoupper((string) ($row['po_stage_status'] ?? '')), $stageStatuses, true)) {

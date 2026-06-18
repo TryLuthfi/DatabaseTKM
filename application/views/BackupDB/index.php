@@ -12,10 +12,61 @@
 
     <section class="content">
         <div class="container-fluid">
+            <?php if ($this->session->flashdata('success')): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars((string) $this->session->flashdata('success'), ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            <?php if ($this->session->flashdata('error')): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars((string) $this->session->flashdata('error'), ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            <?php if ($this->session->flashdata('import_vps_output')): ?>
+                <div class="card border-info">
+                    <div class="card-header bg-info">
+                        <h3 class="card-title">Output Import VPS Terakhir</h3>
+                    </div>
+                    <div class="card-body">
+                        <pre class="mb-0" style="white-space: pre-wrap; max-height: 360px; overflow: auto;"><?= htmlspecialchars((string) $this->session->flashdata('import_vps_output'), ENT_QUOTES, 'UTF-8') ?></pre>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <div class="row">
                 <div class="clearfix hidden-md-up"></div>
 
                 <div class="col-12">
+                    <?php if (!empty($canImportVps)): ?>
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger">
+                                <h3 class="card-title">Import Database VPS ke Lokal</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2">
+                                    Tombol ini akan mengambil dump terbaru dari VPS, membuat backup database lokal, lalu mengganti isi database lokal dengan data VPS.
+                                </p>
+                                <p class="text-danger text-bold mb-3">
+                                    Gunakan hanya di XAMPP lokal. Proses bisa berjalan beberapa menit.
+                                </p>
+                                <form method="post" action="<?= base_url('Backup/import_vps_to_local') ?>" id="form-import-vps">
+                                    <button type="submit" class="btn btn-danger" <?= empty($vpsImportAvailable) ? 'disabled' : '' ?>>
+                                        Import VPS ke Lokal &nbsp;<i class="fas fa-cloud-download-alt"></i>
+                                    </button>
+                                    <?php if (empty($vpsImportAvailable)): ?>
+                                        <small class="text-muted ml-2">Script import atau SSH key belum tersedia.</small>
+                                    <?php endif; ?>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="card">
                         <div class="card-header">
                             <div class="row">
@@ -85,6 +136,18 @@
 
         $("#tabel_histori_backup").DataTable({
             "responsive": true,
+        });
+
+        $('#form-import-vps').on('submit', function(e) {
+            var ok = window.confirm('Import VPS ke lokal sekarang? Database lokal akan dibackup lalu diganti dengan data VPS terbaru.');
+            if (!ok) {
+                e.preventDefault();
+                return;
+            }
+
+            $(this).find('button[type="submit"]')
+                .prop('disabled', true)
+                .html('Sedang import... &nbsp;<i class="fas fa-spinner fa-spin"></i>');
         });
     })
 

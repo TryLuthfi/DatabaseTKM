@@ -50,6 +50,22 @@ if (!function_exists('poMyRepDate')) {
         return date('d/m/Y', strtotime($date));
     }
 }
+if (!function_exists('poMyRepHasInvoiceDate')) {
+    function poMyRepHasInvoiceDate($date)
+    {
+        return !empty($date) && $date !== '0000-00-00' && $date !== '0000-00-00 00:00:00';
+    }
+}
+if (!function_exists('poMyRepTerminInvoiceValue')) {
+    function poMyRepTerminInvoiceValue($termin)
+    {
+        if (isset($termin['invoice_value']) && $termin['invoice_value'] !== null && $termin['invoice_value'] !== '') {
+            return (float) $termin['invoice_value'];
+        }
+
+        return (float) ($termin['termin_value'] ?? 0);
+    }
+}
 if (!function_exists('poMyRepStatusBadge')) {
     function poMyRepStatusBadge($status)
     {
@@ -351,11 +367,11 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                 <tr>
                                                     <th>Termin</th>
                                                     <th>%</th>
-                                                    <th>Nilai</th>
+                                                    <th>Invoice</th>
+                                                    <th>Outstanding</th>
                                                     <th>Status</th>
                                                     <th>Sertifikat</th>
-                                                    <th>Invoice</th>
-                                                    <th>Nilai Invoice</th>
+                                                    <th>No Invoice</th>
                                                     <th>Tgl Invoice</th>
                                                     <th>Tgl BAST</th>
                                                     <th>Tgl Payment</th>
@@ -364,11 +380,23 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <?php
+                                                $terminInvoiceTotal = 0;
+                                                $terminOutstandingTotal = 0;
+                                                ?>
                                                 <?php foreach (($header['termin_rows'] ?? []) as $termin): ?>
+                                                    <?php
+                                                    $hasInvoiceDate = poMyRepHasInvoiceDate($termin['invoice_date'] ?? null);
+                                                    $terminInvoiceValue = $hasInvoiceDate ? poMyRepTerminInvoiceValue($termin) : 0;
+                                                    $terminOutstandingValue = $hasInvoiceDate ? 0 : (float) ($termin['termin_value'] ?? 0);
+                                                    $terminInvoiceTotal += $terminInvoiceValue;
+                                                    $terminOutstandingTotal += $terminOutstandingValue;
+                                                    ?>
                                                     <tr>
                                                         <td class="text-center"><?= (int) ($termin['termin_no'] ?? 0) ?></td>
                                                         <td class="text-center"><?= poMyRepValue((float) ($termin['termin_percent'] ?? 0)) ?>%</td>
-                                                        <td class="text-right"><?= poMyRepValue((float) ($termin['termin_value'] ?? 0)) ?></td>
+                                                        <td class="text-right"><?= $terminInvoiceValue > 0 ? poMyRepValue($terminInvoiceValue) : '-' ?></td>
+                                                        <td class="text-right"><?= $terminOutstandingValue > 0 ? poMyRepValue($terminOutstandingValue) : '-' ?></td>
                                                         <td class="text-center"><span class="badge badge-secondary"><?= htmlspecialchars((string) ($termin['status_termin'] ?? '-')) ?></span></td>
                                                         <td class="text-center">
                                                             <?php if ((int) ($termin['termin_no'] ?? 0) >= 2): ?>
@@ -389,7 +417,6 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                             <?php endif; ?>
                                                         </td>
                                                         <td><?= !empty($termin['invoice_number']) ? htmlspecialchars((string) $termin['invoice_number']) : '-' ?></td>
-                                                        <td class="text-right"><?= isset($termin['invoice_value']) && $termin['invoice_value'] !== null && $termin['invoice_value'] !== '' ? poMyRepValue((float) $termin['invoice_value']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['invoice_date']) ? htmlspecialchars((string) $termin['invoice_date']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['bast_date']) ? htmlspecialchars((string) $termin['bast_date']) : '-' ?></td>
                                                         <td class="text-center"><?= !empty($termin['payment_date']) ? htmlspecialchars((string) $termin['payment_date']) : '-' ?></td>
@@ -419,6 +446,14 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="2" class="text-right">TOTAL</th>
+                                                    <th class="text-right"><?= $terminInvoiceTotal > 0 ? poMyRepValue($terminInvoiceTotal) : '-' ?></th>
+                                                    <th class="text-right"><?= $terminOutstandingTotal > 0 ? poMyRepValue($terminOutstandingTotal) : '-' ?></th>
+                                                    <th colspan="8"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
