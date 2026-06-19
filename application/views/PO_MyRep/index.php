@@ -232,8 +232,8 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
 
-    .po-btn:hover {
-        color: inherit;
+    .po-btn:hover,
+    .po-btn:focus {
         text-decoration: none;
         transform: translateY(-1px);
     }
@@ -244,14 +244,23 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
     }
 
-    .po-btn--primary:hover {
+    .po-btn--primary:hover,
+    .po-btn--primary:focus {
         color: #fff;
+        background: #1d4ed8;
     }
 
     .po-btn--light {
         background: #f8fafc;
         color: #0f172a;
         border: 1px solid rgba(148, 163, 184, 0.24);
+    }
+
+    .po-btn--light:hover,
+    .po-btn--light:focus {
+        color: #0f172a;
+        background: #fff;
+        border-color: rgba(148, 163, 184, 0.38);
     }
 
     .po-myrep-revamp .form-control,
@@ -454,12 +463,39 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         border-color: rgba(37, 99, 235, 0.22);
     }
 
+    .po-batch-status-filters {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .po-batch-status-filter {
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        font: inherit;
+        appearance: none;
+        transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+    }
+
+    .po-batch-status-filter:focus {
+        outline: none;
+    }
+
+    .po-batch-status-filter.is-active {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .14), 0 12px 26px rgba(15, 23, 42, .1);
+        transform: translateY(-1px);
+    }
+
     @media (max-width: 768px) {
         .po-batch-invoice__toolbar {
             grid-template-columns: 1fr;
         }
 
-        .po-batch-summary {
+        .po-batch-summary,
+        .po-batch-status-filters {
             grid-template-columns: 1fr;
         }
 
@@ -1169,6 +1205,29 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                 </span>
                                 <span class="po-batch-summary-card__value" id="po-batch-summary-total-value">0</span>
                             </div>
+                            <div class="po-batch-status-filters">
+                                <button type="button" class="po-batch-summary-card po-batch-status-filter" data-batch-status-filter="success">
+                                    <span class="po-batch-summary-card__label">
+                                        Valid
+                                        <span class="po-batch-summary-card__count" id="po-batch-status-valid-count">0</span>
+                                    </span>
+                                    <span class="po-batch-summary-card__value text-success" id="po-batch-status-valid-value">0</span>
+                                </button>
+                                <button type="button" class="po-batch-summary-card po-batch-status-filter" data-batch-status-filter="invalid">
+                                    <span class="po-batch-summary-card__label">
+                                        Invalid
+                                        <span class="po-batch-summary-card__count" id="po-batch-status-invalid-count">0</span>
+                                    </span>
+                                    <span class="po-batch-summary-card__value text-danger" id="po-batch-status-invalid-value">0</span>
+                                </button>
+                                <button type="button" class="po-batch-summary-card po-batch-status-filter" data-batch-status-filter="need_certif">
+                                    <span class="po-batch-summary-card__label">
+                                        Need Certif
+                                        <span class="po-batch-summary-card__count" id="po-batch-status-need-certif-count">0</span>
+                                    </span>
+                                    <span class="po-batch-summary-card__value text-warning" id="po-batch-status-need-certif-value">0</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
@@ -1188,16 +1247,6 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                         <td colspan="6" class="text-center text-muted">Belum ada row invoice.</td>
                                     </tr>
                                 </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="3" class="text-right">TOTAL INVOICE VALID</th>
-                                        <th class="text-right" id="po-batch-total-value">0</th>
-                                        <th colspan="2">
-                                            <span class="text-success">Sukses: <span id="po-batch-total-valid">0</span></span>
-                                            <span class="text-danger ml-3">Invalid: <span id="po-batch-total-invalid">0</span></span>
-                                        </th>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -1408,7 +1457,30 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
             }
             echo json_encode($poBatchTerminLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
+        var poBatchCertificateReleaseLookup = <?php
+            $poBatchCertificateReleaseLookup = [];
+            foreach (($certificateBatchRows ?? []) as $certificateBatchRow) {
+                $certificatePoNumber = strtoupper(trim((string) ($certificateBatchRow['po_number'] ?? '')));
+                $certificateTermNo = (int) ($certificateBatchRow['termin_no'] ?? 0);
+                if ($certificatePoNumber === '' || $certificateTermNo < 2 || $certificateTermNo > 5) {
+                    continue;
+                }
+
+                $poBatchCertificateReleaseLookup[$certificatePoNumber . '|' . $certificateTermNo] = [
+                    'is_release_ready' => !empty($certificateBatchRow['is_release_ready']),
+                    'is_certificate_released' => !empty($certificateBatchRow['is_certificate_released']),
+                    'release_note' => (string) ($certificateBatchRow['release_note'] ?? ''),
+                    'certificate_status' => (string) ($certificateBatchRow['certificate_status'] ?? ''),
+                    'certificate_status_label' => (string) ($certificateBatchRow['certificate_status_label'] ?? ''),
+                    'required_docs' => (int) ($certificateBatchRow['required_docs'] ?? 0),
+                    'astri_submitted_docs' => (int) ($certificateBatchRow['astri_submitted_docs'] ?? 0),
+                    'astri_approved_docs' => (int) ($certificateBatchRow['astri_approved_docs'] ?? 0),
+                ];
+            }
+            echo json_encode($poBatchCertificateReleaseLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
         var poAllowedCertificateStatuses = ['REVISI', 'FULL UPLOAD', 'APPROVED 1', 'LOGISTIK', 'PLANNING', 'TEAM LEADER', 'WASPANG', 'PERMIT'];
+        var poBatchActiveStatusFilter = '';
 
         function escapeHtml(value) {
             return $('<div>').text(value == null ? '' : String(value)).html();
@@ -1501,8 +1573,13 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         function updateBatchInvoiceState() {
             var $rows = $('#po-batch-invoice-table tbody tr.po-batch-row');
             var $validRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="1"]');
-            var $invalidRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="0"]');
+            var $needCertifRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-status-code="need_certif"]');
+            var $invalidRows = $('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="0"]').not('[data-status-code="need_certif"]');
             var totalValue = 0;
+            var validValue = 0;
+            var needCertifValue = 0;
+            var invalidValue = 0;
+            var visibleIndex = 0;
             var termSummary = {
                 1: { count: 0, total: 0 },
                 2: { count: 0, total: 0 },
@@ -1515,27 +1592,52 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                 var invoiceValue = parseLocaleNumber($(this).data('invoice-value'));
                 var termNo = Number($(this).data('term-no') || 0);
                 totalValue += invoiceValue;
+                validValue += invoiceValue;
                 if (termSummary[termNo]) {
                     termSummary[termNo].count++;
                     termSummary[termNo].total += invoiceValue;
                 }
             });
 
-            $('#po-batch-invoice-table tbody .po-batch-empty-row').toggle($rows.length === 0);
+            $needCertifRows.each(function () {
+                needCertifValue += parseLocaleNumber($(this).data('invoice-value'));
+            });
+
+            $invalidRows.each(function () {
+                invalidValue += parseLocaleNumber($(this).data('invoice-value'));
+            });
+
+            $rows.each(function () {
+                var $row = $(this);
+                var matchesFilter = !poBatchActiveStatusFilter || String($row.data('status-code') || '') === poBatchActiveStatusFilter;
+                $row.toggle(matchesFilter);
+                if (matchesFilter) {
+                    $row.find('.po-batch-row-no').text(++visibleIndex);
+                }
+            });
+
+            $('#po-batch-invoice-table tbody .po-batch-empty-row')
+                .toggle($rows.length === 0 || visibleIndex === 0)
+                .find('td')
+                .text($rows.length === 0 ? 'Belum ada row invoice.' : 'Tidak ada row sesuai filter.');
             $('#po-batch-submit').prop('disabled', $validRows.length === 0);
             $('#po-batch-clear-list').prop('disabled', $rows.length === 0);
-            $('#po-batch-total-valid').text($validRows.length);
-            $('#po-batch-total-invalid').text($invalidRows.length);
-            $('#po-batch-total-value').text(totalValue > 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
             $('#po-batch-summary-total-count').text($validRows.length);
             $('#po-batch-summary-total-value').text(totalValue > 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-status-valid-count').text($validRows.length);
+            $('#po-batch-status-need-certif-count').text($needCertifRows.length);
+            $('#po-batch-status-invalid-count').text($invalidRows.length);
+            $('#po-batch-status-valid-value').text(validValue > 0 ? validValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-status-need-certif-value').text(needCertifValue > 0 ? needCertifValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-status-invalid-value').text(invalidValue > 0 ? invalidValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('.po-batch-status-filter').toggleClass('is-active', false);
+            if (poBatchActiveStatusFilter) {
+                $('.po-batch-status-filter[data-batch-status-filter="' + poBatchActiveStatusFilter + '"]').addClass('is-active');
+            }
             Object.keys(termSummary).forEach(function (termNo) {
                 var summary = termSummary[termNo];
                 $('#po-batch-summary-count-' + termNo).text(summary.count);
                 $('#po-batch-summary-term-' + termNo).text(summary.total > 0 ? summary.total.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
-            });
-            $rows.each(function (idx) {
-                $(this).find('.po-batch-row-no').text(idx + 1);
             });
         }
 
@@ -1552,6 +1654,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                 return {
                     valid: false,
                     label: 'Invalid',
+                    statusCode: 'invalid',
                     message: 'Nomor PO, term, dan nilai invoice wajib diisi.'
                 };
             }
@@ -1560,26 +1663,42 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                 return {
                     valid: false,
                     label: 'Invalid',
+                    statusCode: 'invalid',
                     message: 'PO tidak ditemukan.'
                 };
             }
 
             var statusMap = lookup.termin_status || {};
             var invoiceDateMap = lookup.termin_invoice_date || {};
+            var certificateMap = lookup.termin_certificate || {};
             var status = String(statusMap[termNo] || 'NOT READY').toUpperCase();
             var invoiceDate = invoiceDateMap[termNo] || '';
+            var certificateValue = certificateMap[termNo] || '';
 
             if (status === 'BILLED' || status === 'PAID' || hasBatchInvoiceDate(invoiceDate)) {
                 return {
                     valid: false,
                     label: 'Invalid',
+                    statusCode: 'invalid',
                     message: 'Termin sudah ditagih' + (status ? ' (' + status + ')' : '') + '.'
+                };
+            }
+
+            if (Number(termNo) >= 2 && Number(termNo) <= 5 && normalizeCertificateDateInput(certificateValue) === '') {
+                return {
+                    valid: false,
+                    label: 'Need Certif',
+                    statusCode: 'need_certif',
+                    badgeClass: 'badge-warning',
+                    rowClass: 'table-warning',
+                    message: 'Sertifikat belum release.'
                 };
             }
 
             return {
                 valid: true,
                 label: 'Sukses',
+                statusCode: 'success',
                 message: 'PO ditemukan dan termin belum ditagih.',
                 poNumber: lookup.po_number || poNumber
             };
@@ -1603,7 +1722,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                 }
             });
             if (exists) {
-                var duplicateHtml = '<tr class="po-batch-row table-danger" data-valid="0" data-key="' + escapeHtml(key) + '">' +
+                var duplicateHtml = '<tr class="po-batch-row table-danger" data-valid="0" data-status-code="invalid" data-key="' + escapeHtml(key) + '">' +
                     '<td class="text-center po-batch-row-no"></td>' +
                     '<td>' + escapeHtml(poNumber || '-') + '</td>' +
                     '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
@@ -1617,8 +1736,9 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
             }
 
             var check = getBatchInvoiceCheck(poNumber, termNo, invoiceValue);
-            var rowClass = check.valid ? 'table-success' : 'table-danger';
-            var badgeClass = check.valid ? 'badge-success' : 'badge-danger';
+            var rowClass = check.rowClass || (check.valid ? 'table-success' : 'table-danger');
+            var badgeClass = check.badgeClass || (check.valid ? 'badge-success' : 'badge-danger');
+            var statusCode = check.statusCode || (check.valid ? 'success' : 'invalid');
             var effectivePoNumber = check.poNumber || poNumber;
             var hiddenInputs = check.valid
                 ? '<input type="hidden" name="po_number[]" value="' + escapeHtml(effectivePoNumber) + '">' +
@@ -1626,7 +1746,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                   '<input type="hidden" name="invoice_value[]" value="' + escapeHtml(invoiceValue) + '">'
                 : '';
 
-            var html = '<tr class="po-batch-row ' + rowClass + '" data-valid="' + (check.valid ? '1' : '0') + '" data-key="' + escapeHtml(key) + '" data-term-no="' + escapeHtml(termNo) + '" data-invoice-value="' + escapeHtml(invoiceValueRaw) + '">' +
+            var html = '<tr class="po-batch-row ' + rowClass + '" data-valid="' + (check.valid ? '1' : '0') + '" data-status-code="' + escapeHtml(statusCode) + '" data-key="' + escapeHtml(key) + '" data-term-no="' + escapeHtml(termNo) + '" data-invoice-value="' + escapeHtml(invoiceValueRaw) + '">' +
                 '<td class="text-center po-batch-row-no"></td>' +
                 '<td>' + escapeHtml(effectivePoNumber || '-') + hiddenInputs + '</td>' +
                 '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
@@ -1704,6 +1824,13 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
 
         $('#po-batch-clear-list').on('click', function () {
             $('#po-batch-invoice-table tbody tr.po-batch-row').remove();
+            poBatchActiveStatusFilter = '';
+            updateBatchInvoiceState();
+        });
+
+        $('.po-batch-status-filter').on('click', function () {
+            var filter = String($(this).data('batch-status-filter') || '');
+            poBatchActiveStatusFilter = poBatchActiveStatusFilter === filter ? '' : filter;
             updateBatchInvoiceState();
         });
 
@@ -1761,7 +1888,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                     valid: true,
                     type: 'Tanggal',
                     value: normalizedDate,
-                    message: 'Tanggal valid; syarat release dicek saat submit.'
+                    message: 'Tanggal valid dan syarat release terpenuhi.'
                 };
             }
 
@@ -1836,6 +1963,15 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                 type = 'Invalid';
             } else if (!certClass.valid) {
                 valid = false;
+            } else if (certClass.type === 'Tanggal') {
+                var releaseLookup = poBatchCertificateReleaseLookup[String(poNumber || '').trim().toUpperCase() + '|' + termNo] || null;
+                if (!releaseLookup || (!releaseLookup.is_release_ready && !releaseLookup.is_certificate_released)) {
+                    valid = false;
+                    message = releaseLookup && releaseLookup.release_note
+                        ? releaseLookup.release_note
+                        : 'Dokumen ASTRI belum full approved.';
+                    type = 'Tanggal';
+                }
             }
 
             var rowClass = valid ? 'table-success' : 'table-danger';

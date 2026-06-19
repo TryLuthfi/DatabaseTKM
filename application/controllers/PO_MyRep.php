@@ -46,6 +46,9 @@ class PO_MyRep extends CI_Controller
         $data['certificateSummaryRows'] = $data['isReady']
             ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus)
             : [];
+        $data['certificateBatchRows'] = $data['isReady']
+            ? $this->MPO_MyRep->getCertificateDetailRows($selectedCity, $selectedStatus, '', 0, 'ALL')
+            : [];
         $data['canBatchInvoice'] = $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT');
         $data['canBatchCertificate'] = $data['canBatchInvoice']
             && (
