@@ -1497,11 +1497,46 @@ class MPO_MyRep extends CI_Model
     {
         $prefix = $alias !== '' ? rtrim($alias, '.') . '.' : '';
         $remarkColumn = $prefix . 'remark_termin';
+        $rawValueSql = "REPLACE(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX({$remarkColumn}, 'Plan Invoice:', -1), ';', 1)), ' ', ''), CHAR(160), '')";
+        $dotCountSql = "(CHAR_LENGTH({$rawValueSql}) - CHAR_LENGTH(REPLACE({$rawValueSql}, '.', '')))";
+        $commaCountSql = "(CHAR_LENGTH({$rawValueSql}) - CHAR_LENGTH(REPLACE({$rawValueSql}, ',', '')))";
+        $lastDotPosSql = "(CHAR_LENGTH({$rawValueSql}) - LOCATE('.', REVERSE({$rawValueSql})) + 1)";
+        $lastCommaPosSql = "(CHAR_LENGTH({$rawValueSql}) - LOCATE(',', REVERSE({$rawValueSql})) + 1)";
+        $normalizedValueSql = "
+            CASE
+                WHEN {$rawValueSql} = '' THEN '0'
+                WHEN LOCATE('.', {$rawValueSql}) > 0 AND LOCATE(',', {$rawValueSql}) > 0 THEN
+                    CASE
+                        WHEN {$lastDotPosSql} > {$lastCommaPosSql}
+                            THEN REPLACE({$rawValueSql}, ',', '')
+                        ELSE REPLACE(REPLACE({$rawValueSql}, '.', ''), ',', '.')
+                    END
+                WHEN LOCATE(',', {$rawValueSql}) > 0 THEN
+                    CASE
+                        WHEN {$commaCountSql} > 1
+                            THEN REPLACE({$rawValueSql}, ',', '')
+                        WHEN CHAR_LENGTH(SUBSTRING_INDEX({$rawValueSql}, ',', -1)) = 3
+                            AND CHAR_LENGTH(SUBSTRING_INDEX({$rawValueSql}, ',', 1)) BETWEEN 1 AND 3
+                            THEN REPLACE({$rawValueSql}, ',', '')
+                        ELSE REPLACE({$rawValueSql}, ',', '.')
+                    END
+                WHEN LOCATE('.', {$rawValueSql}) > 0 THEN
+                    CASE
+                        WHEN {$dotCountSql} > 1
+                            THEN REPLACE({$rawValueSql}, '.', '')
+                        WHEN CHAR_LENGTH(SUBSTRING_INDEX({$rawValueSql}, '.', -1)) = 3
+                            AND CHAR_LENGTH(SUBSTRING_INDEX({$rawValueSql}, '.', 1)) BETWEEN 1 AND 3
+                            THEN REPLACE({$rawValueSql}, '.', '')
+                        ELSE {$rawValueSql}
+                    END
+                ELSE {$rawValueSql}
+            END
+        ";
 
         return "
             CASE
                 WHEN COALESCE({$remarkColumn}, '') LIKE '%Plan Invoice:%'
-                    THEN CAST(REPLACE(REPLACE(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX({$remarkColumn}, 'Plan Invoice:', -1), ';', 1)), '.', ''), ',', '') AS DECIMAL(18,2))
+                    THEN CAST({$normalizedValueSql} AS DECIMAL(18,2))
                 ELSE 0
             END
         ";
