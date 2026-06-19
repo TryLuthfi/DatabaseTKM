@@ -49,6 +49,9 @@ class PO_MyRep extends CI_Controller
         $data['certificateBatchRows'] = $data['isReady']
             ? $this->MPO_MyRep->getCertificateDetailRows($selectedCity, $selectedStatus, '', 0, 'ALL')
             : [];
+        $data['certificateReleasedUninvoicedSummary'] = $data['isReady']
+            ? $this->MPO_MyRep->getCertificateReleasedUninvoicedSummary($selectedCity, $selectedStatus)
+            : [];
         $data['canBatchInvoice'] = $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT');
         $data['canBatchCertificate'] = $data['canBatchInvoice']
             && (
@@ -584,6 +587,8 @@ class PO_MyRep extends CI_Controller
         $metricLabel = strtoupper($poType) . ' - ' . strtoupper($metric);
         if ($metric === 'outstanding_term' && $termNo > 0) {
             $metricLabel = strtoupper($poType) . ' - OUTSTANDING ' . $termNo;
+        } elseif ($metric === 'invoice_term' && $termNo > 0) {
+            $metricLabel = strtoupper($poType) . ' - INVOICE ' . $termNo;
         }
 
         return $this->output
@@ -624,6 +629,38 @@ class PO_MyRep extends CI_Controller
                 'title' => $this->buildCertificateDetailTitle($poType, $termNo, $certificateStatus),
                 'can_release_certificate' => $canReleaseCertificate,
                 'rows' => $rows,
+            ]));
+    }
+
+    public function getCertificateReleasedUninvoicedDetail()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            return $this->output
+                ->set_status_header(401)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['status' => false, 'message' => 'Unauthorized']));
+        }
+
+        $city = strtoupper(trim((string) $this->input->post('city')));
+        $status = strtoupper(trim((string) $this->input->post('status')));
+        $termNo = (int) $this->input->post('term_no');
+        if ($termNo < 2 || $termNo > 5) {
+            $termNo = 0;
+        }
+
+        $rows = $this->MPO_MyRep->getCertificateReleasedUninvoicedDetailRows($city, $status, $termNo);
+        $title = $termNo > 0
+            ? 'Detail Ready Invoice - Term ' . $termNo
+            : 'Detail Ready Invoice - Semua Term';
+
+        return $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'title' => $title,
+                'term_no' => $termNo,
+                'ready_rows' => $rows['ready'] ?? [],
+                'blocked_rows' => $rows['blocked'] ?? [],
             ]));
     }
 

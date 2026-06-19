@@ -556,6 +556,7 @@ class MPO_MyRep extends CI_Model
                 'po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
+                'done_invoice_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'total_invoiced_value' => 0,
                 'outstanding_value' => 0,
@@ -565,6 +566,7 @@ class MPO_MyRep extends CI_Model
                 'po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
+                'done_invoice_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'total_invoiced_value' => 0,
                 'outstanding_value' => 0,
@@ -2015,6 +2017,7 @@ class MPO_MyRep extends CI_Model
                 'total_po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
+                'done_invoice_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'total_invoiced_value' => 0,
                 'outstanding_value' => 0,
@@ -2024,6 +2027,7 @@ class MPO_MyRep extends CI_Model
                 'total_po_count' => 0,
                 'total_po_value' => 0,
                 'term_done_count' => 0,
+                'done_invoice_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 'total_invoiced_value' => 0,
                 'outstanding_value' => 0,
@@ -2052,9 +2056,12 @@ class MPO_MyRep extends CI_Model
             if ($hasSubmitInvoice) {
                 $result[$type]['term_done_count']++;
                 $result[$type]['total_invoiced_value'] += $terminValue;
+                if ($terminNo >= 1 && $terminNo <= 5) {
+                    $result[$type]['done_invoice_values'][$terminNo] += $terminValue;
+                }
             }
 
-            if ($terminNo >= 1 && $terminNo <= 5) {
+            if (!$hasSubmitInvoice && $terminNo >= 1 && $terminNo <= 5) {
                 // Outstanding per termin mengikuti kolom plan invoice import.
                 $result[$type]['termin_values'][$terminNo] += $planInvoiceValue;
                 $result[$type]['outstanding_value'] += $planInvoiceValue;
@@ -2187,6 +2194,9 @@ class MPO_MyRep extends CI_Model
         if ($metric === 'outstanding_total') {
             $outstandingPerPo = [];
             foreach ($terminRows as $terminRow) {
+                if (trim((string) ($terminRow['invoice_date'] ?? '')) !== '') {
+                    continue;
+                }
                 $headerId = (int) ($terminRow['id_po_header'] ?? 0);
                 if (!isset($outstandingPerPo[$headerId])) {
                     $outstandingPerPo[$headerId] = 0;
@@ -2223,8 +2233,10 @@ class MPO_MyRep extends CI_Model
 
             if ($metric === 'total_invoiced') {
                 $include = trim((string) ($terminRow['invoice_date'] ?? '')) !== '';
+            } elseif ($metric === 'invoice_term' && $termNo >= 1 && $termNo <= 5) {
+                $include = ($terminNoRow === $termNo && trim((string) ($terminRow['invoice_date'] ?? '')) !== '');
             } elseif ($metric === 'outstanding_term' && $termNo >= 1 && $termNo <= 5) {
-                $include = ($terminNoRow === $termNo && abs($this->resolvePlanInvoiceValue($terminRow)) > 0.000001);
+                $include = ($terminNoRow === $termNo && trim((string) ($terminRow['invoice_date'] ?? '')) === '' && abs($this->resolvePlanInvoiceValue($terminRow)) > 0.000001);
             }
 
             if (!$include) {
@@ -2313,6 +2325,193 @@ class MPO_MyRep extends CI_Model
         return array_values($summary);
     }
 
+    public function getCertificateReleasedUninvoicedSummary($city = '', $status = '')
+    {
+        $rows = $this->getCertificateDashboardRows($city, $status);
+        $summary = $this->buildEmptyCertificateReleasedUninvoicedSummary();
+
+        if (empty($rows)) {
+            return $summary;
+        }
+
+        $headerIds = array_values(array_unique(array_filter(array_map(static function ($row) {
+            return (int) ($row['id_po_header'] ?? 0);
+        }, $rows))));
+
+        $invoiceDateMap = [];
+        if (!empty($headerIds)) {
+            $this->db
+                ->select('id_po_header, termin_no, invoice_date')
+                ->from('tb_myrep_po_termin')
+                ->where('termin_no >=', 1)
+                ->where('termin_no <=', 4);
+            $this->applyIntWhereInChunks('id_po_header', $headerIds);
+            $invoiceRows = $this->db->get()->result_array();
+
+            foreach ($invoiceRows as $invoiceRow) {
+                $headerId = (int) ($invoiceRow['id_po_header'] ?? 0);
+                $termNo = (int) ($invoiceRow['termin_no'] ?? 0);
+                if ($headerId > 0 && $termNo >= 1 && $termNo <= 4) {
+                    $invoiceDateMap[$headerId][$termNo] = (string) ($invoiceRow['invoice_date'] ?? '');
+                }
+            }
+        }
+
+
+        foreach ($rows as $row) {
+            $termNo = (int) ($row['termin_no'] ?? 0);
+            if ($termNo < 2 || $termNo > 5) {
+                continue;
+            }
+
+            $hasCertificateDate = $this->isValidEmrTargetDateValue((string) ($row['sertifikat_invoice_date'] ?? ''));
+            $hasInvoiceDate = $this->isValidEmrTargetDateValue((string) ($row['invoice_date'] ?? ''));
+            if (!$hasCertificateDate || $hasInvoiceDate) {
+                continue;
+            }
+
+            $value = (float) $this->resolvePlanInvoiceValue($row);
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $previousTermNo = $termNo - 1;
+            $previousInvoiceDate = $invoiceDateMap[$headerId][$previousTermNo] ?? '';
+            $isReadyInvoice = $this->isValidEmrTargetDateValue((string) $previousInvoiceDate);
+
+            $this->addCertificateReleasedUninvoicedSummaryRow($summary, 'all', $termNo, $value);
+            if ($isReadyInvoice) {
+                $this->addCertificateReleasedUninvoicedSummaryRow($summary, 'ready', $termNo, $value);
+            } else {
+                $this->addCertificateReleasedUninvoicedSummaryRow($summary, 'blocked', $termNo, $value);
+                $summary['blocked_reasons']['term_' . $previousTermNo]['count']++;
+                $summary['blocked_reasons']['term_' . $previousTermNo]['value'] += $value;
+            }
+        }
+
+        return $summary;
+    }
+
+    private function buildEmptyCertificateReleasedUninvoicedSummary()
+    {
+        $summary = [
+            'all' => ['total' => ['count' => 0, 'value' => 0], 'terms' => []],
+            'ready' => ['total' => ['count' => 0, 'value' => 0], 'terms' => []],
+            'blocked' => ['total' => ['count' => 0, 'value' => 0], 'terms' => []],
+            'blocked_reasons' => [],
+        ];
+
+        for ($termNo = 2; $termNo <= 5; $termNo++) {
+            foreach (['all', 'ready', 'blocked'] as $bucket) {
+                $summary[$bucket]['terms'][$termNo] = [
+                    'termin_no' => $termNo,
+                    'label' => 'Term ' . $termNo,
+                    'count' => 0,
+                    'value' => 0,
+                ];
+            }
+        }
+
+        for ($termNo = 1; $termNo <= 4; $termNo++) {
+            $summary['blocked_reasons']['term_' . $termNo] = [
+                'term_no' => $termNo,
+                'label' => 'Term ' . $termNo . ' belum invoice',
+                'count' => 0,
+                'value' => 0,
+            ];
+        }
+
+        return $summary;
+    }
+
+    private function addCertificateReleasedUninvoicedSummaryRow(array &$summary, $bucket, $termNo, $value)
+    {
+        if (!isset($summary[$bucket]['terms'][$termNo])) {
+            return;
+        }
+
+        $summary[$bucket]['terms'][$termNo]['count']++;
+        $summary[$bucket]['terms'][$termNo]['value'] += (float) $value;
+        $summary[$bucket]['total']['count']++;
+        $summary[$bucket]['total']['value'] += (float) $value;
+    }
+
+    public function getCertificateReleasedUninvoicedDetailRows($city = '', $status = '', $termNo = 0)
+    {
+        $termNo = (int) $termNo;
+        $rows = $this->getCertificateDashboardRows($city, $status, '', $termNo);
+        $detail = [
+            'ready' => [],
+            'blocked' => [],
+        ];
+
+        if (empty($rows)) {
+            return $detail;
+        }
+
+        $headerIds = array_values(array_unique(array_filter(array_map(static function ($row) {
+            return (int) ($row['id_po_header'] ?? 0);
+        }, $rows))));
+
+        $invoiceDateMap = [];
+        if (!empty($headerIds)) {
+            $this->db
+                ->select('id_po_header, termin_no, invoice_date')
+                ->from('tb_myrep_po_termin')
+                ->where('termin_no >=', 1)
+                ->where('termin_no <=', 4);
+            $this->applyIntWhereInChunks('id_po_header', $headerIds);
+            $invoiceRows = $this->db->get()->result_array();
+
+            foreach ($invoiceRows as $invoiceRow) {
+                $headerId = (int) ($invoiceRow['id_po_header'] ?? 0);
+                $previousTermNo = (int) ($invoiceRow['termin_no'] ?? 0);
+                if ($headerId > 0 && $previousTermNo >= 1 && $previousTermNo <= 4) {
+                    $invoiceDateMap[$headerId][$previousTermNo] = (string) ($invoiceRow['invoice_date'] ?? '');
+                }
+            }
+        }
+
+        foreach ($rows as $row) {
+            $currentTermNo = (int) ($row['termin_no'] ?? 0);
+            if ($currentTermNo < 2 || $currentTermNo > 5) {
+                continue;
+            }
+
+            $hasCertificateDate = $this->isValidEmrTargetDateValue((string) ($row['sertifikat_invoice_date'] ?? ''));
+            $hasInvoiceDate = $this->isValidEmrTargetDateValue((string) ($row['invoice_date'] ?? ''));
+            if (!$hasCertificateDate || $hasInvoiceDate) {
+                continue;
+            }
+
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $previousTermNo = $currentTermNo - 1;
+            $previousInvoiceDate = $invoiceDateMap[$headerId][$previousTermNo] ?? '';
+            $isReadyInvoice = $this->isValidEmrTargetDateValue((string) $previousInvoiceDate);
+            $planInvoiceValue = (float) $this->resolvePlanInvoiceValue($row);
+
+            $item = [
+                'id_myrep_cluster' => (int) ($row['id_myrep_cluster'] ?? 0),
+                'cluster_name' => (string) ($row['cluster_name'] ?? '-'),
+                'city_name' => (string) ($row['city_name'] ?? '-'),
+                'regional_name' => (string) ($row['regional_name'] ?? '-'),
+                'po_type' => (string) ($row['po_type'] ?? '-'),
+                'po_category' => (string) ($row['po_category'] ?? '-'),
+                'po_number' => (string) ($row['po_number'] ?? '-'),
+                'po_date' => (string) ($row['po_date'] ?? ''),
+                'termin_no' => $currentTermNo,
+                'term_label' => (string) ($row['term_label'] ?? ('Term ' . $currentTermNo)),
+                'certificate_date' => (string) ($row['sertifikat_invoice_date'] ?? ''),
+                'invoice_date' => (string) ($row['invoice_date'] ?? ''),
+                'plan_invoice_value' => $planInvoiceValue,
+                'previous_term_no' => $previousTermNo,
+                'previous_invoice_date' => (string) $previousInvoiceDate,
+                'block_reason' => $isReadyInvoice ? '' : 'Term ' . $previousTermNo . ' belum invoice',
+            ];
+
+            $detail[$isReadyInvoice ? 'ready' : 'blocked'][] = $item;
+        }
+
+        return $detail;
+    }
+
     public function getCertificateDetailRows($city = '', $status = '', $poType = '', $termNo = 0, $certificateStatus = '')
     {
         $poType = strtoupper(trim((string) $poType));
@@ -2379,6 +2578,9 @@ class MPO_MyRep extends CI_Model
         $certificateSelect = $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
             ? 't.sertifikat_invoice_date'
             : "'' AS sertifikat_invoice_date";
+        $remarkSelect = $this->db->field_exists('remark_termin', 'tb_myrep_po_termin')
+            ? 't.remark_termin'
+            : "'' AS remark_termin";
 
         $this->db
             ->select("
@@ -2399,7 +2601,8 @@ class MPO_MyRep extends CI_Model
                 t.termin_value,
                 t.status_termin,
                 t.invoice_date,
-                {$certificateSelect}
+                {$certificateSelect},
+                {$remarkSelect}
             ", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')

@@ -18,6 +18,22 @@ if (!function_exists('poMyRepNumberOrDash')) {
     }
 }
 
+if (!function_exists('poMyRepTermValueMap')) {
+    function poMyRepTermValueMap($values)
+    {
+        $map = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        if (!is_array($values)) {
+            return $map;
+        }
+
+        for ($termNo = 1; $termNo <= 5; $termNo++) {
+            $map[$termNo] = (float) ($values[$termNo] ?? 0);
+        }
+
+        return $map;
+    }
+}
+
 $poTotalRows = is_array($poListRows ?? null) ? count($poListRows) : 0;
 $poRegionalSeen = [];
 foreach (($poListRows ?? []) as $poStatRow) {
@@ -28,6 +44,82 @@ foreach (($poListRows ?? []) as $poStatRow) {
 }
 $poTotalRegional = count($poRegionalSeen);
 $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
+$certificateReleasedUninvoicedSummary = is_array($certificateReleasedUninvoicedSummary ?? null) ? $certificateReleasedUninvoicedSummary : [];
+$certificateSummaryEmptyBucket = ['total' => ['count' => 0, 'value' => 0], 'terms' => []];
+for ($certificateSummaryTermNo = 2; $certificateSummaryTermNo <= 5; $certificateSummaryTermNo++) {
+    $certificateSummaryEmptyBucket['terms'][$certificateSummaryTermNo] = ['count' => 0, 'value' => 0];
+}
+foreach (['all', 'ready', 'blocked'] as $certificateSummaryBucket) {
+    if (empty($certificateReleasedUninvoicedSummary[$certificateSummaryBucket]) || !is_array($certificateReleasedUninvoicedSummary[$certificateSummaryBucket])) {
+        $certificateReleasedUninvoicedSummary[$certificateSummaryBucket] = $certificateSummaryEmptyBucket;
+    }
+}
+if (empty($certificateReleasedUninvoicedSummary['blocked_reasons']) || !is_array($certificateReleasedUninvoicedSummary['blocked_reasons'])) {
+    $certificateReleasedUninvoicedSummary['blocked_reasons'] = [];
+}
+$certificateReleasedUninvoicedCards = [
+    [
+        'label' => 'Total',
+        'hint' => 'Semua termin ready invoice',
+        'term_no' => 0,
+        'all_count' => (int) ($certificateReleasedUninvoicedSummary['all']['total']['count'] ?? 0),
+        'all_value' => (float) ($certificateReleasedUninvoicedSummary['all']['total']['value'] ?? 0),
+        'ready_count' => (int) ($certificateReleasedUninvoicedSummary['ready']['total']['count'] ?? 0),
+        'ready_value' => (float) ($certificateReleasedUninvoicedSummary['ready']['total']['value'] ?? 0),
+        'blocked_count' => (int) ($certificateReleasedUninvoicedSummary['blocked']['total']['count'] ?? 0),
+        'blocked_value' => (float) ($certificateReleasedUninvoicedSummary['blocked']['total']['value'] ?? 0),
+        'icon' => 'fas fa-file-invoice-dollar',
+        'accent' => 'teal',
+    ],
+];
+foreach ([2, 3, 4, 5] as $certificateSummaryTermNo) {
+    $certificateReleasedUninvoicedCards[] = [
+        'label' => 'Term ' . $certificateSummaryTermNo,
+        'hint' => 'Sertifikat rilis, invoice kosong',
+        'term_no' => $certificateSummaryTermNo,
+        'all_count' => (int) ($certificateReleasedUninvoicedSummary['all']['terms'][$certificateSummaryTermNo]['count'] ?? 0),
+        'all_value' => (float) ($certificateReleasedUninvoicedSummary['all']['terms'][$certificateSummaryTermNo]['value'] ?? 0),
+        'ready_count' => (int) ($certificateReleasedUninvoicedSummary['ready']['terms'][$certificateSummaryTermNo]['count'] ?? 0),
+        'ready_value' => (float) ($certificateReleasedUninvoicedSummary['ready']['terms'][$certificateSummaryTermNo]['value'] ?? 0),
+        'blocked_count' => (int) ($certificateReleasedUninvoicedSummary['blocked']['terms'][$certificateSummaryTermNo]['count'] ?? 0),
+        'blocked_value' => (float) ($certificateReleasedUninvoicedSummary['blocked']['terms'][$certificateSummaryTermNo]['value'] ?? 0),
+        'icon' => 'fas fa-certificate',
+        'accent' => ['slate', 'blue', 'amber', 'green'][$certificateSummaryTermNo - 2],
+    ];
+}
+$certificateReadyDefaultCopy = 'Menampilkan termin yang sudah rilis sertifikat, belum invoice, dan invoice term sebelumnya sudah lengkap.';
+$certificateAllReleasedCopy = 'Menampilkan semua termin yang sudah rilis sertifikat namun belum invoice, termasuk yang masih tertahan invoice term sebelumnya.';
+$poTerminBreakdownConsoleRows = [];
+if (is_array($terminBreakdownRows ?? null)) {
+    foreach ($terminBreakdownRows as $debugIndex => &$terminBreakdownRow) {
+        if (!is_array($terminBreakdownRow)) {
+            $poTerminBreakdownConsoleRows[] = ['index' => $debugIndex, 'issue' => 'row_not_array'];
+            $terminBreakdownRow = [];
+        }
+
+        $missingKeys = [];
+        if (!array_key_exists('termin_values', $terminBreakdownRow) || !is_array($terminBreakdownRow['termin_values'])) {
+            $missingKeys[] = 'termin_values';
+            $terminBreakdownRow['termin_values'] = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        }
+        if (!array_key_exists('done_invoice_values', $terminBreakdownRow) || !is_array($terminBreakdownRow['done_invoice_values'])) {
+            $missingKeys[] = 'done_invoice_values';
+            $terminBreakdownRow['done_invoice_values'] = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        }
+
+        $terminBreakdownRow['termin_values'] = poMyRepTermValueMap($terminBreakdownRow['termin_values']);
+        $terminBreakdownRow['done_invoice_values'] = poMyRepTermValueMap($terminBreakdownRow['done_invoice_values']);
+
+        if (!empty($missingKeys)) {
+            $poTerminBreakdownConsoleRows[] = [
+                'index' => $debugIndex,
+                'po_type' => (string) ($terminBreakdownRow['po_type'] ?? '-'),
+                'missing_keys' => $missingKeys,
+            ];
+        }
+    }
+    unset($terminBreakdownRow);
+}
 ?>
 
 <style>
@@ -261,6 +353,394 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
         color: #0f172a;
         background: #fff;
         border-color: rgba(148, 163, 184, 0.38);
+    }
+
+    .po-cert-release-panel {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+    }
+
+    .po-cert-release-panel__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .po-cert-release-panel__tools {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.55rem;
+    }
+
+    .po-cert-release-panel__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.35rem;
+        padding: 0.26rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(20, 184, 166, 0.1);
+        color: #0f766e;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .po-cert-release-panel__title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+        letter-spacing: 0;
+    }
+
+    .po-cert-release-panel__copy {
+        max-width: 760px;
+        margin: 0.28rem 0 0;
+        color: #64748b;
+        font-size: 0.86rem;
+        line-height: 1.55;
+    }
+
+    .po-cert-release-panel__note {
+        padding: 0.5rem 0.65rem;
+        border: 1px solid rgba(37, 99, 235, 0.16);
+        border-radius: 8px;
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .po-cert-release-toggle {
+        display: inline-flex;
+        padding: 0.22rem;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 999px;
+        background: #f8fafc;
+    }
+
+    .po-cert-release-toggle__btn {
+        min-width: 108px;
+        padding: 0.42rem 0.72rem;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+        line-height: 1;
+        cursor: pointer;
+        transition: background .16s ease, color .16s ease, box-shadow .16s ease;
+    }
+
+    .po-cert-release-toggle__btn:focus {
+        outline: none;
+    }
+
+    .po-cert-release-toggle__btn.is-active {
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    }
+
+    .po-table-mode-toggle {
+        display: inline-flex;
+        margin-left: auto;
+        padding: 0.22rem;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 999px;
+        background: #f8fafc;
+    }
+
+    .po-termin-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 52px;
+    }
+
+    .po-termin-card-header .card-title {
+        float: none;
+        margin: 0;
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+
+    .po-table-mode-toggle__btn {
+        min-width: 104px;
+        padding: 0.42rem 0.72rem;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+        line-height: 1;
+        cursor: pointer;
+        transition: background .16s ease, color .16s ease, box-shadow .16s ease;
+    }
+
+    .po-table-mode-toggle__btn:focus {
+        outline: none;
+    }
+
+    .po-table-mode-toggle__btn.is-active {
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    }
+
+    .po-termin-table-pane.is-hidden {
+        display: none;
+    }
+
+    .po-cert-release-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .po-cert-release-card {
+        position: relative;
+        min-height: 132px;
+        overflow: hidden;
+        padding: 0.95rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+
+    .po-cert-release-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--cert-accent, #0f766e);
+    }
+
+    .po-cert-release-card__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .po-cert-release-card__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .po-cert-release-card__label {
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .po-cert-release-card__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: #fff;
+        color: var(--cert-accent, #0f766e);
+    }
+
+    .po-cert-release-card__detail {
+        border: 0;
+        background: transparent;
+        color: var(--cert-accent, #0f766e);
+        font-size: 0.72rem;
+        font-weight: 900;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0.25rem 0;
+    }
+
+    .po-cert-release-card__detail:hover,
+    .po-cert-release-card__detail:focus {
+        color: var(--cert-accent, #0f766e);
+        text-decoration: underline;
+        outline: none;
+    }
+
+    .po-cert-release-card__count {
+        display: block;
+        margin-top: 0.72rem;
+        color: #0f172a;
+        font-size: 1.85rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .po-cert-release-card__sum {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--cert-accent, #0f766e);
+        font-size: 0.86rem;
+        font-weight: 900;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .po-cert-release-card__hint {
+        display: block;
+        margin-top: 0.35rem;
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .po-cert-release-card__blocked {
+        display: block;
+        margin-top: 0.45rem;
+        padding-top: 0.45rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.24);
+        color: #b45309;
+        font-size: 0.74rem;
+        font-weight: 900;
+        line-height: 1.35;
+    }
+
+    .po-cert-release-blocked {
+        margin-top: 0.85rem;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid rgba(245, 158, 11, 0.24);
+        border-radius: 8px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.5;
+    }
+
+    .po-cert-release-blocked.is-hidden,
+    .po-cert-release-card__blocked.is-hidden {
+        display: none;
+    }
+
+    .po-modal-xxl {
+        max-width: 78vw;
+    }
+
+    .po-cert-release-detail-section + .po-cert-release-detail-section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.24);
+    }
+
+    .po-cert-release-detail-section.is-hidden {
+        display: none;
+    }
+
+    .po-cert-release-detail-section__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .po-cert-release-detail-section__title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+    }
+
+    .po-cert-release-detail-section__meta {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .po-cert-release-card--teal {
+        --cert-accent: #0f766e;
+        background: linear-gradient(135deg, #f0fdfa, #ffffff);
+    }
+
+    .po-cert-release-card--slate {
+        --cert-accent: #475569;
+    }
+
+    .po-cert-release-card--blue {
+        --cert-accent: #2563eb;
+        background: linear-gradient(135deg, #eff6ff, #ffffff);
+    }
+
+    .po-cert-release-card--amber {
+        --cert-accent: #b45309;
+        background: linear-gradient(135deg, #fffbeb, #ffffff);
+    }
+
+    .po-cert-release-card--green {
+        --cert-accent: #16a34a;
+        background: linear-gradient(135deg, #f0fdf4, #ffffff);
+    }
+
+    @media (max-width: 1199px) {
+        .po-cert-release-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .po-cert-release-panel__head {
+            flex-direction: column;
+        }
+
+        .po-cert-release-panel__tools {
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .po-cert-release-panel__note {
+            width: 100%;
+            text-align: center;
+            white-space: normal;
+        }
+
+        .po-cert-release-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .po-modal-xxl {
+            max-width: calc(100vw - 1rem);
+        }
+
+        .po-termin-card-header {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .po-table-mode-toggle {
+            width: 100%;
+        }
+
+        .po-table-mode-toggle__btn {
+            flex: 1 1 0;
+            min-width: 0;
+        }
     }
 
     .po-myrep-revamp .form-control,
@@ -631,69 +1111,110 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                     </div>
                 </section>
 
-                <div class="row">
-                    <div class="col-md-2">
-                        <div class="small-box bg-info">
-                            <div class="inner">
-                                <h3><?= (int) ($summary['total_cluster'] ?? 0) ?></h3>
-                                <p>Total Cluster</p>
+                <section class="po-cert-release-panel">
+                    <div class="po-cert-release-panel__head">
+                        <div>
+                            <span class="po-cert-release-panel__eyebrow">
+                                <i class="fas fa-certificate"></i>
+                                Ready To Invoice
+                            </span>
+                            <h2 class="po-cert-release-panel__title">Sertifikat sudah rilis, invoice belum masuk</h2>
+                            <p class="po-cert-release-panel__copy" id="po-cert-release-copy"
+                                data-ready-copy="<?= htmlspecialchars($certificateReadyDefaultCopy, ENT_QUOTES) ?>"
+                                data-all-copy="<?= htmlspecialchars($certificateAllReleasedCopy, ENT_QUOTES) ?>">
+                                <?= htmlspecialchars($certificateReadyDefaultCopy) ?>
+                            </p>
+                        </div>
+                        <div class="po-cert-release-panel__tools">
+                            <div class="po-cert-release-toggle" role="group" aria-label="Mode summary sertifikat">
+                                <button type="button" class="po-cert-release-toggle__btn" data-cert-summary-mode="all">All Released</button>
+                                <button type="button" class="po-cert-release-toggle__btn is-active" data-cert-summary-mode="ready">Ready Invoice</button>
                             </div>
-                            <div class="icon"><i class="fas fa-network-wired"></i></div>
+                            <div class="po-cert-release-panel__note">
+                                Count PO-Term
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="small-box bg-secondary">
-                            <div class="inner">
-                                <h3><?= (int) ($summary['not_issued'] ?? 0) ?></h3>
-                                <p>Not Issued</p>
-                            </div>
-                            <div class="icon"><i class="fas fa-file-circle-question"></i></div>
-                        </div>
+                    <div class="po-cert-release-grid">
+                        <?php foreach ($certificateReleasedUninvoicedCards as $certificateSummaryCard): ?>
+                            <article class="po-cert-release-card po-cert-release-card--<?= htmlspecialchars((string) ($certificateSummaryCard['accent'] ?? 'teal'), ENT_QUOTES) ?>">
+                                <div class="po-cert-release-card__top">
+                                    <span class="po-cert-release-card__label"><?= htmlspecialchars((string) ($certificateSummaryCard['label'] ?? '-')) ?></span>
+                                    <span class="po-cert-release-card__actions">
+                                        <button type="button" class="po-cert-release-card__detail js-open-cert-release-detail"
+                                            data-term-no="<?= (int) ($certificateSummaryCard['term_no'] ?? 0) ?>"
+                                            data-label="<?= htmlspecialchars((string) ($certificateSummaryCard['label'] ?? '-'), ENT_QUOTES) ?>">
+                                            Lihat detail
+                                        </button>
+                                        <span class="po-cert-release-card__icon">
+                                            <i class="<?= htmlspecialchars((string) ($certificateSummaryCard['icon'] ?? 'fas fa-certificate'), ENT_QUOTES) ?>"></i>
+                                        </span>
+                                    </span>
+                                </div>
+                                <span class="po-cert-release-card__count"
+                                    data-ready-count="<?= (int) ($certificateSummaryCard['ready_count'] ?? 0) ?>"
+                                    data-all-count="<?= (int) ($certificateSummaryCard['all_count'] ?? 0) ?>">
+                                    <?= poMyRepNumber((int) ($certificateSummaryCard['ready_count'] ?? 0)) ?>
+                                </span>
+                                <span class="po-cert-release-card__sum"
+                                    data-ready-value="<?= (float) ($certificateSummaryCard['ready_value'] ?? 0) ?>"
+                                    data-all-value="<?= (float) ($certificateSummaryCard['all_value'] ?? 0) ?>">
+                                    Nilai <?= poMyRepNumber((float) ($certificateSummaryCard['ready_value'] ?? 0)) ?>
+                                </span>
+                                <span class="po-cert-release-card__hint"><?= htmlspecialchars((string) ($certificateSummaryCard['hint'] ?? '')) ?></span>
+                                <span class="po-cert-release-card__blocked is-hidden">
+                                    Blocked <?= poMyRepNumber((int) ($certificateSummaryCard['blocked_count'] ?? 0)) ?> | Nilai <?= poMyRepNumber((float) ($certificateSummaryCard['blocked_value'] ?? 0)) ?>
+                                </span>
+                            </article>
+                        <?php endforeach; ?>
                     </div>
-                    <div class="col-md-2">
-                        <div class="small-box bg-primary">
-                            <div class="inner">
-                                <h3><?= (int) ($summary['issued'] ?? 0) ?></h3>
-                                <p>Issued</p>
-                            </div>
-                            <div class="icon"><i class="fas fa-file-signature"></i></div>
-                        </div>
+                    <div class="po-cert-release-blocked is-hidden" id="po-cert-release-blocked-note">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Blocked by previous term:
+                        <?php
+                        $certificateBlockedReasonTexts = [];
+                        foreach (($certificateReleasedUninvoicedSummary['blocked_reasons'] ?? []) as $certificateBlockedReason) {
+                            $certificateBlockedCount = (int) ($certificateBlockedReason['count'] ?? 0);
+                            if ($certificateBlockedCount <= 0) {
+                                continue;
+                            }
+                            $certificateBlockedReasonTexts[] = htmlspecialchars((string) ($certificateBlockedReason['label'] ?? '-')) . ': ' . poMyRepNumber($certificateBlockedCount) . ' | Nilai ' . poMyRepNumber((float) ($certificateBlockedReason['value'] ?? 0));
+                        }
+                        ?>
+                        <?= !empty($certificateBlockedReasonTexts) ? implode(' · ', $certificateBlockedReasonTexts) : 'Tidak ada data blocked.' ?>
                     </div>
-                    <div class="col-md-2">
-                        <div class="small-box bg-warning">
-                            <div class="inner">
-                                <h3><?= (int) ($summary['partial_payment'] ?? 0) ?></h3>
-                                <p>Partial Payment</p>
-                            </div>
-                            <div class="icon"><i class="fas fa-hand-holding-dollar"></i></div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="small-box bg-success">
-                            <div class="inner">
-                                <h3><?= (int) ($summary['fully_paid'] ?? 0) ?></h3>
-                                <p>Fully Paid</p>
-                            </div>
-                            <div class="icon"><i class="fas fa-check-circle"></i></div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="small-box bg-dark">
-                            <div class="inner">
-                                <h3><?= (int) ($summary['closed'] ?? 0) ?></h3>
-                                <p>Closed</p>
-                            </div>
-                            <div class="icon"><i class="fas fa-box-archive"></i></div>
-                        </div>
-                    </div>
-                </div>
+                </section>
 
                 <div class="card card-outline card-info shadow-sm">
-                    <div class="card-header">
+                    <div class="card-header po-termin-card-header">
                         <h3 class="card-title">Pembagian Termin (Cluster & Subfeeder)</h3>
+                        <div class="po-table-mode-toggle" role="group" aria-label="Mode pembagian termin">
+                            <button type="button" class="po-table-mode-toggle__btn is-active" data-termin-table-mode="outstanding">Outstanding</button>
+                            <button type="button" class="po-table-mode-toggle__btn" data-termin-table-mode="summary">Summary</button>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+                        <?php
+                        $sumPoQty = 0;
+                        $sumTotalPo = 0;
+                        $sumTotalInvoiced = 0;
+                        $sumOutstanding = 0;
+                        $sumTermin = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+                        $sumInvoiceTermin = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+                        foreach ($terminBreakdownRows as $row) {
+                            $sumPoQty += (int) ($row['total_po_count'] ?? 0);
+                            $sumTotalPo += (float) ($row['total_po_value'] ?? 0);
+                            $sumTotalInvoiced += (float) ($row['total_invoiced_value'] ?? 0);
+                            $sumOutstanding += (float) ($row['outstanding_value'] ?? 0);
+                            $rowOutstandingValues = poMyRepTermValueMap(array_key_exists('termin_values', $row) ? $row['termin_values'] : []);
+                            $rowInvoiceValues = poMyRepTermValueMap(array_key_exists('done_invoice_values', $row) ? $row['done_invoice_values'] : []);
+                            for ($i = 1; $i <= 5; $i++) {
+                                $sumTermin[$i] += (float) ($rowOutstandingValues[$i] ?? 0);
+                                $sumInvoiceTermin[$i] += (float) ($rowInvoiceValues[$i] ?? 0);
+                            }
+                        }
+                        ?>
+                        <div class="table-responsive po-termin-table-pane" data-termin-table-pane="outstanding">
                             <table class="table table-bordered table-hover mb-0">
                                 <thead>
                                     <tr>
@@ -714,33 +1235,18 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php
-                                    $sumPoQty = 0;
-                                    $sumTotalPo = 0;
-                                    $sumTotalInvoiced = 0;
-                                    $sumOutstanding = 0;
-                                    $sumTermin = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
-                                    ?>
                                     <?php foreach ($terminBreakdownRows as $index => $row): ?>
-                                        <?php
-                                        $sumPoQty += (int) ($row['total_po_count'] ?? 0);
-                                        $sumTotalPo += (float) ($row['total_po_value'] ?? 0);
-                                        $sumTotalInvoiced += (float) ($row['total_invoiced_value'] ?? 0);
-                                        $sumOutstanding += (float) ($row['outstanding_value'] ?? 0);
-                                        for ($i = 1; $i <= 5; $i++) {
-                                            $sumTermin[$i] += (float) ($row['termin_values'][$i] ?? 0);
-                                        }
-                                        ?>
+                                        <?php $rowOutstandingValues = poMyRepTermValueMap(array_key_exists('termin_values', $row) ? $row['termin_values'] : []); ?>
                                         <tr>
                                             <td><?= $index + 1 ?></td>
                                             <td><strong><?= htmlspecialchars((string) ($row['po_type'] ?? '-')) ?></strong></td>
                                             <td class="text-center"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="po_qty"><?= (int) ($row['total_po_count'] ?? 0) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="total_po"><?= poMyRepNumber((float) ($row['total_po_value'] ?? 0)) ?></span></td>
-                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="1"><?= poMyRepNumber((float) ($row['termin_values'][1] ?? 0)) ?></span></td>
-                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="2"><?= poMyRepNumber((float) ($row['termin_values'][2] ?? 0)) ?></span></td>
-                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="3"><?= poMyRepNumber((float) ($row['termin_values'][3] ?? 0)) ?></span></td>
-                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="4"><?= poMyRepNumber((float) ($row['termin_values'][4] ?? 0)) ?></span></td>
-                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="5"><?= poMyRepNumber((float) ($row['termin_values'][5] ?? 0)) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="1"><?= poMyRepNumber((float) ($rowOutstandingValues[1] ?? 0)) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="2"><?= poMyRepNumber((float) ($rowOutstandingValues[2] ?? 0)) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="3"><?= poMyRepNumber((float) ($rowOutstandingValues[3] ?? 0)) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="4"><?= poMyRepNumber((float) ($rowOutstandingValues[4] ?? 0)) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="5"><?= poMyRepNumber((float) ($rowOutstandingValues[5] ?? 0)) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="total_invoiced"><?= poMyRepNumber((float) ($row['total_invoiced_value'] ?? 0)) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_total"><?= poMyRepNumber((float) ($row['outstanding_value'] ?? 0)) ?></span></td>
                                         </tr>
@@ -762,6 +1268,71 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[3]) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[4]) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[5]) ?></th>
+                                            <th class="text-right"><?= poMyRepNumber($sumTotalInvoiced) ?></th>
+                                            <th class="text-right"><?= poMyRepNumber($sumOutstanding) ?></th>
+                                        </tr>
+                                    </tfoot>
+                                <?php endif; ?>
+                            </table>
+                        </div>
+                        <div class="table-responsive po-termin-table-pane is-hidden" data-termin-table-pane="summary">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">No</th>
+                                        <th rowspan="2">Tipe PO</th>
+                                        <th rowspan="2">PO QTY</th>
+                                        <th rowspan="2">Total PO Value</th>
+                                        <th colspan="2" class="text-center">Term 1</th>
+                                        <th colspan="2" class="text-center">Term 2</th>
+                                        <th colspan="2" class="text-center">Term 3</th>
+                                        <th colspan="2" class="text-center">Term 4</th>
+                                        <th colspan="2" class="text-center">Term 5</th>
+                                        <th rowspan="2">Total Invoice</th>
+                                        <th rowspan="2">Outstanding Total</th>
+                                    </tr>
+                                    <tr>
+                                        <?php for ($terminSummaryTerm = 1; $terminSummaryTerm <= 5; $terminSummaryTerm++): ?>
+                                            <th>Invoice</th>
+                                            <th>Outstanding</th>
+                                        <?php endfor; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($terminBreakdownRows as $index => $row): ?>
+                                        <?php
+                                        $rowOutstandingValues = poMyRepTermValueMap(array_key_exists('termin_values', $row) ? $row['termin_values'] : []);
+                                        $rowInvoiceValues = poMyRepTermValueMap(array_key_exists('done_invoice_values', $row) ? $row['done_invoice_values'] : []);
+                                        ?>
+                                        <tr>
+                                            <td><?= $index + 1 ?></td>
+                                            <td><strong><?= htmlspecialchars((string) ($row['po_type'] ?? '-')) ?></strong></td>
+                                            <td class="text-center"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="po_qty"><?= (int) ($row['total_po_count'] ?? 0) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="total_po"><?= poMyRepNumber((float) ($row['total_po_value'] ?? 0)) ?></span></td>
+                                            <?php for ($terminSummaryTerm = 1; $terminSummaryTerm <= 5; $terminSummaryTerm++): ?>
+                                                <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="invoice_term" data-term-no="<?= $terminSummaryTerm ?>"><?= poMyRepNumber((float) $rowInvoiceValues[$terminSummaryTerm]) ?></span></td>
+                                                <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="<?= $terminSummaryTerm ?>"><?= poMyRepNumber((float) $rowOutstandingValues[$terminSummaryTerm]) ?></span></td>
+                                            <?php endfor; ?>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="total_invoiced"><?= poMyRepNumber((float) ($row['total_invoiced_value'] ?? 0)) ?></span></td>
+                                            <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_total"><?= poMyRepNumber((float) ($row['outstanding_value'] ?? 0)) ?></span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($terminBreakdownRows)): ?>
+                                        <tr>
+                                            <td colspan="16" class="text-center text-muted">Belum ada data pembagian termin.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                                <?php if (!empty($terminBreakdownRows)): ?>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2" class="text-right">TOTAL</th>
+                                            <th class="text-center"><?= (int) $sumPoQty ?></th>
+                                            <th class="text-right"><?= poMyRepNumber($sumTotalPo) ?></th>
+                                            <?php for ($terminSummaryTerm = 1; $terminSummaryTerm <= 5; $terminSummaryTerm++): ?>
+                                                <th class="text-right"><?= poMyRepNumber($sumInvoiceTermin[$terminSummaryTerm]) ?></th>
+                                                <th class="text-right"><?= poMyRepNumber($sumTermin[$terminSummaryTerm]) ?></th>
+                                            <?php endfor; ?>
                                             <th class="text-right"><?= poMyRepNumber($sumTotalInvoiced) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumOutstanding) ?></th>
                                         </tr>
@@ -1431,14 +2002,91 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
     </div>
 </div>
 
+<div class="modal fade" id="modal-cert-release-detail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog po-modal-xxl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <div>
+                    <h5 class="modal-title mb-1" id="cert-release-detail-title">Detail Ready Invoice</h5>
+                    <div class="small text-white-50" id="cert-release-detail-subtitle">Sertifikat sudah rilis, invoice belum masuk.</div>
+                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <section class="po-cert-release-detail-section" id="cert-release-ready-section">
+                    <div class="po-cert-release-detail-section__head">
+                        <h6 class="po-cert-release-detail-section__title">Ready Invoice</h6>
+                        <span class="po-cert-release-detail-section__meta" id="cert-release-ready-meta">0 data</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Cluster</th>
+                                    <th>Kota</th>
+                                    <th>Regional</th>
+                                    <th>PO</th>
+                                    <th>Tanggal PO</th>
+                                    <th>Term</th>
+                                    <th>Sertifikat</th>
+                                    <th>Prev Invoice</th>
+                                    <th>Nilai</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cert-release-ready-body">
+                                <tr><td colspan="11" class="text-center text-muted">Belum ada data.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="po-cert-release-detail-section is-hidden" id="cert-release-blocked-section">
+                    <div class="po-cert-release-detail-section__head">
+                        <h6 class="po-cert-release-detail-section__title">Blocked Previous Term</h6>
+                        <span class="po-cert-release-detail-section__meta" id="cert-release-blocked-meta">0 data</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Cluster</th>
+                                    <th>Kota</th>
+                                    <th>Regional</th>
+                                    <th>PO</th>
+                                    <th>Tanggal PO</th>
+                                    <th>Term</th>
+                                    <th>Sertifikat</th>
+                                    <th>Blocked By</th>
+                                    <th>Nilai</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cert-release-blocked-body">
+                                <tr><td colspan="11" class="text-center text-muted">Belum ada data.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     (function () {
         var breakdownDetailUrl = "<?= base_url('PO_MyRep/getTerminBreakdownDetail') ?>";
         var certificateDetailUrl = "<?= base_url('PO_MyRep/getCertificateSummaryDetail') ?>";
+        var certificateReleasedDetailUrl = "<?= base_url('PO_MyRep/getCertificateReleasedUninvoicedDetail') ?>";
         var certificateSaveUrl = "<?= base_url('PO_MyRep/saveTerminCertificate') ?>";
         var poDetailBaseUrl = "<?= base_url('PO_MyRep/detail/') ?>";
         var selectedCity = "<?= htmlspecialchars((string) $selectedCity, ENT_QUOTES) ?>";
         var selectedStatus = "<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>";
+        var poTerminBreakdownDebugRows = <?= json_encode($poTerminBreakdownConsoleRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        if (poTerminBreakdownDebugRows.length) {
+            console.warn('PO_MyRep Pembagian Termin rows missing expected keys', poTerminBreakdownDebugRows);
+        }
         var poBatchTerminLookup = <?php
             $poBatchTerminLookup = [];
             foreach (($poListRows ?? []) as $poBatchRow) {
@@ -2297,6 +2945,122 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                     error: function () {
                         $('#certificate-detail-title').text('Detail Sertifikat');
                         $('#certificate-detail-body').html('<tr><td colspan="10" class="text-center text-danger">Terjadi kesalahan saat memuat detail.</td></tr>');
+                    }
+                });
+            });
+
+            function applyCertificateReleaseSummaryMode(mode) {
+                mode = mode === 'all' ? 'all' : 'ready';
+                $('.po-cert-release-toggle__btn').removeClass('is-active');
+                $('.po-cert-release-toggle__btn[data-cert-summary-mode="' + mode + '"]').addClass('is-active');
+
+                $('.po-cert-release-card').each(function () {
+                    var $card = $(this);
+                    var $count = $card.find('.po-cert-release-card__count');
+                    var $sum = $card.find('.po-cert-release-card__sum');
+                    var count = Number($count.data(mode + '-count') || 0);
+                    var value = Number($sum.data(mode + '-value') || 0);
+                    $count.text(count.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $sum.text('Nilai ' + value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $card.find('.po-cert-release-card__blocked').toggleClass('is-hidden', mode !== 'all');
+                });
+
+                var $copy = $('#po-cert-release-copy');
+                $copy.text(mode === 'all' ? String($copy.data('all-copy') || '') : String($copy.data('ready-copy') || ''));
+                $('#po-cert-release-blocked-note').toggleClass('is-hidden', mode !== 'all');
+            }
+
+            $('.po-cert-release-toggle__btn').on('click', function () {
+                applyCertificateReleaseSummaryMode(String($(this).data('cert-summary-mode') || 'ready'));
+            });
+
+            applyCertificateReleaseSummaryMode('ready');
+
+            $('.po-table-mode-toggle__btn').on('click', function () {
+                var mode = String($(this).data('termin-table-mode') || 'outstanding');
+                $('.po-table-mode-toggle__btn').removeClass('is-active');
+                $(this).addClass('is-active');
+                $('.po-termin-table-pane').addClass('is-hidden');
+                $('.po-termin-table-pane[data-termin-table-pane="' + mode + '"]').removeClass('is-hidden');
+            });
+
+            function renderCertificateReleaseDetailRows(rows, type) {
+                rows = rows || [];
+                if (!rows.length) {
+                    return '<tr><td colspan="11" class="text-center text-muted">Tidak ada data.</td></tr>';
+                }
+
+                return rows.map(function (row, idx) {
+                    var previousInfo = type === 'blocked'
+                        ? escapeHtml(row.block_reason || '-')
+                        : 'Term ' + escapeHtml(row.previous_term_no || '-') + '<div class="small text-muted">' + escapeHtml(row.previous_invoice_date || '-') + '</div>';
+                    return '<tr>' +
+                        '<td>' + (idx + 1) + '</td>' +
+                        '<td><strong>' + escapeHtml(row.cluster_name || '-') + '</strong></td>' +
+                        '<td>' + escapeHtml(row.city_name || '-') + '</td>' +
+                        '<td>' + escapeHtml(row.regional_name || '-') + '</td>' +
+                        '<td><strong>' + escapeHtml(row.po_number || '-') + '</strong><div class="small text-muted">' + escapeHtml(row.po_type || '-') + ' / ' + escapeHtml(row.po_category || '-') + '</div></td>' +
+                        '<td>' + escapeHtml(row.po_date || '-') + '</td>' +
+                        '<td class="text-center">' + escapeHtml(row.termin_no || '-') + '</td>' +
+                        '<td>' + escapeHtml(row.certificate_date || '-') + '</td>' +
+                        '<td>' + previousInfo + '</td>' +
+                        '<td class="text-right">' + Number(row.plan_invoice_value || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 }) + '</td>' +
+                        '<td><a href="' + poDetailBaseUrl + Number(row.id_myrep_cluster || 0) + '" class="btn btn-sm btn-outline-primary">Detail</a></td>' +
+                    '</tr>';
+                }).join('');
+            }
+
+            $(document).on('click', '.js-open-cert-release-detail', function () {
+                var $btn = $(this);
+                var activeMode = $('.po-cert-release-toggle__btn.is-active').data('cert-summary-mode') === 'all' ? 'all' : 'ready';
+                var label = String($btn.data('label') || 'Total');
+                var termNo = Number($btn.data('term-no') || 0);
+
+                $('#cert-release-detail-title').text('Detail ' + label);
+                $('#cert-release-detail-subtitle').text(activeMode === 'all'
+                    ? 'All Released: detail atas adalah Ready Invoice, detail bawah adalah Blocked Previous Term.'
+                    : 'Ready Invoice: sertifikat sudah rilis, invoice term ini kosong, dan previous term sudah invoice.');
+                $('#cert-release-ready-meta').text('Memuat...');
+                $('#cert-release-blocked-meta').text('Memuat...');
+                $('#cert-release-ready-body').html('<tr><td colspan="11" class="text-center text-muted">Loading...</td></tr>');
+                $('#cert-release-blocked-body').html('<tr><td colspan="11" class="text-center text-muted">Loading...</td></tr>');
+                $('#cert-release-blocked-section').toggleClass('is-hidden', activeMode !== 'all');
+                $('#modal-cert-release-detail').modal('show');
+
+                $.ajax({
+                    url: certificateReleasedDetailUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        city: selectedCity,
+                        status: selectedStatus,
+                        term_no: termNo
+                    },
+                    success: function (response) {
+                        if (!response || !response.status) {
+                            $('#cert-release-ready-meta').text('0 data');
+                            $('#cert-release-ready-body').html('<tr><td colspan="11" class="text-center text-danger">Gagal memuat data.</td></tr>');
+                            return;
+                        }
+
+                        var readyRows = response.ready_rows || [];
+                        var blockedRows = response.blocked_rows || [];
+                        $('#cert-release-detail-title').text(response.title || ('Detail ' + label));
+                        $('#cert-release-ready-meta').text(readyRows.length.toLocaleString('id-ID') + ' data');
+                        $('#cert-release-ready-body').html(renderCertificateReleaseDetailRows(readyRows, 'ready'));
+
+                        if (activeMode === 'all') {
+                            $('#cert-release-blocked-section').removeClass('is-hidden');
+                            $('#cert-release-blocked-meta').text(blockedRows.length.toLocaleString('id-ID') + ' data');
+                            $('#cert-release-blocked-body').html(renderCertificateReleaseDetailRows(blockedRows, 'blocked'));
+                        } else {
+                            $('#cert-release-blocked-section').addClass('is-hidden');
+                        }
+                    },
+                    error: function () {
+                        $('#cert-release-ready-meta').text('0 data');
+                        $('#cert-release-ready-body').html('<tr><td colspan="11" class="text-center text-danger">Terjadi kesalahan saat memuat detail.</td></tr>');
+                        $('#cert-release-blocked-section').addClass('is-hidden');
                     }
                 });
             });
