@@ -674,11 +674,16 @@ unset($scopeBaseQuery['scope']);
 <div class="emr-page-title">
     <div>
         <h1>OUTSTANDING TARGET PO EMMR</h1>
+        <p>
+            <?= $selectedScope === 'aging_6m'
+                ? 'Live Data: List PO dengan umur hari lebih dari 180 hari.'
+                : 'On Target: Prioritas pertama berdasarkan target lock 15 Mei 2025.' ?>
+        </p>
     </div>
     <div class="emr-title-actions">
         <div class="emr-scope-toggle">
             <a href="<?= base_url('PO_EMR_Myrep?' . http_build_query(array_merge($scopeBaseQuery, ['scope' => 'target']))) ?>" class="<?= $selectedScope === 'target' ? 'active' : '' ?>">On Target</a>
-            <a href="<?= base_url('PO_EMR_Myrep?' . http_build_query(array_merge($scopeBaseQuery, ['scope' => 'aging_6m']))) ?>" class="<?= $selectedScope === 'aging_6m' ? 'active' : '' ?>">Aging &gt;= 6 Bulan</a>
+            <a href="<?= base_url('PO_EMR_Myrep?' . http_build_query(array_merge($scopeBaseQuery, ['scope' => 'aging_6m']))) ?>" class="<?= $selectedScope === 'aging_6m' ? 'active' : '' ?>">Live Data</a>
         </div>
         <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-po-emr-download-report">
             <i class="fas fa-file-excel mr-1"></i> Download Report
