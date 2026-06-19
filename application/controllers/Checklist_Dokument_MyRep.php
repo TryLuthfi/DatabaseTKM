@@ -2212,14 +2212,17 @@ class Checklist_Dokument_MyRep extends CI_Controller
     public function saveTimeline()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
         if ($clusterId <= 0) {
-            $this->session->set_flashdata('error', 'Data timeline tidak valid.');
-            redirect('Checklist_Dokument_MyRep');
+            $this->respondDetailAction(false, 'Data timeline tidak valid.', 0, 'Checklist_Dokument_MyRep');
             return;
         }
 
@@ -2229,8 +2232,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         ];
 
         $this->MChecklist_Dokument_MyRep->updateClusterTimeline($clusterId, $payload);
-        $this->session->set_flashdata('success', 'Timeline berhasil diperbarui.');
-        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+        $this->respondDetailAction(true, 'Timeline berhasil diperbarui.', $clusterId);
     }
 
     public function uploadDocument()
@@ -2637,6 +2639,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
     public function saveAstriStatus()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
@@ -2648,14 +2654,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $astriRemark = trim((string) $this->input->post('astri_remark'));
 
         if (!$this->isApprover()) {
-            $this->session->set_flashdata('error', 'Anda tidak memiliki akses update status ASTRI.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Anda tidak memiliki akses update status ASTRI.', $clusterId);
             return;
         }
 
         if ($clusterId <= 0 || $fileId <= 0) {
-            $this->session->set_flashdata('error', 'Data ASTRI tidak valid.');
-            redirect('Checklist_Dokument_MyRep');
+            $this->respondDetailAction(false, 'Data ASTRI tidak valid.', 0, 'Checklist_Dokument_MyRep');
             return;
         }
 
@@ -2670,40 +2674,34 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'APPROVED'
         ];
         if (!in_array($astriStatus, $allowedStatuses, true)) {
-            $this->session->set_flashdata('error', 'Status ASTRI tidak dikenali.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Status ASTRI tidak dikenali.', $clusterId);
             return;
         }
 
         $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
         if (empty($file)) {
-            $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Dokumen tidak ditemukan.', $clusterId);
             return;
         }
 
         $specialAstriStatuses = ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'];
         if (!(int) ($file['is_special_project_opname'] ?? 0) && in_array($astriStatus, $specialAstriStatuses, true)) {
-            $this->session->set_flashdata('error', 'Status ASTRI khusus ini hanya berlaku untuk Project Opname.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Status ASTRI khusus ini hanya berlaku untuk Project Opname.', $clusterId);
             return;
         }
 
         if ((int) ($file['is_special_project_opname'] ?? 0) && empty($file['cluster_actual_atp_date']) && $astriStatus !== 'NY') {
-            $this->session->set_flashdata('error', 'Project Opname hanya bisa masuk flow approval ASTRI setelah ATP terisi.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Project Opname hanya bisa masuk flow approval ASTRI setelah ATP terisi.', $clusterId);
             return;
         }
 
         if ($file['status_file'] !== 'APPROVED' && $astriStatus !== 'NY') {
-            $this->session->set_flashdata('error', 'Dokumen internal harus APPROVED sebelum di-submit ke ASTRI.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Dokumen internal harus APPROVED sebelum di-submit ke ASTRI.', $clusterId);
             return;
         }
 
         if ($astriStatus !== 'NY' && empty($astriSubmittedDate)) {
-            $this->session->set_flashdata('error', 'Tanggal submit ASTRI wajib diisi untuk status selain NY.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Tanggal submit ASTRI wajib diisi untuk status selain NY.', $clusterId);
             return;
         }
 
@@ -2713,13 +2711,16 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'astri_remark' => $astriRemark,
         ]);
 
-        $this->session->set_flashdata('success', 'Status ASTRI berhasil diperbarui.');
-        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+        $this->respondDetailAction(true, 'Status ASTRI berhasil diperbarui.', $clusterId);
     }
 
     public function bulkEditAstriStatus()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
@@ -2731,14 +2732,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $astriRemarks = (array) $this->input->post('astri_remark');
 
         if (!$this->isApprover()) {
-            $this->session->set_flashdata('error', 'Anda tidak memiliki akses update status ASTRI.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(false, 'Anda tidak memiliki akses update status ASTRI.', $clusterId);
             return;
         }
 
         if ($clusterId <= 0 || empty($fileIds)) {
-            $this->session->set_flashdata('error', 'Data bulk ASTRI tidak valid.');
-            redirect($clusterId > 0 ? 'Checklist_Dokument_MyRep/detail/' . $clusterId : 'Checklist_Dokument_MyRep');
+            $this->respondDetailAction(false, 'Data bulk ASTRI tidak valid.', $clusterId, 'Checklist_Dokument_MyRep');
             return;
         }
 
@@ -2816,8 +2815,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             if (!empty($skippedMessages)) {
                 $message .= ' ' . count($skippedMessages) . ' dokumen dilewati: ' . implode('; ', array_slice($skippedMessages, 0, 3));
             }
-            $this->session->set_flashdata('success', $message);
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->respondDetailAction(true, $message, $clusterId);
             return;
         }
 
@@ -2825,8 +2823,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         if (!empty($skippedMessages)) {
             $message .= ' ' . implode('; ', array_slice($skippedMessages, 0, 3));
         }
-        $this->session->set_flashdata('error', $message);
-        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+        $this->respondDetailAction(false, $message, $clusterId);
     }
 
     public function previewDocument($fileId = 0)
@@ -3106,6 +3103,20 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $this->session->set_flashdata('success', $message);
+        redirect($redirectPath);
+    }
+
+    private function respondDetailAction($status, $message, $clusterId = 0, $fallbackPath = 'Checklist_Dokument_MyRep')
+    {
+        $clusterId = (int) $clusterId;
+        $redirectPath = $clusterId > 0 ? 'Checklist_Dokument_MyRep/detail/' . $clusterId : $fallbackPath;
+
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse((bool) $status, $message, base_url($redirectPath));
+            return;
+        }
+
+        $this->session->set_flashdata($status ? 'success' : 'error', $message);
         redirect($redirectPath);
     }
 

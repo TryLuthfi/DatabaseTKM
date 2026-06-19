@@ -580,6 +580,7 @@ $clusterProgressPercent = checklist_doc_percent(
 </style>
 
 <div class="content-wrapper">
+    <div id="checklist-detail-refresh-area">
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
@@ -1556,6 +1557,7 @@ $clusterProgressPercent = checklist_doc_percent(
             </div>
         </div>
     </section>
+    </div>
 </div>
 
 <div class="modal fade doc-modal doc-modal-timeline" id="modalTimeline">
@@ -1849,6 +1851,51 @@ $clusterProgressPercent = checklist_doc_percent(
 <script>
     var checklistApproveAllUrl = "<?= base_url('Checklist_Dokument_MyRep/approveAllDocuments') ?>";
 
+    function currentDetailScrollTop() {
+        return window.pageYOffset || document.documentElement.scrollTop || 0;
+    }
+
+    function softRefreshDetail(url, scrollTop) {
+        var activeTabHref = $('#checklist-detail-refresh-area .nav-link.active').attr('href') || '';
+        $.ajax({
+            url: url || window.location.href,
+            type: 'GET',
+            dataType: 'html'
+        }).done(function(html) {
+            var parsed = $('<div>').append($.parseHTML(html, document, true));
+            var freshArea = parsed.find('#checklist-detail-refresh-area');
+            if (!freshArea.length) {
+                window.location.href = url || window.location.href;
+                return;
+            }
+
+            $('#checklist-detail-refresh-area').html(freshArea.html());
+            if (activeTabHref) {
+                $('#checklist-detail-refresh-area a[href="' + activeTabHref + '"]').tab('show');
+            }
+            window.setTimeout(function() {
+                window.scrollTo(0, scrollTop || 0);
+            }, 50);
+        }).fail(function() {
+            window.location.href = url || window.location.href;
+        });
+    }
+
+    function handleDetailAjaxResponse(response, successFallbackMessage, scrollTop, onFailure) {
+        if (response && response.status) {
+            $('.modal.show').modal('hide');
+            alert(response.message || successFallbackMessage || 'Data berhasil diperbarui.');
+            softRefreshDetail(response.redirect_url || window.location.href, scrollTop);
+            return true;
+        }
+
+        alert(response && response.message ? response.message : 'Update gagal.');
+        if (typeof onFailure === 'function') {
+            onFailure();
+        }
+        return false;
+    }
+
     function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
         var dropzone = document.querySelector(dropzoneSelector);
         var input = document.querySelector(inputSelector);
@@ -2067,6 +2114,7 @@ $clusterProgressPercent = checklist_doc_percent(
         var progressBar = $('#upload-progress-bar');
         var progressPercent = $('#upload-progress-percent');
         var formData = new FormData(form);
+        var scrollTop = currentDetailScrollTop();
 
         submitButton.prop('disabled', true).text('Uploading...');
         progressPanel.show();
@@ -2098,14 +2146,9 @@ $clusterProgressPercent = checklist_doc_percent(
             success: function(response) {
                 progressBar.removeClass('warning').addClass('success').css('width', '100%');
                 progressPercent.text('100%');
-                if (response && response.status) {
-                    alert(response.message || 'Dokumen berhasil disubmit.');
-                    window.location.href = response.redirect_url || window.location.href;
-                    return;
-                }
-
-                alert(response && response.message ? response.message : 'Upload gagal.');
-                submitButton.prop('disabled', false).text('Upload Dokumen');
+                handleDetailAjaxResponse(response, 'Dokumen berhasil disubmit.', scrollTop, function() {
+                    submitButton.prop('disabled', false).text('Upload Dokumen');
+                });
             },
             error: function() {
                 alert('Upload gagal. Silakan coba lagi.');
@@ -2114,7 +2157,7 @@ $clusterProgressPercent = checklist_doc_percent(
         });
     });
 
-    $('.bulk-upload-form').on('submit', function(e) {
+    $(document).on('submit', '.bulk-upload-form', function(e) {
         e.preventDefault();
 
         var form = this;
@@ -2124,6 +2167,7 @@ $clusterProgressPercent = checklist_doc_percent(
         var progressBar = $form.find('.bulk-upload-progress-bar');
         var progressPercent = $form.find('.bulk-upload-progress-percent');
         var formData = new FormData(form);
+        var scrollTop = currentDetailScrollTop();
 
         submitButton.prop('disabled', true).text('Uploading...');
         progressPanel.show();
@@ -2155,14 +2199,9 @@ $clusterProgressPercent = checklist_doc_percent(
             success: function(response) {
                 progressBar.removeClass('warning').addClass('success').css('width', '100%');
                 progressPercent.text('100%');
-                if (response && response.status) {
-                    alert(response.message || 'Bulk upload berhasil disubmit.');
-                    window.location.href = response.redirect_url || window.location.href;
-                    return;
-                }
-
-                alert(response && response.message ? response.message : 'Bulk upload gagal.');
-                submitButton.prop('disabled', false).text('Upload Semua Yang Diisi');
+                handleDetailAjaxResponse(response, 'Bulk upload berhasil disubmit.', scrollTop, function() {
+                    submitButton.prop('disabled', false).text('Upload Semua Yang Diisi');
+                });
             },
             error: function() {
                 alert('Bulk upload gagal. Silakan coba lagi.');
@@ -2185,6 +2224,7 @@ $clusterProgressPercent = checklist_doc_percent(
         }
 
         button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Approving...');
+        var scrollTop = currentDetailScrollTop();
         $.ajax({
             url: checklistApproveAllUrl,
             type: 'POST',
@@ -2197,14 +2237,9 @@ $clusterProgressPercent = checklist_doc_percent(
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(response) {
-                if (response && response.status) {
-                    alert(response.message || 'Approve all berhasil.');
-                    window.location.href = response.redirect_url || window.location.href;
-                    return;
-                }
-
-                alert(response && response.message ? response.message : 'Approve all gagal.');
-                button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i>Approve All');
+                handleDetailAjaxResponse(response, 'Approve all berhasil.', scrollTop, function() {
+                    button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i>Approve All');
+                });
             },
             error: function() {
                 alert('Approve all gagal. Silakan coba lagi.');
@@ -2220,6 +2255,7 @@ $clusterProgressPercent = checklist_doc_percent(
         var formEl = $(form);
         var submitButton = formEl.find('button[type="submit"]');
         var originalText = submitButton.text();
+        var scrollTop = currentDetailScrollTop();
 
         submitButton.prop('disabled', true).text('Memproses...');
         $.ajax({
@@ -2231,17 +2267,41 @@ $clusterProgressPercent = checklist_doc_percent(
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(response) {
-                if (response && response.status) {
-                    alert(response.message || 'Dokumen berhasil diproses.');
-                    window.location.href = response.redirect_url || window.location.href;
-                    return;
-                }
-
-                alert(response && response.message ? response.message : 'Proses dokumen gagal.');
-                submitButton.prop('disabled', false).text(originalText);
+                handleDetailAjaxResponse(response, 'Dokumen berhasil diproses.', scrollTop, function() {
+                    submitButton.prop('disabled', false).text(originalText);
+                });
             },
             error: function() {
                 alert('Proses dokumen gagal. Silakan coba lagi.');
+                submitButton.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+
+    $(document).on('submit', '#modalTimeline form, #modalAstriDocument form, form[action*="bulkEditAstriStatus"]', function(e) {
+        e.preventDefault();
+
+        var formEl = $(this);
+        var submitButton = formEl.find('button[type="submit"]');
+        var originalText = submitButton.text();
+        var scrollTop = currentDetailScrollTop();
+
+        submitButton.prop('disabled', true).text('Memproses...');
+        $.ajax({
+            url: formEl.attr('action'),
+            type: 'POST',
+            dataType: 'json',
+            data: formEl.serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                handleDetailAjaxResponse(response, 'Data berhasil diperbarui.', scrollTop, function() {
+                    submitButton.prop('disabled', false).text(originalText);
+                });
+            },
+            error: function() {
+                alert('Update gagal. Silakan coba lagi.');
                 submitButton.prop('disabled', false).text(originalText);
             }
         });
