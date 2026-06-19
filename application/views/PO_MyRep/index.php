@@ -665,7 +665,6 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                         <th rowspan="2">Tipe PO</th>
                                         <th rowspan="2">PO QTY</th>
                                         <th rowspan="2">Total PO Value</th>
-                                        <th rowspan="2">Term Done</th>
                                         <th colspan="5" class="text-center">Outstanding</th>
                                         <th rowspan="2">Total Invoiced</th>
                                         <th rowspan="2">Outstanding Total</th>
@@ -682,7 +681,6 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                     <?php
                                     $sumPoQty = 0;
                                     $sumTotalPo = 0;
-                                    $sumTermDone = 0;
                                     $sumTotalInvoiced = 0;
                                     $sumOutstanding = 0;
                                     $sumTermin = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
@@ -691,7 +689,6 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                         <?php
                                         $sumPoQty += (int) ($row['total_po_count'] ?? 0);
                                         $sumTotalPo += (float) ($row['total_po_value'] ?? 0);
-                                        $sumTermDone += (int) ($row['term_done_count'] ?? 0);
                                         $sumTotalInvoiced += (float) ($row['total_invoiced_value'] ?? 0);
                                         $sumOutstanding += (float) ($row['outstanding_value'] ?? 0);
                                         for ($i = 1; $i <= 5; $i++) {
@@ -703,7 +700,6 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                             <td><strong><?= htmlspecialchars((string) ($row['po_type'] ?? '-')) ?></strong></td>
                                             <td class="text-center"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="po_qty"><?= (int) ($row['total_po_count'] ?? 0) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="total_po"><?= poMyRepNumber((float) ($row['total_po_value'] ?? 0)) ?></span></td>
-                                            <td class="text-center"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="term_done"><?= (int) ($row['term_done_count'] ?? 0) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="1"><?= poMyRepNumber((float) ($row['termin_values'][1] ?? 0)) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="2"><?= poMyRepNumber((float) ($row['termin_values'][2] ?? 0)) ?></span></td>
                                             <td class="text-right"><span class="po-breakdown-link js-open-breakdown" data-po-type="<?= htmlspecialchars((string) ($row['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>" data-metric="outstanding_term" data-term-no="3"><?= poMyRepNumber((float) ($row['termin_values'][3] ?? 0)) ?></span></td>
@@ -715,7 +711,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                     <?php endforeach; ?>
                                     <?php if (empty($terminBreakdownRows)): ?>
                                         <tr>
-                                            <td colspan="12" class="text-center text-muted">Belum ada data pembagian termin.</td>
+                                            <td colspan="11" class="text-center text-muted">Belum ada data pembagian termin.</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -725,7 +721,6 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                             <th colspan="2" class="text-right">TOTAL</th>
                                             <th class="text-center"><?= (int) $sumPoQty ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTotalPo) ?></th>
-                                            <th class="text-center"><?= (int) $sumTermDone ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[1]) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[2]) ?></th>
                                             <th class="text-right"><?= poMyRepNumber($sumTermin[3]) ?></th>
@@ -971,32 +966,27 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                                 <th rowspan="3">Status PO</th>
                                                 <th rowspan="3">Nilai PO</th>
                                                 <th rowspan="3">Termin</th>
-                                                <th colspan="15" class="text-center">PROGRESS INVOICE</th>
+                                                <th colspan="10" class="text-center">PROGRESS INVOICE</th>
                                                 <th rowspan="3">Total Invoiced</th>
                                                 <th rowspan="3">Outstanding Total</th>
                                                 <th rowspan="3">Aksi</th>
                                             </tr>
                                             <tr>
-                                                <th colspan="3" class="text-center">TOP 1<br>20%(DP)</th>
-                                                <th colspan="3" class="text-center">TOP 2<br>25%(CW)</th>
-                                                <th colspan="3" class="text-center">TOP 3<br>15%(FULL OPM)</th>
-                                                <th colspan="3" class="text-center">TOP 4<br>30%(RFS)</th>
-                                                <th colspan="3" class="text-center">TOP 5<br>10%(FAC)</th>
+                                                <th colspan="2" class="text-center">TOP 1<br>20%(DP)</th>
+                                                <th colspan="2" class="text-center">TOP 2<br>25%(CW)</th>
+                                                <th colspan="2" class="text-center">TOP 3<br>15%(FULL OPM)</th>
+                                                <th colspan="2" class="text-center">TOP 4<br>30%(RFS)</th>
+                                                <th colspan="2" class="text-center">TOP 5<br>10%(FAC)</th>
                                             </tr>
                                             <tr>
-                                                <th class="text-center">PLAN INV</th>
                                                 <th class="text-center">INVOICE</th>
                                                 <th class="text-center">OUTSTANDING</th>
-                                                <th class="text-center">PLAN INV</th>
                                                 <th class="text-center">INVOICE</th>
                                                 <th class="text-center">OUTSTANDING</th>
-                                                <th class="text-center">PLAN INV</th>
                                                 <th class="text-center">INVOICE</th>
                                                 <th class="text-center">OUTSTANDING</th>
-                                                <th class="text-center">PLAN INV</th>
                                                 <th class="text-center">INVOICE</th>
                                                 <th class="text-center">OUTSTANDING</th>
-                                                <th class="text-center">PLAN INV</th>
                                                 <th class="text-center">INVOICE</th>
                                                 <th class="text-center">OUTSTANDING</th>
                                             </tr>
@@ -1031,19 +1021,14 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                                     </td>
                                                     <td class="text-right"><?= poMyRepNumber((float) ($row['po_value'] ?? 0)) ?></td>
                                                     <td class="text-center"><?= $terminProgress ?>/<?= $terminTotal ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][1] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][1] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][1] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][2] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][2] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][2] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][3] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][3] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][3] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][4] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][4] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][4] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][5] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][5] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][5] ?? 0))) ?></td>
                                                     <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['total_invoiced'] ?? 0)) ?></td>
@@ -1052,7 +1037,7 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                                 </tr>
                                             <?php endforeach; ?>
                                             <?php if (empty($poListRows)): ?>
-                                                <tr><td colspan="28" class="text-center text-muted">Belum ada data PO.</td></tr>
+                                                <tr><td colspan="23" class="text-center text-muted">Belum ada data PO.</td></tr>
                                             <?php endif; ?>
                                         </tbody>
                                         <tfoot>
@@ -1060,19 +1045,14 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                                                 <th colspan="8" class="text-right">TOTAL NILAI PO</th>
                                                 <th class="text-right po-list-footer-nilai-po" id="po-list-footer-nilai-po">0</th>
                                                 <th></th>
-                                                <th class="text-right po-list-footer-plan-1" id="po-list-footer-plan-1">-</th>
                                                 <th class="text-right po-list-footer-done-1" id="po-list-footer-done-1">-</th>
                                                 <th class="text-right po-list-footer-outstanding-1" id="po-list-footer-outstanding-1">-</th>
-                                                <th class="text-right po-list-footer-plan-2" id="po-list-footer-plan-2">-</th>
                                                 <th class="text-right po-list-footer-done-2" id="po-list-footer-done-2">-</th>
                                                 <th class="text-right po-list-footer-outstanding-2" id="po-list-footer-outstanding-2">-</th>
-                                                <th class="text-right po-list-footer-plan-3" id="po-list-footer-plan-3">-</th>
                                                 <th class="text-right po-list-footer-done-3" id="po-list-footer-done-3">-</th>
                                                 <th class="text-right po-list-footer-outstanding-3" id="po-list-footer-outstanding-3">-</th>
-                                                <th class="text-right po-list-footer-plan-4" id="po-list-footer-plan-4">-</th>
                                                 <th class="text-right po-list-footer-done-4" id="po-list-footer-done-4">-</th>
                                                 <th class="text-right po-list-footer-outstanding-4" id="po-list-footer-outstanding-4">-</th>
-                                                <th class="text-right po-list-footer-plan-5" id="po-list-footer-plan-5">-</th>
                                                 <th class="text-right po-list-footer-done-5" id="po-list-footer-done-5">-</th>
                                                 <th class="text-right po-list-footer-outstanding-5" id="po-list-footer-outstanding-5">-</th>
                                                 <th class="text-right po-list-footer-total-invoiced" id="po-list-footer-total-invoiced">-</th>
@@ -2016,37 +1996,27 @@ $poTotalCity = is_array($cityOptions ?? null) ? count($cityOptions) : 0;
                     var totalNilaiPo = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
                         return parseLocaleNumber(a) + parseLocaleNumber(b);
                     }, 0);
-                    var totalPlan1 = api.column(10, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone1 = api.column(11, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding1 = api.column(12, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan2 = api.column(13, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone2 = api.column(14, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding2 = api.column(15, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan3 = api.column(16, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone3 = api.column(17, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding3 = api.column(18, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan4 = api.column(19, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone4 = api.column(20, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding4 = api.column(21, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalPlan5 = api.column(22, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalDone5 = api.column(23, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding5 = api.column(24, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalInvoiced = api.column(25, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
-                    var totalOutstanding = api.column(26, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone1 = api.column(10, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding1 = api.column(11, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone2 = api.column(12, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding2 = api.column(13, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone3 = api.column(14, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding3 = api.column(15, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone4 = api.column(16, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding4 = api.column(17, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone5 = api.column(18, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding5 = api.column(19, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalInvoiced = api.column(20, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding = api.column(21, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
                     $('.po-list-footer-nilai-po').text(totalNilaiPo.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                    $('.po-list-footer-plan-1').text(totalPlan1 === 0 ? '-' : totalPlan1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-1').text(totalDone1 === 0 ? '-' : totalDone1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-outstanding-1').text(totalOutstanding1 === 0 ? '-' : totalOutstanding1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                    $('.po-list-footer-plan-2').text(totalPlan2 === 0 ? '-' : totalPlan2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-2').text(totalDone2 === 0 ? '-' : totalDone2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-outstanding-2').text(totalOutstanding2 === 0 ? '-' : totalOutstanding2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                    $('.po-list-footer-plan-3').text(totalPlan3 === 0 ? '-' : totalPlan3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-3').text(totalDone3 === 0 ? '-' : totalDone3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-outstanding-3').text(totalOutstanding3 === 0 ? '-' : totalOutstanding3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                    $('.po-list-footer-plan-4').text(totalPlan4 === 0 ? '-' : totalPlan4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-4').text(totalDone4 === 0 ? '-' : totalDone4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-outstanding-4').text(totalOutstanding4 === 0 ? '-' : totalOutstanding4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                    $('.po-list-footer-plan-5').text(totalPlan5 === 0 ? '-' : totalPlan5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-done-5').text(totalDone5 === 0 ? '-' : totalDone5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-outstanding-5').text(totalOutstanding5 === 0 ? '-' : totalOutstanding5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     $('.po-list-footer-total-invoiced').text(totalInvoiced === 0 ? '-' : totalInvoiced.toLocaleString('id-ID', { maximumFractionDigits: 0 }));

@@ -4,8 +4,9 @@ param(
     [string] $RemoteAppPath = "/www/wwwroot/databasetkm.com",
     [string] $KeyPath = "tmp_codex_vps_ed25519",
     [string] $KnownHostsPath = "tmp_vps_known_hosts",
-    [string] $LocalHost = "127.0.0.1",
-    [string] $LocalUser = "root",
+    [string] $LocalHost = "",
+    [int] $LocalPort = 0,
+    [string] $LocalUser = "",
     [string] $LocalPassword = "",
     [string] $LocalDatabase = "",
     [switch] $SkipLocalBackup,
@@ -23,7 +24,7 @@ function Read-DotEnv {
 
     foreach ($line in Get-Content -LiteralPath $Path) {
         $trimmed = $line.Trim()
-        if ($trimmed -eq "" -or $trimmed.StartsWith("#") -or $trimmed -notmatch "=") {
+        if ($trimmed -eq "" -or $trimmed.StartsWith("#") -or $trimmed.StartsWith(";") -or $trimmed -notmatch "=") {
             continue
         }
 
@@ -47,6 +48,22 @@ function Get-MysqlPasswordArgs {
     return @()
 }
 
+function Get-MysqlConnectionArgs {
+    param(
+        [string] $HostName,
+        [int] $Port,
+        [string] $User,
+        [string] $Password
+    )
+
+    $args = @("-h", $HostName, "-u", $User)
+    if ($Port -gt 0) {
+        $args += @("-P", [string] $Port)
+    }
+    $args += Get-MysqlPasswordArgs $Password
+    return $args
+}
+
 function Assert-SafeDatabaseName {
     param([string] $Name)
     if ($Name -notmatch "^[A-Za-z0-9_]+$") {
@@ -57,6 +74,39 @@ function Assert-SafeDatabaseName {
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $envPath = Join-Path $repoRoot ".env"
 $env = Read-DotEnv $envPath
+if ($LocalHost -eq "") {
+    if ($env.ContainsKey("HOSTNAME")) {
+        $LocalHost = [string] $env["HOSTNAME"]
+    }
+}
+if ($LocalHost -eq "") {
+    $LocalHost = "127.0.0.1"
+}
+if ($LocalHost -match "^\[?([^\]]+)\]?:(\d+)$") {
+    $LocalHost = $Matches[1]
+    if ($LocalPort -le 0) {
+        $LocalPort = [int] $Matches[2]
+    }
+}
+if ($LocalPort -le 0 -and $env.ContainsKey("DB_PORT")) {
+    $parsedPort = 0
+    if ([int]::TryParse([string] $env["DB_PORT"], [ref] $parsedPort)) {
+        $LocalPort = $parsedPort
+    }
+}
+if ($LocalUser -eq "") {
+    if ($env.ContainsKey("USERNAME")) {
+        $LocalUser = [string] $env["USERNAME"]
+    }
+}
+if ($LocalUser -eq "") {
+    $LocalUser = "root"
+}
+if ($LocalPassword -eq "") {
+    if ($env.ContainsKey("PASSWORD")) {
+        $LocalPassword = [string] $env["PASSWORD"]
+    }
+}
 if ($LocalDatabase -eq "") {
     if ($env.ContainsKey("DATABASE")) {
         $LocalDatabase = [string] $env["DATABASE"]
@@ -112,6 +162,7 @@ MYSQL_PWD="`$DB_PASS" mysqldump --single-transaction --routines --triggers --eve
 echo "`$DUMP"
 "@
 
+Write-Host "[Target lokal] $LocalUser@$LocalHost$(if ($LocalPort -gt 0) { ":$LocalPort" })/$LocalDatabase"
 Write-Host "[1/6] Dump database VPS..."
 $remoteOutput = $remoteScript | & ssh @sshArgs "bash -s"
 if ($LASTEXITCODE -ne 0) {
@@ -146,15 +197,15 @@ finally {
     $writer.Close()
 }
 
-$localPassArgs = Get-MysqlPasswordArgs $LocalPassword
-$dbExists = & $mysql -h $LocalHost -u $LocalUser @localPassArgs --batch --skip-column-names -e "SHOW DATABASES LIKE '$LocalDatabase';"
+$localMysqlArgs = Get-MysqlConnectionArgs $LocalHost $LocalPort $LocalUser $LocalPassword
+$dbExists = & $mysql @localMysqlArgs --batch --skip-column-names -e "SHOW DATABASES LIKE '$LocalDatabase';"
 if ($LASTEXITCODE -ne 0) {
     throw "Tidak bisa konek ke MySQL lokal XAMPP."
 }
 
 if (($dbExists | Out-String).Trim() -ne "" -and !$SkipLocalBackup) {
     Write-Host "[4/6] Backup database lokal ke $localBeforePath..."
-    & $mysqldump -h $LocalHost -u $LocalUser @localPassArgs --single-transaction --routines --triggers --events --default-character-set=utf8mb4 --result-file=$localBeforePath $LocalDatabase
+    & $mysqldump @localMysqlArgs --single-transaction --routines --triggers --events --default-character-set=utf8mb4 --result-file=$localBeforePath $LocalDatabase
     if ($LASTEXITCODE -ne 0) {
         throw "Backup database lokal gagal. Import dibatalkan."
     }
@@ -164,9 +215,9 @@ if (($dbExists | Out-String).Trim() -ne "" -and !$SkipLocalBackup) {
 
 Write-Host "[5/6] Create/update database lokal $LocalDatabase..."
 if ($NoDropLocalDatabase) {
-    & $mysql -h $LocalHost -u $LocalUser @localPassArgs -e "CREATE DATABASE IF NOT EXISTS ``$LocalDatabase`` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
+    & $mysql @localMysqlArgs -e "CREATE DATABASE IF NOT EXISTS ``$LocalDatabase`` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 } else {
-    & $mysql -h $LocalHost -u $LocalUser @localPassArgs -e "DROP DATABASE IF EXISTS ``$LocalDatabase``; CREATE DATABASE ``$LocalDatabase`` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
+    & $mysql @localMysqlArgs -e "DROP DATABASE IF EXISTS ``$LocalDatabase``; CREATE DATABASE ``$LocalDatabase`` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 }
 if ($LASTEXITCODE -ne 0) {
     throw "Gagal create database lokal."
@@ -174,7 +225,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $sourcePath = $localXamppDumpPath.Replace("\", "/")
 Write-Host "[6/6] Import dump VPS ke database lokal..."
-& $mysql -h $LocalHost -u $LocalUser @localPassArgs $LocalDatabase -e "source $sourcePath"
+& $mysql @localMysqlArgs $LocalDatabase -e "source $sourcePath"
 if ($LASTEXITCODE -ne 0) {
     throw "Import dump ke database lokal gagal."
 }

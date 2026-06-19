@@ -318,7 +318,7 @@ class MPO_MyRep extends CI_Model
         return $rows;
     }
 
-    public function getEmrTargetCityOptions($regional = '')
+    public function getEmrTargetCityOptions($regional = '', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -331,7 +331,7 @@ class MPO_MyRep extends CI_Model
             ->select('c.city_name')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where($this->getActivePoHeaderCondition('p'), null, false)
+            ->where($this->getEmrTargetScopeCondition('p', $scope), null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC');
@@ -361,12 +361,12 @@ class MPO_MyRep extends CI_Model
         return array_values(array_unique($cities));
     }
 
-    public function getEmrTargetRegionalOptions($city = '')
+    public function getEmrTargetRegionalOptions($city = '', $scope = 'target')
     {
-        return $this->getEmrTargetAreaOptions($city);
+        return $this->getEmrTargetAreaOptions($city, $scope);
     }
 
-    public function getEmrTargetAreaOptions($city = '')
+    public function getEmrTargetAreaOptions($city = '', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -379,7 +379,7 @@ class MPO_MyRep extends CI_Model
             ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where($this->getActivePoHeaderCondition('p'), null, false)
+            ->where($this->getEmrTargetScopeCondition('p', $scope), null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
             ->order_by('c.regional_name', 'ASC');
@@ -408,12 +408,12 @@ class MPO_MyRep extends CI_Model
         }));
     }
 
-    public function getEmrTargetCityOptionsByRegional()
+    public function getEmrTargetCityOptionsByRegional($scope = 'target')
     {
-        return $this->getEmrTargetCityOptionsByArea();
+        return $this->getEmrTargetCityOptionsByArea($scope);
     }
 
-    public function getEmrTargetCityOptionsByArea()
+    public function getEmrTargetCityOptionsByArea($scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -425,7 +425,7 @@ class MPO_MyRep extends CI_Model
             ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where($this->getActivePoHeaderCondition('p'), null, false)
+            ->where($this->getEmrTargetScopeCondition('p', $scope), null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
@@ -454,12 +454,12 @@ class MPO_MyRep extends CI_Model
         return $map;
     }
 
-    public function getEmrTargetRegionalOptionsByCity()
+    public function getEmrTargetRegionalOptionsByCity($scope = 'target')
     {
-        return $this->getEmrTargetAreaOptionsByCity();
+        return $this->getEmrTargetAreaOptionsByCity($scope);
     }
 
-    public function getEmrTargetAreaOptionsByCity()
+    public function getEmrTargetAreaOptionsByCity($scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -471,7 +471,7 @@ class MPO_MyRep extends CI_Model
             ->select($this->supportsEmrTargetAreaColumn() ? 'area_map.area_number' : "'' AS area_number", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where($this->getActivePoHeaderCondition('p'), null, false)
+            ->where($this->getEmrTargetScopeCondition('p', $scope), null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
@@ -500,7 +500,7 @@ class MPO_MyRep extends CI_Model
         return $map;
     }
 
-    public function getEmrTargetPoListRows($city = '', $stageStatus = '', $regional = '')
+    public function getEmrTargetPoListRows($city = '', $stageStatus = '', $regional = '', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -530,7 +530,7 @@ class MPO_MyRep extends CI_Model
             ')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where($this->getActivePoHeaderCondition('p'), null, false);
+            ->where($this->getEmrTargetScopeCondition('p', $scope), null, false);
 
         if (!empty($city)) {
             $this->applyUpperInFilter($this->db, 'c.city_name', $city);
@@ -548,7 +548,7 @@ class MPO_MyRep extends CI_Model
         return $this->decoratePoRowsWithTerminMeta($rows, $stageStatus);
     }
 
-    public function getEmrTargetAggregateData($city = '', $stageStatus = '', $regional = '')
+    public function getEmrTargetAggregateData($city = '', $stageStatus = '', $regional = '', $scope = 'target')
     {
         $emptyBreakdown = [
             'CLUSTER' => [
@@ -585,7 +585,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $fromSql = $this->getEmrTargetPoFromSql();
-        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
+        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional, [], $scope);
 
         $summary = $this->db->query("
             SELECT
@@ -648,7 +648,7 @@ class MPO_MyRep extends CI_Model
         ];
     }
 
-    public function getEmrTargetTerminPicSummary($city = '', $stageStatus = '', $regional = '')
+    public function getEmrTargetTerminPicSummary($city = '', $stageStatus = '', $regional = '', $scope = 'target')
     {
         $summary = $this->buildEmptyTerminPicSummary();
         if (!$this->emrTargetReady()) {
@@ -678,7 +678,7 @@ class MPO_MyRep extends CI_Model
             {$this->getEmrTargetPoFromSql()}
             LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
                 AND t.termin_no BETWEEN 1 AND 5
-            {$this->buildEmrTargetWhereSql($city, $stageStatus, $regional)}
+            {$this->buildEmrTargetWhereSql($city, $stageStatus, $regional, [], $scope)}
         ")->result_array();
 
         if (empty($rows)) {
@@ -722,7 +722,7 @@ class MPO_MyRep extends CI_Model
         return array_values($summary);
     }
 
-    public function getEmrTargetPoDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 4, $orderDir = 'desc', $pic = '', $termStage = '', $nroStatus = '')
+    public function getEmrTargetPoDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 4, $orderDir = 'desc', $pic = '', $termStage = '', $nroStatus = '', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
@@ -734,7 +734,7 @@ class MPO_MyRep extends CI_Model
         $termStageValue = $termStageValues[0] ?? '';
         $hasComputedFilter = !empty($picValues) || $termStageValue !== '' || !empty($nroStatusValues);
         $fromSql = $this->getEmrTargetPoFromSql();
-        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
+        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional, [], $scope);
         $searchSql = $this->buildEmrTargetSearchSql($search, [
             'p.po_number',
             'p.po_type',
@@ -852,7 +852,7 @@ class MPO_MyRep extends CI_Model
         ];
     }
 
-    public function getEmrTargetPoTerminReportRows($city = '', $termStage = '', $regional = '', $pic = '', $nroStatus = '')
+    public function getEmrTargetPoTerminReportRows($city = '', $termStage = '', $regional = '', $pic = '', $nroStatus = '', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -862,7 +862,7 @@ class MPO_MyRep extends CI_Model
         $picValues = $this->normalizeUpperList($pic);
         $nroStatusValues = $this->normalizeUpperList($nroStatus);
         $fromSql = $this->getEmrTargetPoFromSql();
-        $whereSql = $this->buildEmrTargetWhereSql($city, '', $regional);
+        $whereSql = $this->buildEmrTargetWhereSql($city, '', $regional, [], $scope);
         $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
             ? 'c.rfs_cluster_id'
             : '0 AS rfs_cluster_id';
@@ -967,10 +967,8 @@ class MPO_MyRep extends CI_Model
         }
 
         $fromSql = $this->getEmrTargetPoFromSql();
-        $whereSql = $this->buildEmrTargetWhereSql($city, '', $regional);
+        $whereSql = $this->buildPurchaseOrderRefreshWhereSql($city, $regional);
         $onTargetSql = $this->getEmrTargetOnTargetSelectSql('p');
-        $baseOnTargetSql = $this->getEmrTargetOnTargetCondition('p_base');
-        $finalOnTargetSql = $this->getEmrTargetOnTargetCondition('p_final');
         $planInvoiceSql = $this->getEmrTargetPlanInvoiceValueSql('t');
         $sertifikatSelectSql = $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
             ? 't.sertifikat_invoice_date'
@@ -982,7 +980,6 @@ class MPO_MyRep extends CI_Model
                 FROM tb_myrep_po_header p_base
                 WHERE p_base.id_myrep_cluster = p.id_myrep_cluster
                     AND UPPER(TRIM(COALESCE(p_base.po_type, 'CLUSTER'))) = {$poTypeMatchSql}
-                    AND {$baseOnTargetSql}
                     AND UPPER(TRIM(COALESCE(p_base.po_category, 'INITIAL'))) = 'INITIAL'
                 ORDER BY p_base.po_date DESC, p_base.id_po_header DESC
                 LIMIT 1
@@ -994,7 +991,6 @@ class MPO_MyRep extends CI_Model
                 FROM tb_myrep_po_header p_final
                 WHERE p_final.id_myrep_cluster = p.id_myrep_cluster
                     AND UPPER(TRIM(COALESCE(p_final.po_type, 'CLUSTER'))) = {$poTypeMatchSql}
-                    AND {$finalOnTargetSql}
                     AND UPPER(TRIM(COALESCE(p_final.po_category, ''))) = 'FINAL'
                 ORDER BY p_final.po_date DESC, p_final.id_po_header DESC
                 LIMIT 1
@@ -1082,14 +1078,38 @@ class MPO_MyRep extends CI_Model
         return array_values($groupedRows);
     }
 
-    public function getEmrTargetClusterDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc')
+    private function buildPurchaseOrderRefreshWhereSql($city = '', $regional = '')
+    {
+        $conditions = [];
+        $city = $this->normalizeUpperList($city);
+        $areaNumbers = $this->resolveEmrTargetAreaNumbers($regional);
+        $regional = $this->resolveEmrTargetAreaRegionalValues($regional);
+
+        if (!empty($city)) {
+            $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
+        }
+        if (!empty($regional)) {
+            if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
+                $conditions[] = '(
+                    UPPER(area_map.area_number) IN (' . $this->buildEscapedSqlList($areaNumbers) . ')
+                    OR UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')
+                )';
+            } else {
+                $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
+            }
+        }
+
+        return !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
+    }
+
+    public function getEmrTargetClusterDataTable($city = '', $stageStatus = '', $regional = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
         }
 
         $fromSql = $this->getEmrTargetPoFromSql();
-        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional);
+        $whereSql = $this->buildEmrTargetWhereSql($city, $stageStatus, $regional, [], $scope);
         $searchSql = $this->buildEmrTargetSearchSql($search, [
             'c.cluster_name',
             'c.cluster_code',
@@ -1154,7 +1174,7 @@ class MPO_MyRep extends CI_Model
             {$limitSql}
         ")->result_array();
 
-        $latestStageMap = $this->getEmrTargetLatestStageMap(array_column($rows, 'id_myrep_cluster'), $city, $stageStatus, $regional);
+        $latestStageMap = $this->getEmrTargetLatestStageMap(array_column($rows, 'id_myrep_cluster'), $city, $stageStatus, $regional, $scope);
         foreach ($rows as &$row) {
             $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $row['po_stage_status'] = $latestStageMap[$clusterId] ?? 'NOT ISSUED';
@@ -1168,7 +1188,7 @@ class MPO_MyRep extends CI_Model
         ];
     }
 
-    public function getEmrTargetClusterById($clusterId)
+    public function getEmrTargetClusterById($clusterId, $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
@@ -1183,7 +1203,7 @@ class MPO_MyRep extends CI_Model
             ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND ' . $this->getActivePoHeaderCondition('p'), 'inner', false)
+            ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster AND ' . $this->getEmrTargetScopeCondition('p', $scope), 'inner', false)
             ->where('c.id_myrep_cluster', $clusterId)
             ->group_by('c.id_myrep_cluster')
             ->get()
@@ -1193,7 +1213,7 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $targetRows = $this->getEmrTargetPoListRows('', '');
+        $targetRows = $this->getEmrTargetPoListRows('', '', '', $scope);
         $clusterTargetRows = [];
         foreach ($targetRows as $targetRow) {
             if ((int) ($targetRow['id_myrep_cluster'] ?? 0) === $clusterId) {
@@ -1209,14 +1229,14 @@ class MPO_MyRep extends CI_Model
         return $row;
     }
 
-    public function getEmrTargetPoHeadersByClusterId($clusterId)
+    public function getEmrTargetPoHeadersByClusterId($clusterId, $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
             return [];
         }
 
         $clusterId = (int) $clusterId;
-        if ($clusterId <= 0 || empty($this->getEmrTargetClusterById($clusterId))) {
+        if ($clusterId <= 0 || empty($this->getEmrTargetClusterById($clusterId, $scope))) {
             return [];
         }
 
@@ -1224,7 +1244,7 @@ class MPO_MyRep extends CI_Model
             ->select('p.*')
             ->from('tb_myrep_po_header p')
             ->where('p.id_myrep_cluster', $clusterId)
-            ->where($this->getActivePoHeaderCondition('p'), null, false)
+            ->where($this->getEmrTargetScopeCondition('p', $scope), null, false)
             ->order_by('po_type', 'ASC')
             ->order_by('po_date', 'DESC')
             ->order_by('po_number', 'ASC')
@@ -1459,6 +1479,20 @@ class MPO_MyRep extends CI_Model
             : '1 = 1';
     }
 
+    private function getEmrTargetScopeCondition($alias = 'p', $scope = 'target')
+    {
+        $scope = strtolower(trim((string) $scope));
+        if ($scope === 'aging_6m') {
+            return "
+                {$alias}.po_date IS NOT NULL
+                AND {$alias}.po_date NOT IN ('0000-00-00', '0000-00-00 00:00:00')
+                AND {$alias}.po_date <= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            ";
+        }
+
+        return $this->getActivePoHeaderCondition($alias);
+    }
+
     private function getEmrTargetPlanInvoiceValueSql($alias = '')
     {
         $prefix = $alias !== '' ? rtrim($alias, '.') . '.' : '';
@@ -1643,9 +1677,9 @@ class MPO_MyRep extends CI_Model
         ";
     }
 
-    private function buildEmrTargetWhereSql($city = '', $stageStatus = '', $regional = '', array $extraConditions = [])
+    private function buildEmrTargetWhereSql($city = '', $stageStatus = '', $regional = '', array $extraConditions = [], $scope = 'target')
     {
-        $conditions = [$this->getActivePoHeaderCondition('p')];
+        $conditions = [$this->getEmrTargetScopeCondition('p', $scope)];
         $city = $this->normalizeUpperList($city);
         $areaNumbers = $this->resolveEmrTargetAreaNumbers($regional);
         $regional = $this->resolveEmrTargetAreaRegionalValues($regional);
@@ -1823,7 +1857,7 @@ class MPO_MyRep extends CI_Model
         return 'LIMIT ' . $start . ', ' . $length;
     }
 
-    private function getEmrTargetLatestStageMap(array $clusterIds, $city = '', $stageStatus = '', $regional = '')
+    private function getEmrTargetLatestStageMap(array $clusterIds, $city = '', $stageStatus = '', $regional = '', $scope = 'target')
     {
         $clusterIds = array_values(array_filter(array_map('intval', $clusterIds)));
         if (empty($clusterIds)) {
@@ -1838,7 +1872,7 @@ class MPO_MyRep extends CI_Model
                 p.id_po_header,
                 {$this->getEmrTargetStageExpression()} AS po_stage_status
             {$this->getEmrTargetPoFromSql()}
-            {$this->buildEmrTargetWhereSql($city, $stageStatus, $regional, $extraConditions)}
+            {$this->buildEmrTargetWhereSql($city, $stageStatus, $regional, $extraConditions, $scope)}
             ORDER BY p.id_myrep_cluster ASC, p.po_date DESC, p.id_po_header DESC
         ")->result_array();
 

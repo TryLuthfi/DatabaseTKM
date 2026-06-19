@@ -18,6 +18,7 @@ if (!function_exists('poEmrNumberOrDash')) {
 $selectedRegionalValues = is_array($selectedRegional) ? array_values($selectedRegional) : array_filter([strtoupper(trim((string) $selectedRegional))]);
 $selectedCityValues = is_array($selectedCity) ? array_values($selectedCity) : array_filter([strtoupper(trim((string) $selectedCity))]);
 $selectedStageValues = is_array($selectedStage) ? array_values($selectedStage) : array_filter([strtoupper(trim((string) $selectedStage))]);
+$selectedScope = isset($selectedScope) && $selectedScope === 'aging_6m' ? 'aging_6m' : 'target';
 $areaDescriptions = [
     'AREA 1' => 'SUMATERA',
     'AREA 2' => 'JABO JABAR',
@@ -33,6 +34,8 @@ if (!empty($_SERVER['QUERY_STRING'])) {
 unset($currentQueryParams['back']);
 $currentListUrl = base_url('PO_EMR_Myrep') . (!empty($currentQueryParams) ? '?' . http_build_query($currentQueryParams) : '');
 $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
+$scopeBaseQuery = $currentQueryParams;
+unset($scopeBaseQuery['scope']);
 ?>
 
 <style>
@@ -55,6 +58,39 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         margin: .25rem 0 0;
         color: #64748b;
         font-weight: 600;
+    }
+
+    .emr-title-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .65rem;
+        flex-wrap: wrap;
+    }
+
+    .emr-scope-toggle {
+        display: inline-flex;
+        gap: .35rem;
+        padding: .3rem;
+        border-radius: 999px;
+        background: #1f5f96;
+        border: 1px solid rgba(255,255,255,.16);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+
+    .emr-scope-toggle a {
+        padding: .42rem .85rem;
+        border-radius: 999px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 800;
+        font-size: .85rem;
+        white-space: nowrap;
+    }
+
+    .emr-scope-toggle a.active {
+        background: #fff;
+        color: #0f172a;
     }
 
     .emr-executive-summary {
@@ -639,9 +675,15 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
     <div>
         <h1>OUTSTANDING TARGET PO EMMR</h1>
     </div>
-    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-po-emr-download-report">
-        <i class="fas fa-file-excel mr-1"></i> Download Report
-    </button>
+    <div class="emr-title-actions">
+        <div class="emr-scope-toggle">
+            <a href="<?= base_url('PO_EMR_Myrep?' . http_build_query(array_merge($scopeBaseQuery, ['scope' => 'target']))) ?>" class="<?= $selectedScope === 'target' ? 'active' : '' ?>">On Target</a>
+            <a href="<?= base_url('PO_EMR_Myrep?' . http_build_query(array_merge($scopeBaseQuery, ['scope' => 'aging_6m']))) ?>" class="<?= $selectedScope === 'aging_6m' ? 'active' : '' ?>">Aging &gt;= 6 Bulan</a>
+        </div>
+        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-po-emr-download-report">
+            <i class="fas fa-file-excel mr-1"></i> Download Report
+        </button>
+    </div>
 </div>
 
 <?php if ($isReady): ?>
@@ -667,6 +709,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <form method="GET" target="_blank" action="<?= base_url('PO_EMR_Myrep/downloadReport') ?>">
+                    <input type="hidden" name="scope" value="<?= htmlspecialchars($selectedScope, ENT_QUOTES, 'UTF-8') ?>">
                     <div class="modal-header">
                         <div>
                             <h5 class="modal-title mb-1" id="modalPoEmrDownloadReportLabel">Download PO EMR Report</h5>
@@ -1001,6 +1044,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
         </div>
         <div class="card-body">
             <form method="get" class="row" id="po-emr-filter-form">
+                <input type="hidden" name="scope" id="po-emr-filter-scope" value="<?= htmlspecialchars($selectedScope, ENT_QUOTES, 'UTF-8') ?>">
                 <div class="col-md-4">
                     <div class="form-group">
                         <label>Area</label>
@@ -1316,6 +1360,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
         function syncDownloadFiltersWithPageFilters() {
             var $modal = $('#modal-po-emr-download-report');
+            $modal.find('input[name="scope"]').val($('#po-emr-filter-scope').val() || 'target');
             $modal.find('select[name="regional[]"]').val($('#po-emr-filter-regional').val() || []).trigger('change.select2');
             $modal.find('select[name="city[]"]').val($('#po-emr-filter-city').val() || []).trigger('change.select2');
             $modal.find('select[name="term_stage[]"]').val($('#po-emr-filter-stage').val() || []).trigger('change.select2');
@@ -1353,6 +1398,7 @@ $detailBackQuery = '?back=' . rawurlencode($currentListUrl);
 
         function currentFilterPayload() {
             return {
+                scope: $('#po-emr-filter-scope').val() || 'target',
                 regional: $('#po-emr-filter-regional').val() || [],
                 city: $('#po-emr-filter-city').val() || [],
                 stage: $('#po-emr-filter-stage').val() || [],

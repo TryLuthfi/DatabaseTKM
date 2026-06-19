@@ -16,21 +16,23 @@ class PO_EMR_Myrep extends CI_Controller
         $selectedRegional = $this->normalizeFilterValues($this->input->get('regional'));
         $selectedCity = $this->normalizeFilterValues($this->input->get('city'));
         $selectedStage = $this->normalizeFilterValues($this->input->get('stage'));
+        $selectedScope = $this->normalizeScope($this->input->get('scope'));
 
         $data['title'] = 'PO Ekamas Mora Republik';
         $data['selectedRegional'] = $selectedRegional;
         $data['selectedCity'] = $selectedCity;
         $data['selectedStage'] = $selectedStage;
+        $data['selectedScope'] = $selectedScope;
         $data['isReady'] = $this->MPO_MyRep->emrTargetReady();
-        $data['regionalOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetRegionalOptions() : [];
-        $data['allCityOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptions() : [];
-        $data['cityOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptions($selectedRegional) : [];
-        $data['cityOptionsByRegional'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptionsByRegional() : [];
-        $data['regionalOptionsByCity'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetRegionalOptionsByCity() : [];
-        $aggregateData = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetAggregateData($selectedCity, $selectedStage, $selectedRegional) : [];
+        $data['regionalOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetRegionalOptions('', $selectedScope) : [];
+        $data['allCityOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptions('', $selectedScope) : [];
+        $data['cityOptions'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptions($selectedRegional, $selectedScope) : [];
+        $data['cityOptionsByRegional'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetCityOptionsByRegional($selectedScope) : [];
+        $data['regionalOptionsByCity'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetRegionalOptionsByCity($selectedScope) : [];
+        $aggregateData = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetAggregateData($selectedCity, $selectedStage, $selectedRegional, $selectedScope) : [];
         $data['summary'] = $aggregateData['summary'] ?? $this->buildSummary([]);
         $data['terminBreakdownRows'] = $aggregateData['terminBreakdownRows'] ?? $this->buildTerminBreakdown([]);
-        $data['terminPicSummaryRows'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetTerminPicSummary($selectedCity, $selectedStage, $selectedRegional) : [];
+        $data['terminPicSummaryRows'] = $data['isReady'] ? $this->MPO_MyRep->getEmrTargetTerminPicSummary($selectedCity, $selectedStage, $selectedRegional, $selectedScope) : [];
 
         $this->load->view('Templates/01_Header_EMR', $data);
         $this->load->view('PO_EMR_Myrep/index', $data);
@@ -53,7 +55,8 @@ class PO_EMR_Myrep extends CI_Controller
             $request['length'],
             $request['search'],
             $request['order_column'],
-            $request['order_dir']
+            $request['order_dir'],
+            $request['scope']
         );
 
         $rows = [];
@@ -63,7 +66,7 @@ class PO_EMR_Myrep extends CI_Controller
             $terminTotal = (int) ($row['termin_total_count'] ?? 0);
             $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
             $terminPercent = $terminTotal > 0 ? min(100, round(($terminProgress / $terminTotal) * 100)) : 0;
-            $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url']);
+            $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url'], $request['scope']);
 
             $rows[] = [
                 $request['start'] + $index + 1,
@@ -107,7 +110,8 @@ class PO_EMR_Myrep extends CI_Controller
             $request['order_dir'],
             $request['pic'],
             $request['term_stage'],
-            $request['nro_status']
+            $request['nro_status'],
+            $request['scope']
         );
 
         $rows = [];
@@ -118,7 +122,7 @@ class PO_EMR_Myrep extends CI_Controller
             $currentPic = strtoupper(trim((string) ($row['current_pic'] ?? '-')));
             $currentPicLabel = $this->picDisplayLabel($currentPic);
             $statusCurrentCell = $this->formatStatusCurrentCell($row);
-            $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url']);
+            $detailUrl = $this->buildDetailUrl($clusterId, $request['back_url'], $request['scope']);
 
             $rows[] = [
                 $request['start'] + $index + 1,
@@ -157,14 +161,15 @@ class PO_EMR_Myrep extends CI_Controller
             return;
         }
 
-        $cluster = $this->MPO_MyRep->getEmrTargetClusterById($clusterId);
+        $scope = $this->normalizeScope($this->input->get('scope'));
+        $cluster = $this->MPO_MyRep->getEmrTargetClusterById($clusterId, $scope);
         if (empty($cluster)) {
             $this->session->set_flashdata('error', 'Detail PO target tidak ditemukan.');
             redirect('PO_EMR_Myrep');
             return;
         }
 
-        $poHeaders = $this->MPO_MyRep->getEmrTargetPoHeadersByClusterId($clusterId);
+        $poHeaders = $this->MPO_MyRep->getEmrTargetPoHeadersByClusterId($clusterId, $scope);
         $poGroups = [
             'CLUSTER' => [],
             'SUBFEEDER' => [],
@@ -200,7 +205,8 @@ class PO_EMR_Myrep extends CI_Controller
         $selectedTermStage = $this->normalizeFilterValues($this->input->get('term_stage'));
         $selectedPic = $this->normalizeFilterValues($this->input->get('pic'));
         $selectedNroStatus = $this->normalizeFilterValues($this->input->get('nro_status'));
-        $rows = $this->MPO_MyRep->getEmrTargetPoTerminReportRows($selectedCity, $selectedTermStage, $selectedRegional, $selectedPic, $selectedNroStatus);
+        $selectedScope = $this->normalizeScope($this->input->get('scope'));
+        $rows = $this->MPO_MyRep->getEmrTargetPoTerminReportRows($selectedCity, $selectedTermStage, $selectedRegional, $selectedPic, $selectedNroStatus, $selectedScope);
 
         $filename = 'report_po_emr_myrep_target_' . date('Ymd_His') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
@@ -302,6 +308,12 @@ class PO_EMR_Myrep extends CI_Controller
         return $normalized;
     }
 
+    private function normalizeScope($value)
+    {
+        $value = strtolower(trim((string) $value));
+        return $value === 'aging_6m' ? 'aging_6m' : 'target';
+    }
+
     private function getDataTableRequest()
     {
         $order = (array) $this->input->post('order');
@@ -325,12 +337,14 @@ class PO_EMR_Myrep extends CI_Controller
             'pic' => $this->normalizeFilterValues($this->input->post('pic')),
             'term_stage' => $this->normalizeFilterValues($this->input->post('term_stage')),
             'nro_status' => $this->normalizeFilterValues($this->input->post('nro_status')),
+            'scope' => $this->normalizeScope($this->input->post('scope')),
             'back_url' => (string) $this->input->post('back_url'),
         ];
     }
 
-    private function buildDetailUrl($clusterId, $backUrl = '')
+    private function buildDetailUrl($clusterId, $backUrl = '', $scope = 'target')
     {
+        $scope = $this->normalizeScope($scope);
         $url = base_url('PO_EMR_Myrep/detail/' . (int) $clusterId);
         $backUrl = trim((string) $backUrl);
         if ($backUrl === '') {
@@ -341,7 +355,10 @@ class PO_EMR_Myrep extends CI_Controller
             $backUrl = base_url('PO_EMR_Myrep');
         }
 
-        return $url . '?back=' . rawurlencode($backUrl);
+        return $url . '?' . http_build_query([
+            'scope' => $scope,
+            'back' => $backUrl,
+        ]);
     }
 
     private function stageBadgeClass($stage)

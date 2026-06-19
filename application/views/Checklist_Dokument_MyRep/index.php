@@ -79,15 +79,11 @@ if (!function_exists('checklist_doc_progress_bucket')) {
         $required = (int) $required;
         $uploaded = (int) $uploaded;
 
-        if ($required <= 0 || $uploaded <= 0) {
-            return 'empty';
-        }
-
-        if ($uploaded >= $required) {
+        if ($required > 0 && $uploaded >= $required) {
             return 'full';
         }
 
-        return 'partial';
+        return 'progress';
     }
 }
 
@@ -998,54 +994,48 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                     <label>CW ATP</label>
                                     <select id="cluster-filter-cw-progress" class="form-control form-control-sm">
                                         <option value="">Semua Progress</option>
-                                        <option value="full">Full</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="empty">Belum</option>
+                                        <option value="full">FULL UPLOAD</option>
+                                        <option value="progress">PROGRESS</option>
                                     </select>
                                 </div>
                                 <div class="cluster-filter-group">
                                     <label>Full OPM</label>
                                     <select id="cluster-filter-opm-progress" class="form-control form-control-sm">
                                         <option value="">Semua Progress</option>
-                                        <option value="full">Full</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="empty">Belum</option>
+                                        <option value="full">FULL UPLOAD</option>
+                                        <option value="progress">PROGRESS</option>
                                     </select>
                                 </div>
                                 <div class="cluster-filter-group">
                                     <label>Full RFS</label>
                                     <select id="cluster-filter-rfs-progress" class="form-control form-control-sm">
                                         <option value="">Semua Progress</option>
-                                        <option value="full">Full</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="empty">Belum</option>
+                                        <option value="full">FULL UPLOAD</option>
+                                        <option value="progress">PROGRESS</option>
                                     </select>
                                 </div>
                                 <div class="cluster-filter-group">
                                     <label>ASTRI CW ATP</label>
                                     <select id="cluster-filter-astri-cw-progress" class="form-control form-control-sm">
                                         <option value="">Semua Progress</option>
-                                        <option value="full">Full</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="empty">Belum</option>
+                                        <option value="full">FULL UPLOAD</option>
+                                        <option value="progress">PROGRESS</option>
                                     </select>
                                 </div>
                                 <div class="cluster-filter-group">
                                     <label>ASTRI Full OPM</label>
                                     <select id="cluster-filter-astri-opm-progress" class="form-control form-control-sm">
                                         <option value="">Semua Progress</option>
-                                        <option value="full">Full</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="empty">Belum</option>
+                                        <option value="full">FULL UPLOAD</option>
+                                        <option value="progress">PROGRESS</option>
                                     </select>
                                 </div>
                                 <div class="cluster-filter-group">
                                     <label>ASTRI Full RFS</label>
                                     <select id="cluster-filter-astri-rfs-progress" class="form-control form-control-sm">
                                         <option value="">Semua Progress</option>
-                                        <option value="full">Full</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="empty">Belum</option>
+                                        <option value="full">FULL UPLOAD</option>
+                                        <option value="progress">PROGRESS</option>
                                     </select>
                                 </div>
                             <?php endif; ?>
@@ -1738,6 +1728,14 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             };
         }
 
+        function normalizeClusterProgressFilter(value) {
+            value = (value || '').toString();
+            if (value === 'partial' || value === 'empty' || value === 'na') {
+                return 'progress';
+            }
+            return (value === 'full' || value === 'progress') ? value : '';
+        }
+
         function saveChecklistState(extraState) {
             if (checklistStateDisabled || isApplyingChecklistState || !storageAvailable()) {
                 return;
@@ -2011,12 +2009,12 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         }
 
         if (checklistState.clusterProgressFilters) {
-            $('#cluster-filter-cw-progress').val(checklistState.clusterProgressFilters.cwProgress || '');
-            $('#cluster-filter-opm-progress').val(checklistState.clusterProgressFilters.opmProgress || '');
-            $('#cluster-filter-rfs-progress').val(checklistState.clusterProgressFilters.rfsProgress || '');
-            $('#cluster-filter-astri-cw-progress').val(checklistState.clusterProgressFilters.astriCwProgress || '');
-            $('#cluster-filter-astri-opm-progress').val(checklistState.clusterProgressFilters.astriOpmProgress || '');
-            $('#cluster-filter-astri-rfs-progress').val(checklistState.clusterProgressFilters.astriRfsProgress || '');
+            $('#cluster-filter-cw-progress').val(normalizeClusterProgressFilter(checklistState.clusterProgressFilters.cwProgress));
+            $('#cluster-filter-opm-progress').val(normalizeClusterProgressFilter(checklistState.clusterProgressFilters.opmProgress));
+            $('#cluster-filter-rfs-progress').val(normalizeClusterProgressFilter(checklistState.clusterProgressFilters.rfsProgress));
+            $('#cluster-filter-astri-cw-progress').val(normalizeClusterProgressFilter(checklistState.clusterProgressFilters.astriCwProgress));
+            $('#cluster-filter-astri-opm-progress').val(normalizeClusterProgressFilter(checklistState.clusterProgressFilters.astriOpmProgress));
+            $('#cluster-filter-astri-rfs-progress').val(normalizeClusterProgressFilter(checklistState.clusterProgressFilters.astriRfsProgress));
         }
 
         $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {

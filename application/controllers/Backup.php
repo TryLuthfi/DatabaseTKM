@@ -110,6 +110,8 @@ class Backup extends CI_Controller
         $uploadOutput = [];
         if ($exitCode === 0) {
             [$uploadExitCode, $uploadOutput] = $this->syncRfsEvidenceUploads($repoRoot);
+            $clearedCacheFiles = $this->clearChecklistCacheFiles();
+            $output[] = '[Cache] Checklist cache dibersihkan: ' . $clearedCacheFiles . ' file.';
         }
 
         $message = $exitCode === 0
@@ -240,6 +242,35 @@ class Backup extends CI_Controller
             . escapeshellarg($destinationPath);
 
         return $this->runShellCommand($command, $repoRoot);
+    }
+
+    private function clearChecklistCacheFiles()
+    {
+        $cacheDir = APPPATH . 'cache';
+        if (!is_dir($cacheDir)) {
+            return 0;
+        }
+
+        $patterns = [
+            $cacheDir . DIRECTORY_SEPARATOR . 'checklist_doc_dashboard_*.json',
+            $cacheDir . DIRECTORY_SEPARATOR . 'checklist_doc_index_*.json',
+        ];
+
+        $deleted = 0;
+        foreach ($patterns as $pattern) {
+            $files = glob($pattern);
+            if (empty($files)) {
+                continue;
+            }
+
+            foreach ($files as $filePath) {
+                if (is_file($filePath) && @unlink($filePath)) {
+                    $deleted++;
+                }
+            }
+        }
+
+        return $deleted;
     }
 
     private function summarizeImportOutput(array $output)
