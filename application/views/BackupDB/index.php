@@ -65,6 +65,33 @@
                                 </form>
                             </div>
                         </div>
+
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning">
+                                <h3 class="card-title">Import Backup SQL ke Lokal</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2">
+                                    Pakai ini kalau laptop lokal tidak punya SSH key VPS. Upload file <code>.sql</code>, sistem akan backup database lokal dulu, lalu restore dari file tersebut.
+                                </p>
+                                <form method="post" action="<?= base_url('Backup/upload_local_backup_import') ?>" enctype="multipart/form-data" id="form-import-local-upload">
+                                    <div class="input-group">
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="sql_file" name="sql_file" accept=".sql" required <?= empty($localImportAvailable) ? 'disabled' : '' ?>>
+                                            <label class="custom-file-label" for="sql_file">Pilih file .sql</label>
+                                        </div>
+                                        <div class="input-group-append">
+                                            <button type="submit" class="btn btn-warning text-bold" <?= empty($localImportAvailable) ? 'disabled' : '' ?>>
+                                                Upload & Import &nbsp;<i class="fas fa-file-import"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <?php if (empty($localImportAvailable)): ?>
+                                        <small class="text-muted">Script import lokal atau mysql.exe XAMPP belum tersedia.</small>
+                                    <?php endif; ?>
+                                </form>
+                            </div>
+                        </div>
                     <?php endif; ?>
 
                     <div class="card">
@@ -106,6 +133,14 @@
                                                     class="btn btn-danger btn-sm">
                                                     Delete &nbsp;<i class="fas fa-trash"></i>
                                                 </a>
+                                                <?php if (!empty($canImportVps)): ?>
+                                                    <form method="post" action="<?= base_url('Backup/import_local_backup') ?>" class="d-inline form-import-local-existing">
+                                                        <input type="hidden" name="filename" value="<?= htmlspecialchars((string) $backup->filename, ENT_QUOTES, 'UTF-8') ?>">
+                                                        <button type="submit" class="btn btn-warning btn-sm" <?= empty($localImportAvailable) ? 'disabled' : '' ?>>
+                                                            Import &nbsp;<i class="fas fa-file-import"></i>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -148,6 +183,35 @@
             $(this).find('button[type="submit"]')
                 .prop('disabled', true)
                 .html('Sedang import... &nbsp;<i class="fas fa-spinner fa-spin"></i>');
+        });
+
+        $('#sql_file').on('change', function() {
+            var fileName = $(this).val().split('\\').pop();
+            $(this).next('.custom-file-label').html(fileName || 'Pilih file .sql');
+        });
+
+        $('#form-import-local-upload').on('submit', function(e) {
+            var ok = window.confirm('Import file SQL ini ke database lokal sekarang? Database lokal akan dibackup lalu diganti dengan isi file.');
+            if (!ok) {
+                e.preventDefault();
+                return;
+            }
+
+            $(this).find('button[type="submit"]')
+                .prop('disabled', true)
+                .html('Sedang import... &nbsp;<i class="fas fa-spinner fa-spin"></i>');
+        });
+
+        $('.form-import-local-existing').on('submit', function(e) {
+            var ok = window.confirm('Import backup ini ke database lokal sekarang? Database lokal akan dibackup lalu diganti dengan isi file.');
+            if (!ok) {
+                e.preventDefault();
+                return;
+            }
+
+            $(this).find('button[type="submit"]')
+                .prop('disabled', true)
+                .html('Importing... &nbsp;<i class="fas fa-spinner fa-spin"></i>');
         });
     })
 

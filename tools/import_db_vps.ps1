@@ -71,6 +71,36 @@ function Assert-SafeDatabaseName {
     }
 }
 
+function New-ProtectedSshPrivateKeyCopy {
+    param([string] $Path)
+
+    $currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $sourceFile = Get-Item -LiteralPath $Path
+    $tempKeyPath = Join-Path ([System.IO.Path]::GetTempPath()) ("databasetkm_ssh_key_{0}_{1}.tmp" -f $PID, ([guid]::NewGuid().ToString("N")))
+
+    Copy-Item -LiteralPath $sourceFile.FullName -Destination $tempKeyPath -Force
+    & icacls $tempKeyPath /inheritance:r 2>$null | Out-Null
+
+    $acl = Get-Acl -LiteralPath $tempKeyPath
+    foreach ($rule in @($acl.Access)) {
+        $identityName = $rule.IdentityReference.Value
+        if ($identityName -ne $currentIdentity.Name) {
+            try {
+                & icacls $tempKeyPath /remove:g $identityName 2>$null | Out-Null
+                & icacls $tempKeyPath /remove:d $identityName 2>$null | Out-Null
+            }
+            catch {
+                # Best effort only; temp file is still safer than the shared source key.
+            }
+        }
+    }
+
+    & icacls $tempKeyPath /remove:g "Everyone" "BUILTIN\Users" "Users" "Authenticated Users" "NT AUTHORITY\Authenticated Users" "BUILTIN\Administrators" "NT AUTHORITY\SYSTEM" 2>$null | Out-Null
+    & icacls $tempKeyPath /grant:r "$($currentIdentity.Name)`:(F)" 2>$null | Out-Null
+
+    return $tempKeyPath
+}
+
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $envPath = Join-Path $repoRoot ".env"
 $env = Read-DotEnv $envPath
@@ -117,8 +147,9 @@ if ($LocalDatabase -eq "") {
 }
 Assert-SafeDatabaseName $LocalDatabase
 
-$mysql = "C:\xampp\mysql\bin\mysql.exe"
-$mysqldump = "C:\xampp\mysql\bin\mysqldump.exe"
+$xamppRoot = Split-Path (Split-Path $repoRoot -Parent) -Parent
+$mysql = Join-Path $xamppRoot "mysql\bin\mysql.exe"
+$mysqldump = Join-Path $xamppRoot "mysql\bin\mysqldump.exe"
 if (!(Test-Path -LiteralPath $mysql)) {
     throw "mysql.exe XAMPP tidak ditemukan: $mysql"
 }
@@ -128,8 +159,8 @@ if (!(Test-Path -LiteralPath $mysqldump)) {
 
 $keyFullPath = (Resolve-Path (Join-Path $repoRoot $KeyPath)).Path
 $knownHostsFullPath = (Resolve-Path (Join-Path $repoRoot $KnownHostsPath)).Path
-$currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-& icacls $keyFullPath /inheritance:r /grant:r "$currentIdentity`:(R)" | Out-Null
+$sshKeyPath = New-ProtectedSshPrivateKeyCopy $keyFullPath
+Write-Host "[SSH Key] Menggunakan key sementara untuk $([System.Security.Principal.WindowsIdentity]::GetCurrent().Name)"
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $backupDir = Join-Path $repoRoot "backups\VPS"
@@ -139,7 +170,7 @@ $localXamppDumpPath = Join-Path $backupDir ("databasetkm_com_{0}_mysql_data_xamp
 $localBeforePath = Join-Path $backupDir ("local_before_vps_import_{0}_{1}.sql" -f $LocalDatabase, $timestamp)
 
 $sshArgs = @(
-    "-i", $keyFullPath,
+    "-i", $sshKeyPath,
     "-o", "UserKnownHostsFile=$knownHostsFullPath",
     "-o", "StrictHostKeyChecking=yes",
     "-o", "BatchMode=yes",
@@ -161,10 +192,12 @@ DUMP="/tmp/databasetkm_com_`${STAMP}_mysql_data.sql"
 MYSQL_PWD="`$DB_PASS" mysqldump --single-transaction --routines --triggers --events --default-character-set=utf8mb4 -h "`$DB_HOST" -u "`$DB_USER" "`$DB_NAME" > "`$DUMP"
 echo "`$DUMP"
 "@
+$remoteScript = $remoteScript -replace "`r`n", "`n" -replace "`r", "`n"
 
 Write-Host "[Target lokal] $LocalUser@$LocalHost$(if ($LocalPort -gt 0) { ":$LocalPort" })/$LocalDatabase"
 Write-Host "[1/6] Dump database VPS..."
-$remoteOutput = $remoteScript | & ssh @sshArgs "bash -s"
+$remoteScriptBase64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($remoteScript))
+$remoteOutput = & ssh @sshArgs "printf '%s' '$remoteScriptBase64' | base64 -d | bash"
 if ($LASTEXITCODE -ne 0) {
     throw "Gagal dump database dari VPS."
 }
@@ -174,7 +207,7 @@ if ($remoteDumpPath -eq "") {
 }
 
 Write-Host "[2/6] Download dump ke $localDumpPath..."
-& scp -i $keyFullPath -o "UserKnownHostsFile=$knownHostsFullPath" -o "StrictHostKeyChecking=yes" -o "BatchMode=yes" "${RemoteUser}@${RemoteHost}:$remoteDumpPath" $localDumpPath
+& scp -i $sshKeyPath -o "UserKnownHostsFile=$knownHostsFullPath" -o "StrictHostKeyChecking=yes" -o "BatchMode=yes" "${RemoteUser}@${RemoteHost}:$remoteDumpPath" $localDumpPath
 if ($LASTEXITCODE -ne 0) {
     throw "Gagal download dump dari VPS."
 }
@@ -231,6 +264,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 & ssh @sshArgs "rm -f '$remoteDumpPath'" | Out-Null
+if ($sshKeyPath -and (Test-Path -LiteralPath $sshKeyPath)) {
+    Remove-Item -LiteralPath $sshKeyPath -Force
+}
 
 Write-Host "Selesai."
 Write-Host "Dump VPS: $localDumpPath"

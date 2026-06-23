@@ -20,6 +20,7 @@ class Backup extends CI_Controller
         $data['judul'] = 'BACKUP DATABASE MYSQL';
         $data['canImportVps'] = $this->canRunVpsImport();
         $data['vpsImportAvailable'] = $this->isVpsImportAvailable();
+        $data['localImportAvailable'] = $this->isLocalImportAvailable();
 
         // Load view
         $this->load->view('Templates/01_Header', $data);
@@ -75,6 +76,84 @@ class Backup extends CI_Controller
     {
         $this->db->delete('backup_history', ['id' => $id]);
         redirect('Backup');
+    }
+
+    public function import_local_backup()
+    {
+        if (!$this->canRunVpsImport()) {
+            $this->session->set_flashdata('error', 'Import backup hanya bisa dijalankan di lokal oleh Super Admin.');
+            redirect('Backup');
+            return;
+        }
+
+        if (!$this->isLocalImportAvailable()) {
+            $this->session->set_flashdata('error', 'Script import lokal belum tersedia atau mysql.exe XAMPP tidak ditemukan.');
+            redirect('Backup');
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            redirect('Backup');
+            return;
+        }
+
+        $filename = basename((string) $this->input->post('filename'));
+        $dumpPath = FCPATH . 'backups' . DIRECTORY_SEPARATOR . $filename;
+        if ($filename === '' || !is_file($dumpPath) || strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'sql') {
+            $this->session->set_flashdata('error', 'File backup lokal tidak valid.');
+            redirect('Backup');
+            return;
+        }
+
+        $this->runLocalImport($dumpPath, 'Import backup lokal selesai.');
+    }
+
+    public function upload_local_backup_import()
+    {
+        if (!$this->canRunVpsImport()) {
+            $this->session->set_flashdata('error', 'Import backup hanya bisa dijalankan di lokal oleh Super Admin.');
+            redirect('Backup');
+            return;
+        }
+
+        if (!$this->isLocalImportAvailable()) {
+            $this->session->set_flashdata('error', 'Script import lokal belum tersedia atau mysql.exe XAMPP tidak ditemukan.');
+            redirect('Backup');
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            redirect('Backup');
+            return;
+        }
+
+        if (empty($_FILES['sql_file']['tmp_name']) || !is_uploaded_file($_FILES['sql_file']['tmp_name'])) {
+            $this->session->set_flashdata('error', 'File SQL belum dipilih.');
+            redirect('Backup');
+            return;
+        }
+
+        $originalName = basename((string) ($_FILES['sql_file']['name'] ?? ''));
+        if (strtolower(pathinfo($originalName, PATHINFO_EXTENSION)) !== 'sql') {
+            $this->session->set_flashdata('error', 'File import harus berekstensi .sql.');
+            redirect('Backup');
+            return;
+        }
+
+        $uploadDir = FCPATH . 'backups' . DIRECTORY_SEPARATOR . 'UPLOAD_IMPORT';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+
+        $safeName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $originalName);
+        $targetPath = $uploadDir . DIRECTORY_SEPARATOR . date('Ymd_His') . '_' . $safeName;
+        if (!move_uploaded_file($_FILES['sql_file']['tmp_name'], $targetPath)) {
+            $this->session->set_flashdata('error', 'Gagal menyimpan file SQL upload.');
+            redirect('Backup');
+            return;
+        }
+
+        $this->runLocalImport($targetPath, 'Upload dan import backup lokal selesai.');
     }
 
     public function import_vps_to_local()
@@ -151,7 +230,14 @@ class Backup extends CI_Controller
         $path = strtolower(str_replace('/', '\\', FCPATH));
 
         return in_array($host, $localHosts, true)
-            || strpos($path, 'c:\\xampp\\htdocs\\databasetkm') === 0;
+            || preg_match('/^[a-z]:\\\\xampp\\\\htdocs\\\\databasetkm/i', $path) === 1;
+    }
+
+    private function isLocalImportAvailable()
+    {
+        $repoRoot = rtrim(FCPATH, DIRECTORY_SEPARATOR);
+        return is_file($repoRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'import_db_local_file.ps1')
+            && is_file($this->getXamppMysqlBinaryPath('mysql.exe'));
     }
 
     private function isVpsImportAvailable()
@@ -170,6 +256,43 @@ class Backup extends CI_Controller
         }
 
         return true;
+    }
+
+    private function runLocalImport($dumpPath, $successPrefix)
+    {
+        @set_time_limit(0);
+
+        $repoRoot = rtrim(FCPATH, DIRECTORY_SEPARATOR);
+        $scriptPath = $repoRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'import_db_local_file.ps1';
+        $command = 'powershell -NoProfile -ExecutionPolicy Bypass -File '
+            . escapeshellarg($scriptPath)
+            . ' -DumpPath '
+            . escapeshellarg($dumpPath);
+
+        $startedAt = microtime(true);
+        [$exitCode, $output] = $this->runShellCommand($command, $repoRoot);
+        $duration = max(1, (int) round(microtime(true) - $startedAt));
+
+        if ($exitCode === 0) {
+            $clearedCacheFiles = $this->clearChecklistCacheFiles();
+            $output[] = '[Cache] Checklist cache dibersihkan: ' . $clearedCacheFiles . ' file.';
+        }
+
+        $message = $exitCode === 0
+            ? $successPrefix . ' Durasi: ' . $duration . ' detik.'
+            : 'Import backup lokal gagal. Cek output proses di bawah.';
+
+        $this->session->set_flashdata($exitCode === 0 ? 'success' : 'error', $message);
+        $this->session->set_flashdata('import_vps_output', $this->summarizeImportOutput($output));
+
+        redirect('Backup');
+    }
+
+    private function getXamppMysqlBinaryPath($binaryName)
+    {
+        $repoRoot = rtrim(FCPATH, DIRECTORY_SEPARATOR);
+        $xamppRoot = dirname(dirname($repoRoot));
+        return $xamppRoot . DIRECTORY_SEPARATOR . 'mysql' . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . $binaryName;
     }
 
     private function runShellCommand($command, $cwd)

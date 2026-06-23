@@ -63,6 +63,9 @@ $route['translate_uri_dashes'] = FALSE;
 $route['backup'] = 'backup/index';
 $route['backup/create_backup'] = 'backup/create_backup';
 $route['backup/download_backup/(:any)'] = 'backup/download_backup/$1';
+$route['Backup/import_local_backup'] = 'backup/import_local_backup';
+$route['Backup/upload_local_backup_import'] = 'backup/upload_local_backup_import';
+$route['Backup/import_vps_to_local'] = 'backup/import_vps_to_local';
 
 $route['StockOpname/periode/(:num)'] = 'StockOpname/periode/$1';
 $route['StockOpname/periode/(:num)/lokasi/(:num)'] = 'StockOpname/periode/$1/$2';
