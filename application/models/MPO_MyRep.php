@@ -336,12 +336,14 @@ class MPO_MyRep extends CI_Model
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC');
 
-        if (!empty($regional)) {
+        if (!empty($regional) || !empty($areaNumbers)) {
             if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
                 $this->joinEmrTargetAreaMap($rows);
                 $rows->group_start();
                 $this->applyUpperInFilter($rows, 'area_map.area_number', $areaNumbers);
-                $rows->or_where('UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')', null, false);
+                if (!empty($regional)) {
+                    $rows->or_where("(COALESCE(area_map.area_number, '') = '' AND UPPER(c.regional_name) IN (" . $this->buildEscapedSqlList($regional) . '))', null, false);
+                }
                 $rows->group_end();
             } else {
                 $this->applyUpperInFilter($rows, 'c.regional_name', $regional);
@@ -1090,13 +1092,13 @@ class MPO_MyRep extends CI_Model
         if (!empty($city)) {
             $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
         }
-        if (!empty($regional)) {
+        if (!empty($regional) || !empty($areaNumbers)) {
             if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
                 $conditions[] = '(
                     UPPER(area_map.area_number) IN (' . $this->buildEscapedSqlList($areaNumbers) . ')
-                    OR UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')
+                    ' . (!empty($regional) ? "OR (COALESCE(area_map.area_number, '') = '' AND UPPER(c.regional_name) IN (" . $this->buildEscapedSqlList($regional) . '))' : '') . '
                 )';
-            } else {
+            } elseif (!empty($regional)) {
                 $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
             }
         }
@@ -1577,9 +1579,12 @@ class MPO_MyRep extends CI_Model
                 UPPER(TRIM(COALESCE(regional_name, ''))) AS regional_key,
                 MAX(
                     CASE
-                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA %'
-                            THEN TRIM(SUBSTRING(UPPER(TRIM(COALESCE(area, ''))), 6))
-                        ELSE TRIM(COALESCE(area, ''))
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 1%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 1%' OR UPPER(TRIM(COALESCE(area, ''))) = '1' THEN '1'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 2%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 2%' OR UPPER(TRIM(COALESCE(area, ''))) = '2' THEN '2'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 3%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 3%' OR UPPER(TRIM(COALESCE(area, ''))) = '3' THEN '3'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 4%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 4%' OR UPPER(TRIM(COALESCE(area, ''))) = '4' THEN '4'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 5%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 5%' OR UPPER(TRIM(COALESCE(area, ''))) = '5' THEN '5'
+                        ELSE ''
                     END
                 ) AS area_number
             FROM tb_myrep_pic_mapping_city
@@ -1725,13 +1730,13 @@ class MPO_MyRep extends CI_Model
         if (!empty($city)) {
             $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
         }
-        if (!empty($regional)) {
+        if (!empty($regional) || !empty($areaNumbers)) {
             if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
                 $conditions[] = '(
                     UPPER(area_map.area_number) IN (' . $this->buildEscapedSqlList($areaNumbers) . ')
-                    OR UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')
+                    ' . (!empty($regional) ? "OR (COALESCE(area_map.area_number, '') = '' AND UPPER(c.regional_name) IN (" . $this->buildEscapedSqlList($regional) . '))' : '') . '
                 )';
-            } else {
+            } elseif (!empty($regional)) {
                 $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
             }
         }
@@ -1785,8 +1790,10 @@ class MPO_MyRep extends CI_Model
 
         $regionals = [];
         foreach ($values as $value) {
-            if (isset($this->emrTargetAreaRegionalMap[$value])) {
-                $regionals = array_merge($regionals, $this->emrTargetAreaRegionalMap[$value]);
+            $areaNumber = $this->normalizeEmrTargetAreaNumber($value);
+            $areaName = $areaNumber !== '' ? 'AREA ' . $areaNumber : $value;
+            if (isset($this->emrTargetAreaRegionalMap[$areaName])) {
+                $regionals = array_merge($regionals, $this->emrTargetAreaRegionalMap[$areaName]);
                 continue;
             }
 
@@ -1835,6 +1842,11 @@ class MPO_MyRep extends CI_Model
 
         if (strpos($value, 'REGIONAL ') === 0) {
             $value = trim(substr($value, 9));
+        }
+
+        if (strpos($value, '-') !== false) {
+            $parts = explode('-', $value);
+            $value = trim((string) $parts[0]);
         }
 
         return in_array($value, ['1', '2', '3', '4', '5'], true) ? $value : '';
