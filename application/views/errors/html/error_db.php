@@ -1,12 +1,17 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
+$faviconUrl = function_exists('base_url')
+	? base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png')
+	: '';
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>Database Error</title>
-  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
-  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+<?php if ($faviconUrl !== ''): ?>
+  <link rel="icon" type="image/png" href="<?= $faviconUrl ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= $faviconUrl ?>">
+<?php endif; ?>
 <style type="text/css">
 
 ::selection { background-color: #E13300; color: white; }

@@ -139,7 +139,10 @@ SELECT
   END AS status_batch_final,
   CASE
     WHEN n.status_current_raw = 'ATP' OR n.cutoff_group = 'ATP' THEN 'DONE'
-    WHEN n.status_drm_raw <> '' THEN n.status_drm_raw
+    WHEN n.status_drm_raw IN ('WAITING DOC','WAITING INPUT','WAITING DOCUMENT') THEN 'DRAFT'
+    WHEN n.status_drm_raw IN ('WAITING APPROVE','WAITING APPROVAL') THEN 'ON REVIEW'
+    WHEN n.status_drm_raw IN ('COMPLETE','COMPLETED') THEN 'APPROVED'
+    WHEN n.status_drm_raw IN ('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') THEN n.status_drm_raw
     ELSE 'DONE'
   END AS status_drm_final,
   CASE

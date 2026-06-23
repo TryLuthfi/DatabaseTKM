@@ -510,8 +510,9 @@ class MPO_MyRep extends CI_Model
 
         $city = $this->normalizeUpperList($city);
         $regional = $this->normalizeUpperList($regional);
+        $onTargetSelectSql = $this->getEmrTargetOnTargetSelectSql();
         $this->db
-            ->select('
+            ->select("
                 p.id_po_header,
                 p.id_myrep_cluster,
                 p.po_type,
@@ -520,7 +521,7 @@ class MPO_MyRep extends CI_Model
                 p.po_date,
                 p.po_value,
                 p.status_po,
-                {$this->getEmrTargetOnTargetSelectSql()},
+                {$onTargetSelectSql},
                 p.po_version_label,
                 p.remark_po,
                 c.cluster_name,
@@ -529,7 +530,7 @@ class MPO_MyRep extends CI_Model
                 c.regional_name,
                 c.team_name,
                 c.status_current
-            ')
+            ", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->where($this->getEmrTargetScopeCondition('p', $scope), null, false);

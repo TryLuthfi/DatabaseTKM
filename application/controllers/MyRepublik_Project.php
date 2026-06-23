@@ -2223,7 +2223,7 @@ class MyRepublik_Project extends CI_Controller
             $hpDrm = (int) $this->normalizeNumber($row['hp_donasi'] ?? 0);
         }
 
-        $statusDrm = 'COMPLETE';
+        $statusDrm = 'APPROVED';
         $remarkDrm = trim((string) ($row['remark_drm'] ?? ''));
 
         $payload = [
@@ -4327,7 +4327,7 @@ class MyRepublik_Project extends CI_Controller
             'drm_date' => $this->normalizeDate((string) ($row['drm_date'] ?? '')) ?: date('Y-m-d'),
             'homepass_drm' => max(0, $hpDrm),
             'nama_olt' => trim((string) ($row['nama_olt'] ?? '')) ?: null,
-            'status_drm' => 'COMPLETE',
+            'status_drm' => 'APPROVED',
             'remark_drm' => trim((string) ($row['remark_drm'] ?? '')) ?: (trim((string) ($row['remark_general'] ?? '')) ?: null),
             'updated_by' => (int) $userId,
         ];
@@ -4600,6 +4600,11 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
+        if ($table === 'tb_myrep_drm') {
+            $payload = $this->normalizeDrmPayloadForStorage($payload);
+            $insertOnly = $this->normalizeDrmPayloadForStorage($insertOnly);
+        }
+
         $existing = $this->db
             ->from($table)
             ->where($where)
@@ -4614,6 +4619,34 @@ class MyRepublik_Project extends CI_Controller
         }
 
         $this->db->insert($table, $this->filterPayloadByTableFields($table, array_merge($insertOnly, $payload)));
+    }
+
+    private function normalizeDrmPayloadForStorage(array $payload)
+    {
+        if (array_key_exists('status_drm', $payload)) {
+            $payload['status_drm'] = $this->normalizeStoredDrmStatus($payload['status_drm']);
+        }
+
+        return $payload;
+    }
+
+    private function normalizeStoredDrmStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $displayToStored = [
+            'WAITING INPUT' => 'DRAFT',
+            'WAITING DOC' => 'DRAFT',
+            'WAITING DOCUMENT' => 'DRAFT',
+            'WAITING APPROVE' => 'ON REVIEW',
+            'WAITING APPROVAL' => 'ON REVIEW',
+            'COMPLETE' => 'APPROVED',
+            'COMPLETED' => 'APPROVED',
+        ];
+        $status = $displayToStored[$status] ?? $status;
+
+        return in_array($status, ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'], true)
+            ? $status
+            : 'DRAFT';
     }
 
     private function filterPayloadByTableFields($table, array $payload)
