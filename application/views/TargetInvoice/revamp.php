@@ -1505,7 +1505,14 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                         </div>
                         <div class="form-group col-md-3 target-new-area-field invoice-hidden">
                             <label for="target_add_regional">Regional</label>
-                            <input type="text" id="target_add_regional" name="inputRegionalBaru" class="form-control" autocomplete="off">
+                            <select id="target_add_regional" name="inputRegionalBaru" class="form-control">
+                                <option value="">Pilih Regional</option>
+                                <option value="REGIONAL 1">REGIONAL 1</option>
+                                <option value="REGIONAL 2">REGIONAL 2</option>
+                                <option value="REGIONAL 3">REGIONAL 3</option>
+                                <option value="REGIONAL 4">REGIONAL 4</option>
+                                <option value="REGIONAL 5">REGIONAL 5</option>
+                            </select>
                         </div>
                         <div class="form-group col-md-3 target-new-area-field invoice-hidden">
                             <label for="target_add_pic_area">PIC Area</label>
@@ -2253,7 +2260,13 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         function updateTargetAddAreaOptions() {
             const areaSelect = $('#target_add_area');
-            const areas = uniqueOptions(invoiceRows, 'area');
+            const projectId = String($('#target_add_project option:selected').data('id') || '');
+            const sourceRows = projectId
+                ? invoiceRows.filter(function (row) {
+                    return row.project === projectId;
+                })
+                : [];
+            const areas = uniqueOptions(sourceRows, 'area');
             areaSelect.empty().append(new Option('Pilih Area', '', true, false));
             areas.forEach(function (option) {
                 areaSelect.append(new Option(option[1], option[0]));

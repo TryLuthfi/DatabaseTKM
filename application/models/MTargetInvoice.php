@@ -363,10 +363,9 @@ JOIN tb_master_bowheer_invoice tmb
     public function getRevampFilterOptions()
     {
         return [
-            'projects' => $this->db->query('SELECT DISTINCT tmb.id_bowheer, tmb.nama_bowheer
-                FROM tb_target_invoice tti
-                JOIN tb_master_bowheer_invoice tmb ON tti.id_bowheer = tmb.id_bowheer
-                ORDER BY tmb.nama_bowheer ASC')
+            'projects' => $this->db->query('SELECT id_bowheer, nama_bowheer
+                FROM tb_master_bowheer_invoice
+                ORDER BY nama_bowheer ASC')
                 ->result_array(),
             'pics' => $this->db->query('SELECT DISTINCT tmb.pic_user
                 FROM tb_target_invoice tti
