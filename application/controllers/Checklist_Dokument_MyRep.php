@@ -1739,6 +1739,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'WAITING PLANNING' => 0,
                 'WAITING TL' => 0,
                 'WAITING LOGISTIK' => 0,
+                'ON REVIEW' => 0,
             ],
         ];
 

@@ -3689,7 +3689,7 @@ class MPO_MyRep extends CI_Model
     private function buildEmptyNroFlowSummary()
     {
         $summary = [];
-        foreach (['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'] as $status) {
+        foreach (['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW'] as $status) {
             $summary[$status] = ['count' => 0, 'value' => 0];
         }
 
@@ -3969,6 +3969,7 @@ class MPO_MyRep extends CI_Model
             'WAITING PLANNING' => 'EMMR - PLANNING',
             'WAITING TL' => 'EMMR - TEAM LEADER',
             'WAITING LOGISTIK' => 'EMMR - LOGISTIK',
+            'ON REVIEW' => 'EMMR - DC',
         ];
 
         return $map[strtoupper(trim((string) $nroStatus))] ?? '';
@@ -3991,7 +3992,7 @@ class MPO_MyRep extends CI_Model
         $state = $checklistStateMap[$stateKey] ?? [];
         $nroStatus = strtoupper(trim((string) ($state['project_opname_nro_status'] ?? '')));
 
-        return in_array($nroStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)
+        return in_array($nroStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW'], true)
             ? $nroStatus
             : '';
     }
@@ -4299,7 +4300,7 @@ class MPO_MyRep extends CI_Model
                     $sowType === 'RFS'
                     && $scopeType === 'CLUSTER'
                     && $docName === 'PROJECT OPNAME'
-                    && in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)
+                    && in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW'], true)
                 ) {
                     $stateMap[$stateKey]['has_project_opname_nro_flow'] = true;
                     $stateMap[$stateKey]['project_opname_nro_status'] = $astriStatus;

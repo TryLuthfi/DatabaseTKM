@@ -172,7 +172,8 @@ $clusterDoneAtpBelumDokument = (int) ($summary['clusterDoneAtpBelumDokument'] ??
 $clusterNyAstri = (int) ($summary['clusterNyAstri'] ?? 0);
 $internalStatusSummary = isset($summary['internalStatusSummary']) && is_array($summary['internalStatusSummary']) ? $summary['internalStatusSummary'] : ['NY' => 0, 'ON REVIEW' => 0, 'REJECTED' => 0, 'APPROVED' => 0];
 $astriStatusSummary = isset($summary['astriStatusSummary']) && is_array($summary['astriStatusSummary']) ? $summary['astriStatusSummary'] : ['NY' => 0, 'ON REVIEW' => 0, 'REJECTED' => 0, 'APPROVED' => 0];
-$projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_array($summary['projectOpnameFlowSummary']) ? $summary['projectOpnameFlowSummary'] : ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, 'WAITING TL' => 0, 'WAITING LOGISTIK' => 0];
+$projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_array($summary['projectOpnameFlowSummary']) ? $summary['projectOpnameFlowSummary'] : ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, 'WAITING TL' => 0, 'WAITING LOGISTIK' => 0, 'ON REVIEW' => 0];
+$projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, 'WAITING TL' => 0, 'WAITING LOGISTIK' => 0, 'ON REVIEW' => 0];
 ?>
 
 <style>
@@ -948,6 +949,10 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                 <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING LOGISTIK">
                                     <span class="status-summary-label">Waiting Logistik</span>
                                     <span class="status-summary-count primary" data-summary-section="projectOpnameFlowSummary" data-summary-key="WAITING LOGISTIK"><?= (int) $projectOpnameFlowSummary['WAITING LOGISTIK'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="ON REVIEW">
+                                    <span class="status-summary-label">On Review</span>
+                                    <span class="status-summary-count warning" data-summary-section="projectOpnameFlowSummary" data-summary-key="ON REVIEW"><?= (int) $projectOpnameFlowSummary['ON REVIEW'] ?></span>
                                 </li>
                             </ul>
                         </div>

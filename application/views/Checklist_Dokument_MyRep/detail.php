@@ -99,7 +99,7 @@ if (!function_exists('checklist_doc_astri_options')) {
     function checklist_doc_astri_options($isSpecialProjectOpname)
     {
         if ((int) $isSpecialProjectOpname === 1) {
-            return ['NY', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'REJECTED', 'APPROVED'];
+            return ['NY', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW', 'REJECTED', 'APPROVED'];
         }
 
         return ['NY', 'ON REVIEW', 'REJECTED', 'APPROVED'];
@@ -1821,11 +1821,11 @@ $clusterProgressPercent = checklist_doc_percent(
                                 <label class="font-weight-bold">Status ASTRI</label>
                                 <select name="astri_status" id="astri-status" class="form-control">
                                     <option value="NY">NY</option>
-                                    <option value="ON REVIEW">ON REVIEW</option>
                                     <option value="WAITING WASPANG">WAITING WASPANG</option>
                                     <option value="WAITING PLANNING">WAITING PLANNING</option>
                                     <option value="WAITING TL">WAITING TL</option>
                                     <option value="WAITING LOGISTIK">WAITING LOGISTIK</option>
+                                    <option value="ON REVIEW">ON REVIEW</option>
                                     <option value="REJECTED">REJECTED</option>
                                     <option value="APPROVED">APPROVED</option>
                                 </select>
@@ -1985,6 +1985,7 @@ $clusterProgressPercent = checklist_doc_percent(
             'WAITING PLANNING',
             'WAITING TL',
             'WAITING LOGISTIK',
+            'ON REVIEW',
             'REJECTED',
             'APPROVED'
         ] : [
