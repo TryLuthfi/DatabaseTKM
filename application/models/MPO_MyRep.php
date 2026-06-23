@@ -2939,27 +2939,38 @@ class MPO_MyRep extends CI_Model
 
         $this->ensurePoTerminCertificateColumnForDashboard();
 
+        $hasMainfeederPo = $this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')
+            && $this->db->table_exists('tb_rfs_myrep_mainfeeder')
+            && $this->db->field_exists('city_name', 'tb_rfs_myrep_mainfeeder');
+
+        $select = '
+            t.*,
+            p.id_myrep_cluster,
+            p.po_number,
+            p.po_type,
+            p.po_category,
+            ' . ($hasMainfeederPo ? 'p.id_mainfeeder,' : 'NULL AS id_mainfeeder,') . '
+            ' . ($hasMainfeederPo ? 'COALESCE(c.cluster_name, mf.mainfeeder_name)' : 'c.cluster_name') . ' AS cluster_name,
+            ' . ($hasMainfeederPo ? 'COALESCE(c.city_name, mf.city_name)' : 'c.city_name') . ' AS city_name,
+            ' . ($hasMainfeederPo ? 'COALESCE(c.regional_name, mf.regional_name)' : 'c.regional_name') . ' AS regional_name
+        ';
+
         $this->db
-            ->select('
-                t.*,
-                p.id_myrep_cluster,
-                p.po_number,
-                p.po_type,
-                p.po_category,
-                c.cluster_name,
-                c.city_name,
-                c.regional_name
-            ')
+            ->select($select, false)
             ->from('tb_myrep_po_termin t')
             ->join('tb_myrep_po_header p', 'p.id_po_header = t.id_po_header', 'inner')
-            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', $hasMainfeederPo ? 'left' : 'inner');
+        if ($hasMainfeederPo) {
+            $this->db->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left');
+        }
+        $this->db
             ->where('UPPER(TRIM(p.po_number))', strtoupper($poNumber))
             ->where('t.termin_no', $terminNo)
             ->order_by('p.po_date', 'DESC')
             ->order_by('p.id_po_header', 'DESC')
             ->limit(1);
 
-        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+        if (!$this->applyAllowedCityRestriction($hasMainfeederPo ? 'COALESCE(c.city_name, mf.city_name)' : 'c.city_name')) {
             return [];
         }
 

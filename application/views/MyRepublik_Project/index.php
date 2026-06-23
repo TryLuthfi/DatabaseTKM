@@ -9,6 +9,11 @@ if (!function_exists('myrepDashNumber')) {
 if (!function_exists('myrepClusterDetailUrl')) {
     function myrepClusterDetailUrl($row)
     {
+        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+            $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+            return $mainfeederId > 0 ? base_url('Mainfeeder_MyRep/detail/' . $mainfeederId) : '#';
+        }
+
         $myrepClusterId = (int) ($row['id_myrep_cluster'] ?? 0);
         if ($myrepClusterId > 0) {
             return base_url('MyRepublik_Project/detail/' . $myrepClusterId);
@@ -213,12 +218,15 @@ if (!empty($summaryRows)) {
                             <button type="button" class="btn btn-outline-light btn-sm" data-toggle="modal" data-target="#modal-import-po-certificate-myrep">
                                 Import PO & Certificate CSV
                             </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" data-toggle="modal" data-target="#modalImportMainfeeder">
+                                Import Mainfeeder
+                            </button>
                         </div>
                     </div>
 
                     <div class="myrep-overview">
                         <div class="myrep-overview__box">
-                            <div class="myrep-overview__label">Total Cluster</div>
+                            <div class="myrep-overview__label">Total Project</div>
                             <div class="myrep-overview__value" data-myrep-overview="total_cluster"><?= (int) ($overview['total_cluster'] ?? 0) ?></div>
                         </div>
                         <div class="myrep-overview__box">
@@ -295,7 +303,7 @@ if (!empty($summaryRows)) {
                                     <div class="myrep-status-card__value">
                                         <?= $metricMode === 'PO' ? myrepDashNumber((float) ($card['metric_total'] ?? 0)) : myrepDashNumber((float) ($card['metric_total'] ?? 0)) . ' HP' ?>
                                     </div>
-                                    <div class="myrep-status-card__sub"><?= (int) ($card['cluster_count'] ?? 0) ?> cluster</div>
+                                <div class="myrep-status-card__sub"><?= (int) ($card['cluster_count'] ?? 0) ?> project</div>
                                 </div>
                             <?php endforeach; ?>
                             <?php if (empty($statusCards)): ?>
@@ -307,7 +315,7 @@ if (!empty($summaryRows)) {
 
                 <div class="card card-outline card-primary shadow-sm">
                     <div class="card-header">
-                        <h3 class="card-title mb-0">Rekap Cluster per Kota</h3>
+                        <h3 class="card-title mb-0">Rekap Project per Kota</h3>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -342,7 +350,7 @@ if (!empty($summaryRows)) {
                                         </tr>
                                     <?php endforeach; ?>
                                     <?php if (empty($clusterStageSummaryRows)): ?>
-                                        <tr><td colspan="10" class="text-center text-muted">Memuat rekap cluster...</td></tr>
+                                        <tr><td colspan="10" class="text-center text-muted">Memuat rekap project...</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                                 <tfoot id="myrep-city-stage-summary-foot" class="<?= empty($summaryFooter) ? 'd-none' : '' ?>">
@@ -366,7 +374,7 @@ if (!empty($summaryRows)) {
 
                 <div class="card card-outline card-primary shadow-sm">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">Daftar Cluster</h3>
+                        <h3 class="card-title mb-0">Daftar Project</h3>
                         <div class="d-flex align-items-center">
                             <div class="myrep-table-note mr-2">Angka utama saat ini: <?= $metricMode === 'PO' ? 'PO Value' : 'Homepass' ?></div>
                             <?php if ($isSuperAdmin): ?>
@@ -380,7 +388,7 @@ if (!empty($summaryRows)) {
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Cluster</th>
+                                        <th>Project</th>
                                         <th>Kota</th>
                                         <th>Regional</th>
                                         <th>Status</th>
@@ -407,12 +415,15 @@ if (!empty($summaryRows)) {
                                                         <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
                                                     <?php endif; ?>
                                                 </strong>
-                                                <div class="small text-muted"><?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?></div>
+                                                 <div class="small text-muted">
+                                                    <span class="badge <?= strtoupper((string) ($row['project_type'] ?? 'CLUSTER')) === 'MAINFEEDER' ? 'badge-warning' : 'badge-dark' ?>"><?= htmlspecialchars((string) ($row['project_type'] ?? 'CLUSTER')) ?></span>
+                                                    <?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?>
+                                                 </div>
                                             </td>
                                             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
                                             <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current_display'] ?? $row['status_current'] ?? '-')) ?></span></td>
-                                            <td><?= $metricMode === 'PO' ? myrepDashNumber((float) ($row['metric_value'] ?? 0)) : myrepDashNumber((float) ($row['metric_value'] ?? 0)) . ' HP' ?></td>
+                                            <td><?= $metricMode === 'PO' ? myrepDashNumber((float) ($row['metric_value'] ?? 0)) : myrepDashNumber((float) ($row['metric_value'] ?? 0)) . (strtoupper((string) ($row['project_type'] ?? 'CLUSTER')) === 'MAINFEEDER' ? ' M' : ' HP') ?></td>
                                             <td><?= (int) ($row['po_count'] ?? 0) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['rpm'] ?? '-')) ?> / <?= htmlspecialchars((string) ($row['spv'] ?? '-')) ?></td>
                                             <td><?= !empty($row['drm_date']) ? htmlspecialchars((string) $row['drm_date']) : '-' ?></td>
@@ -436,7 +447,7 @@ if (!empty($summaryRows)) {
                                     <?php endif; ?>
                                     <?php if (empty($clusterRows)): ?>
                                         <?php if ($renderClusterRows): ?>
-                                            <tr><td colspan="10" class="text-center text-muted">Belum ada data cluster MyRep.</td></tr>
+                                            <tr><td colspan="10" class="text-center text-muted">Belum ada data project MyRep.</td></tr>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </tbody>
@@ -447,6 +458,41 @@ if (!empty($summaryRows)) {
             <?php endif; ?>
         </div>
     </section>
+</div>
+
+<div class="modal fade" id="modalImportMainfeeder" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Mainfeeder</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-dropzone" id="myrep-mainfeeder-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
+                    <input type="file" id="myrep-mainfeeder-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
+                    <div><strong>Drag & drop file CSV/XLSX mainfeeder di sini</strong></div>
+                    <div class="text-muted small">Minimal header: mainfeeder_name dan city_name. cluster_code boleh kosong; PO dan termin akan diproses jika kolomnya tersedia.</div>
+                    <div id="myrep-mainfeeder-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
+                </div>
+                <div class="mt-3">
+                    <a href="<?= base_url('Mainfeeder_MyRep/downloadImportTemplate') ?>" class="btn btn-outline-secondary btn-sm">
+                        Download Contoh CSV
+                    </a>
+                    <a href="<?= base_url('Mainfeeder_MyRep/downloadCurrentSnapshot?' . http_build_query(['city' => $selectedCity, 'status' => $selectedStatus])) ?>" class="btn btn-outline-info btn-sm">
+                        Download Update Sekarang
+                    </a>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-preview-mainfeeder-import">Preview Data</button>
+                    <button type="button" class="btn btn-success btn-sm" id="btn-save-mainfeeder-import" disabled>Import Semua Data Valid</button>
+                </div>
+                <div class="mt-3 table-responsive">
+                    <table class="table table-bordered table-sm" id="table-preview-mainfeeder-import">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php if ($isSuperAdmin): ?>
@@ -592,6 +638,7 @@ if (!empty($summaryRows)) {
     (function initMyrepClusterTable() {
         var importedValidRows = [];
         var importedPoCertificateValidRows = [];
+        var importedMainfeederValidRows = [];
         var myrepMetricMode = <?= json_encode($metricMode) ?>;
         var myrepSelectedCity = <?= json_encode($selectedCity) ?>;
         var myrepSelectedStatus = <?= json_encode($selectedStatus) ?>;
@@ -631,7 +678,7 @@ if (!empty($summaryRows)) {
                 html += '<div class="myrep-status-card">'
                     + '<div class="myrep-status-card__status">' + escapeHtml(card.status || '-') + '</div>'
                     + '<div class="myrep-status-card__value">' + metric + '</div>'
-                    + '<div class="myrep-status-card__sub">' + Number(card.cluster_count || 0) + ' cluster</div>'
+                    + '<div class="myrep-status-card__sub">' + Number(card.cluster_count || 0) + ' project</div>'
                     + '</div>';
             });
             $grid.html(html || '<div class="text-muted small">Belum ada data status.</div>');
@@ -664,7 +711,7 @@ if (!empty($summaryRows)) {
                     + '<td>' + formatNumber(row.total || 0) + '</td>'
                     + '</tr>';
             });
-            $('#myrep-city-stage-summary-body').html(bodyHtml || '<tr><td colspan="10" class="text-center text-muted">Belum ada data rekap cluster.</td></tr>');
+            $('#myrep-city-stage-summary-body').html(bodyHtml || '<tr><td colspan="10" class="text-center text-muted">Belum ada data rekap project.</td></tr>');
 
             if (footer) {
                 $('#myrep-city-stage-summary-foot')
@@ -816,6 +863,34 @@ if (!empty($summaryRows)) {
             tbody.innerHTML = bodyHtml;
         }
 
+        function renderMainfeederPreviewTable(headers, rows) {
+            var thead = document.querySelector('#table-preview-mainfeeder-import thead');
+            var tbody = document.querySelector('#table-preview-mainfeeder-import tbody');
+            if (!thead || !tbody) {
+                return;
+            }
+
+            var headHtml = '<tr><th>No</th><th>Status</th><th>Message</th>';
+            headers.forEach(function (h) { headHtml += '<th>' + escapeHtml(h) + '</th>'; });
+            headHtml += '</tr>';
+            thead.innerHTML = headHtml;
+
+            var bodyHtml = '';
+            rows.forEach(function (row, index) {
+                var badge = row.status === 'valid' ? 'success' : 'danger';
+                bodyHtml += '<tr>';
+                bodyHtml += '<td>' + (index + 1) + '</td>';
+                bodyHtml += '<td><span class="badge badge-' + badge + '">' + escapeHtml(row.status || '') + '</span></td>';
+                bodyHtml += '<td>' + escapeHtml(row.message || '') + '</td>';
+                headers.forEach(function (h) {
+                    var value = row.raw && row.raw[h] ? row.raw[h] : '';
+                    bodyHtml += '<td>' + escapeHtml(value) + '</td>';
+                });
+                bodyHtml += '</tr>';
+            });
+            tbody.innerHTML = bodyHtml;
+        }
+
         function bootDataTable(tryCount) {
             if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
                 if (tryCount < 30) {
@@ -879,6 +954,7 @@ if (!empty($summaryRows)) {
 
         bindDropzone('#myrep-cutoff-dropzone', '#myrep-cutoff-file-input', '#myrep-cutoff-file-name');
         bindDropzone('#myrep-po-certificate-dropzone', '#myrep-po-certificate-file-input', '#myrep-po-certificate-file-name');
+        bindDropzone('#myrep-mainfeeder-dropzone', '#myrep-mainfeeder-file-input', '#myrep-mainfeeder-file-name');
 
         $(document).on('shown.bs.modal', '#modal-delete-myrep-clusters', function () {
             if ($.fn.DataTable && $.fn.DataTable.isDataTable('#table_myrep_delete_cluster_list')) {
@@ -966,6 +1042,62 @@ if (!empty($summaryRows)) {
                 window.location.reload();
             }).fail(function () {
                 alert('Import gagal dijalankan.');
+            });
+        });
+
+        $(document).on('click', '#btn-preview-mainfeeder-import', function () {
+            var fileInput = document.getElementById('myrep-mainfeeder-file-input');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                alert('Pilih file import mainfeeder terlebih dahulu.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file_excel', fileInput.files[0]);
+
+            $.ajax({
+                url: '<?= base_url("Mainfeeder_MyRep/previewImport") ?>',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json'
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    alert(response && response.message ? response.message : 'Preview import mainfeeder gagal.');
+                    return;
+                }
+                importedMainfeederValidRows = response.valid_rows || [];
+                renderMainfeederPreviewTable(response.headers || [], response.rows || []);
+                $('#btn-save-mainfeeder-import').prop('disabled', importedMainfeederValidRows.length === 0);
+            }).fail(function () {
+                alert('Preview import mainfeeder gagal dijalankan.');
+            });
+        });
+
+        $(document).on('click', '#btn-save-mainfeeder-import', function () {
+            if (!importedMainfeederValidRows.length) {
+                alert('Tidak ada data mainfeeder valid untuk diimport.');
+                return;
+            }
+            if (!confirm('Lanjut import semua mainfeeder valid? Data dengan cluster_code/PO mainfeeder yang sama akan diupdate.')) {
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("Mainfeeder_MyRep/saveImport") ?>',
+                method: 'POST',
+                data: { rows_json: JSON.stringify(importedMainfeederValidRows) },
+                dataType: 'json'
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    alert(response && response.message ? response.message : 'Import mainfeeder gagal.');
+                    return;
+                }
+                alert(response.message || 'Import mainfeeder selesai.');
+                window.location.reload();
+            }).fail(function () {
+                alert('Import mainfeeder gagal dijalankan.');
             });
         });
 

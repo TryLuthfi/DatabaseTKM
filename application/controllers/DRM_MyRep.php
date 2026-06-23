@@ -8,6 +8,7 @@ class DRM_MyRep extends CI_Controller
         parent::__construct();
         $this->load->model('MDRM_MyRep');
         $this->load->model('MMyRep_Cleanup');
+        $this->load->model('MMainfeeder_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
         $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
@@ -808,6 +809,58 @@ class DRM_MyRep extends CI_Controller
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen DRM berhasil di-reject.' : 'Gagal reject dokumen DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function mainfeeder($mainfeederId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0) {
+            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+            $data['title'] = 'DRM Mainfeeder';
+            $data['section'] = 'drm';
+            $data['moduleTitle'] = 'DRM Mainfeeder';
+            $data['detailBase'] = 'DRM_MyRep/mainfeeder';
+            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
+            $data['selectedCity'] = $selectedCity;
+            $data['selectedStatus'] = $selectedStatus;
+            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
+            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
+            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Mainfeeder_MyRep/module_index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+            return;
+        }
+
+        $mainfeeder = $this->MMainfeeder_MyRep->getById($mainfeederId);
+        if (empty($mainfeeder)) {
+            $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
+            redirect('DRM_MyRep/mainfeeder');
+            return;
+        }
+
+        $data['title'] = 'DRM Mainfeeder';
+        $data['section'] = 'drm';
+        $data['moduleTitle'] = 'DRM Mainfeeder';
+        $data['mainfeeder'] = $mainfeeder;
+        $data['drmDocuments'] = $this->MMainfeeder_MyRep->getDrmDocumentRows($mainfeederId);
+        $data['boqHeader'] = $this->MMainfeeder_MyRep->getDrmBoqHeader($mainfeederId);
+        $data['boqItems'] = $this->MMainfeeder_MyRep->getDrmBoqItems($mainfeederId);
+        $data['canApprove'] = $this->isApprover();
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Mainfeeder_MyRep/module_detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
     public function requestSubfeederNotRequired()

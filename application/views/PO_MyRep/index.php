@@ -1012,8 +1012,8 @@ if (is_array($terminBreakdownRows ?? null)) {
                             Pantau status PO cluster dan subfeeder, progress invoice termin, nilai outstanding, serta kesiapan
                             sertifikat billing dalam satu dashboard operasional.
                         </p>
-                        <?php if ($canBatchInvoice): ?>
-                            <div class="po-hero__actions">
+                        <div class="po-hero__actions">
+                            <?php if ($canBatchInvoice): ?>
                                 <button type="button" class="po-btn po-btn--primary" data-toggle="modal" data-target="#modal-batch-invoice-termin">
                                     <i class="fas fa-file-invoice-dollar"></i>
                                     Batch Input Invoice Termin
@@ -1024,8 +1024,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                                         Batch Status/Tanggal Sertifikat
                                     </button>
                                 <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
+                            <?php endif; ?>
+                            <a href="<?= base_url('PO_MyRep/mainfeeder') ?>" class="po-btn po-btn--light">
+                                <i class="fas fa-project-diagram"></i>
+                                PO Mainfeeder
+                            </a>
+                        </div>
                     </div>
 
                     <div class="po-hero__stats">

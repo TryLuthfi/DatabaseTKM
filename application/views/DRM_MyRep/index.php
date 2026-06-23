@@ -261,6 +261,9 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                 <div class="col-sm-6">
                     <h1 class="m-0 text-dark">DRM MyRep</h1>
                 </div>
+                <div class="col-sm-6 text-right">
+                    <a href="<?= base_url('DRM_MyRep/mainfeeder') ?>" class="btn btn-dark">DRM Mainfeeder</a>
+                </div>
             </div>
         </div>
     </section>

@@ -9,6 +9,7 @@ class ATP_MyRep extends CI_Controller
         $this->load->model('MATP_MyRep');
         $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->model('MMonitoring_RFS_MyRep');
+        $this->load->model('MMainfeeder_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
@@ -17,6 +18,55 @@ class ATP_MyRep extends CI_Controller
                 'save' => 'EDIT',
             ]);
         }
+    }
+
+    public function mainfeeder($mainfeederId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0) {
+            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+            $data['title'] = 'ATP Mainfeeder';
+            $data['section'] = 'atp';
+            $data['moduleTitle'] = 'ATP Mainfeeder';
+            $data['detailBase'] = 'ATP_MyRep/mainfeeder';
+            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
+            $data['selectedCity'] = $selectedCity;
+            $data['selectedStatus'] = $selectedStatus;
+            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
+            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
+            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Mainfeeder_MyRep/module_index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+            return;
+        }
+
+        $mainfeeder = $this->MMainfeeder_MyRep->getById($mainfeederId);
+        if (empty($mainfeeder)) {
+            $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
+            redirect('ATP_MyRep/mainfeeder');
+            return;
+        }
+
+        $data['title'] = 'ATP Mainfeeder';
+        $data['section'] = 'atp';
+        $data['moduleTitle'] = 'ATP Mainfeeder';
+        $data['mainfeeder'] = $mainfeeder;
+        $data['atpFiles'] = $this->MMainfeeder_MyRep->getAtpFiles($mainfeederId);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Mainfeeder_MyRep/module_detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
     public function index()
