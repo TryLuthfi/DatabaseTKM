@@ -985,6 +985,7 @@ class MPO_MyRep extends CI_Model
                 FROM tb_myrep_po_header p_base
                 WHERE p_base.id_myrep_cluster = p.id_myrep_cluster
                     AND UPPER(TRIM(COALESCE(p_base.po_type, 'CLUSTER'))) = {$poTypeMatchSql}
+                    AND TRIM(COALESCE(p_base.po_number, '')) = TRIM(COALESCE(p.po_number, ''))
                     AND UPPER(TRIM(COALESCE(p_base.po_category, 'INITIAL'))) = 'INITIAL'
                 ORDER BY p_base.po_date DESC, p_base.id_po_header DESC
                 LIMIT 1
@@ -996,6 +997,7 @@ class MPO_MyRep extends CI_Model
                 FROM tb_myrep_po_header p_final
                 WHERE p_final.id_myrep_cluster = p.id_myrep_cluster
                     AND UPPER(TRIM(COALESCE(p_final.po_type, 'CLUSTER'))) = {$poTypeMatchSql}
+                    AND TRIM(COALESCE(p_final.po_number, '')) = TRIM(COALESCE(p.po_number, ''))
                     AND UPPER(TRIM(COALESCE(p_final.po_category, ''))) = 'FINAL'
                 ORDER BY p_final.po_date DESC, p_final.id_po_header DESC
                 LIMIT 1
@@ -1005,6 +1007,7 @@ class MPO_MyRep extends CI_Model
         $rows = $this->db->query("
             SELECT
                 p.id_po_header,
+                p.id_myrep_cluster,
                 p.po_type,
                 p.po_category,
                 p.po_number,
@@ -1050,12 +1053,19 @@ class MPO_MyRep extends CI_Model
                 continue;
             }
 
-            if (!isset($groupedRows[$headerId])) {
-                $groupedRows[$headerId] = [
+            $scope = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) ?: 'CLUSTER';
+            $poNumber = strtoupper(trim((string) ($row['po_number'] ?? '')));
+            $groupKey = ((int) ($row['id_myrep_cluster'] ?? 0)) . '|' . $scope . '|' . $poNumber;
+            if ($poNumber === '') {
+                $groupKey = ((int) ($row['id_myrep_cluster'] ?? 0)) . '|' . $scope . '|HEADER:' . $headerId;
+            }
+
+            if (!isset($groupedRows[$groupKey])) {
+                $groupedRows[$groupKey] = [
                     'regional_name' => (string) ($row['regional_name'] ?? ''),
                     'city_name' => (string) ($row['city_name'] ?? ''),
                     'cluster_name' => (string) ($row['cluster_name'] ?? ''),
-                    'scope' => strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) ?: 'CLUSTER',
+                    'scope' => $scope,
                     'po_number' => (string) ($row['po_number'] ?? ''),
                     'po_category' => (string) ($row['po_category'] ?? ''),
                     'on_target' => (int) ($row['on_target'] ?? 0),
@@ -1067,18 +1077,25 @@ class MPO_MyRep extends CI_Model
                     'remark_po' => (string) ($row['remark_po'] ?? ''),
                     'terms' => [],
                 ];
+            } elseif (strtoupper(trim((string) ($row['po_category'] ?? ''))) === 'FINAL') {
+                $groupedRows[$groupKey]['po_value_final'] = (float) ($row['po_value'] ?? ($row['po_value_final'] ?? 0));
+                if ((float) ($groupedRows[$groupKey]['po_value'] ?? 0) <= 0) {
+                    $groupedRows[$groupKey]['po_value'] = (float) ($row['po_value_base'] ?? 0);
+                }
             }
 
             $termNo = (int) ($row['termin_no'] ?? 0);
             if ($termNo >= 1 && $termNo <= 5) {
                 $submitInvoiceDate = (string) ($row['invoice_date'] ?? '');
                 $hasSubmitInvoice = $this->normalizeEmrTargetDateValue($submitInvoiceDate) !== '';
-                $groupedRows[$headerId]['terms'][$termNo] = [
-                    'sertifikat_invoice_date' => (string) ($row['sertifikat_invoice_date'] ?? ''),
-                    'plan_invoice_value' => $hasSubmitInvoice ? 0 : (float) ($row['plan_invoice_value'] ?? 0),
-                    'submit_invoice_date' => $submitInvoiceDate,
-                    'nilai_invoice' => $hasSubmitInvoice ? (float) ($row['termin_value'] ?? 0) : 0,
-                ];
+                if (!isset($groupedRows[$groupKey]['terms'][$termNo]) || $hasSubmitInvoice) {
+                    $groupedRows[$groupKey]['terms'][$termNo] = [
+                        'sertifikat_invoice_date' => (string) ($row['sertifikat_invoice_date'] ?? ''),
+                        'plan_invoice_value' => $hasSubmitInvoice ? 0 : (float) ($row['plan_invoice_value'] ?? 0),
+                        'submit_invoice_date' => $submitInvoiceDate,
+                        'nilai_invoice' => $hasSubmitInvoice ? (float) ($row['termin_value'] ?? 0) : 0,
+                    ];
+                }
             }
         }
 
