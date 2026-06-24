@@ -1490,7 +1490,11 @@ if (is_array($terminBreakdownRows ?? null)) {
                                                 <tr>
                                                     <td><?= $index + 1 ?></td>
                                                     <td>
-                                                        <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                                                        <strong>
+                                                            <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>">
+                                                                <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                                                            </a>
+                                                        </strong>
                                                         <div class="small text-muted"><?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?></div>
                                                     </td>
                                                     <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
@@ -1622,7 +1626,11 @@ if (is_array($terminBreakdownRows ?? null)) {
                                                         <div class="small text-muted"><?= htmlspecialchars((string) ($row['po_category'] ?? '-')) ?></div>
                                                     </td>
                                                     <td><?= !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date']) : '-' ?></td>
-                                                    <td><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></td>
+                                                    <td>
+                                                        <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>">
+                                                            <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                                                        </a>
+                                                    </td>
                                                     <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
                                                     <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
                                                     <td>
