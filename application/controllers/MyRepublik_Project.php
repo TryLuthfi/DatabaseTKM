@@ -3445,10 +3445,25 @@ class MyRepublik_Project extends CI_Controller
 
     private function getPoCertificateDefinitions(array $row)
     {
+        $clusterBaseValue = $this->normalizeNumber($row['po_cluster_value'] ?? '');
+        $clusterFinalValue = $this->normalizeNumber($row['po_cluster_value_final'] ?? ($row['po_cluster_final_value'] ?? ''));
+        $subfeederBaseValue = $this->normalizeNumber($row['po_subfeeder_value'] ?? '');
+        $subfeederFinalValue = $this->normalizeNumber($row['po_subfeeder_value_final'] ?? ($row['po_subfeeder_final_value'] ?? ''));
+
+        $clusterBaseCategory = (string) ($row['po_cluster_category'] ?? '');
+        if ((float) $clusterBaseValue > 0 && (float) $clusterFinalValue > 0) {
+            $clusterBaseCategory = 'INITIAL';
+        }
+
+        $subfeederBaseCategory = (string) ($row['po_subfeeder_category'] ?? '');
+        if ((float) $subfeederBaseValue > 0 && (float) $subfeederFinalValue > 0) {
+            $subfeederBaseCategory = 'INITIAL';
+        }
+
         return [
             [
                 'type' => 'CLUSTER',
-                'category' => (string) ($row['po_cluster_category'] ?? ''),
+                'category' => $clusterBaseCategory,
                 'status' => (string) ($row['po_cluster_status'] ?? ''),
                 'number' => (string) ($row['po_cluster_number'] ?? ''),
                 'date' => (string) ($row['po_cluster_date'] ?? ''),
@@ -3484,7 +3499,7 @@ class MyRepublik_Project extends CI_Controller
             ],
             [
                 'type' => 'SUBFEEDER',
-                'category' => (string) ($row['po_subfeeder_category'] ?? ''),
+                'category' => $subfeederBaseCategory,
                 'status' => (string) ($row['po_subfeeder_status'] ?? ''),
                 'number' => (string) ($row['po_subfeeder_number'] ?? ''),
                 'date' => (string) ($row['po_subfeeder_date'] ?? ''),
