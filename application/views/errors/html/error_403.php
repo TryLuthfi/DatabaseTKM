@@ -1,11 +1,19 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+$faviconUrl = function_exists('base_url')
+  ? base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png')
+  : '';
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>503 - MAINTENANCE</title>
-  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
-  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+<?php if ($faviconUrl !== ''): ?>
+  <link rel="icon" type="image/png" href="<?= $faviconUrl ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= $faviconUrl ?>">
+<?php endif; ?>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html,body { width:100%; height:100%; background:#06010f; overflow:hidden; font-family:Arial,Helvetica,sans-serif; }

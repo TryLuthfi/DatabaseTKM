@@ -181,6 +181,9 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                 <div class="col-sm-6">
                     <h1 class="m-0 text-dark">ATP MyRep</h1>
                 </div>
+                <div class="col-sm-6 text-right">
+                    <a href="<?= base_url('ATP_MyRep/mainfeeder') ?>" class="btn btn-dark">ATP Mainfeeder</a>
+                </div>
             </div>
         </div>
     </section>

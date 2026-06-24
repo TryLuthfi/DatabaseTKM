@@ -1293,6 +1293,7 @@ unset($scopeBaseQuery['scope']);
         function rebuildOptions($select, options, emptyLabel, selectedValue) {
             var selectedValues = toValueArray(selectedValue);
             var isMultiple = $select.prop('multiple');
+            options = uniqueOptions((options || []).concat(selectedValues));
             $select.empty();
             if (!isMultiple) {
                 $select.append($('<option>').attr('value', '').text(emptyLabel));
@@ -1308,10 +1309,6 @@ unset($scopeBaseQuery['scope']);
                     displayLabel = label + ' - ' + areaDescriptions[label];
                 }
                 $select.append($('<option>').attr('value', label).text(displayLabel));
-            });
-
-            selectedValues = selectedValues.filter(function (selected) {
-                return (options || []).indexOf(selected) !== -1;
             });
 
             if (isMultiple) {

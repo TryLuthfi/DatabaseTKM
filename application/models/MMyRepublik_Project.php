@@ -16,6 +16,7 @@ class MMyRepublik_Project extends CI_Model
         'DRM',
         'RFS',
         'ATP',
+        'CHECKLIST',
         'CHECKLIST DOKUMENT',
         'DONE',
         'IMPLEMENTASI',
@@ -25,7 +26,7 @@ class MMyRepublik_Project extends CI_Model
 
     public function tablesReady()
     {
-        return $this->hasMyrepTables() || $this->hasLegacyRfsTables();
+        return $this->hasMyrepTables() || $this->hasLegacyRfsTables() || $this->hasMainfeederTables();
     }
 
     public function getCityOptions()
@@ -60,6 +61,25 @@ class MMyRepublik_Project extends CI_Model
                 ->distinct()
                 ->select('city_name')
                 ->from('tb_rfs_myrep_monthly_target')
+                ->where('city_name IS NOT NULL', null, false)
+                ->where("TRIM(city_name) !=", '')
+                ->order_by('city_name', 'ASC')
+                ->get()
+                ->result_array();
+
+            foreach ($rows as $row) {
+                $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+                if ($cityName !== '') {
+                    $cities[$cityName] = $cityName;
+                }
+            }
+        }
+
+        if ($this->hasMainfeederTables()) {
+            $rows = $this->db
+                ->distinct()
+                ->select('city_name')
+                ->from('tb_rfs_myrep_mainfeeder')
                 ->where('city_name IS NOT NULL', null, false)
                 ->where("TRIM(city_name) !=", '')
                 ->order_by('city_name', 'ASC')
@@ -121,6 +141,11 @@ class MMyRepublik_Project extends CI_Model
             $rows[] = $legacyRow;
         }
 
+        $mainfeederRows = $this->getMainfeederRows($selectedCity, $selectedStatus, $metricMode);
+        foreach ($mainfeederRows as $mainfeederRow) {
+            $rows[] = $mainfeederRow;
+        }
+
         usort($rows, static function ($a, $b) {
             $cityCompare = strcmp(
                 strtoupper(trim((string) ($a['city_name'] ?? ''))),
@@ -177,6 +202,82 @@ class MMyRepublik_Project extends CI_Model
             'recordsFiltered' => $recordsFiltered,
             'rows' => array_slice($rows, $start, $length),
         ];
+    }
+
+    private function getMainfeederRows($selectedCity = '', $selectedStatus = '', $metricMode = 'HP')
+    {
+        if (!$this->hasMainfeederTables()) {
+            return [];
+        }
+
+        $query = $this->db
+            ->select("
+                mf.id_mainfeeder,
+                mf.cluster_code,
+                mf.mainfeeder_name,
+                mf.current_status,
+                mf.year_num,
+                mf.month_num,
+                mf.regional_name,
+                mf.province_name,
+                mf.city_name,
+                mf.team_name,
+                mf.chief,
+                mf.rpm,
+                mf.sm,
+                mf.spv,
+                mf.vendor_name,
+                mf.length_meter,
+                drm.drm_date,
+                drm.status_drm,
+                mf.email_atp_date,
+                mf.atp_date,
+                mf.status_atp,
+                mf.created_at
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_myrep_mainfeeder_drm drm', 'drm.id_mainfeeder = mf.id_mainfeeder', 'left');
+
+        $selectedCity = strtoupper(trim((string) $selectedCity));
+        if ($selectedCity !== '') {
+            $query->where('UPPER(mf.city_name)', $selectedCity);
+        }
+
+        $selectedStatus = strtoupper(trim((string) $selectedStatus));
+        if (in_array($selectedStatus, ['CHECKLIST DOKUMENT', 'CHECKLIST DOKUMEN'], true)) {
+            $selectedStatus = 'CHECKLIST';
+        }
+        if ($selectedStatus !== '') {
+            $query->where('UPPER(mf.current_status)', $selectedStatus);
+        }
+
+        $rows = $query
+            ->order_by('mf.city_name', 'ASC')
+            ->order_by('mf.mainfeeder_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $poMap = $this->getMainfeederPoMap(array_column($rows, 'id_mainfeeder'));
+        foreach ($rows as &$row) {
+            $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+            $status = strtoupper(trim((string) ($row['current_status'] ?? 'DRM')));
+            $row['project_type'] = 'MAINFEEDER';
+            $row['id_myrep_cluster'] = 0;
+            $row['legacy_rfs_cluster_id'] = 0;
+            $row['rfs_cluster_id'] = 0;
+            $row['cluster_name'] = (string) ($row['mainfeeder_name'] ?? '-');
+            $row['status_current'] = $status !== '' ? $status : 'DRM';
+            $row['status_current_display'] = $status === 'CHECKLIST' ? 'CHECKLIST DOKUMENT' : ($status !== '' ? $status : 'DRM');
+            $row['hp_plan'] = (float) ($row['length_meter'] ?? 0);
+            $row['homepass_drm'] = (float) ($row['length_meter'] ?? 0);
+            $row['homepass_rfs'] = (float) ($row['length_meter'] ?? 0);
+            $row['po_total_value'] = (float) ($poMap[$mainfeederId]['po_total_value'] ?? 0);
+            $row['po_count'] = (int) ($poMap[$mainfeederId]['po_count'] ?? 0);
+            $row['metric_value'] = $this->resolveMetricValue($row, $metricMode);
+        }
+        unset($row);
+
+        return $rows;
     }
 
     private function sortClusterRowsForDataTable(array &$rows, array $order = [])
@@ -247,6 +348,10 @@ class MMyRepublik_Project extends CI_Model
 
     private function resolveDisplayStatus($row)
     {
+        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+            return strtoupper(trim((string) ($row['status_current'] ?? 'DRM'))) ?: 'DRM';
+        }
+
         $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
         $statusDrm = strtoupper(trim((string) ($row['status_drm'] ?? '')));
 
@@ -279,6 +384,8 @@ class MMyRepublik_Project extends CI_Model
             } elseif ($status === 'RFS') {
                 $overview['total_rfs']++;
             } elseif ($status === 'ATP') {
+                $overview['total_atp']++;
+            } elseif (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER' && $status === 'CHECKLIST') {
                 $overview['total_atp']++;
             }
         }
@@ -704,6 +811,10 @@ class MMyRepublik_Project extends CI_Model
             return (float) ($row['po_total_value'] ?? 0);
         }
 
+        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+            return (float) ($row['length_meter'] ?? $row['hp_plan'] ?? 0);
+        }
+
         $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
         $hpPlan = (float) ($row['hp_plan'] ?? 0);
         $hpBak = (float) ($row['homepass_bak'] ?? 0);
@@ -945,6 +1056,42 @@ class MMyRepublik_Project extends CI_Model
         return $this->db->table_exists('tb_rfs_myrep_cluster') && $this->db->table_exists('tb_rfs_myrep_monthly_target');
     }
 
+    private function hasMainfeederTables()
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
+            return false;
+        }
+
+        foreach ([
+            'id_mainfeeder',
+            'cluster_code',
+            'mainfeeder_name',
+            'current_status',
+            'year_num',
+            'month_num',
+            'regional_name',
+            'province_name',
+            'city_name',
+            'team_name',
+            'chief',
+            'rpm',
+            'sm',
+            'spv',
+            'vendor_name',
+            'length_meter',
+            'email_atp_date',
+            'atp_date',
+            'status_atp',
+            'created_at',
+        ] as $field) {
+            if (!$this->db->field_exists($field, 'tb_rfs_myrep_mainfeeder')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function myrepDocumentTablesReady()
     {
         return $this->db->table_exists('md_myrep_flow_doc_group')
@@ -975,6 +1122,40 @@ class MMyRepublik_Project extends CI_Model
         $map = [];
         foreach ($rows as $row) {
             $map[(int) ($row['id_myrep_cluster'] ?? 0)] = [
+                'po_count' => (int) ($row['po_count'] ?? 0),
+                'po_total_value' => (float) ($row['po_total_value'] ?? 0),
+            ];
+        }
+
+        return $map;
+    }
+
+    private function getMainfeederPoMap($mainfeederIds)
+    {
+        if (
+            !$this->db->table_exists('tb_myrep_po_header')
+            || !$this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')
+        ) {
+            return [];
+        }
+
+        $mainfeederIds = array_values(array_filter(array_map('intval', (array) $mainfeederIds)));
+        if (empty($mainfeederIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('id_mainfeeder, COUNT(id_po_header) AS po_count, COALESCE(SUM(po_value),0) AS po_total_value')
+            ->from('tb_myrep_po_header')
+            ->where_in('id_mainfeeder', $mainfeederIds)
+            ->where('po_type', 'MAINFEEDER')
+            ->group_by('id_mainfeeder')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) ($row['id_mainfeeder'] ?? 0)] = [
                 'po_count' => (int) ($row['po_count'] ?? 0),
                 'po_total_value' => (float) ($row['po_total_value'] ?? 0),
             ];

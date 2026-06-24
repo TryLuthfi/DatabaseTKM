@@ -185,6 +185,10 @@ class MyRepublik_Project extends CI_Controller
     private function buildClusterTableRow(array $row, $no, $metricMode, $isSuperAdmin)
     {
         $detailUrl = $this->clusterDetailUrl($row);
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        if ($projectType === '') {
+            $projectType = 'CLUSTER';
+        }
         $clusterName = (string) ($row['cluster_name'] ?? '-');
         $clusterHtml = '<strong>';
         if ($detailUrl !== '#') {
@@ -192,10 +196,12 @@ class MyRepublik_Project extends CI_Controller
         } else {
             $clusterHtml .= $this->html($clusterName);
         }
-        $clusterHtml .= '</strong><div class="small text-muted">' . $this->html($row['team_name'] ?? '-') . '</div>';
+        $badgeClass = $projectType === 'MAINFEEDER' ? 'badge-warning' : 'badge-dark';
+        $clusterHtml .= '</strong><div class="small text-muted"><span class="badge ' . $badgeClass . '">' . $this->html($projectType) . '</span> ' . $this->html($row['team_name'] ?? '-') . '</div>';
 
         $metricValue = (float) ($row['metric_value'] ?? 0);
-        $metricHtml = $this->formatNumber($metricValue) . (strtoupper((string) $metricMode) === 'PO' ? '' : ' HP');
+        $metricSuffix = strtoupper((string) $metricMode) === 'PO' ? '' : ($projectType === 'MAINFEEDER' ? ' M' : ' HP');
+        $metricHtml = $this->formatNumber($metricValue) . $metricSuffix;
 
         $actionHtml = $detailUrl !== '#'
             ? '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-primary">Detail</a>'
@@ -224,6 +230,11 @@ class MyRepublik_Project extends CI_Controller
 
     private function clusterDetailUrl(array $row)
     {
+        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+            $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+            return $mainfeederId > 0 ? base_url('Mainfeeder_MyRep/detail/' . $mainfeederId) : '#';
+        }
+
         $myrepClusterId = (int) ($row['id_myrep_cluster'] ?? 0);
         if ($myrepClusterId > 0) {
             return base_url('MyRepublik_Project/detail/' . $myrepClusterId);
@@ -1845,7 +1856,7 @@ class MyRepublik_Project extends CI_Controller
                 $rows[$cityName]['rfs'] += $homepassValue;
             } elseif ($statusCurrent === 'ATP') {
                 $rows[$cityName]['atp'] += $homepassValue;
-            } elseif (in_array($statusCurrent, ['CHECKLIST DOKUMENT', 'DONE'], true)) {
+            } elseif (in_array($statusCurrent, ['CHECKLIST', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
                 $rows[$cityName]['dokument'] += $homepassValue;
             }
 
@@ -1893,6 +1904,10 @@ class MyRepublik_Project extends CI_Controller
 
     private function resolveClusterHomepassValue(array $clusterRow)
     {
+        if (strtoupper(trim((string) ($clusterRow['project_type'] ?? ''))) === 'MAINFEEDER') {
+            return (float) ($clusterRow['length_meter'] ?? $clusterRow['metric_value'] ?? 0);
+        }
+
         $status = strtoupper(trim((string) ($clusterRow['status_current'] ?? 'DRAFT')));
         $hpPlan = (float) ($clusterRow['hp_plan'] ?? 0);
         $hpBak = (float) ($clusterRow['homepass_bak'] ?? 0);
@@ -2208,7 +2223,7 @@ class MyRepublik_Project extends CI_Controller
             $hpDrm = (int) $this->normalizeNumber($row['hp_donasi'] ?? 0);
         }
 
-        $statusDrm = 'COMPLETE';
+        $statusDrm = 'APPROVED';
         $remarkDrm = trim((string) ($row['remark_drm'] ?? ''));
 
         $payload = [
@@ -4312,7 +4327,7 @@ class MyRepublik_Project extends CI_Controller
             'drm_date' => $this->normalizeDate((string) ($row['drm_date'] ?? '')) ?: date('Y-m-d'),
             'homepass_drm' => max(0, $hpDrm),
             'nama_olt' => trim((string) ($row['nama_olt'] ?? '')) ?: null,
-            'status_drm' => 'COMPLETE',
+            'status_drm' => 'APPROVED',
             'remark_drm' => trim((string) ($row['remark_drm'] ?? '')) ?: (trim((string) ($row['remark_general'] ?? '')) ?: null),
             'updated_by' => (int) $userId,
         ];
@@ -4585,6 +4600,11 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
+        if ($table === 'tb_myrep_drm') {
+            $payload = $this->normalizeDrmPayloadForStorage($payload);
+            $insertOnly = $this->normalizeDrmPayloadForStorage($insertOnly);
+        }
+
         $existing = $this->db
             ->from($table)
             ->where($where)
@@ -4599,6 +4619,34 @@ class MyRepublik_Project extends CI_Controller
         }
 
         $this->db->insert($table, $this->filterPayloadByTableFields($table, array_merge($insertOnly, $payload)));
+    }
+
+    private function normalizeDrmPayloadForStorage(array $payload)
+    {
+        if (array_key_exists('status_drm', $payload)) {
+            $payload['status_drm'] = $this->normalizeStoredDrmStatus($payload['status_drm']);
+        }
+
+        return $payload;
+    }
+
+    private function normalizeStoredDrmStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $displayToStored = [
+            'WAITING INPUT' => 'DRAFT',
+            'WAITING DOC' => 'DRAFT',
+            'WAITING DOCUMENT' => 'DRAFT',
+            'WAITING APPROVE' => 'ON REVIEW',
+            'WAITING APPROVAL' => 'ON REVIEW',
+            'COMPLETE' => 'APPROVED',
+            'COMPLETED' => 'APPROVED',
+        ];
+        $status = $displayToStored[$status] ?? $status;
+
+        return in_array($status, ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'], true)
+            ? $status
+            : 'DRAFT';
     }
 
     private function filterPayloadByTableFields($table, array $payload)

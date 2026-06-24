@@ -8,6 +8,7 @@ class PO_MyRep extends CI_Controller
         parent::__construct();
         $this->load->model('MPO_MyRep');
         $this->load->model('MChecklist_Dokument_MyRep');
+        $this->load->model('MMainfeeder_MyRep');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('PO_MyRep');
@@ -17,6 +18,64 @@ class PO_MyRep extends CI_Controller
                 'batchTerminCertificate' => 'EDIT',
             ]);
         }
+    }
+
+    public function mainfeeder($mainfeederId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0) {
+            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+            $data['title'] = 'PO Mainfeeder';
+            $data['section'] = 'po';
+            $data['moduleTitle'] = 'PO Mainfeeder';
+            $data['detailBase'] = 'PO_MyRep/mainfeeder';
+            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
+            $data['selectedCity'] = $selectedCity;
+            $data['selectedStatus'] = $selectedStatus;
+            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
+            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
+            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Mainfeeder_MyRep/module_index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+            return;
+        }
+
+        $mainfeeder = $this->MMainfeeder_MyRep->getById($mainfeederId);
+        if (empty($mainfeeder)) {
+            $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
+            redirect('PO_MyRep/mainfeeder');
+            return;
+        }
+
+        $poHeaders = $this->MMainfeeder_MyRep->getPoHeaders($mainfeederId);
+        foreach ($poHeaders as &$poHeader) {
+            $poHeader['termin_rows'] = $this->MMainfeeder_MyRep->getTerminRowsByPoId((int) ($poHeader['id_po_header'] ?? 0));
+        }
+        unset($poHeader);
+
+        $data['title'] = 'PO Mainfeeder';
+        $data['section'] = 'po';
+        $data['moduleTitle'] = 'PO Mainfeeder';
+        $data['mainfeeder'] = $mainfeeder;
+        $data['poHeaders'] = $poHeaders;
+        $data['poCategoryOptions'] = ['INITIAL' => 'PO Initial', 'FINAL' => 'PO Final', 'AMANDMENT' => 'PO Amandement'];
+        $data['poStatusOptions'] = ['NOT ISSUED' => 'NOT ISSUED', 'ISSUED' => 'ISSUED', 'PARTIAL PAYMENT' => 'PARTIAL PAYMENT', 'FULLY PAID' => 'FULLY PAID', 'CLOSED' => 'CLOSED'];
+        $data['terminStatusOptions'] = ['NOT READY' => 'NOT READY', 'READY BILLING' => 'READY BILLING', 'BILLED' => 'BILLED', 'PAID' => 'PAID'];
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Mainfeeder_MyRep/module_detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
     public function index()

@@ -7,6 +7,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MImplementasi_BOQ_MyRep');
+        $this->load->model('MMainfeeder_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
@@ -230,6 +231,57 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         ]);
         $this->session->set_flashdata('success', $createdCount . ' aktivitas harian berhasil disimpan.' . $autoBoqMessage);
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+    }
+
+    public function mainfeeder($mainfeederId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0) {
+            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+            $data['title'] = 'Implementasi Mainfeeder';
+            $data['section'] = 'implementasi';
+            $data['moduleTitle'] = 'Implementasi Mainfeeder';
+            $data['detailBase'] = 'Implementasi_BOQ_MyRep/mainfeeder';
+            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
+            $data['selectedCity'] = $selectedCity;
+            $data['selectedStatus'] = $selectedStatus;
+            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
+            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
+            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Mainfeeder_MyRep/module_index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+            return;
+        }
+
+        $mainfeeder = $this->MMainfeeder_MyRep->getById($mainfeederId);
+        if (empty($mainfeeder)) {
+            $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
+            redirect('Implementasi_BOQ_MyRep/mainfeeder');
+            return;
+        }
+
+        $data['title'] = 'Implementasi Mainfeeder';
+        $data['section'] = 'implementasi';
+        $data['moduleTitle'] = 'Implementasi Mainfeeder';
+        $data['mainfeeder'] = $mainfeeder;
+        $data['compareRows'] = $this->MMainfeeder_MyRep->getBaselineCompareRows($mainfeederId);
+        $data['activityDefinitions'] = $this->MImplementasi_BOQ_MyRep->getDailyActivityDefinitions();
+        $data['dailyActivities'] = $this->MMainfeeder_MyRep->getDailyActivities($mainfeederId);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Mainfeeder_MyRep/module_detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
     public function printComplyPdf($clusterId = 0)

@@ -336,12 +336,14 @@ class MPO_MyRep extends CI_Model
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC');
 
-        if (!empty($regional)) {
+        if (!empty($regional) || !empty($areaNumbers)) {
             if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
                 $this->joinEmrTargetAreaMap($rows);
                 $rows->group_start();
                 $this->applyUpperInFilter($rows, 'area_map.area_number', $areaNumbers);
-                $rows->or_where('UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')', null, false);
+                if (!empty($regional)) {
+                    $rows->or_where("(COALESCE(area_map.area_number, '') = '' AND UPPER(c.regional_name) IN (" . $this->buildEscapedSqlList($regional) . '))', null, false);
+                }
                 $rows->group_end();
             } else {
                 $this->applyUpperInFilter($rows, 'c.regional_name', $regional);
@@ -508,8 +510,9 @@ class MPO_MyRep extends CI_Model
 
         $city = $this->normalizeUpperList($city);
         $regional = $this->normalizeUpperList($regional);
+        $onTargetSelectSql = $this->getEmrTargetOnTargetSelectSql();
         $this->db
-            ->select('
+            ->select("
                 p.id_po_header,
                 p.id_myrep_cluster,
                 p.po_type,
@@ -518,7 +521,7 @@ class MPO_MyRep extends CI_Model
                 p.po_date,
                 p.po_value,
                 p.status_po,
-                {$this->getEmrTargetOnTargetSelectSql()},
+                {$onTargetSelectSql},
                 p.po_version_label,
                 p.remark_po,
                 c.cluster_name,
@@ -527,7 +530,7 @@ class MPO_MyRep extends CI_Model
                 c.regional_name,
                 c.team_name,
                 c.status_current
-            ')
+            ", false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->where($this->getEmrTargetScopeCondition('p', $scope), null, false);
@@ -1090,13 +1093,13 @@ class MPO_MyRep extends CI_Model
         if (!empty($city)) {
             $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
         }
-        if (!empty($regional)) {
+        if (!empty($regional) || !empty($areaNumbers)) {
             if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
                 $conditions[] = '(
                     UPPER(area_map.area_number) IN (' . $this->buildEscapedSqlList($areaNumbers) . ')
-                    OR UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')
+                    ' . (!empty($regional) ? "OR (COALESCE(area_map.area_number, '') = '' AND UPPER(c.regional_name) IN (" . $this->buildEscapedSqlList($regional) . '))' : '') . '
                 )';
-            } else {
+            } elseif (!empty($regional)) {
                 $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
             }
         }
@@ -1577,9 +1580,12 @@ class MPO_MyRep extends CI_Model
                 UPPER(TRIM(COALESCE(regional_name, ''))) AS regional_key,
                 MAX(
                     CASE
-                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA %'
-                            THEN TRIM(SUBSTRING(UPPER(TRIM(COALESCE(area, ''))), 6))
-                        ELSE TRIM(COALESCE(area, ''))
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 1%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 1%' OR UPPER(TRIM(COALESCE(area, ''))) = '1' THEN '1'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 2%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 2%' OR UPPER(TRIM(COALESCE(area, ''))) = '2' THEN '2'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 3%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 3%' OR UPPER(TRIM(COALESCE(area, ''))) = '3' THEN '3'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 4%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 4%' OR UPPER(TRIM(COALESCE(area, ''))) = '4' THEN '4'
+                        WHEN UPPER(TRIM(COALESCE(area, ''))) LIKE 'AREA 5%' OR UPPER(TRIM(COALESCE(area, ''))) LIKE 'REGIONAL 5%' OR UPPER(TRIM(COALESCE(area, ''))) = '5' THEN '5'
+                        ELSE ''
                     END
                 ) AS area_number
             FROM tb_myrep_pic_mapping_city
@@ -1725,13 +1731,13 @@ class MPO_MyRep extends CI_Model
         if (!empty($city)) {
             $conditions[] = 'UPPER(c.city_name) IN (' . $this->buildEscapedSqlList($city) . ')';
         }
-        if (!empty($regional)) {
+        if (!empty($regional) || !empty($areaNumbers)) {
             if ($this->supportsEmrTargetAreaColumn() && !empty($areaNumbers)) {
                 $conditions[] = '(
                     UPPER(area_map.area_number) IN (' . $this->buildEscapedSqlList($areaNumbers) . ')
-                    OR UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')
+                    ' . (!empty($regional) ? "OR (COALESCE(area_map.area_number, '') = '' AND UPPER(c.regional_name) IN (" . $this->buildEscapedSqlList($regional) . '))' : '') . '
                 )';
-            } else {
+            } elseif (!empty($regional)) {
                 $conditions[] = 'UPPER(c.regional_name) IN (' . $this->buildEscapedSqlList($regional) . ')';
             }
         }
@@ -1785,8 +1791,10 @@ class MPO_MyRep extends CI_Model
 
         $regionals = [];
         foreach ($values as $value) {
-            if (isset($this->emrTargetAreaRegionalMap[$value])) {
-                $regionals = array_merge($regionals, $this->emrTargetAreaRegionalMap[$value]);
+            $areaNumber = $this->normalizeEmrTargetAreaNumber($value);
+            $areaName = $areaNumber !== '' ? 'AREA ' . $areaNumber : $value;
+            if (isset($this->emrTargetAreaRegionalMap[$areaName])) {
+                $regionals = array_merge($regionals, $this->emrTargetAreaRegionalMap[$areaName]);
                 continue;
             }
 
@@ -1835,6 +1843,11 @@ class MPO_MyRep extends CI_Model
 
         if (strpos($value, 'REGIONAL ') === 0) {
             $value = trim(substr($value, 9));
+        }
+
+        if (strpos($value, '-') !== false) {
+            $parts = explode('-', $value);
+            $value = trim((string) $parts[0]);
         }
 
         return in_array($value, ['1', '2', '3', '4', '5'], true) ? $value : '';
@@ -2939,27 +2952,38 @@ class MPO_MyRep extends CI_Model
 
         $this->ensurePoTerminCertificateColumnForDashboard();
 
+        $hasMainfeederPo = $this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')
+            && $this->db->table_exists('tb_rfs_myrep_mainfeeder')
+            && $this->db->field_exists('city_name', 'tb_rfs_myrep_mainfeeder');
+
+        $select = '
+            t.*,
+            p.id_myrep_cluster,
+            p.po_number,
+            p.po_type,
+            p.po_category,
+            ' . ($hasMainfeederPo ? 'p.id_mainfeeder,' : 'NULL AS id_mainfeeder,') . '
+            ' . ($hasMainfeederPo ? 'COALESCE(c.cluster_name, mf.mainfeeder_name)' : 'c.cluster_name') . ' AS cluster_name,
+            ' . ($hasMainfeederPo ? 'COALESCE(c.city_name, mf.city_name)' : 'c.city_name') . ' AS city_name,
+            ' . ($hasMainfeederPo ? 'COALESCE(c.regional_name, mf.regional_name)' : 'c.regional_name') . ' AS regional_name
+        ';
+
         $this->db
-            ->select('
-                t.*,
-                p.id_myrep_cluster,
-                p.po_number,
-                p.po_type,
-                p.po_category,
-                c.cluster_name,
-                c.city_name,
-                c.regional_name
-            ')
+            ->select($select, false)
             ->from('tb_myrep_po_termin t')
             ->join('tb_myrep_po_header p', 'p.id_po_header = t.id_po_header', 'inner')
-            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', $hasMainfeederPo ? 'left' : 'inner');
+        if ($hasMainfeederPo) {
+            $this->db->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left');
+        }
+        $this->db
             ->where('UPPER(TRIM(p.po_number))', strtoupper($poNumber))
             ->where('t.termin_no', $terminNo)
             ->order_by('p.po_date', 'DESC')
             ->order_by('p.id_po_header', 'DESC')
             ->limit(1);
 
-        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+        if (!$this->applyAllowedCityRestriction($hasMainfeederPo ? 'COALESCE(c.city_name, mf.city_name)' : 'c.city_name')) {
             return [];
         }
 
@@ -3666,7 +3690,7 @@ class MPO_MyRep extends CI_Model
     private function buildEmptyNroFlowSummary()
     {
         $summary = [];
-        foreach (['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'] as $status) {
+        foreach (['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW'] as $status) {
             $summary[$status] = ['count' => 0, 'value' => 0];
         }
 
@@ -3946,6 +3970,7 @@ class MPO_MyRep extends CI_Model
             'WAITING PLANNING' => 'EMMR - PLANNING',
             'WAITING TL' => 'EMMR - TEAM LEADER',
             'WAITING LOGISTIK' => 'EMMR - LOGISTIK',
+            'ON REVIEW' => 'EMMR - DC',
         ];
 
         return $map[strtoupper(trim((string) $nroStatus))] ?? '';
@@ -3968,7 +3993,7 @@ class MPO_MyRep extends CI_Model
         $state = $checklistStateMap[$stateKey] ?? [];
         $nroStatus = strtoupper(trim((string) ($state['project_opname_nro_status'] ?? '')));
 
-        return in_array($nroStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)
+        return in_array($nroStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW'], true)
             ? $nroStatus
             : '';
     }
@@ -4276,7 +4301,7 @@ class MPO_MyRep extends CI_Model
                     $sowType === 'RFS'
                     && $scopeType === 'CLUSTER'
                     && $docName === 'PROJECT OPNAME'
-                    && in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)
+                    && in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK', 'ON REVIEW'], true)
                 ) {
                     $stateMap[$stateKey]['has_project_opname_nro_flow'] = true;
                     $stateMap[$stateKey]['project_opname_nro_status'] = $astriStatus;

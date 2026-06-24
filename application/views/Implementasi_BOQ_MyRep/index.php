@@ -397,6 +397,9 @@ $renderImplTableRows = static function (array $rows) {
                 <div class="col-sm-6">
                     <h1 class="m-0 text-dark">Implementasi BOQ MyRep</h1>
                 </div>
+                <div class="col-sm-6 text-right">
+                    <a href="<?= base_url('Implementasi_BOQ_MyRep/mainfeeder') ?>" class="btn btn-dark">Implementasi Mainfeeder</a>
+                </div>
             </div>
         </div>
     </section>
