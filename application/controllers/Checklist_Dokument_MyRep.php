@@ -541,9 +541,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
             }
 
             foreach ([1, 2, 3, 4, 5] as $termNo) {
-                $line[] = $this->formatPurchaseOrderRefreshNumber($terms[$termNo]['plan_invoice_value'] ?? 0);
-                $line[] = $this->formatPurchaseOrderRefreshDate($terms[$termNo]['submit_invoice_date'] ?? '');
-                $line[] = $this->formatPurchaseOrderRefreshNumber($terms[$termNo]['nilai_invoice'] ?? 0);
+                $submitInvoiceDate = $this->formatPurchaseOrderRefreshDate($terms[$termNo]['submit_invoice_date'] ?? '');
+                $hasSubmitInvoice = $submitInvoiceDate !== '';
+                $line[] = $this->formatPurchaseOrderRefreshNumber($hasSubmitInvoice ? 0 : ($terms[$termNo]['plan_invoice_value'] ?? 0));
+                $line[] = $submitInvoiceDate;
+                $line[] = $this->formatPurchaseOrderRefreshNumber($hasSubmitInvoice ? ($terms[$termNo]['nilai_invoice'] ?? 0) : 0);
             }
 
             $line[] = $this->formatPurchaseOrderRefreshNumber($row['outstanding_total'] ?? 0);

@@ -597,7 +597,7 @@ class MPO_MyRep extends CI_Model
                 COUNT(*) AS total_po,
                 COUNT(DISTINCT p.id_myrep_cluster) AS total_cluster,
                 COALESCE(SUM(p.po_value), 0) AS total_po_value,
-                COALESCE(SUM(COALESCE(tm.plan_invoice_total, 0)), 0) AS total_outstanding,
+                COALESCE(SUM(COALESCE(tm.outstanding_invoice_total, 0)), 0) AS total_outstanding,
                 COALESCE(SUM(COALESCE(tm.done_invoice_total, 0)), 0) AS total_invoiced
             {$fromSql}
             {$whereSql}
@@ -615,7 +615,7 @@ class MPO_MyRep extends CI_Model
                 COALESCE(SUM(COALESCE(tm.plan_4, 0)), 0) AS termin_4,
                 COALESCE(SUM(COALESCE(tm.plan_5, 0)), 0) AS termin_5,
                 COALESCE(SUM(COALESCE(tm.done_invoice_total, 0)), 0) AS total_invoiced_value,
-                COALESCE(SUM(COALESCE(tm.plan_invoice_total, 0)), 0) AS outstanding_value
+                COALESCE(SUM(COALESCE(tm.outstanding_invoice_total, 0)), 0) AS outstanding_value
             {$fromSql}
             {$whereSql}
             GROUP BY CASE WHEN UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) = 'SUBFEEDER' THEN 'SUBFEEDER' ELSE 'CLUSTER' END
@@ -768,7 +768,7 @@ class MPO_MyRep extends CI_Model
             9 => $this->getEmrTargetStageExpression(),
             12 => 'p.po_value',
             13 => 'COALESCE(tm.termin_progress_count, 0)',
-            14 => 'COALESCE(tm.plan_invoice_total, 0)',
+            14 => 'COALESCE(tm.outstanding_invoice_total, 0)',
         ];
         $orderSql = $this->buildDataTableOrderSql($orderMap, $orderColumn, $orderDir, 'p.po_date DESC, p.po_number ASC');
         $limitSql = $this->buildLimitSql($start, $length);
@@ -801,7 +801,7 @@ class MPO_MyRep extends CI_Model
                 COALESCE(tm.termin_total_count, 0) AS termin_total_count,
                 COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
                 COALESCE(tm.termin_paid_count, 0) AS termin_paid_count,
-                COALESCE(tm.plan_invoice_total, 0) AS outstanding_total,
+                COALESCE(tm.outstanding_invoice_total, 0) AS outstanding_total,
                 COALESCE(tm.done_invoice_total, 0) AS total_invoiced,
                 {$this->getEmrTargetStageExpression()} AS po_stage_status
             {$fromSql}
@@ -905,7 +905,7 @@ class MPO_MyRep extends CI_Model
                 COALESCE(tm.termin_total_count, 0) AS termin_total_count,
                 COALESCE(tm.termin_progress_count, 0) AS termin_progress_count,
                 COALESCE(tm.termin_paid_count, 0) AS termin_paid_count,
-                COALESCE(tm.plan_invoice_total, 0) AS outstanding_total,
+                COALESCE(tm.outstanding_invoice_total, 0) AS outstanding_total,
                 COALESCE(tm.done_invoice_total, 0) AS total_invoiced
             {$fromSql}
             INNER JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
@@ -1022,7 +1022,7 @@ class MPO_MyRep extends CI_Model
                 t.invoice_date,
                 {$sertifikatSelectSql} AS sertifikat_invoice_date,
                 {$planInvoiceSql} AS plan_invoice_value,
-                COALESCE(tm.plan_invoice_total, 0) AS outstanding_total,
+                COALESCE(tm.outstanding_invoice_total, 0) AS outstanding_total,
                 COALESCE(tm.done_invoice_total, 0) AS total_invoiced
             {$fromSql}
             LEFT JOIN tb_myrep_po_termin t ON t.id_po_header = p.id_po_header
@@ -1071,11 +1071,13 @@ class MPO_MyRep extends CI_Model
 
             $termNo = (int) ($row['termin_no'] ?? 0);
             if ($termNo >= 1 && $termNo <= 5) {
+                $submitInvoiceDate = (string) ($row['invoice_date'] ?? '');
+                $hasSubmitInvoice = $this->normalizeEmrTargetDateValue($submitInvoiceDate) !== '';
                 $groupedRows[$headerId]['terms'][$termNo] = [
                     'sertifikat_invoice_date' => (string) ($row['sertifikat_invoice_date'] ?? ''),
-                    'plan_invoice_value' => (float) ($row['plan_invoice_value'] ?? 0),
-                    'submit_invoice_date' => (string) ($row['invoice_date'] ?? ''),
-                    'nilai_invoice' => (float) ($row['termin_value'] ?? 0),
+                    'plan_invoice_value' => $hasSubmitInvoice ? 0 : (float) ($row['plan_invoice_value'] ?? 0),
+                    'submit_invoice_date' => $submitInvoiceDate,
+                    'nilai_invoice' => $hasSubmitInvoice ? (float) ($row['termin_value'] ?? 0) : 0,
                 ];
             }
         }
@@ -1699,6 +1701,7 @@ class MPO_MyRep extends CI_Model
                 SUM(CASE WHEN termin_no = 4 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_4,
                 SUM(CASE WHEN termin_no = 5 THEN {$planInvoiceValueSql} ELSE 0 END) AS plan_5,
                 SUM({$planInvoiceValueSql}) AS plan_invoice_total,
+                SUM(CASE WHEN NOT ({$hasInvoiceDateSql}) THEN {$planInvoiceValueSql} ELSE 0 END) AS outstanding_invoice_total,
                 SUM(CASE WHEN {$hasInvoiceDateSql} THEN {$doneInvoiceValueSql} ELSE 0 END) AS done_invoice_total
             FROM tb_myrep_po_termin
             GROUP BY id_po_header
