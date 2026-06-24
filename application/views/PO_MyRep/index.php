@@ -1886,7 +1886,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                         <div class="form-group">
                             <label>Paste dari Excel</label>
                             <textarea id="po-cert-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Status/Tanggal Sertifikat&#10;7400127996[TAB]2[TAB]FULL UPLOAD&#10;7400127996[TAB]4[TAB]2026-06-18"></textarea>
-                            <small class="form-text text-muted">Status valid: REVISI, FULL UPLOAD, APPROVED 1, LOGISTIK, PLANNING, TEAM LEADER, WASPANG, PERMIT. Tanggal bisa YYYY-MM-DD atau DD/MM/YYYY.</small>
+                            <small class="form-text text-muted">Text/status bebas bisa disimpan. Jika diisi tanggal, format akan dinormalisasi dan hanya boleh tersimpan saat syarat release terpenuhi.</small>
                         </div>
                         <button type="button" class="btn btn-outline-secondary mb-3" id="po-cert-parse-paste">Cek Status/Tanggal</button>
 
@@ -2523,11 +2523,18 @@ if (is_array($terminBreakdownRows ?? null)) {
                 if (!match) {
                     return '';
                 }
-                day = Number(match[1]);
-                month = Number(match[2]);
+                var first = Number(match[1]);
+                var second = Number(match[2]);
                 year = Number(match[3]);
                 if (year < 100) {
                     year += 2000;
+                }
+                if (first > 12 && second <= 12) {
+                    day = first;
+                    month = second;
+                } else {
+                    month = first;
+                    day = second;
                 }
             }
 
@@ -2552,12 +2559,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                 };
             }
 
-            if (poAllowedCertificateStatuses.indexOf(normalizedStatus) !== -1) {
+            if (String(value || '').trim() !== '') {
                 return {
                     valid: true,
                     type: 'Status',
-                    value: normalizedStatus,
-                    message: 'Status proses sertifikat valid.'
+                    value: normalizedStatus || String(value || '').trim(),
+                    message: 'Status text akan disimpan. Tanggal release tetap wajib memenuhi syarat.'
                 };
             }
 
@@ -2565,7 +2572,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 valid: false,
                 type: 'Invalid',
                 value: String(value || '').trim(),
-                message: 'Isi bukan tanggal valid atau status yang dikenal.'
+                message: 'Status/tanggal wajib diisi.'
             };
         }
 

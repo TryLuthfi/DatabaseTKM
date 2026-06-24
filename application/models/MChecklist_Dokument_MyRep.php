@@ -1274,6 +1274,17 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $this->normalizeCertificateDateValue($value);
     }
 
+    public function normalizeCertificateValueForSave($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        $dateValue = $this->normalizeCertificateDateValue($value);
+        return $dateValue !== '' ? $dateValue : $value;
+    }
+
     private function getCertificateReadinessMap($clusterId)
     {
         $clusterId = (int) $clusterId;
@@ -1396,9 +1407,25 @@ class MChecklist_Dokument_MyRep extends CI_Model
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             return date('Y-m-d', strtotime($value));
         }
-        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
-            $timestamp = strtotime($value);
-            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        if (preg_match('/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/', $value, $matches)) {
+            $first = (int) $matches[1];
+            $second = (int) $matches[2];
+            $year = (int) $matches[3];
+            if ($year < 100) {
+                $year += 2000;
+            }
+
+            if ($first > 12 && $second <= 12) {
+                $day = $first;
+                $month = $second;
+            } else {
+                $month = $first;
+                $day = $second;
+            }
+
+            return checkdate($month, $day, $year)
+                ? sprintf('%04d-%02d-%02d', $year, $month, $day)
+                : '';
         }
 
         return '';

@@ -442,6 +442,10 @@ class PO_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $terminId = (int) $this->input->post('id_po_termin');
         $certificateValue = trim((string) $this->input->post('sertifikat_invoice'));
+        $certificateMode = strtolower(trim((string) $this->input->post('certificate_mode')));
+        if (!in_array($certificateMode, ['claim', 'status'], true)) {
+            $certificateMode = 'claim';
+        }
 
         if ($clusterId <= 0 || $terminId <= 0) {
             $this->session->set_flashdata('error', 'Data sertifikat tidak valid.');
@@ -476,15 +480,24 @@ class PO_MyRep extends CI_Controller
 
         $isReady = !empty($selectedTerm['is_release_ready']);
         $isReleased = !empty($selectedTerm['is_certificate_released']);
-        if (!$isReady && !$isReleased) {
-            $this->session->set_flashdata('error', 'Sertifikat belum bisa disimpan karena syarat release belum terpenuhi.');
+        $certificateDateValue = $this->MChecklist_Dokument_MyRep->normalizeCertificateDateForRelease($certificateValue);
+        if ($certificateMode === 'claim' && $certificateDateValue === '') {
+            $this->session->set_flashdata('error', 'Claim sertifikat wajib memakai format tanggal yang valid.');
             redirect('PO_MyRep/detail/' . $clusterId);
             return;
         }
+        if ($certificateMode === 'claim' && !$isReady && !$isReleased) {
+            $this->session->set_flashdata('error', 'Tanggal release sertifikat belum bisa disimpan karena syarat release belum terpenuhi. Status text tetap boleh disimpan.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+        $saveCertificateValue = $certificateMode === 'claim'
+            ? $certificateDateValue
+            : $certificateValue;
 
         $result = $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
             $terminId,
-            $certificateValue,
+            $saveCertificateValue,
             (int) $this->session->userdata('id_user')
         );
 
@@ -530,7 +543,6 @@ class PO_MyRep extends CI_Controller
         $poNumbers = (array) $this->input->post('certificate_po_number');
         $termInputs = (array) $this->input->post('certificate_term_no');
         $certificateValues = (array) $this->input->post('certificate_value');
-        $allowedStatuses = $this->getAllowedCertificateStatusValues();
 
         $updatedCount = 0;
         $skippedMessages = [];
@@ -562,13 +574,7 @@ class PO_MyRep extends CI_Controller
             $seenKeys[$dedupeKey] = true;
 
             $normalizedDate = $this->normalizeCertificateDateValue($certificateValue);
-            $normalizedStatus = strtoupper(preg_replace('/\s+/', ' ', $certificateValue));
             $isDateValue = $normalizedDate !== '';
-            $isStatusValue = in_array($normalizedStatus, $allowedStatuses, true);
-            if (!$isDateValue && !$isStatusValue) {
-                $skippedMessages[] = $rowLabel . ': isi bukan tanggal valid atau status sertifikat yang dikenal.';
-                continue;
-            }
 
             $termin = $this->MPO_MyRep->getTerminByPoNumberAndTerm($poNumber, $termNo);
             if (empty($termin)) {
@@ -598,7 +604,7 @@ class PO_MyRep extends CI_Controller
                 }
                 $saveValue = $normalizedDate;
             } else {
-                $saveValue = $normalizedStatus;
+                $saveValue = $this->MChecklist_Dokument_MyRep->normalizeCertificateValueForSave($certificateValue);
             }
 
             $updated = $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
@@ -790,9 +796,25 @@ class PO_MyRep extends CI_Controller
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             return date('Y-m-d', strtotime($value));
         }
-        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
-            $timestamp = strtotime($value);
-            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        if (preg_match('/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/', $value, $matches)) {
+            $first = (int) $matches[1];
+            $second = (int) $matches[2];
+            $year = (int) $matches[3];
+            if ($year < 100) {
+                $year += 2000;
+            }
+
+            if ($first > 12 && $second <= 12) {
+                $day = $first;
+                $month = $second;
+            } else {
+                $month = $first;
+                $day = $second;
+            }
+
+            return checkdate($month, $day, $year)
+                ? sprintf('%04d-%02d-%02d', $year, $month, $day)
+                : '';
         }
 
         return '';

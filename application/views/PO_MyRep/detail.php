@@ -322,7 +322,8 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                 $hasFacRfsCertificate = !empty($term['fac_rfs_certificate_date']);
                                                 $statusBadge = $isReleased ? 'success' : ($isReady ? 'primary' : 'warning');
                                                 $statusText = $isReleased ? 'Released' : ($isReady ? 'Ready Release' : ($isManualTerm ? ($hasFacRfsCertificate ? 'BJT' : 'NY FAC') : 'Waiting ASTRI'));
-                                                $canSaveCertificate = $canReleaseCertificate && ($isReady || $isReleased);
+                                                $canSaveCertificate = $canReleaseCertificate;
+                                                $canClaimCertificate = $canReleaseCertificate && ($isReady || $isReleased);
                                                 ?>
                                                 <tr>
                                                     <td>
@@ -359,16 +360,36 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                     </td>
                                                     <td>
                                                         <?php if ($canReleaseCertificate): ?>
-                                                            <form method="post" action="<?= base_url('PO_MyRep/saveTerminCertificate') ?>" class="mb-0">
-                                                                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                                                <input type="hidden" name="id_po_termin" value="<?= (int) ($term['id_po_termin'] ?? 0) ?>">
-                                                                <div class="input-group input-group-sm">
-                                                                    <input type="text" name="sertifikat_invoice" class="form-control" value="<?= htmlspecialchars($certValue, ENT_QUOTES) ?>" placeholder="No/status sertifikat" <?= $canSaveCertificate ? '' : 'disabled' ?>>
-                                                                    <div class="input-group-append">
-                                                                        <button type="submit" class="btn btn-dark" <?= $canSaveCertificate ? '' : 'disabled' ?>>Simpan</button>
-                                                                    </div>
-                                                                </div>
-                                                            </form>
+                                                            <div class="btn-group btn-group-sm" role="group">
+                                                                <button
+                                                                    type="button"
+                                                                    class="btn btn-dark js-open-certificate-modal"
+                                                                    data-toggle="modal"
+                                                                    data-target="#modal-certificate-action"
+                                                                    data-mode="claim"
+                                                                    data-cluster-id="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>"
+                                                                    data-termin-id="<?= (int) ($term['id_po_termin'] ?? 0) ?>"
+                                                                    data-po-number="<?= htmlspecialchars((string) ($term['po_number'] ?? '-'), ENT_QUOTES) ?>"
+                                                                    data-term-label="<?= htmlspecialchars((string) ($term['term_label'] ?? ('Term ' . $termNo)), ENT_QUOTES) ?>"
+                                                                    data-certificate="<?= htmlspecialchars($certValue, ENT_QUOTES) ?>"
+                                                                    data-can-claim="<?= $canClaimCertificate ? '1' : '0' ?>"
+                                                                    <?= $canClaimCertificate ? '' : 'disabled' ?>>
+                                                                    Claim Sertifikat
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    class="btn btn-outline-secondary js-open-certificate-modal"
+                                                                    data-toggle="modal"
+                                                                    data-target="#modal-certificate-action"
+                                                                    data-mode="status"
+                                                                    data-cluster-id="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>"
+                                                                    data-termin-id="<?= (int) ($term['id_po_termin'] ?? 0) ?>"
+                                                                    data-po-number="<?= htmlspecialchars((string) ($term['po_number'] ?? '-'), ENT_QUOTES) ?>"
+                                                                    data-term-label="<?= htmlspecialchars((string) ($term['term_label'] ?? ('Term ' . $termNo)), ENT_QUOTES) ?>"
+                                                                    data-certificate="<?= htmlspecialchars($certValue, ENT_QUOTES) ?>">
+                                                                    Update Status
+                                                                </button>
+                                                            </div>
                                                         <?php else: ?>
                                                             <span class="text-muted">Read only</span>
                                                         <?php endif; ?>
@@ -583,6 +604,39 @@ if (!function_exists('poMyRepStatusBadge')) {
 </div>
 <?php endif; ?>
 
+<?php if ($canReleaseCertificate): ?>
+<div class="modal fade" id="modal-certificate-action" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('PO_MyRep/saveTerminCertificate') ?>">
+                <input type="hidden" name="cluster_id" id="certificate_action_cluster_id">
+                <input type="hidden" name="id_po_termin" id="certificate_action_termin_id">
+                <input type="hidden" name="certificate_mode" id="certificate_action_mode">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="certificate_action_title">Update Sertifikat</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>PO:</strong> <span id="certificate_action_po_number">-</span> |
+                        <strong>Term:</strong> <span id="certificate_action_term_label">-</span>
+                    </div>
+                    <div class="form-group">
+                        <label id="certificate_action_label">Sertifikat</label>
+                        <input type="text" name="sertifikat_invoice" id="certificate_action_value" class="form-control">
+                        <small class="form-text text-muted" id="certificate_action_help"></small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-dark" id="certificate_action_submit">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
     (function () {
         $(document).on('click', '.js-open-termin-modal', function () {
@@ -598,6 +652,41 @@ if (!function_exists('poMyRepStatusBadge')) {
             $('#po_termin_payment_date').val($button.data('payment-date') || '');
             $('#po_termin_sertifikat').text($button.data('sertifikat') || '-');
             $('#po_termin_remark').val($button.data('remark') || '');
+        });
+
+        $(document).on('click', '.js-open-certificate-modal', function () {
+            var $button = $(this);
+            var mode = String($button.data('mode') || 'claim');
+            var certificateValue = String($button.data('certificate') || '');
+
+            $('#certificate_action_cluster_id').val($button.data('cluster-id') || '');
+            $('#certificate_action_termin_id').val($button.data('termin-id') || '');
+            $('#certificate_action_mode').val(mode);
+            $('#certificate_action_po_number').text($button.data('po-number') || '-');
+            $('#certificate_action_term_label').text($button.data('term-label') || '-');
+
+            if (mode === 'status') {
+                $('#certificate_action_title').text('Update Status Sertifikat');
+                $('#certificate_action_label').text('Status Sertifikat');
+                $('#certificate_action_value')
+                    .attr('type', 'text')
+                    .prop('required', false)
+                    .attr('placeholder', 'Kosongkan untuk hapus status / isi text status')
+                    .val(certificateValue);
+                $('#certificate_action_help').text('Status text bebas dan boleh dikosongkan. Input tanggal di mode ini akan disimpan sebagai text status.');
+                $('#certificate_action_submit').text('Simpan Status').removeClass('btn-dark').addClass('btn-secondary');
+                return;
+            }
+
+            $('#certificate_action_title').text('Claim Sertifikat');
+            $('#certificate_action_label').text('Tanggal Release Sertifikat');
+            $('#certificate_action_value')
+                .attr('type', 'date')
+                .prop('required', true)
+                .attr('placeholder', '')
+                .val(/^\d{4}-\d{2}-\d{2}$/.test(certificateValue) ? certificateValue : '');
+            $('#certificate_action_help').text('Hanya tanggal valid. Bisa disimpan setelah syarat submitted dan approved terpenuhi.');
+            $('#certificate_action_submit').text('Claim Sertifikat').removeClass('btn-secondary').addClass('btn-dark');
         });
     })();
 </script>
