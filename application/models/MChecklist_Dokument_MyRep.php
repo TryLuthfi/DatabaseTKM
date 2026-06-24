@@ -1156,11 +1156,42 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->where('t.termin_no >=', 2)
             ->where('t.termin_no <=', 5)
             ->order_by('h.po_type', 'ASC')
+            ->order_by("CASE UPPER(TRIM(COALESCE(h.po_category, 'INITIAL'))) WHEN 'FINAL' THEN 1 WHEN 'AMANDMENT' THEN 2 WHEN 'AMENDMENT' THEN 2 WHEN 'INITIAL' THEN 3 ELSE 4 END", 'ASC', false)
             ->order_by('h.created_at', 'DESC')
             ->order_by('h.id_po_header', 'DESC')
             ->order_by('t.termin_no', 'ASC')
             ->get()
             ->result_array();
+
+        $dedupedRows = [];
+        foreach ($rows as $row) {
+            $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) ?: 'CLUSTER';
+            $poNumber = strtoupper(trim((string) ($row['po_number'] ?? '')));
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            $dedupeKey = $poType . '|' . $poNumber . '|' . $terminNo;
+
+            if ($poNumber === '' || $terminNo < 2 || $terminNo > 5) {
+                $dedupeKey = $poType . '|HEADER:' . (int) ($row['id_po_header'] ?? 0) . '|' . $terminNo;
+            }
+
+            if (!isset($dedupedRows[$dedupeKey])) {
+                $dedupedRows[$dedupeKey] = $row;
+                continue;
+            }
+
+            foreach (['sertifikat_invoice_date', 'invoice_date'] as $dateField) {
+                if (empty($dedupedRows[$dedupeKey][$dateField]) && !empty($row[$dateField])) {
+                    $dedupedRows[$dedupeKey][$dateField] = $row[$dateField];
+                }
+            }
+
+            $currentStatus = strtoupper(trim((string) ($dedupedRows[$dedupeKey]['status_termin'] ?? '')));
+            $nextStatus = strtoupper(trim((string) ($row['status_termin'] ?? '')));
+            if (($currentStatus === '' || $currentStatus === 'NOT READY') && $nextStatus !== '' && $nextStatus !== 'NOT READY') {
+                $dedupedRows[$dedupeKey]['status_termin'] = $row['status_termin'];
+            }
+        }
+        $rows = array_values($dedupedRows);
 
         $term4CertificateByHeader = [];
         foreach ($rows as $row) {

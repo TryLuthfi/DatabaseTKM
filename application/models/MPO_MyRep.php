@@ -3025,14 +3025,30 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $rows = $this->db
             ->select('*')
             ->from('tb_myrep_po_header')
             ->where('id_myrep_cluster', (int) $clusterId)
             ->order_by('po_type', 'ASC')
+            ->order_by("CASE UPPER(TRIM(COALESCE(po_category, 'INITIAL'))) WHEN 'FINAL' THEN 1 WHEN 'AMANDMENT' THEN 2 WHEN 'AMENDMENT' THEN 2 WHEN 'INITIAL' THEN 3 ELSE 4 END", 'ASC', false)
             ->order_by('created_at', 'DESC')
             ->get()
             ->result_array();
+
+        $dedupedRows = [];
+        foreach ($rows as $row) {
+            $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) ?: 'CLUSTER';
+            $poNumber = strtoupper(trim((string) ($row['po_number'] ?? '')));
+            $dedupeKey = $poNumber !== ''
+                ? $poType . '|' . $poNumber
+                : $poType . '|HEADER:' . (int) ($row['id_po_header'] ?? 0);
+
+            if (!isset($dedupedRows[$dedupeKey])) {
+                $dedupedRows[$dedupeKey] = $row;
+            }
+        }
+
+        return array_values($dedupedRows);
     }
 
     public function getTerminRowsByPoId($poId)
