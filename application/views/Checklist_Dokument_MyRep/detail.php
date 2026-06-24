@@ -1896,6 +1896,10 @@ $clusterProgressPercent = checklist_doc_percent(
         return false;
     }
 
+    function resetDocumentActionButton(formEl, buttonText) {
+        formEl.find('button[type="submit"]').prop('disabled', false).text(buttonText);
+    }
+
     function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
         var dropzone = document.querySelector(dropzoneSelector);
         var input = document.querySelector(inputSelector);
@@ -1967,6 +1971,7 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#reject-cluster-id').val($(this).data('cluster-id'));
         $('#reject-file-id').val($(this).data('file-id'));
         $('#reject-remark').val('');
+        resetDocumentActionButton($('#modalRejectDocument form'), 'Reject');
     });
 
     $(document).on('click', '.btn-approve-doc', function() {
@@ -1974,6 +1979,7 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#approve-cluster-id').val($(this).data('cluster-id'));
         $('#approve-file-id').val($(this).data('file-id'));
         $('#approve-remark').val('');
+        resetDocumentActionButton($('#modalApproveDocument form'), 'Approve Dokumen');
     });
 
     $(document).on('click', '.btn-astri-doc', function() {
@@ -2256,6 +2262,9 @@ $clusterProgressPercent = checklist_doc_percent(
         var submitButton = formEl.find('button[type="submit"]');
         var originalText = submitButton.text();
         var scrollTop = currentDetailScrollTop();
+        var resetSubmitButton = function() {
+            resetDocumentActionButton(formEl, originalText);
+        };
 
         submitButton.prop('disabled', true).text('Memproses...');
         $.ajax({
@@ -2267,13 +2276,13 @@ $clusterProgressPercent = checklist_doc_percent(
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(response) {
-                handleDetailAjaxResponse(response, 'Dokumen berhasil diproses.', scrollTop, function() {
-                    submitButton.prop('disabled', false).text(originalText);
-                });
+                if (handleDetailAjaxResponse(response, 'Dokumen berhasil diproses.', scrollTop, resetSubmitButton)) {
+                    resetSubmitButton();
+                }
             },
             error: function() {
                 alert('Proses dokumen gagal. Silakan coba lagi.');
-                submitButton.prop('disabled', false).text(originalText);
+                resetSubmitButton();
             }
         });
     });
