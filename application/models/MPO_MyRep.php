@@ -980,7 +980,7 @@ class MPO_MyRep extends CI_Model
             : "''";
         $poTypeMatchSql = "UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER')))";
         $basePoValueSql = "
-            COALESCE((
+            (
                 SELECT p_base.po_value
                 FROM tb_myrep_po_header p_base
                 WHERE p_base.id_myrep_cluster = p.id_myrep_cluster
@@ -989,7 +989,7 @@ class MPO_MyRep extends CI_Model
                     AND UPPER(TRIM(COALESCE(p_base.po_category, 'INITIAL'))) = 'INITIAL'
                 ORDER BY p_base.po_date DESC, p_base.id_po_header DESC
                 LIMIT 1
-            ), p.po_value)
+            )
         ";
         $finalPoValueSql = "
             (
@@ -1070,7 +1070,7 @@ class MPO_MyRep extends CI_Model
                     'po_category' => (string) ($row['po_category'] ?? ''),
                     'on_target' => (int) ($row['on_target'] ?? 0),
                     'po_date' => (string) ($row['po_date'] ?? ''),
-                    'po_value' => (float) ($row['po_value_base'] ?? ($row['po_value'] ?? 0)),
+                    'po_value' => (float) ($row['po_value_base'] ?? 0),
                     'po_value_final' => (float) ($row['po_value_final'] ?? 0),
                     'outstanding_total' => (float) ($row['outstanding_total'] ?? 0),
                     'total_invoiced' => (float) ($row['total_invoiced'] ?? 0),
