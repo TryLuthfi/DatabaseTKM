@@ -1531,10 +1531,13 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
             if ($rfsClusterId > 0) {
                 $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
+                $approvedClaimQty = $this->getRfsApprovedClaimQty($rfsClusterId);
                 $syncedStatus = $this->resolveSyncedRfsStatus(
                     $mappedStatus,
                     $cluster['current_status_rfs'] ?? '',
-                    $cluster['latest_claim_status_rfs'] ?? ''
+                    $cluster['latest_claim_status_rfs'] ?? '',
+                    $homepassBase,
+                    $approvedClaimQty
                 );
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
@@ -1559,10 +1562,13 @@ class MMonitoring_RFS_MyRep extends CI_Model
             if ($existing) {
                 $rfsClusterId = (int) $existing['id_cluster'];
                 $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
+                $approvedClaimQty = $this->getRfsApprovedClaimQty($rfsClusterId);
                 $syncedStatus = $this->resolveSyncedRfsStatus(
                     $mappedStatus,
                     $existing['status_rfs'] ?? '',
-                    $cluster['latest_claim_status_rfs'] ?? ''
+                    $cluster['latest_claim_status_rfs'] ?? '',
+                    $homepassBase,
+                    $approvedClaimQty
                 );
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
@@ -1647,26 +1653,40 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return 'NY RFS';
     }
 
-    private function resolveSyncedRfsStatus($mappedStatus, $currentStatus, $latestClaimStatus = '')
+    private function resolveSyncedRfsStatus($mappedStatus, $currentStatus, $latestClaimStatus = '', $homepassBase = 0, $approvedClaimQty = 0)
     {
         $mappedStatus = strtoupper(trim((string) $mappedStatus));
         $currentStatus = strtoupper(trim((string) $currentStatus));
         $latestClaimStatus = strtoupper(trim((string) $latestClaimStatus));
-
-        if (in_array($latestClaimStatus, ['PARTIAL', 'PARTIAL RFS'], true)) {
-            return 'PARTIAL';
-        }
+        $homepassBase = max(0, (int) round((float) $homepassBase));
+        $approvedClaimQty = max(0, (int) round((float) $approvedClaimQty));
 
         if ($latestClaimStatus === 'REJECTED') {
             return 'REJECTED';
         }
 
-        if (in_array($currentStatus, ['PARTIAL', 'PARTIAL RFS'], true)) {
+        if ($currentStatus === 'REJECTED') {
+            return 'REJECTED';
+        }
+
+        if ($homepassBase > 0 && $approvedClaimQty >= $homepassBase) {
+            return 'FULL RFS';
+        }
+
+        if (in_array($latestClaimStatus, ['FULL RFS', 'FULL'], true)) {
+            return 'FULL RFS';
+        }
+
+        if (in_array($currentStatus, ['FULL RFS', 'FULL'], true)) {
+            return 'FULL RFS';
+        }
+
+        if (in_array($latestClaimStatus, ['PARTIAL', 'PARTIAL RFS'], true)) {
             return 'PARTIAL';
         }
 
-        if ($currentStatus === 'REJECTED') {
-            return 'REJECTED';
+        if (in_array($currentStatus, ['PARTIAL', 'PARTIAL RFS'], true)) {
+            return 'PARTIAL';
         }
 
         return $mappedStatus !== '' ? $mappedStatus : 'NY RFS';
@@ -1747,6 +1767,24 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
         $totalClaim = (int) round((float) ($row['total_claim'] ?? 0));
         return max($fallbackHomepass, $totalClaim);
+    }
+
+    private function getRfsApprovedClaimQty($rfsClusterId)
+    {
+        $rfsClusterId = (int) $rfsClusterId;
+        if ($rfsClusterId <= 0 || !$this->db->table_exists('tb_rfs_myrep_claim')) {
+            return 0;
+        }
+
+        $row = $this->db
+            ->select('COALESCE(SUM(claim_qty), 0) AS total_claim', false)
+            ->from('tb_rfs_myrep_claim')
+            ->where('cluster_id', $rfsClusterId)
+            ->where('status_claim', 'APPROVED')
+            ->get()
+            ->row_array();
+
+        return (int) round((float) ($row['total_claim'] ?? 0));
     }
 }
 

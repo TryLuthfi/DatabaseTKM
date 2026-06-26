@@ -209,6 +209,11 @@ class Monitoring_RFS_MyRep extends CI_Controller
     {
         $statusRfs = (string) ($cluster['status_rfs'] ?? 'NY RFS');
         $hasPendingClaim = (int) ($cluster['pending_claim_count'] ?? 0) > 0;
+        $clusterHomepassDrm = (float) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
+        $claimedQty = (float) ($cluster['claimed_qty'] ?? 0);
+        if (!$hasPendingClaim && strtoupper($statusRfs) !== 'FULL RFS' && $clusterHomepassDrm > 0 && $claimedQty >= $clusterHomepassDrm) {
+            $statusRfs = 'FULL RFS';
+        }
         $displayStatusRfs = $hasPendingClaim ? 'WAITING APPROVAL' : $statusRfs;
         $displayBadgeClass = $displayStatusRfs === 'FULL RFS'
             ? 'success'
@@ -217,8 +222,6 @@ class Monitoring_RFS_MyRep extends CI_Controller
                 : ($displayStatusRfs === 'WAITING APPROVAL'
                     ? 'info'
                     : ($displayStatusRfs === 'REJECTED' ? 'danger' : 'secondary')));
-        $clusterHomepassDrm = (float) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
-        $claimedQty = (float) ($cluster['claimed_qty'] ?? 0);
         $deviasiBase = strtoupper($statusRfs) === 'PARTIAL'
             ? max($clusterHomepassDrm - $claimedQty, 0)
             : $clusterHomepassDrm;

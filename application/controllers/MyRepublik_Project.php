@@ -2279,11 +2279,11 @@ class MyRepublik_Project extends CI_Controller
         $homepassRfs = $totalClaimQty > 0 ? $totalClaimQty : $homepass;
 
         $statusRfsInput = strtoupper(trim((string) ($row['status_rfs'] ?? '')));
-        $statusRfs = ($homepassRfs > 0 && $totalClaimQty >= $homepassRfs) ? 'FULL RFS' : 'NY RFS';
+        $statusRfs = ($homepass > 0 && $totalClaimQty >= $homepass) ? 'FULL RFS' : 'NY RFS';
         if (in_array($statusCurrent, ['CHECKLIST DOKUMENT', 'DONE'], true) || in_array($statusRfsInput, ['FULL RFS', 'FULL'], true)) {
             // Explicit override from CSV: force full even if claim qty is still below DRM.
             $statusRfs = 'FULL RFS';
-        } elseif (in_array($statusRfsInput, ['PARTIAL', 'PARTIAL RFS', 'NY RFS'], true)) {
+        } elseif (in_array($statusRfsInput, ['PARTIAL', 'PARTIAL RFS', 'NY RFS'], true) && $statusRfs !== 'FULL RFS') {
             $statusRfs = 'NY RFS';
         }
         $statusAtp = 'NOT STARTED';
