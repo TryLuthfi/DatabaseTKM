@@ -1508,68 +1508,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($clusterRows as $index => $row): ?>
-                                                <?php
-                                                $statusBadgeClass = 'secondary';
-                                                $summaryStatus = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
-                                                if ($summaryStatus === 'DP') {
-                                                    $statusBadgeClass = 'danger';
-                                                } elseif ($summaryStatus === 'ATP CW') {
-                                                    $statusBadgeClass = 'warning';
-                                                } elseif ($summaryStatus === 'FULL OPM') {
-                                                    $statusBadgeClass = 'info';
-                                                } elseif ($summaryStatus === 'RFS') {
-                                                    $statusBadgeClass = 'primary';
-                                                } elseif ($summaryStatus === 'FAC') {
-                                                    $statusBadgeClass = 'success';
-                                                }
-                                                $terminTotal = (int) ($row['termin_total_count'] ?? 0);
-                                                $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
-                                                $terminPercent = $terminTotal > 0 ? min(100, round(($terminProgress / $terminTotal) * 100)) : 0;
-                                                ?>
-                                                <tr>
-                                                    <td><?= $index + 1 ?></td>
-                                                    <td>
-                                                        <strong>
-                                                            <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>">
-                                                                <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
-                                                            </a>
-                                                        </strong>
-                                                        <div class="small text-muted"><?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?></div>
-                                                    </td>
-                                                    <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-                                                    <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
-                                                    <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current'] ?? '-')) ?></span></td>
-                                                    <td>
-                                                        <div>Cluster: <?= (int) ($row['po_cluster_count'] ?? 0) ?></div>
-                                                        <div>Subfeeder: <?= (int) ($row['po_subfeeder_count'] ?? 0) ?></div>
-                                                        <div><span class="badge badge-<?= $statusBadgeClass ?>"><?= htmlspecialchars($summaryStatus) ?></span></div>
-                                                    </td>
-                                                    <td><?= poMyRepNumber((float) ($row['po_total_value'] ?? 0)) ?></td>
-                                                    <td class="po-progress-cell">
-                                                        <div class="po-mini-progress">
-                                                            <div class="po-mini-progress__head">
-                                                                <span>Termin Billed/Paid</span>
-                                                                <span><?= $terminPercent ?>%</span>
-                                                            </div>
-                                                            <div class="po-mini-progress__track">
-                                                                <span style="width: <?= $terminPercent ?>%;"></span>
-                                                            </div>
-                                                            <div class="po-mini-progress__meta">
-                                                                <span><?= $terminProgress ?> billed/paid</span>
-                                                                <span><?= $terminTotal ?> termin</span>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td><?= !empty($row['last_po_date']) ? htmlspecialchars((string) $row['last_po_date']) : '-' ?></td>
-                                                    <td>
-                                                        <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-primary">Detail</a>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($clusterRows)): ?>
-                                                <tr><td colspan="10" class="text-center text-muted">Belum ada data PO MyRep.</td></tr>
-                                            <?php endif; ?>
+                                            <tr><td colspan="10" class="text-center text-muted">Memuat data...</td></tr>
                                         </tbody>
                                         <tfoot>
                                             <tr>
@@ -1647,57 +1586,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($poListRows as $index => $row): ?>
-                                                <?php
-                                                $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
-                                                $statusPo = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
-                                                $terminTotal = (int) ($row['termin_total_count'] ?? 0);
-                                                $terminProgress = (int) ($row['termin_progress_count'] ?? 0);
-                                                ?>
-                                                <tr>
-                                                    <td><?= $index + 1 ?></td>
-                                                    <td><span class="badge badge-<?= $tipePo === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars($tipePo) ?></span></td>
-                                                    <td>
-                                                        <strong>
-                                                            <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>">
-                                                                <?= htmlspecialchars((string) ($row['po_number'] ?? '-')) ?>
-                                                            </a>
-                                                        </strong>
-                                                        <div class="small text-muted"><?= htmlspecialchars((string) ($row['po_category'] ?? '-')) ?></div>
-                                                    </td>
-                                                    <td><?= !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date']) : '-' ?></td>
-                                                    <td>
-                                                        <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>">
-                                                            <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
-                                                        </a>
-                                                    </td>
-                                                    <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-                                                    <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
-                                                    <td>
-                                                        <span class="badge badge-<?= $statusPo === 'DP' ? 'danger' : ($statusPo === 'ATP CW' ? 'warning' : ($statusPo === 'FULL OPM' ? 'info' : ($statusPo === 'RFS' ? 'primary' : ($statusPo === 'FAC' ? 'success' : 'secondary')))) ?>">
-                                                            <?= htmlspecialchars($statusPo) ?>
-                                                        </span>
-                                                    </td>
-                                                    <td class="text-right"><?= poMyRepNumber((float) ($row['po_value'] ?? 0)) ?></td>
-                                                    <td class="text-center"><?= $terminProgress ?>/<?= $terminTotal ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][1] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][1] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][2] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][2] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][3] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][3] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][4] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][4] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][5] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['outstanding_invoice_per_termin'][5] ?? 0))) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['total_invoiced'] ?? 0)) ?></td>
-                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['outstanding_total'] ?? 0)) ?></td>
-                                                    <td><a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-primary">Detail</a></td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($poListRows)): ?>
-                                                <tr><td colspan="23" class="text-center text-muted">Belum ada data PO.</td></tr>
-                                            <?php endif; ?>
+                                            <tr><td colspan="23" class="text-center text-muted">Memuat data...</td></tr>
                                         </tbody>
                                         <tfoot>
                                             <tr>
@@ -2208,6 +2097,8 @@ if (is_array($terminBreakdownRows ?? null)) {
         var poDetailBaseUrl = "<?= base_url('PO_MyRep/detail/') ?>";
         var selectedCity = "<?= htmlspecialchars((string) $selectedCity, ENT_QUOTES) ?>";
         var selectedStatus = "<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>";
+        var poMonitorDataUrl = "<?= base_url('PO_MyRep/datatableMonitor') ?>";
+        var poListDataUrl = "<?= base_url('PO_MyRep/datatablePo') ?>";
         var poTerminBreakdownDebugRows = <?= json_encode($poTerminBreakdownConsoleRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
         if (poTerminBreakdownDebugRows.length) {
             console.warn('PO_MyRep Pembagian Termin rows missing expected keys', poTerminBreakdownDebugRows);
@@ -3123,10 +3014,20 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
 
             var tableMonitor = $('#table_po_myrep').length ? $('#table_po_myrep').DataTable({
+                processing: true,
+                serverSide: true,
                 responsive: true,
                 autoWidth: false,
                 pageLength: 10,
-                order: [[0, 'asc']],
+                order: [[1, 'asc']],
+                ajax: {
+                    url: poMonitorDataUrl,
+                    type: 'POST',
+                    data: function (payload) {
+                        payload.city = selectedCity;
+                        payload.status = selectedStatus;
+                    }
+                },
                 footerCallback: function () {
                     var api = this.api();
                     var totalNilaiPo = api.column(6, { page: 'current' }).data().reduce(function (a, b) {
@@ -3146,11 +3047,23 @@ if (is_array($terminBreakdownRows ?? null)) {
             }) : null;
 
             var tablePoList = $('#table_po_list_only').length ? $('#table_po_list_only').DataTable({
+                processing: true,
+                serverSide: true,
                 responsive: false,
                 scrollX: true,
                 autoWidth: false,
                 pageLength: 10,
                 order: [[3, 'desc']],
+                ajax: {
+                    url: poListDataUrl,
+                    type: 'POST',
+                    data: function (payload) {
+                        payload.city = selectedCity;
+                        payload.status = selectedStatus;
+                        payload.po_type_filter = String($('#po-list-filter-type').val() || '');
+                        payload.stage_filter = String($('#po-list-filter-status').val() || '');
+                    }
+                },
                 footerCallback: function () {
                     var api = this.api();
                     var totalNilaiPo = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
@@ -3193,13 +3106,11 @@ if (is_array($terminBreakdownRows ?? null)) {
                 }
 
                 $('#po-list-filter-type').on('change', function () {
-                    var val = String($(this).val() || '');
-                    tablePoList.column(1).search(val ? '^' + val + '$' : '', true, false).draw();
+                    tablePoList.ajax.reload();
                 });
 
                 $('#po-list-filter-status').on('change', function () {
-                    var val = String($(this).val() || '');
-                    tablePoList.column(7).search(val ? '^' + val + '$' : '', true, false).draw();
+                    tablePoList.ajax.reload();
                 });
             }
 

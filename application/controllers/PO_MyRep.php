@@ -126,6 +126,117 @@ class PO_MyRep extends CI_Controller
         $this->load->view('Templates/99_JS');
     }
 
+    public function datatableMonitor()
+    {
+        if (empty($this->session->userdata('id_user')) || !$this->MPO_MyRep->tablesReady()) {
+            $this->jsonResponse($this->emptyDataTableResponse());
+            return;
+        }
+
+        $request = $this->getDataTableRequest();
+        $result = $this->MPO_MyRep->getMonitorDataTable(
+            $request['city'],
+            $request['status'],
+            $request['start'],
+            $request['length'],
+            $request['search'],
+            $request['order_column'],
+            $request['order_dir']
+        );
+
+        $rows = [];
+        foreach ($result['rows'] as $index => $row) {
+            $summaryStatus = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
+            $terminTotal = (int) ($row['termin_total_count'] ?? 0);
+            $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
+            $terminPercent = $terminTotal > 0 ? min(100, round(($terminProgress / $terminTotal) * 100)) : 0;
+            $detailUrl = base_url('PO_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
+
+            $rows[] = [
+                $request['start'] + $index + 1,
+                '<strong><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a></strong><div class="small text-muted">' . htmlspecialchars((string) ($row['team_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</div>',
+                htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
+                '<div>Cluster: ' . (int) ($row['po_cluster_count'] ?? 0) . '</div><div>Subfeeder: ' . (int) ($row['po_subfeeder_count'] ?? 0) . '</div><div><span class="badge badge-' . $this->stageBadgeClass($summaryStatus) . '">' . htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') . '</span></div>',
+                $this->formatNumber((float) ($row['po_total_value'] ?? 0)),
+                '<div class="po-mini-progress"><div class="po-mini-progress__head"><span>Termin Billed/Paid</span><span>' . $terminPercent . '%</span></div><div class="po-mini-progress__track"><span style="width: ' . $terminPercent . '%;"></span></div><div class="po-mini-progress__meta"><span>' . $terminProgress . ' billed/paid</span><span>' . $terminTotal . ' termin</span></div></div>',
+                !empty($row['last_po_date']) ? htmlspecialchars((string) $row['last_po_date'], ENT_QUOTES, 'UTF-8') : '-',
+                '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '" class="btn btn-sm btn-primary">Detail</a>',
+            ];
+        }
+
+        $this->jsonResponse([
+            'draw' => $request['draw'],
+            'recordsTotal' => (int) ($result['recordsTotal'] ?? 0),
+            'recordsFiltered' => (int) ($result['recordsFiltered'] ?? 0),
+            'data' => $rows,
+        ]);
+    }
+
+    public function datatablePo()
+    {
+        if (empty($this->session->userdata('id_user')) || !$this->MPO_MyRep->tablesReady()) {
+            $this->jsonResponse($this->emptyDataTableResponse());
+            return;
+        }
+
+        $request = $this->getDataTableRequest();
+        $result = $this->MPO_MyRep->getPoListDataTable(
+            $request['city'],
+            $request['status'],
+            $request['po_type_filter'],
+            $request['stage_filter'],
+            $request['start'],
+            $request['length'],
+            $request['search'],
+            $request['order_column'],
+            $request['order_dir']
+        );
+
+        $rows = [];
+        foreach ($result['rows'] as $index => $row) {
+            $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            $statusPo = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
+            $terminTotal = (int) ($row['termin_total_count'] ?? 0);
+            $terminProgress = (int) ($row['termin_progress_count'] ?? 0);
+            $detailUrl = base_url('PO_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
+
+            $rows[] = [
+                $request['start'] + $index + 1,
+                '<span class="badge badge-' . ($tipePo === 'SUBFEEDER' ? 'warning' : 'primary') . '">' . htmlspecialchars($tipePo, ENT_QUOTES, 'UTF-8') . '</span>',
+                '<strong><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['po_number'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a></strong><div class="small text-muted">' . htmlspecialchars((string) ($row['po_category'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</div>',
+                !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date'], ENT_QUOTES, 'UTF-8') : '-',
+                '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a>',
+                htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+                '<span class="badge badge-' . $this->stageBadgeClass($statusPo) . '">' . htmlspecialchars($statusPo, ENT_QUOTES, 'UTF-8') . '</span>',
+                $this->formatNumber((float) ($row['po_value'] ?? 0)),
+                $terminProgress . '/' . $terminTotal,
+                $this->formatNumberOrDash((float) (($row['done_invoice_per_termin'][1] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['outstanding_invoice_per_termin'][1] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['done_invoice_per_termin'][2] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['outstanding_invoice_per_termin'][2] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['done_invoice_per_termin'][3] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['outstanding_invoice_per_termin'][3] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['done_invoice_per_termin'][4] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['outstanding_invoice_per_termin'][4] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['done_invoice_per_termin'][5] ?? 0))),
+                $this->formatNumberOrDash((float) (($row['outstanding_invoice_per_termin'][5] ?? 0))),
+                $this->formatNumberOrDash((float) ($row['total_invoiced'] ?? 0)),
+                $this->formatNumberOrDash((float) ($row['outstanding_total'] ?? 0)),
+                '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '" class="btn btn-sm btn-primary">Detail</a>',
+            ];
+        }
+
+        $this->jsonResponse([
+            'draw' => $request['draw'],
+            'recordsTotal' => (int) ($result['recordsTotal'] ?? 0),
+            'recordsFiltered' => (int) ($result['recordsFiltered'] ?? 0),
+            'data' => $rows,
+        ]);
+    }
+
     public function detail($clusterId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -738,6 +849,82 @@ class PO_MyRep extends CI_Controller
 
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function getDataTableRequest()
+    {
+        $order = (array) $this->input->post('order');
+        $firstOrder = (array) ($order[0] ?? []);
+        $search = (array) $this->input->post('search');
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        return [
+            'draw' => (int) $this->input->post('draw'),
+            'start' => max(0, (int) $this->input->post('start')),
+            'length' => min($length, 100),
+            'search' => (string) ($search['value'] ?? ''),
+            'order_column' => (int) ($firstOrder['column'] ?? 0),
+            'order_dir' => (string) ($firstOrder['dir'] ?? 'asc'),
+            'city' => strtoupper(trim((string) $this->input->post('city'))),
+            'status' => strtoupper(trim((string) $this->input->post('status'))),
+            'po_type_filter' => strtoupper(trim((string) $this->input->post('po_type_filter'))),
+            'stage_filter' => strtoupper(trim((string) $this->input->post('stage_filter'))),
+        ];
+    }
+
+    private function stageBadgeClass($stage)
+    {
+        $stage = strtoupper(trim((string) $stage));
+        if ($stage === 'DP') {
+            return 'danger';
+        }
+        if ($stage === 'ATP CW') {
+            return 'warning';
+        }
+        if ($stage === 'FULL OPM') {
+            return 'info';
+        }
+        if ($stage === 'RFS') {
+            return 'primary';
+        }
+        if ($stage === 'FAC') {
+            return 'success';
+        }
+        if ($stage === 'CLOSED') {
+            return 'dark';
+        }
+
+        return 'secondary';
+    }
+
+    private function formatNumber($value)
+    {
+        return number_format((float) $value, 0, ',', '.');
+    }
+
+    private function formatNumberOrDash($value)
+    {
+        return (float) $value == 0.0 ? '-' : $this->formatNumber($value);
+    }
+
+    private function jsonResponse(array $payload)
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($payload));
+    }
+
+    private function emptyDataTableResponse()
+    {
+        return [
+            'draw' => (int) $this->input->post('draw'),
+            'recordsTotal' => 0,
+            'recordsFiltered' => 0,
+            'data' => [],
+        ];
     }
 
     private function buildCertificateDetailTitle($poType, $termNo, $certificateStatus)

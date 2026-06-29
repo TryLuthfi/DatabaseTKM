@@ -318,6 +318,211 @@ class MPO_MyRep extends CI_Model
         return $rows;
     }
 
+    public function getMonitorDataTable($city = '', $status = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc')
+    {
+        $rows = $this->getRows($city, $status);
+        $recordsTotal = count($rows);
+        $filteredRows = $this->filterMonitorDataTableRows($rows, $search);
+        $recordsFiltered = count($filteredRows);
+        $sortedRows = $this->sortMonitorDataTableRows($filteredRows, $orderColumn, $orderDir);
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => array_slice($sortedRows, max(0, (int) $start), min(max(0, (int) $length), 100)),
+        ];
+    }
+
+    public function getPoListDataTable($city = '', $status = '', $poTypeFilter = '', $stageFilter = '', $start = 0, $length = 10, $search = '', $orderColumn = 3, $orderDir = 'desc')
+    {
+        $rows = $this->getPoListRows($city, $status);
+        $recordsTotal = count($rows);
+        $filteredRows = $this->filterPoListDataTableRows($rows, $poTypeFilter, $stageFilter, $search);
+        $recordsFiltered = count($filteredRows);
+        $sortedRows = $this->sortPoListDataTableRows($filteredRows, $orderColumn, $orderDir);
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => array_slice($sortedRows, max(0, (int) $start), min(max(0, (int) $length), 100)),
+        ];
+    }
+
+    private function filterMonitorDataTableRows(array $rows, $search = '')
+    {
+        $search = strtolower(trim((string) $search));
+        if ($search === '') {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, static function ($row) use ($search) {
+            $haystacks = [
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['team_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['status_current'] ?? ''),
+                (string) ($row['po_stage_status'] ?? ''),
+            ];
+
+            foreach ($haystacks as $haystack) {
+                if (stripos($haystack, $search) !== false) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+    }
+
+    private function filterPoListDataTableRows(array $rows, $poTypeFilter = '', $stageFilter = '', $search = '')
+    {
+        $poTypeFilter = strtoupper(trim((string) $poTypeFilter));
+        $stageFilter = strtoupper(trim((string) $stageFilter));
+        $search = strtolower(trim((string) $search));
+
+        return array_values(array_filter($rows, static function ($row) use ($poTypeFilter, $stageFilter, $search) {
+            $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            $stageStatus = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
+            if ($poTypeFilter !== '' && $poType !== $poTypeFilter) {
+                return false;
+            }
+            if ($stageFilter !== '' && $stageStatus !== $stageFilter) {
+                return false;
+            }
+            if ($search === '') {
+                return true;
+            }
+
+            $haystacks = [
+                (string) ($row['po_number'] ?? ''),
+                (string) ($row['po_category'] ?? ''),
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['po_type'] ?? ''),
+                (string) ($row['po_stage_status'] ?? ''),
+                (string) ($row['status_po'] ?? ''),
+            ];
+
+            foreach ($haystacks as $haystack) {
+                if (stripos($haystack, $search) !== false) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+    }
+
+    private function sortMonitorDataTableRows(array $rows, $orderColumn = 1, $orderDir = 'asc')
+    {
+        $direction = strtolower((string) $orderDir) === 'desc' ? 'desc' : 'asc';
+        usort($rows, function ($left, $right) use ($orderColumn, $direction) {
+            $leftValue = $this->extractMonitorOrderValue($left, $orderColumn);
+            $rightValue = $this->extractMonitorOrderValue($right, $orderColumn);
+            $result = $this->compareDataTableValues($leftValue, $rightValue);
+            return $direction === 'desc' ? -$result : $result;
+        });
+
+        return $rows;
+    }
+
+    private function sortPoListDataTableRows(array $rows, $orderColumn = 3, $orderDir = 'desc')
+    {
+        $direction = strtolower((string) $orderDir) === 'desc' ? 'desc' : 'asc';
+        usort($rows, function ($left, $right) use ($orderColumn, $direction) {
+            $leftValue = $this->extractPoListOrderValue($left, $orderColumn);
+            $rightValue = $this->extractPoListOrderValue($right, $orderColumn);
+            $result = $this->compareDataTableValues($leftValue, $rightValue);
+            return $direction === 'desc' ? -$result : $result;
+        });
+
+        return $rows;
+    }
+
+    private function extractMonitorOrderValue(array $row, $orderColumn = 1)
+    {
+        switch ((int) $orderColumn) {
+            case 2:
+                return (string) ($row['city_name'] ?? '');
+            case 3:
+                return (string) ($row['regional_name'] ?? '');
+            case 4:
+                return (string) ($row['status_current'] ?? '');
+            case 5:
+                return (int) ($row['po_cluster_count'] ?? 0) + (int) ($row['po_subfeeder_count'] ?? 0);
+            case 6:
+                return (float) ($row['po_total_value'] ?? 0);
+            case 7:
+                return (int) ($row['termin_progress_count'] ?? 0);
+            case 8:
+                return (string) ($row['last_po_date'] ?? '');
+            case 1:
+            default:
+                return (string) ($row['cluster_name'] ?? '');
+        }
+    }
+
+    private function extractPoListOrderValue(array $row, $orderColumn = 3)
+    {
+        switch ((int) $orderColumn) {
+            case 1:
+                return (string) ($row['po_type'] ?? '');
+            case 2:
+                return (string) ($row['po_number'] ?? '');
+            case 3:
+                return (string) ($row['po_date'] ?? '');
+            case 4:
+                return (string) ($row['cluster_name'] ?? '');
+            case 5:
+                return (string) ($row['city_name'] ?? '');
+            case 6:
+                return (string) ($row['regional_name'] ?? '');
+            case 7:
+                return (string) ($row['po_stage_status'] ?? '');
+            case 8:
+                return (float) ($row['po_value'] ?? 0);
+            case 9:
+                return (int) ($row['termin_progress_count'] ?? 0);
+            case 10:
+                return (float) (($row['done_invoice_per_termin'][1] ?? 0));
+            case 11:
+                return (float) (($row['outstanding_invoice_per_termin'][1] ?? 0));
+            case 12:
+                return (float) (($row['done_invoice_per_termin'][2] ?? 0));
+            case 13:
+                return (float) (($row['outstanding_invoice_per_termin'][2] ?? 0));
+            case 14:
+                return (float) (($row['done_invoice_per_termin'][3] ?? 0));
+            case 15:
+                return (float) (($row['outstanding_invoice_per_termin'][3] ?? 0));
+            case 16:
+                return (float) (($row['done_invoice_per_termin'][4] ?? 0));
+            case 17:
+                return (float) (($row['outstanding_invoice_per_termin'][4] ?? 0));
+            case 18:
+                return (float) (($row['done_invoice_per_termin'][5] ?? 0));
+            case 19:
+                return (float) (($row['outstanding_invoice_per_termin'][5] ?? 0));
+            case 20:
+                return (float) ($row['total_invoiced'] ?? 0);
+            case 21:
+                return (float) ($row['outstanding_total'] ?? 0);
+            default:
+                return (string) ($row['po_date'] ?? '');
+        }
+    }
+
+    private function compareDataTableValues($left, $right)
+    {
+        if (is_numeric($left) && is_numeric($right)) {
+            return (float) $left <=> (float) $right;
+        }
+
+        return strcasecmp((string) $left, (string) $right);
+    }
+
     public function getEmrTargetCityOptions($regional = '', $scope = 'target')
     {
         if (!$this->emrTargetReady()) {
