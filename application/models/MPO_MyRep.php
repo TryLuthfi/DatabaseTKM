@@ -223,7 +223,24 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
+        $allRows = $rows;
+        $groupHeaderMap = [];
+        foreach ($allRows as $sourceRow) {
+            $groupKey = ((int) ($sourceRow['id_myrep_cluster'] ?? 0)) . '|' .
+                strtoupper(trim((string) ($sourceRow['po_type'] ?? 'CLUSTER'))) . '|' .
+                strtoupper(trim((string) ($sourceRow['po_number'] ?? '')));
+            if (!isset($groupHeaderMap[$groupKey])) {
+                $groupHeaderMap[$groupKey] = [];
+            }
+            $groupHeaderMap[$groupKey][] = (int) ($sourceRow['id_po_header'] ?? 0);
+        }
+
+        $rows = $this->pickActivePoHeadersByClusterType($rows);
+        if (empty($rows)) {
+            return [];
+        }
+
+        $headerIds = array_values(array_filter(array_map('intval', array_column($allRows, 'id_po_header'))));
         $terminSelect = 'id_po_header, termin_no, termin_value, status_termin, invoice_date, remark_termin';
         if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
             $terminSelect .= ', sertifikat_invoice_date';
@@ -284,9 +301,67 @@ class MPO_MyRep extends CI_Model
             }
         }
 
+        $terminMapByGroup = [];
+        foreach ($groupHeaderMap as $groupKey => $groupHeaderIds) {
+            $groupMeta = [
+                'total' => 0,
+                'progress' => 0,
+                'paid' => 0,
+                'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'outstanding_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'status_per_termin' => [1 => 'NOT READY', 2 => 'NOT READY', 3 => 'NOT READY', 4 => 'NOT READY', 5 => 'NOT READY'],
+                'invoice_date_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
+                'certificate_per_termin' => [1 => '', 2 => '', 3 => '', 4 => '', 5 => ''],
+                'resolved_terms' => [],
+            ];
+
+            foreach ($groupHeaderIds as $groupHeaderId) {
+                foreach (($terminByHeader[$groupHeaderId] ?? []) as $terminRow) {
+                    $terminNo = (int) ($terminRow['termin_no'] ?? 0);
+                    if ($terminNo < 1 || $terminNo > 5) {
+                        continue;
+                    }
+
+                    $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($terminRow['invoice_date'] ?? '')) !== '';
+                    if (!isset($groupMeta['resolved_terms'][$terminNo]) || $hasInvoiceDate) {
+                        $groupMeta['resolved_terms'][$terminNo] = $terminRow;
+                    }
+                }
+            }
+
+            foreach ($groupMeta['resolved_terms'] as $terminNo => $terminRow) {
+                $terminValue = $this->resolveDoneInvoiceValue($terminRow);
+                $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($terminRow['invoice_date'] ?? '')) !== '';
+                $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+                $planInvoiceValue = $this->resolvePlanInvoiceValue($terminRow);
+
+                $groupMeta['total']++;
+                $groupMeta['plan_invoice'][$terminNo] = $planInvoiceValue;
+                $groupMeta['status_per_termin'][$terminNo] = $statusTermin;
+                $groupMeta['invoice_date_per_termin'][$terminNo] = (string) ($terminRow['invoice_date'] ?? '');
+                $groupMeta['certificate_per_termin'][$terminNo] = (string) ($terminRow['sertifikat_invoice_date'] ?? '');
+                if (!$hasInvoiceDate) {
+                    $groupMeta['outstanding_invoice'][$terminNo] = $planInvoiceValue;
+                } else {
+                    $groupMeta['progress']++;
+                    $groupMeta['done_invoice'][$terminNo] = $terminValue;
+                }
+                if ($statusTermin === 'PAID') {
+                    $groupMeta['paid']++;
+                }
+            }
+
+            unset($groupMeta['resolved_terms']);
+            $terminMapByGroup[$groupKey] = $groupMeta;
+        }
+
         foreach ($rows as &$row) {
             $headerId = (int) ($row['id_po_header'] ?? 0);
-            $meta = $terminMap[$headerId] ?? [
+            $groupKey = ((int) ($row['id_myrep_cluster'] ?? 0)) . '|' .
+                strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) . '|' .
+                strtoupper(trim((string) ($row['po_number'] ?? '')));
+            $meta = $terminMapByGroup[$groupKey] ?? $terminMap[$headerId] ?? [
                 'total' => 0,
                 'progress' => 0,
                 'paid' => 0,
@@ -310,8 +385,15 @@ class MPO_MyRep extends CI_Model
             $row['done_invoice_total'] = array_sum($meta['done_invoice']);
             $row['total_invoiced'] = $row['done_invoice_total'];
             $row['outstanding_total'] = array_sum($meta['outstanding_invoice']);
-            $terminsForHeader = $terminByHeader[$headerId] ?? [];
-            $row['po_stage_status'] = $this->resolveStageStatus($terminsForHeader);
+            $stageTerms = [];
+            foreach (($meta['status_per_termin'] ?? []) as $stageTerminNo => $stageStatus) {
+                $stageTerms[] = [
+                    'termin_no' => (int) $stageTerminNo,
+                    'status_termin' => (string) $stageStatus,
+                    'invoice_date' => (string) (($meta['invoice_date_per_termin'][$stageTerminNo] ?? '')),
+                ];
+            }
+            $row['po_stage_status'] = $this->resolveStageStatus($stageTerms);
         }
         unset($row);
 
@@ -3276,6 +3358,31 @@ class MPO_MyRep extends CI_Model
         return array_values($dedupedRows);
     }
 
+    public function poHeaderExists($clusterId, $poType, $poCategory, $poNumber)
+    {
+        if (!$this->tablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $poType = strtoupper(trim((string) $poType));
+        $poCategory = strtoupper(trim((string) $poCategory));
+        $poNumber = trim((string) $poNumber);
+
+        if ($clusterId <= 0 || $poNumber === '') {
+            return false;
+        }
+
+        return $this->db
+            ->from('tb_myrep_po_header')
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(TRIM(po_type))', $poType)
+            ->where("UPPER(TRIM(COALESCE(po_category, 'INITIAL')))", $poCategory)
+            ->where('UPPER(TRIM(po_number))', strtoupper($poNumber))
+            ->limit(1)
+            ->count_all_results() > 0;
+    }
+
     public function getTerminRowsByPoId($poId)
     {
         if (!$this->tablesReady()) {
@@ -3370,7 +3477,18 @@ class MPO_MyRep extends CI_Model
             return 0;
         }
 
+        if (strtoupper(trim((string) ($payload['po_category'] ?? 'INITIAL'))) === 'FINAL') {
+            $this->carryForwardTerminProgress(
+                $clusterId,
+                (string) ($payload['po_type'] ?? 'CLUSTER'),
+                (string) ($payload['po_number'] ?? ''),
+                $poHeaderId,
+                (int) $payload['updated_by']
+            );
+        }
+
         $this->syncTerminEstimatesForCluster($clusterId, (string) $payload['po_type'], (int) $payload['updated_by']);
+        $this->syncPoStatus($poHeaderId);
         return $poHeaderId;
     }
 
@@ -3628,39 +3746,111 @@ class MPO_MyRep extends CI_Model
         foreach ($headers as $header) {
             $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
             $type = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
+            $poNumber = strtoupper(trim((string) ($header['po_number'] ?? '')));
             if ($clusterId <= 0) {
                 continue;
             }
             if (!in_array($type, ['CLUSTER', 'SUBFEEDER'], true)) {
                 $type = 'CLUSTER';
             }
-            $grouped[$clusterId][$type][] = $header;
+            $groupKey = $clusterId . '|' . $type . '|' . ($poNumber !== '' ? $poNumber : ('HEADER:' . (int) ($header['id_po_header'] ?? 0)));
+            $grouped[$groupKey][] = $header;
         }
 
         $active = [];
-        foreach ($grouped as $typeGroups) {
-            foreach ($typeGroups as $typeHeaders) {
-                $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['FINAL']);
-                if (empty($selected)) {
-                    $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['INITIAL']);
-                }
-                if (empty($selected)) {
-                    $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['AMANDMENT']);
-                }
-                if (empty($selected)) {
-                    foreach ($typeHeaders as $header) {
-                        if (empty($selected) || $this->isPoHeaderNewer($header, $selected)) {
-                            $selected = $header;
-                        }
+        foreach ($grouped as $typeHeaders) {
+            $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['FINAL']);
+            if (empty($selected)) {
+                $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['INITIAL']);
+            }
+            if (empty($selected)) {
+                $selected = $this->pickLatestPoHeaderByCategory($typeHeaders, ['AMANDMENT']);
+            }
+            if (empty($selected)) {
+                foreach ($typeHeaders as $header) {
+                    if (empty($selected) || $this->isPoHeaderNewer($header, $selected)) {
+                        $selected = $header;
                     }
                 }
-                if (!empty($selected)) {
-                    $active[] = $selected;
-                }
+            }
+            if (!empty($selected)) {
+                $active[] = $selected;
             }
         }
 
         return $active;
+    }
+
+    private function carryForwardTerminProgress($clusterId, $poType, $poNumber, $newPoHeaderId, $userId = 0)
+    {
+        $clusterId = (int) $clusterId;
+        $newPoHeaderId = (int) $newPoHeaderId;
+        $poType = strtoupper(trim((string) $poType));
+        $poNumber = trim((string) $poNumber);
+
+        if ($clusterId <= 0 || $newPoHeaderId <= 0 || $poNumber === '') {
+            return;
+        }
+
+        $sourceHeader = $this->db
+            ->select('id_po_header')
+            ->from('tb_myrep_po_header')
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(TRIM(po_type))', $poType)
+            ->where('UPPER(TRIM(po_number))', strtoupper($poNumber))
+            ->where('id_po_header !=', $newPoHeaderId)
+            ->order_by('po_date', 'DESC')
+            ->order_by('id_po_header', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $sourceHeaderId = (int) ($sourceHeader['id_po_header'] ?? 0);
+        if ($sourceHeaderId <= 0) {
+            return;
+        }
+
+        $sourceTerms = $this->getTerminRowsByPoId($sourceHeaderId);
+        $targetTerms = $this->getTerminRowsByPoId($newPoHeaderId);
+        if (empty($sourceTerms) || empty($targetTerms)) {
+            return;
+        }
+
+        $targetByNo = [];
+        foreach ($targetTerms as $targetTerm) {
+            $terminNo = (int) ($targetTerm['termin_no'] ?? 0);
+            if ($terminNo >= 1 && $terminNo <= 5) {
+                $targetByNo[$terminNo] = $targetTerm;
+            }
+        }
+
+        foreach ($sourceTerms as $sourceTerm) {
+            $terminNo = (int) ($sourceTerm['termin_no'] ?? 0);
+            if ($terminNo < 1 || $terminNo > 5 || empty($targetByNo[$terminNo])) {
+                continue;
+            }
+
+            $payload = [
+                'status_termin' => (string) ($sourceTerm['status_termin'] ?? 'NOT READY'),
+                'invoice_number' => $sourceTerm['invoice_number'] ?? null,
+                'invoice_date' => $sourceTerm['invoice_date'] ?? null,
+                'bast_date' => $sourceTerm['bast_date'] ?? null,
+                'payment_date' => $sourceTerm['payment_date'] ?? null,
+                'remark_termin' => $sourceTerm['remark_termin'] ?? null,
+                'updated_by' => (int) $userId,
+                'termin_value' => (float) ($sourceTerm['termin_value'] ?? 0),
+            ];
+            if ($this->db->field_exists('invoice_value', 'tb_myrep_po_termin')) {
+                $payload['invoice_value'] = array_key_exists('invoice_value', $sourceTerm) ? $sourceTerm['invoice_value'] : null;
+            }
+            if ($this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+                $payload['sertifikat_invoice_date'] = $sourceTerm['sertifikat_invoice_date'] ?? null;
+            }
+
+            $this->db
+                ->where('id_po_termin', (int) ($targetByNo[$terminNo]['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', $payload);
+        }
     }
 
     private function resolvePlanInvoiceValue(array $terminRow)

@@ -16,6 +16,7 @@ class PO_MyRep extends CI_Controller
                 'saveTerminCertificate' => 'EDIT',
                 'batchInvoiceTermin' => 'EDIT',
                 'batchTerminCertificate' => 'EDIT',
+                'batchSavePo' => 'EDIT',
             ]);
         }
     }
@@ -353,6 +354,115 @@ class PO_MyRep extends CI_Controller
 
         $this->session->set_flashdata($result > 0 ? 'success' : 'error', $result > 0 ? 'PO berhasil disimpan.' : 'PO gagal disimpan.');
         redirect('PO_MyRep/detail/' . $clusterId);
+    }
+
+    public function batchSavePo()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $clusterIds = (array) $this->input->post('cluster_id');
+        $poTypes = (array) $this->input->post('po_type');
+        $poCategories = (array) $this->input->post('po_category');
+        $poNumbers = (array) $this->input->post('po_number');
+        $poDates = (array) $this->input->post('po_date');
+        $poValues = (array) $this->input->post('po_value');
+
+        $updatedCount = 0;
+        $skippedMessages = [];
+        $seenKeys = [];
+        $clusterCache = [];
+        $userId = (int) $this->session->userdata('id_user');
+
+        foreach ($poNumbers as $index => $poNumberRaw) {
+            $clusterId = (int) ($clusterIds[$index] ?? 0);
+            $poType = strtoupper(trim((string) ($poTypes[$index] ?? 'CLUSTER')));
+            $poCategory = strtoupper(trim((string) ($poCategories[$index] ?? 'INITIAL')));
+            $poNumber = trim((string) $poNumberRaw);
+            $poDate = $this->normalizeDate($poDates[$index] ?? '');
+            $poValue = $this->normalizeNumber($poValues[$index] ?? '');
+
+            if ($clusterId <= 0 && $poNumber === '' && $poDate === null && $poValue <= 0) {
+                continue;
+            }
+
+            if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+                $poType = 'CLUSTER';
+            }
+            if (!in_array($poCategory, ['INITIAL', 'FINAL'], true)) {
+                $poCategory = 'INITIAL';
+            }
+
+            if (!isset($clusterCache[$clusterId])) {
+                $clusterCache[$clusterId] = $clusterId > 0 ? $this->MPO_MyRep->getClusterById($clusterId) : [];
+            }
+            $cluster = $clusterCache[$clusterId];
+            $clusterLabel = !empty($cluster['cluster_name'])
+                ? (string) $cluster['cluster_name']
+                : 'Baris ' . ($index + 1);
+            $rowLabel = $clusterLabel . ' / ' . ($poNumber !== '' ? $poNumber : ('PO ' . $poCategory));
+
+            if ($clusterId <= 0 || empty($cluster)) {
+                $skippedMessages[] = $rowLabel . ': cluster tidak valid.';
+                continue;
+            }
+            if ($poNumber === '' || $poDate === null || $poValue <= 0) {
+                $skippedMessages[] = $rowLabel . ': nomor PO, tanggal PO, dan nilai PO wajib valid.';
+                continue;
+            }
+
+            $dedupeKey = $clusterId . '|' . $poType . '|' . $poCategory . '|' . strtoupper($poNumber);
+            if (isset($seenKeys[$dedupeKey])) {
+                $skippedMessages[] = $rowLabel . ': duplikat dalam batch.';
+                continue;
+            }
+            $seenKeys[$dedupeKey] = true;
+
+            if ($this->MPO_MyRep->poHeaderExists($clusterId, $poType, $poCategory, $poNumber)) {
+                $skippedMessages[] = $rowLabel . ': PO dengan tipe dan kategori yang sama sudah ada.';
+                continue;
+            }
+
+            $result = $this->MPO_MyRep->createPoHeader($clusterId, [
+                'parent_po_header_id' => null,
+                'po_type' => $poType,
+                'po_category' => $poCategory,
+                'po_number' => $poNumber,
+                'po_date' => $poDate,
+                'po_value' => $poValue,
+                'status_po' => 'ISSUED',
+                'po_version_label' => '',
+                'remark_po' => '',
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+
+            if ($result > 0) {
+                $updatedCount++;
+            } else {
+                $skippedMessages[] = $rowLabel . ': gagal disimpan.';
+            }
+        }
+
+        if ($updatedCount > 0) {
+            $message = $updatedCount . ' PO initial/final berhasil disimpan.';
+            if (!empty($skippedMessages)) {
+                $message .= ' ' . count($skippedMessages) . ' baris dilewati: ' . implode('; ', array_slice($skippedMessages, 0, 5));
+            }
+            $this->session->set_flashdata('success', $message);
+        } else {
+            $this->session->set_flashdata('error', 'Tidak ada PO initial/final yang berhasil disimpan. ' . implode('; ', array_slice($skippedMessages, 0, 5)));
+        }
+
+        redirect('PO_MyRep');
     }
 
     public function updateTermin()

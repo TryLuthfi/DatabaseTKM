@@ -1054,6 +1054,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                         </p>
                         <div class="po-hero__actions">
                             <?php if ($canBatchInvoice): ?>
+                                <button type="button" class="po-btn po-btn--primary" data-toggle="modal" data-target="#modal-batch-po-header">
+                                    <i class="fas fa-layer-group"></i>
+                                    Batch Input PO Initial/Final
+                                </button>
                                 <button type="button" class="po-btn po-btn--primary" data-toggle="modal" data-target="#modal-batch-invoice-termin">
                                     <i class="fas fa-file-invoice-dollar"></i>
                                     Batch Input Invoice Termin
@@ -1620,6 +1624,158 @@ if (is_array($terminBreakdownRows ?? null)) {
 </div>
 
 <?php if ($isReady && $canBatchInvoice): ?>
+    <div class="modal fade" id="modal-batch-po-header" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <form method="post" action="<?= base_url('PO_MyRep/batchSavePo') ?>" id="po-batch-header-form">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Batch Input PO Initial / Final</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <datalist id="po-batch-cluster-options">
+                            <?php
+                            $poBatchClusterSeen = [];
+                            foreach (($clusterRows ?? []) as $poBatchClusterRow):
+                                $poBatchClusterId = (int) ($poBatchClusterRow['id_myrep_cluster'] ?? 0);
+                                if ($poBatchClusterId <= 0 || isset($poBatchClusterSeen[$poBatchClusterId])) {
+                                    continue;
+                                }
+                                $poBatchClusterSeen[$poBatchClusterId] = true;
+                                $poBatchClusterCode = trim((string) ($poBatchClusterRow['cluster_code'] ?? ''));
+                                $poBatchClusterName = trim((string) ($poBatchClusterRow['cluster_name'] ?? ''));
+                                $poBatchClusterCity = trim((string) ($poBatchClusterRow['city_name'] ?? ''));
+                            ?>
+                                <option value="<?= htmlspecialchars(trim($poBatchClusterCode . ' | ' . $poBatchClusterName . ' | ' . $poBatchClusterCity), ENT_QUOTES) ?>"></option>
+                            <?php endforeach; ?>
+                        </datalist>
+
+                        <ul class="nav nav-tabs" id="po-batch-header-tabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="po-batch-header-manual-tab" data-toggle="pill" href="#po-batch-header-manual-pane" role="tab" aria-controls="po-batch-header-manual-pane" aria-selected="true">Input Manual</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="po-batch-header-paste-tab" data-toggle="pill" href="#po-batch-header-paste-pane" role="tab" aria-controls="po-batch-header-paste-pane" aria-selected="false">Paste dari Excel</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content border-left border-right border-bottom p-3 mb-3" id="po-batch-header-tab-content">
+                            <div class="tab-pane fade show active" id="po-batch-header-manual-pane" role="tabpanel" aria-labelledby="po-batch-header-manual-tab">
+                                <div class="po-batch-invoice__toolbar">
+                                    <div>
+                                        <label class="mb-1">Cluster</label>
+                                        <input type="text" id="po-header-cluster-input" class="form-control" list="po-batch-cluster-options" placeholder="Cluster Code | Cluster | Kota">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Tipe PO</label>
+                                        <select id="po-header-type-input" class="form-control">
+                                            <option value="CLUSTER">CLUSTER</option>
+                                            <option value="SUBFEEDER">SUBFEEDER</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Kategori</label>
+                                        <select id="po-header-category-input" class="form-control">
+                                            <option value="INITIAL">INITIAL</option>
+                                            <option value="FINAL">FINAL</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Nomor PO</label>
+                                        <input type="text" id="po-header-number-input" class="form-control" placeholder="Contoh: 7400123456">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Tanggal PO</label>
+                                        <input type="date" id="po-header-date-input" class="form-control" value="<?= date('Y-m-d') ?>">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1">Nilai PO</label>
+                                        <input type="text" id="po-header-value-input" class="form-control" placeholder="Contoh: 1.000.000">
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary" id="po-header-add-row">Tambah Row</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="po-batch-header-paste-pane" role="tabpanel" aria-labelledby="po-batch-header-paste-tab">
+                                <div class="form-group">
+                                    <label>Data PO Initial / Final</label>
+                                    <textarea id="po-header-paste" class="form-control po-batch-invoice__paste" placeholder="Cluster[TAB]Tipe PO[TAB]Kategori[TAB]Nomor PO[TAB]Tanggal PO[TAB]Nilai PO&#10;CL001 | Cluster A | BANDUNG[TAB]CLUSTER[TAB]INITIAL[TAB]7400123456[TAB]2026-06-29[TAB]100000000"></textarea>
+                                    <small class="form-text text-muted">Format: Cluster, Tipe PO, Kategori, Nomor PO, Tanggal PO, Nilai PO. Kategori hanya INITIAL atau FINAL.</small>
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                    <button type="button" class="btn btn-outline-secondary" id="po-header-parse-paste">Cek PO</button>
+                                    <button type="button" class="btn btn-outline-danger" id="po-header-clear-list" disabled>Hapus List</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="po-batch-summary" id="po-header-summary">
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Initial <span class="po-batch-summary-card__count" id="po-header-summary-initial-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-header-summary-initial-value">0</span>
+                            </div>
+                            <div class="po-batch-summary-card">
+                                <span class="po-batch-summary-card__label">Final <span class="po-batch-summary-card__count" id="po-header-summary-final-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-header-summary-final-value">0</span>
+                            </div>
+                            <div class="po-batch-summary-card po-batch-summary-card--total">
+                                <span class="po-batch-summary-card__label">Total Valid <span class="po-batch-summary-card__count" id="po-header-summary-total-count">0</span></span>
+                                <span class="po-batch-summary-card__value" id="po-header-summary-total-value">0</span>
+                            </div>
+                            <div class="po-batch-status-filters">
+                                <button type="button" class="po-batch-summary-card po-header-status-filter" data-header-status-filter="success">
+                                    <span class="po-batch-summary-card__label">Valid <span class="po-batch-summary-card__count" id="po-header-status-valid-count">0</span></span>
+                                    <span class="po-batch-summary-card__value text-success" id="po-header-status-valid-value">0</span>
+                                </button>
+                                <button type="button" class="po-batch-summary-card po-header-status-filter" data-header-status-filter="invalid">
+                                    <span class="po-batch-summary-card__label">Invalid <span class="po-batch-summary-card__count" id="po-header-status-invalid-count">0</span></span>
+                                    <span class="po-batch-summary-card__value text-danger" id="po-header-status-invalid-value">0</span>
+                                </button>
+                                <button type="button" class="po-batch-summary-card po-header-status-filter" data-header-status-filter="duplicate">
+                                    <span class="po-batch-summary-card__label">Duplicate <span class="po-batch-summary-card__count" id="po-header-status-duplicate-count">0</span></span>
+                                    <span class="po-batch-summary-card__value text-warning" id="po-header-status-duplicate-value">0</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0" id="po-batch-header-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width:60px;">No</th>
+                                        <th>Cluster</th>
+                                        <th style="width:110px;">Tipe</th>
+                                        <th style="width:110px;">Kategori</th>
+                                        <th>Nomor PO</th>
+                                        <th style="width:130px;">Tanggal PO</th>
+                                        <th style="width:180px;">Nilai PO</th>
+                                        <th style="width:220px;">Status</th>
+                                        <th style="width:90px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="po-header-empty-row">
+                                        <td colspan="9" class="text-center text-muted">Belum ada row PO.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <div class="text-muted small">Semua row valid akan membuat PO baru dan otomatis sinkron estimasi termin.</div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-primary" id="po-header-submit" disabled>Simpan Batch PO</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if ($isReady && $canBatchInvoice): ?>
     <div class="modal fade" id="modal-batch-invoice-termin" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
@@ -2146,7 +2302,57 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
             echo json_encode($poBatchCertificateReleaseLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
+        var poBatchClusterLookup = <?php
+            $poBatchClusterLookup = [];
+            foreach (($clusterRows ?? []) as $poBatchClusterRow) {
+                $clusterId = (int) ($poBatchClusterRow['id_myrep_cluster'] ?? 0);
+                if ($clusterId <= 0) {
+                    continue;
+                }
+
+                $clusterCode = trim((string) ($poBatchClusterRow['cluster_code'] ?? ''));
+                $clusterName = trim((string) ($poBatchClusterRow['cluster_name'] ?? ''));
+                $cityName = trim((string) ($poBatchClusterRow['city_name'] ?? ''));
+                $regionalName = trim((string) ($poBatchClusterRow['regional_name'] ?? ''));
+                $clusterLabel = trim(($clusterCode !== '' ? $clusterCode . ' - ' : '') . $clusterName . ($cityName !== '' ? ' (' . $cityName . ')' : ''));
+                $aliases = array_values(array_unique(array_filter([
+                    strtoupper(trim($clusterCode)),
+                    strtoupper(trim($clusterName)),
+                    strtoupper(trim($clusterCode . ' | ' . $clusterName)),
+                    strtoupper(trim($clusterCode . ' | ' . $clusterName . ' | ' . $cityName)),
+                    strtoupper(trim($clusterName . ' | ' . $cityName)),
+                    strtoupper(trim($clusterLabel)),
+                ])));
+
+                foreach ($aliases as $alias) {
+                    $poBatchClusterLookup[$alias] = [
+                        'id_myrep_cluster' => $clusterId,
+                        'cluster_code' => $clusterCode,
+                        'cluster_name' => $clusterName,
+                        'city_name' => $cityName,
+                        'regional_name' => $regionalName,
+                        'display_label' => $clusterLabel,
+                    ];
+                }
+            }
+            echo json_encode($poBatchClusterLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
+        var poExistingHeaderLookup = <?php
+            $poExistingHeaderLookup = [];
+            foreach (($poListRows ?? []) as $poExistingRow) {
+                $existingClusterId = (int) ($poExistingRow['id_myrep_cluster'] ?? 0);
+                $existingPoType = strtoupper(trim((string) ($poExistingRow['po_type'] ?? 'CLUSTER')));
+                $existingPoCategory = strtoupper(trim((string) ($poExistingRow['po_category'] ?? 'INITIAL')));
+                $existingPoNumber = strtoupper(trim((string) ($poExistingRow['po_number'] ?? '')));
+                if ($existingClusterId <= 0 || $existingPoNumber === '') {
+                    continue;
+                }
+                $poExistingHeaderLookup[$existingClusterId . '|' . $existingPoType . '|' . $existingPoCategory . '|' . $existingPoNumber] = true;
+            }
+            echo json_encode($poExistingHeaderLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
         var poAllowedCertificateStatuses = ['REVISI', 'FULL UPLOAD', 'APPROVED 1', 'LOGISTIK', 'PLANNING', 'TEAM LEADER', 'WASPANG', 'PERMIT'];
+        var poHeaderActiveStatusFilter = '';
         var poBatchActiveStatusFilter = '';
         var poCertActiveStatusFilter = '';
         var poCertRegionalFilter = '';
@@ -2208,6 +2414,315 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
             $input[0].setSelectionRange(caret, caret);
         }
+
+        function normalizeDateInputValue(value) {
+            var text = String(value || '').trim();
+            if (!text) {
+                return '';
+            }
+            if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+                return text;
+            }
+            var match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+            if (!match) {
+                return '';
+            }
+            var day = match[1].padStart(2, '0');
+            var month = match[2].padStart(2, '0');
+            var year = match[3].length === 2 ? ('20' + match[3]) : match[3];
+            return year + '-' + month + '-' + day;
+        }
+
+        function resolveBatchCluster(value) {
+            var key = String(value || '').trim().toUpperCase();
+            return key ? (poBatchClusterLookup[key] || null) : null;
+        }
+
+        function getBatchHeaderCheck(clusterInput, poType, poCategory, poNumber, poDate, poValue) {
+            var cluster = resolveBatchCluster(clusterInput);
+            var normalizedType = String(poType || '').trim().toUpperCase();
+            var normalizedCategory = String(poCategory || '').trim().toUpperCase();
+            var normalizedNumber = String(poNumber || '').trim().toUpperCase();
+            var normalizedDate = normalizeDateInputValue(poDate);
+            var parsedValue = parseLocaleNumber(poValue);
+
+            if (!cluster || !cluster.id_myrep_cluster) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    statusCode: 'invalid',
+                    message: 'Cluster tidak ditemukan.',
+                    cluster: null,
+                    poDate: normalizedDate
+                };
+            }
+            if (['CLUSTER', 'SUBFEEDER'].indexOf(normalizedType) === -1) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    statusCode: 'invalid',
+                    message: 'Tipe PO harus CLUSTER atau SUBFEEDER.',
+                    cluster: cluster,
+                    poDate: normalizedDate
+                };
+            }
+            if (['INITIAL', 'FINAL'].indexOf(normalizedCategory) === -1) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    statusCode: 'invalid',
+                    message: 'Kategori harus INITIAL atau FINAL.',
+                    cluster: cluster,
+                    poDate: normalizedDate
+                };
+            }
+            if (!normalizedNumber || !normalizedDate || parsedValue <= 0) {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    statusCode: 'invalid',
+                    message: 'Nomor PO, tanggal PO, dan nilai PO wajib valid.',
+                    cluster: cluster,
+                    poDate: normalizedDate
+                };
+            }
+
+            var existingKey = [
+                cluster.id_myrep_cluster,
+                normalizedType,
+                normalizedCategory,
+                normalizedNumber
+            ].join('|');
+            if (poExistingHeaderLookup[existingKey]) {
+                return {
+                    valid: false,
+                    label: 'Duplicate Existing',
+                    statusCode: 'duplicate',
+                    message: 'PO dengan cluster, tipe, kategori, dan nomor yang sama sudah ada.',
+                    cluster: cluster,
+                    poDate: normalizedDate
+                };
+            }
+
+            return {
+                valid: true,
+                label: 'Valid',
+                statusCode: 'success',
+                message: cluster.display_label || cluster.cluster_name || '-',
+                cluster: cluster,
+                poDate: normalizedDate
+            };
+        }
+
+        function updateBatchHeaderState() {
+            var $rows = $('#po-batch-header-table tbody tr.po-header-row');
+            var $validRows = $rows.filter('[data-valid="1"]');
+            var $invalidRows = $rows.filter('[data-status-code="invalid"]');
+            var $duplicateRows = $rows.filter('[data-status-code="duplicate"]');
+            var validValue = 0;
+            var invalidValue = 0;
+            var duplicateValue = 0;
+            var initialCount = 0;
+            var finalCount = 0;
+            var initialValue = 0;
+            var finalValue = 0;
+            var visibleIndex = 0;
+
+            $validRows.each(function () {
+                var amount = parseLocaleNumber($(this).data('po-value'));
+                var category = String($(this).data('po-category') || '').toUpperCase();
+                validValue += amount;
+                if (category === 'FINAL') {
+                    finalCount++;
+                    finalValue += amount;
+                } else {
+                    initialCount++;
+                    initialValue += amount;
+                }
+            });
+
+            $invalidRows.each(function () {
+                invalidValue += parseLocaleNumber($(this).data('po-value'));
+            });
+            $duplicateRows.each(function () {
+                duplicateValue += parseLocaleNumber($(this).data('po-value'));
+            });
+
+            $rows.each(function () {
+                var $row = $(this);
+                var matchesFilter = !poHeaderActiveStatusFilter || String($row.data('status-code') || '') === poHeaderActiveStatusFilter;
+                $row.toggle(matchesFilter);
+                if (matchesFilter) {
+                    $row.find('.po-header-row-no').text(++visibleIndex);
+                }
+            });
+
+            $('#po-batch-header-table tbody .po-header-empty-row')
+                .toggle($rows.length === 0 || visibleIndex === 0)
+                .find('td')
+                .text($rows.length === 0 ? 'Belum ada row PO.' : 'Tidak ada row sesuai filter.');
+
+            $('#po-header-submit').prop('disabled', $validRows.length === 0);
+            $('#po-header-clear-list').prop('disabled', $rows.length === 0);
+            $('#po-header-summary-initial-count').text(initialCount);
+            $('#po-header-summary-final-count').text(finalCount);
+            $('#po-header-summary-total-count').text($validRows.length);
+            $('#po-header-summary-initial-value').text(initialValue > 0 ? initialValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-header-summary-final-value').text(finalValue > 0 ? finalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-header-summary-total-value').text(validValue > 0 ? validValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-header-status-valid-count').text($validRows.length);
+            $('#po-header-status-invalid-count').text($invalidRows.length);
+            $('#po-header-status-duplicate-count').text($duplicateRows.length);
+            $('#po-header-status-valid-value').text(validValue > 0 ? validValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-header-status-invalid-value').text(invalidValue > 0 ? invalidValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-header-status-duplicate-value').text(duplicateValue > 0 ? duplicateValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('.po-header-status-filter').toggleClass('is-active', false);
+            if (poHeaderActiveStatusFilter) {
+                $('.po-header-status-filter[data-header-status-filter="' + poHeaderActiveStatusFilter + '"]').addClass('is-active');
+            }
+        }
+
+        function addBatchHeaderRow(clusterInput, poType, poCategory, poNumber, poDate, poValue) {
+            var normalizedType = String(poType || '').trim().toUpperCase();
+            var normalizedCategory = String(poCategory || '').trim().toUpperCase();
+            var normalizedNumber = String(poNumber || '').trim();
+            var parsedValue = parseLocaleNumber(poValue);
+            var check = getBatchHeaderCheck(clusterInput, normalizedType, normalizedCategory, normalizedNumber, poDate, parsedValue);
+            var cluster = check.cluster;
+            var normalizedDate = check.poDate || '';
+
+            if (cluster && cluster.id_myrep_cluster) {
+                var duplicateBatchKey = [
+                    cluster.id_myrep_cluster,
+                    normalizedType,
+                    normalizedCategory,
+                    normalizedNumber.toUpperCase()
+                ].join('|');
+
+                var hasBatchDuplicate = false;
+                $('#po-batch-header-table tbody tr.po-header-row').each(function () {
+                    if (String($(this).data('batch-key') || '') === duplicateBatchKey) {
+                        hasBatchDuplicate = true;
+                        return false;
+                    }
+                });
+
+                if (hasBatchDuplicate) {
+                    check.valid = false;
+                    check.label = 'Duplicate Batch';
+                    check.statusCode = 'duplicate';
+                    check.message = 'Baris dengan cluster, tipe, kategori, dan nomor PO yang sama sudah ada di list.';
+                }
+            }
+
+            var statusClass = check.valid ? 'table-success' : (check.statusCode === 'duplicate' ? 'table-warning' : 'table-danger');
+            var clusterId = cluster && cluster.id_myrep_cluster ? cluster.id_myrep_cluster : '';
+            var clusterLabel = cluster && cluster.display_label ? cluster.display_label : String(clusterInput || '').trim();
+            var batchKey = clusterId ? [clusterId, normalizedType, normalizedCategory, normalizedNumber.toUpperCase()].join('|') : '';
+            var formattedValue = parsedValue > 0 ? parsedValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '';
+            var html = '<tr class="po-header-row ' + statusClass + '" data-valid="' + (check.valid ? '1' : '0') + '" data-status-code="' + escapeHtml(check.statusCode) + '" data-po-value="' + escapeHtml(parsedValue) + '" data-po-category="' + escapeHtml(normalizedCategory) + '" data-batch-key="' + escapeHtml(batchKey) + '">' +
+                '<td class="text-center po-header-row-no"></td>' +
+                '<td>' + escapeHtml(clusterLabel) + (cluster && cluster.regional_name ? '<div class="small text-muted">' + escapeHtml(cluster.regional_name) + '</div>' : '') + '</td>' +
+                '<td class="text-center">' + escapeHtml(normalizedType || '-') + '</td>' +
+                '<td class="text-center">' + escapeHtml(normalizedCategory || '-') + '</td>' +
+                '<td>' + escapeHtml(normalizedNumber || '-') + '</td>' +
+                '<td class="text-center">' + escapeHtml(normalizedDate || '-') + '</td>' +
+                '<td class="text-right">' + escapeHtml(formattedValue || '-') + '</td>' +
+                '<td><span class="badge badge-' + (check.valid ? 'success' : (check.statusCode === 'duplicate' ? 'warning' : 'danger')) + '">' + escapeHtml(check.label) + '</span><div class="small text-muted">' + escapeHtml(check.message || '-') + '</div></td>' +
+                '<td class="text-center">' +
+                    '<input type="hidden" name="cluster_id[]" value="' + escapeHtml(clusterId) + '">' +
+                    '<input type="hidden" name="po_type[]" value="' + escapeHtml(normalizedType) + '">' +
+                    '<input type="hidden" name="po_category[]" value="' + escapeHtml(normalizedCategory) + '">' +
+                    '<input type="hidden" name="po_number[]" value="' + escapeHtml(normalizedNumber) + '">' +
+                    '<input type="hidden" name="po_date[]" value="' + escapeHtml(normalizedDate) + '">' +
+                    '<input type="hidden" name="po_value[]" value="' + escapeHtml(parsedValue) + '">' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger po-header-remove-row">Hapus</button>' +
+                '</td>' +
+            '</tr>';
+
+            $('#po-batch-header-table tbody').append(html);
+            updateBatchHeaderState();
+            return check.valid;
+        }
+
+        $('#po-header-add-row').on('click', function () {
+            var added = addBatchHeaderRow(
+                $('#po-header-cluster-input').val(),
+                $('#po-header-type-input').val(),
+                $('#po-header-category-input').val(),
+                $('#po-header-number-input').val(),
+                $('#po-header-date-input').val(),
+                $('#po-header-value-input').val()
+            );
+            if (added) {
+                $('#po-header-cluster-input').val('');
+                $('#po-header-number-input').val('');
+                $('#po-header-value-input').val('');
+                $('#po-header-category-input').val('INITIAL');
+                $('#po-header-cluster-input').focus();
+            }
+        });
+
+        $('#po-header-value-input').on('input', function () {
+            formatBatchInvoiceInput($(this));
+        });
+
+        $('#po-header-parse-paste').on('click', function () {
+            var lines = String($('#po-header-paste').val() || '').split(/\r?\n/);
+            var addedCount = 0;
+
+            lines.forEach(function (line) {
+                var trimmedLine = String(line || '').trim();
+                if (!trimmedLine) {
+                    return;
+                }
+
+                var columns = trimmedLine.indexOf('\t') >= 0
+                    ? trimmedLine.split('\t')
+                    : trimmedLine.split(',');
+
+                if (columns.length < 6) {
+                    return;
+                }
+
+                var clusterInput = columns[0];
+                var poType = columns[1];
+                var poCategory = columns[2];
+                var poNumber = columns[3];
+                var poDate = columns[4];
+                var poValue = columns.slice(5).join(' ');
+                if (addBatchHeaderRow(clusterInput, poType, poCategory, poNumber, poDate, poValue)) {
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                $('#po-header-paste').val('');
+            }
+        });
+
+        $(document).on('click', '.po-header-remove-row', function () {
+            $(this).closest('tr').remove();
+            updateBatchHeaderState();
+        });
+
+        $('#po-header-clear-list').on('click', function () {
+            $('#po-batch-header-table tbody tr.po-header-row').remove();
+            updateBatchHeaderState();
+        });
+
+        $('.po-header-status-filter').on('click', function () {
+            var filter = String($(this).data('header-status-filter') || '');
+            poHeaderActiveStatusFilter = poHeaderActiveStatusFilter === filter ? '' : filter;
+            updateBatchHeaderState();
+        });
+
+        $('#po-batch-header-form').on('submit', function (e) {
+            if ($('#po-batch-header-table tbody tr.po-header-row[data-valid="1"]').length === 0) {
+                e.preventDefault();
+                alert('Belum ada row PO valid untuk disimpan.');
+            }
+        });
 
         function getBatchPlanInvoiceValue(poNumber, termNo) {
             var poKey = String(poNumber || '').trim().toUpperCase();
