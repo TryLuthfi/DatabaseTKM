@@ -950,7 +950,8 @@ if (is_array($terminBreakdownRows ?? null)) {
         gap: 0.75rem;
     }
 
-    .po-batch-status-filter {
+    .po-batch-status-filter,
+    .po-cert-status-filter {
         width: 100%;
         text-align: left;
         cursor: pointer;
@@ -959,14 +960,53 @@ if (is_array($terminBreakdownRows ?? null)) {
         transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
     }
 
-    .po-batch-status-filter:focus {
+    .po-batch-status-filter:focus,
+    .po-cert-status-filter:focus {
         outline: none;
     }
 
-    .po-batch-status-filter.is-active {
+    .po-batch-status-filter.is-active,
+    .po-cert-status-filter.is-active {
         border-color: #2563eb;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, .14), 0 12px 26px rgba(15, 23, 42, .1);
         transform: translateY(-1px);
+    }
+
+    .po-batch-filter-active-badge {
+        display: none;
+        margin-left: auto;
+        padding: 0.15rem 0.42rem;
+        border-radius: 999px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 0.64rem;
+        font-weight: 900;
+        letter-spacing: .04em;
+    }
+
+    .po-batch-status-filter.is-active .po-batch-filter-active-badge,
+    .po-cert-status-filter.is-active .po-batch-filter-active-badge {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .po-cert-table-tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .po-cert-table-tools__filter {
+        min-width: 260px;
+    }
+
+    .po-cert-table-tools__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
 
     @media (max-width: 768px) {
@@ -1848,7 +1888,7 @@ if (is_array($terminBreakdownRows ?? null)) {
 
 <?php if ($isReady && $canBatchCertificate): ?>
     <div class="modal fade" id="modal-batch-certificate-termin" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-dialog po-modal-xxl" role="document">
             <div class="modal-content">
                 <form method="post" action="<?= base_url('PO_MyRep/batchTerminCertificate') ?>" id="po-batch-certificate-form">
                     <div class="modal-header bg-primary text-white">
@@ -1944,17 +1984,43 @@ if (is_array($terminBreakdownRows ?? null)) {
                             </div>
                             <div class="po-batch-status-filters">
                                 <button type="button" class="po-batch-summary-card po-cert-status-filter" data-cert-status-filter="success">
-                                    <span class="po-batch-summary-card__label">Valid <span class="po-batch-summary-card__count" id="po-cert-filter-valid-count">0</span></span>
+                                    <span class="po-batch-summary-card__label">Valid <span class="po-batch-filter-active-badge">AKTIF</span> <span class="po-batch-summary-card__count" id="po-cert-filter-valid-count">0</span></span>
                                     <span class="po-batch-summary-card__value text-success" id="po-cert-filter-valid">0</span>
                                 </button>
                                 <button type="button" class="po-batch-summary-card po-cert-status-filter" data-cert-status-filter="invalid">
-                                    <span class="po-batch-summary-card__label">Invalid <span class="po-batch-summary-card__count" id="po-cert-filter-invalid-count">0</span></span>
+                                    <span class="po-batch-summary-card__label">Invalid <span class="po-batch-filter-active-badge">AKTIF</span> <span class="po-batch-summary-card__count" id="po-cert-filter-invalid-count">0</span></span>
                                     <span class="po-batch-summary-card__value text-danger" id="po-cert-filter-invalid">0</span>
                                 </button>
                                 <button type="button" class="po-batch-summary-card po-cert-status-filter" data-cert-status-filter="need_full_approve">
-                                    <span class="po-batch-summary-card__label">Need Full Approve <span class="po-batch-summary-card__count" id="po-cert-filter-need-approve-count">0</span></span>
+                                    <span class="po-batch-summary-card__label">Need Full Approve <span class="po-batch-filter-active-badge">AKTIF</span> <span class="po-batch-summary-card__count" id="po-cert-filter-need-approve-count">0</span></span>
                                     <span class="po-batch-summary-card__value text-warning" id="po-cert-filter-need-approve">0</span>
                                 </button>
+                            </div>
+                        </div>
+
+                        <div class="po-cert-table-tools">
+                            <div class="po-cert-table-tools__filter">
+                                <label class="mb-1">Filter Regional</label>
+                                <select id="po-cert-regional-filter" class="form-control">
+                                    <option value="">Semua Regional</option>
+                                    <?php
+                                    $poCertRegionalOptions = [];
+                                    foreach (($poListRows ?? []) as $poCertRegionalRow) {
+                                        $poCertRegionalName = strtoupper(trim((string) ($poCertRegionalRow['regional_name'] ?? '')));
+                                        if ($poCertRegionalName !== '') {
+                                            $poCertRegionalOptions[$poCertRegionalName] = true;
+                                        }
+                                    }
+                                    ksort($poCertRegionalOptions);
+                                    foreach (array_keys($poCertRegionalOptions) as $poCertRegionalName):
+                                    ?>
+                                        <option value="<?= htmlspecialchars($poCertRegionalName, ENT_QUOTES) ?>"><?= htmlspecialchars($poCertRegionalName) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="po-cert-table-tools__actions">
+                                <button type="button" class="btn btn-outline-secondary" id="po-cert-copy-text" disabled>Copy Excel/Text</button>
+                                <button type="button" class="btn btn-outline-secondary" id="po-cert-copy-image" disabled>Copy Image WA</button>
                             </div>
                         </div>
 
@@ -1964,16 +2030,18 @@ if (is_array($terminBreakdownRows ?? null)) {
                                     <tr>
                                         <th style="width:60px;">No</th>
                                         <th>Nomor PO</th>
+                                        <th>Project</th>
+                                        <th>Regional</th>
+                                        <th>Cluster</th>
                                         <th style="width:110px;">Term</th>
                                         <th>Status/Tanggal</th>
-                                        <th style="width:120px;">Tipe</th>
                                         <th style="width:220px;">Status Cek</th>
                                         <th style="width:90px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr class="po-cert-empty-row">
-                                        <td colspan="7" class="text-center text-muted">Belum ada row status/tanggal sertifikat.</td>
+                                        <td colspan="9" class="text-center text-muted">Belum ada row status/tanggal sertifikat.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2154,6 +2222,9 @@ if (is_array($terminBreakdownRows ?? null)) {
 
                 $poBatchTerminLookup[strtoupper($poBatchNumber)] = [
                     'po_number' => $poBatchNumber,
+                    'po_type' => (string) ($poBatchRow['po_type'] ?? ''),
+                    'regional_name' => (string) ($poBatchRow['regional_name'] ?? ''),
+                    'cluster_name' => (string) ($poBatchRow['cluster_name'] ?? ''),
                     'termin_status' => $poBatchRow['termin_status_per_termin'] ?? [],
                     'termin_invoice_date' => $poBatchRow['termin_invoice_date_per_termin'] ?? [],
                     'termin_certificate' => $poBatchRow['termin_certificate_per_termin'] ?? [],
@@ -2187,6 +2258,7 @@ if (is_array($terminBreakdownRows ?? null)) {
         var poAllowedCertificateStatuses = ['REVISI', 'FULL UPLOAD', 'APPROVED 1', 'LOGISTIK', 'PLANNING', 'TEAM LEADER', 'WASPANG', 'PERMIT'];
         var poBatchActiveStatusFilter = '';
         var poCertActiveStatusFilter = '';
+        var poCertRegionalFilter = '';
 
         function escapeHtml(value) {
             return $('<div>').text(value == null ? '' : String(value)).html();
@@ -2633,7 +2705,10 @@ if (is_array($terminBreakdownRows ?? null)) {
 
             $rows.each(function () {
                 var $row = $(this);
-                var matchesFilter = !poCertActiveStatusFilter || String($row.data('status-code') || '') === poCertActiveStatusFilter;
+                var rowRegional = String($row.data('regional') || '').toUpperCase();
+                var matchesStatusFilter = !poCertActiveStatusFilter || String($row.data('status-code') || '') === poCertActiveStatusFilter;
+                var matchesRegionalFilter = !poCertRegionalFilter || rowRegional === poCertRegionalFilter;
+                var matchesFilter = matchesStatusFilter && matchesRegionalFilter;
                 $row.toggle(matchesFilter);
                 if (matchesFilter) {
                     $row.find('.po-cert-row-no').text(++visibleIndex);
@@ -2646,6 +2721,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 .text($rows.length === 0 ? 'Belum ada row status/tanggal sertifikat.' : 'Tidak ada row sesuai filter.');
             $('#po-cert-submit').prop('disabled', $validRows.length === 0);
             $('#po-cert-clear-list').prop('disabled', $rows.length === 0);
+            $('#po-cert-copy-text, #po-cert-copy-image').prop('disabled', visibleIndex === 0);
             $('#po-cert-summary-date-count, #po-cert-summary-date').text(dateCount);
             $('#po-cert-summary-status-count, #po-cert-summary-status').text(statusCount);
             $('#po-cert-summary-valid-count, #po-cert-summary-valid').text($validRows.length);
@@ -2668,9 +2744,11 @@ if (is_array($terminBreakdownRows ?? null)) {
 
             var key = poNumber.toUpperCase() + '|' + termNo;
             var exists = false;
+            var $existingRow = $();
             $('#po-batch-certificate-table tbody tr.po-cert-row').each(function () {
                 if ($(this).data('key') === key) {
                     exists = true;
+                    $existingRow = $(this);
                     return false;
                 }
             });
@@ -2691,11 +2769,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                 message = 'Nomor PO, term 2-5, dan status/tanggal wajib diisi.';
                 type = 'Invalid';
             } else if (exists) {
-                valid = false;
-                statusCode = 'invalid';
-                statusLabel = 'Invalid';
-                message = 'Duplikat dalam batch.';
-                type = 'Invalid';
+                poCertActiveStatusFilter = '';
+                updateCertificateBatchState();
+                $existingRow.addClass('table-info');
+                setTimeout(function () {
+                    $existingRow.removeClass('table-info');
+                }, 900);
+                alert('PO ' + poNumber + ' term ' + termNo + ' sudah ada di table batch.');
+                return false;
             } else if (!lookup) {
                 valid = false;
                 statusCode = 'invalid';
@@ -2719,6 +2800,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                 }
             }
 
+            var releaseInfo = poBatchCertificateReleaseLookup[String(poNumber || '').trim().toUpperCase() + '|' + termNo] || null;
+            var copyStatus = statusLabel;
+            if (statusCode === 'need_full_approve') {
+                copyStatus = 'need approve ' + Number((releaseInfo && releaseInfo.astri_approved_docs) || 0) + '/' + Number((releaseInfo && releaseInfo.required_docs) || 0);
+            }
+
             var rowClass = statusCode === 'success' ? 'table-success' : (statusCode === 'need_full_approve' ? 'table-warning' : 'table-danger');
             var badgeClass = statusCode === 'success' ? 'badge-success' : (statusCode === 'need_full_approve' ? 'badge-warning' : 'badge-danger');
             var hiddenInputs = valid
@@ -2726,12 +2813,16 @@ if (is_array($terminBreakdownRows ?? null)) {
                   '<input type="hidden" name="certificate_term_no[]" value="' + escapeHtml(termNo) + '">' +
                   '<input type="hidden" name="certificate_value[]" value="' + escapeHtml(saveValue) + '">'
                 : '';
-            var html = '<tr class="po-cert-row ' + rowClass + '" data-valid="' + (valid ? '1' : '0') + '" data-status-code="' + escapeHtml(statusCode) + '" data-key="' + escapeHtml(key) + '" data-cert-type="' + escapeHtml(type) + '">' +
+            var regionalName = (lookup && lookup.regional_name) || '';
+            var projectType = String((lookup && lookup.po_type) || '').toUpperCase() === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            var html = '<tr class="po-cert-row ' + rowClass + '" data-valid="' + (valid ? '1' : '0') + '" data-status-code="' + escapeHtml(statusCode) + '" data-copy-status="' + escapeHtml(copyStatus) + '" data-key="' + escapeHtml(key) + '" data-cert-type="' + escapeHtml(type) + '" data-regional="' + escapeHtml(String(regionalName || '').toUpperCase()) + '">' +
                 '<td class="text-center po-cert-row-no"></td>' +
                 '<td>' + escapeHtml((lookup && lookup.po_number) || poNumber || '-') + hiddenInputs + '</td>' +
+                '<td>' + escapeHtml(projectType) + '</td>' +
+                '<td>' + escapeHtml(regionalName || '-') + '</td>' +
+                '<td>' + escapeHtml((lookup && lookup.cluster_name) || '-') + '</td>' +
                 '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
                 '<td>' + escapeHtml(certificateValue || '-') + '</td>' +
-                '<td class="text-center"><span class="badge badge-secondary">' + escapeHtml(type) + '</span></td>' +
                 '<td><span class="badge ' + badgeClass + '">' + escapeHtml(statusLabel) + '</span><div class="small text-muted">' + escapeHtml(message) + '</div></td>' +
                 '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-cert-remove-row">Hapus</button></td>' +
             '</tr>';
@@ -2799,6 +2890,182 @@ if (is_array($terminBreakdownRows ?? null)) {
             var filter = String($(this).data('cert-status-filter') || '');
             poCertActiveStatusFilter = poCertActiveStatusFilter === filter ? '' : filter;
             updateCertificateBatchState();
+        });
+
+        $('#po-cert-regional-filter').on('change', function () {
+            poCertRegionalFilter = String($(this).val() || '').toUpperCase();
+            updateCertificateBatchState();
+        });
+
+        if ($.fn.select2) {
+            $('#po-cert-regional-filter').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modal-batch-certificate-termin'),
+                placeholder: 'Semua Regional'
+            });
+        }
+
+        function getVisibleCertificateTableData(copyMode) {
+            var isImageMode = copyMode === 'image';
+            var headers = isImageMode
+                ? ['No', 'Nomor PO', 'Project', 'Regional', 'Cluster', 'Term', 'Tanggal', 'Status Cek']
+                : ['No', 'Nomor PO', 'Project', 'Regional', 'Cluster', 'Term', 'Status/Tanggal', 'Status Cek'];
+            var rows = [];
+            $('#po-batch-certificate-table tbody tr.po-cert-row:visible').each(function () {
+                var cells = [];
+                var $row = $(this);
+                $row.children('td').slice(0, 8).each(function (index) {
+                    if (isImageMode && index === 7) {
+                        cells.push(String($row.data('copy-status') || '').replace(/\s+/g, ' ').trim());
+                        return;
+                    }
+                    cells.push(String($(this).text() || '').replace(/\s+/g, ' ').trim());
+                });
+                rows.push(cells);
+            });
+
+            return {
+                headers: headers,
+                rows: rows
+            };
+        }
+
+        function copyTextToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text);
+            }
+
+            var $textarea = $('<textarea>')
+                .val(text)
+                .css({ position: 'fixed', top: '-9999px', left: '-9999px' })
+                .appendTo('body');
+            $textarea[0].focus();
+            $textarea[0].select();
+            var successful = document.execCommand('copy');
+            $textarea.remove();
+            return successful ? Promise.resolve() : Promise.reject(new Error('Clipboard tidak tersedia.'));
+        }
+
+        function buildCertificateTableText(tableData) {
+            var lines = [tableData.headers.join('\t')];
+            tableData.rows.forEach(function (row) {
+                lines.push(row.join('\t'));
+            });
+            return lines.join('\n');
+        }
+
+        function drawCertificateTableImage(tableData) {
+            var columnWidths = [46, 125, 90, 105, 230, 54, 135, 145];
+            var rowHeight = 34;
+            var headerHeight = 38;
+            var padding = 18;
+            var titleHeight = 42;
+            var width = columnWidths.reduce(function (sum, current) { return sum + current; }, 0) + (padding * 2);
+            var height = padding + titleHeight + headerHeight + (Math.max(tableData.rows.length, 1) * rowHeight) + padding;
+            var canvas = document.createElement('canvas');
+            var scale = Math.max(1, window.devicePixelRatio || 1);
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+
+            var ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '700 18px Arial, sans-serif';
+            ctx.fillText('Batch Update Status/Tanggal Sertifikat Termin', padding, padding + 22);
+            ctx.font = '12px Arial, sans-serif';
+            ctx.fillStyle = '#64748b';
+            var subtitle = poCertRegionalFilter ? ('Regional: ' + poCertRegionalFilter) : 'Regional: Semua';
+            ctx.fillText(subtitle + ' • Row: ' + tableData.rows.length, padding, padding + 40);
+
+            var y = padding + titleHeight;
+            var x = padding;
+            ctx.font = '700 12px Arial, sans-serif';
+            tableData.headers.forEach(function (header, index) {
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(x, y, columnWidths[index], headerHeight);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.strokeRect(x, y, columnWidths[index], headerHeight);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(header, x + 7, y + 24);
+                x += columnWidths[index];
+            });
+
+            y += headerHeight;
+            ctx.font = '12px Arial, sans-serif';
+            tableData.rows.forEach(function (row, rowIndex) {
+                x = padding;
+                row.forEach(function (cell, index) {
+                    ctx.fillStyle = rowIndex % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    ctx.fillRect(x, y, columnWidths[index], rowHeight);
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.strokeRect(x, y, columnWidths[index], rowHeight);
+                    ctx.fillStyle = '#0f172a';
+                    var text = String(cell || '-');
+                    var maxWidth = columnWidths[index] - 14;
+                    while (ctx.measureText(text).width > maxWidth && text.length > 3) {
+                        text = text.slice(0, -4) + '...';
+                    }
+                    ctx.fillText(text, x + 7, y + 22);
+                    x += columnWidths[index];
+                });
+                y += rowHeight;
+            });
+
+            return canvas;
+        }
+
+        $('#po-cert-copy-text').on('click', function () {
+            var tableData = getVisibleCertificateTableData('text');
+            if (!tableData.rows.length) {
+                alert('Tidak ada row yang bisa dicopy.');
+                return;
+            }
+
+            copyTextToClipboard(buildCertificateTableText(tableData))
+                .then(function () {
+                    alert('Table berhasil dicopy. Bisa paste ke Excel atau WA sebagai text.');
+                })
+                .catch(function () {
+                    alert('Gagal copy table.');
+                });
+        });
+
+        $('#po-cert-copy-image').on('click', function () {
+            var tableData = getVisibleCertificateTableData('image');
+            if (!tableData.rows.length) {
+                alert('Tidak ada row yang bisa dicopy.');
+                return;
+            }
+
+            var canvas = drawCertificateTableImage(tableData);
+            if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') {
+                copyTextToClipboard(buildCertificateTableText(tableData)).then(function () {
+                    alert('Browser belum support copy image. Table dicopy sebagai text.');
+                });
+                return;
+            }
+
+            canvas.toBlob(function (blob) {
+                if (!blob) {
+                    alert('Gagal membuat image table.');
+                    return;
+                }
+
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                    .then(function () {
+                        alert('Image table berhasil dicopy. Bisa langsung paste ke WhatsApp Web.');
+                    })
+                    .catch(function () {
+                        copyTextToClipboard(buildCertificateTableText(tableData)).then(function () {
+                            alert('Copy image ditolak browser. Table dicopy sebagai text.');
+                        });
+                    });
+            }, 'image/png');
         });
 
         $('#po-batch-certificate-form').on('submit', function (e) {
