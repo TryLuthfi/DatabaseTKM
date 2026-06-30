@@ -3566,6 +3566,11 @@ class MPO_MyRep extends CI_Model
             return false;
         }
 
+        $termin = $this->getTerminById((int) $terminId);
+        if (empty($termin)) {
+            return false;
+        }
+
         $updatePayload = [
             'status_termin' => (string) $payload['status_termin'],
             'invoice_number' => $payload['invoice_number'] !== '' ? (string) $payload['invoice_number'] : null,
@@ -3579,13 +3584,13 @@ class MPO_MyRep extends CI_Model
             $updatePayload['invoice_value'] = $payload['invoice_value'] !== null ? (float) $payload['invoice_value'] : null;
         }
 
-        $this->db
-            ->where('id_po_termin', (int) $terminId)
-            ->update('tb_myrep_po_termin', $updatePayload);
+        $affectedHeaderIds = $this->syncLinkedTerminStates($termin, $updatePayload);
+        if (empty($affectedHeaderIds) && !empty($termin['id_po_header'])) {
+            $affectedHeaderIds = [(int) $termin['id_po_header']];
+        }
 
-        $termin = $this->getTerminById((int) $terminId);
-        if (!empty($termin['id_po_header'])) {
-            $this->syncPoStatus((int) $termin['id_po_header']);
+        foreach ($affectedHeaderIds as $affectedHeaderId) {
+            $this->syncPoStatus((int) $affectedHeaderId);
         }
 
         return $this->db->affected_rows() >= 0;
@@ -3622,6 +3627,50 @@ class MPO_MyRep extends CI_Model
             ->update('tb_myrep_po_header', [
                 'status_po' => $poStatus,
             ]);
+    }
+
+    private function syncLinkedTerminStates(array $termin, array $updatePayload)
+    {
+        $headerId = (int) ($termin['id_po_header'] ?? 0);
+        $clusterId = (int) ($termin['id_myrep_cluster'] ?? 0);
+        $terminNo = (int) ($termin['termin_no'] ?? 0);
+        $poType = strtoupper(trim((string) ($termin['po_type'] ?? 'CLUSTER')));
+        $poNumber = strtoupper(trim((string) ($termin['po_number'] ?? '')));
+
+        if ($headerId <= 0 || $clusterId <= 0 || $terminNo < 1 || $terminNo > 5 || $poNumber === '') {
+            $this->db
+                ->where('id_po_termin', (int) ($termin['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', $updatePayload);
+            return $headerId > 0 ? [$headerId] : [];
+        }
+
+        $relatedRows = $this->db
+            ->select('t.id_po_termin, t.id_po_header')
+            ->from('tb_myrep_po_termin t')
+            ->join('tb_myrep_po_header p', 'p.id_po_header = t.id_po_header', 'inner')
+            ->where('p.id_myrep_cluster', $clusterId)
+            ->where('UPPER(TRIM(p.po_type))', $poType)
+            ->where('UPPER(TRIM(p.po_number))', $poNumber)
+            ->where('t.termin_no', $terminNo)
+            ->get()
+            ->result_array();
+
+        if (empty($relatedRows)) {
+            $this->db
+                ->where('id_po_termin', (int) ($termin['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', $updatePayload);
+            return $headerId > 0 ? [$headerId] : [];
+        }
+
+        $affectedHeaderIds = [];
+        foreach ($relatedRows as $relatedRow) {
+            $this->db
+                ->where('id_po_termin', (int) ($relatedRow['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', $updatePayload);
+            $affectedHeaderIds[] = (int) ($relatedRow['id_po_header'] ?? 0);
+        }
+
+        return array_values(array_unique(array_filter($affectedHeaderIds)));
     }
 
     private function calculateTerminEstimateValues($initialValue, $finalValue = null)
@@ -3860,7 +3909,7 @@ class MPO_MyRep extends CI_Model
             return (float) $this->normalizeNumericValue($matches[1]);
         }
 
-        return 0;
+        return (float) ($terminRow['termin_value'] ?? 0);
     }
 
     private function resolveDoneInvoiceValue(array $terminRow)
