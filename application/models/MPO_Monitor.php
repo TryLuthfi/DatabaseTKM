@@ -149,6 +149,7 @@ class MPO_Monitor extends CI_Model
         $this->addColumnIfMissing('tb_po_term', 'target_week_end', "ALTER TABLE `tb_po_term` ADD COLUMN `target_week_end` date DEFAULT NULL");
         $this->addColumnIfMissing('tb_po_term', 'target_status', "ALTER TABLE `tb_po_term` ADD COLUMN `target_status` varchar(30) DEFAULT 'OPEN'");
         $this->addColumnIfMissing('tb_po_term', 'invoice_date', "ALTER TABLE `tb_po_term` ADD COLUMN `invoice_date` date DEFAULT NULL");
+        $this->modifyColumnIfDifferent('tb_po_term', 'percent', 'decimal(7,2)', "ALTER TABLE `tb_po_term` MODIFY COLUMN `percent` decimal(7,2) NOT NULL DEFAULT 0.00");
 
         $this->dropIndexIfExists('tb_po', 'uk_tb_po_po_number');
         $this->addIndexIfMissing('tb_po', 'idx_tb_po_source_hash', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_source_hash` (`source_hash`)");
@@ -163,6 +164,14 @@ class MPO_Monitor extends CI_Model
     private function addColumnIfMissing($table, $column, $sql)
     {
         if (!$this->db->field_exists($column, $table)) {
+            $this->db->query($sql);
+        }
+    }
+
+    private function modifyColumnIfDifferent($table, $column, $expectedType, $sql)
+    {
+        $row = $this->db->query("SHOW COLUMNS FROM `$table` WHERE Field = " . $this->db->escape($column))->row_array();
+        if (!empty($row) && strtolower((string) $row['Type']) !== strtolower($expectedType)) {
             $this->db->query($sql);
         }
     }
@@ -2328,11 +2337,32 @@ class MPO_Monitor extends CI_Model
             if ($part === '') {
                 continue;
             }
-            $result[$index] = (float) $part;
+            $result[$index] = $this->normalizePercentLocal($part);
             $index++;
         }
 
         return $result;
+    }
+
+    private function normalizePercentLocal($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0.0;
+        }
+
+        if (!preg_match('/-?\d+(?:[.,]\d+)?/', $value, $match)) {
+            return 0.0;
+        }
+
+        $number = str_replace(',', '.', $match[0]);
+        $percent = is_numeric($number) ? (float) $number : 0.0;
+
+        if ($percent < 0) {
+            return 0.0;
+        }
+
+        return $percent > 100 ? 100.0 : $percent;
     }
 
     private function weekPeriod($year, $week)

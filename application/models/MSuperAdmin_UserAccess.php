@@ -13,6 +13,7 @@ class MSuperAdmin_UserAccess extends CI_Model
         'GeneralAffair',
         'Budgeting',
         'BILCO',
+        'Database All PO',
         'TargetInvoice',
         'RincianInvoice',
         'SuperAdmin',

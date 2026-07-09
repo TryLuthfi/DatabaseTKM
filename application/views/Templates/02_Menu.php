@@ -8,6 +8,7 @@ $canAccessMyRepublik = $isSuperAdmin || has_validation_access('MyRepublik');
 $canAccessFiberstar = $isSuperAdmin || has_validation_access('Fiberstar');
 $canAccessProjectGroup = $canAccessKontrak || $canAccessMyRepublik || $canAccessFiberstar;
 $canAccessBilco = $isSuperAdmin || has_validation_access('BILCO');
+$canAccessDatabaseAllPo = $isSuperAdmin || has_validation_access('Database All PO');
 $currentUserId = (int) $this->session->userdata('id_user');
 $pageAccessControllerMap = [];
 if (function_exists('get_user_page_access_controller_map') && function_exists('has_user_page_access')) {
@@ -39,6 +40,8 @@ $disabledFiberstarLinkClass = $canAccessFiberstar ? '' : ' menu-access-disabled'
 $disabledFiberstarLinkAttr = $canAccessFiberstar ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 $disabledBilcoLinkClass = $canAccessBilco ? '' : ' menu-access-disabled';
 $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledDatabaseAllPoLinkClass = $canAccessDatabaseAllPo ? '' : ' menu-access-disabled';
+$disabledDatabaseAllPoLinkAttr = $canAccessDatabaseAllPo ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 $disabledTargetInvoiceLinkClass = $canAccessTargetInvoicePage ? '' : ' menu-access-disabled';
 $disabledTargetInvoiceLinkAttr = $canAccessTargetInvoicePage ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 $disabledRincianInvoiceLinkClass = $canAccessRincianInvoicePage ? '' : ' menu-access-disabled';
@@ -1068,10 +1071,12 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                             </p>
                         </a>
                     </li>
+
+                    <li class="nav-header">Database All PO</li>
                     <li class="nav-item">
-                        <a href="<?= base_url('PO_Monitor') ?>" class="nav-link<?= $disabledBilcoLinkClass ?> <?php if ($id_menu == 'PO_Monitor') {
+                        <a href="<?= base_url('PO_Monitor') ?>" class="nav-link<?= $disabledDatabaseAllPoLinkClass ?> <?php if ($id_menu == 'PO_Monitor') {
                               echo " active";
-                          } ?>"<?= $disabledBilcoLinkAttr ?>>
+                          } ?>"<?= $disabledDatabaseAllPoLinkAttr ?>>
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>
                                 PO Monitor

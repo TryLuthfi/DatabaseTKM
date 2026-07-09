@@ -6,7 +6,7 @@ class PO_Monitor extends CI_Controller
     public function __construct()
     {
         parent::__construct();
-        enforce_bilco_access();
+        enforce_database_all_po_access();
         $this->load->model('MPO_Monitor');
         $this->MPO_Monitor->ensureStandaloneSchema();
     }

@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `tb_po_term` (
   `id_po` int(11) NOT NULL,
   `id_amend` int(11) DEFAULT NULL,
   `term_index` tinyint(4) NOT NULL,
-  `percent` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `percent` decimal(7,2) NOT NULL DEFAULT 0.00,
   `value` decimal(18,2) DEFAULT 0.00,
   `due_date` date DEFAULT NULL,
   `sla_days` int(11) DEFAULT NULL,
@@ -275,6 +275,9 @@ ALTER TABLE `tb_po_term`
   ADD COLUMN IF NOT EXISTS `target_week_end` date DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `target_status` varchar(30) DEFAULT 'OPEN',
   ADD COLUMN IF NOT EXISTS `invoice_date` date DEFAULT NULL;
+
+ALTER TABLE `tb_po_term`
+  MODIFY COLUMN `percent` decimal(7,2) NOT NULL DEFAULT 0.00;
 
 ALTER TABLE `tb_po_term_claim`
   ADD COLUMN IF NOT EXISTS `id_allocation` int(11) DEFAULT NULL AFTER `id_term`,

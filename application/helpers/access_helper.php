@@ -285,6 +285,13 @@ if (!function_exists('enforce_bilco_access')) {
     }
 }
 
+if (!function_exists('enforce_database_all_po_access')) {
+    function enforce_database_all_po_access()
+    {
+        return enforce_module_access('Database All PO', 'Anda tidak memiliki akses ke menu Database All PO.');
+    }
+}
+
 if (!function_exists('get_user_page_access_registry')) {
     function get_user_page_access_registry()
     {
@@ -334,7 +341,7 @@ if (!function_exists('get_user_page_access_registry')) {
             ['module_key' => 'Budgeting', 'page_key' => 'Budget_Report', 'controller' => 'Budget_Report', 'actions' => ['VIEW']],
             ['module_key' => 'Budgeting', 'page_key' => 'ListUser', 'controller' => 'ListUser', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS']],
             ['module_key' => 'BILCO', 'page_key' => 'BillingPayment', 'controller' => 'BillingPayment', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
-            ['module_key' => 'BILCO', 'page_key' => 'PO_Monitor', 'controller' => 'PO_Monitor', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
+            ['module_key' => 'Database All PO', 'page_key' => 'PO_Monitor', 'controller' => 'PO_Monitor', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
             ['module_key' => 'TargetInvoice', 'page_key' => 'TargetInvoice', 'controller' => 'TargetInvoice', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS']],
             ['module_key' => 'RincianInvoice', 'page_key' => 'RincianInvoice', 'controller' => 'RincianInvoice', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS']],
             ['module_key' => 'SuperAdmin', 'page_key' => 'SuperAdmin_MyRep_Config', 'controller' => 'SuperAdmin_MyRep_Config', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS']],

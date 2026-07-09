@@ -1147,6 +1147,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     </div>
                 <?php endif; ?>
 
+                <?php if (false): ?>
                 <div class="po-monitor-panel">
                     <div class="po-monitor-panel__head">
                         <div>
@@ -1224,6 +1225,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <div class="po-monitor-kpi-grid">
                     <div class="po-monitor-kpi-card">
