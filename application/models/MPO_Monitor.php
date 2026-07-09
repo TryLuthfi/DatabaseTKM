@@ -3,6 +3,231 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MPO_Monitor extends CI_Model
 {
+    public function ensureStandaloneSchema()
+    {
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_bowheer_po` (
+            `id_bowheer` int(11) NOT NULL AUTO_INCREMENT,
+            `no_urut` int(11) DEFAULT NULL,
+            `pic` varchar(100) DEFAULT NULL,
+            `bowheer` varchar(150) NOT NULL,
+            `bowheer_key` varchar(180) NOT NULL,
+            `created_at` datetime DEFAULT current_timestamp(),
+            PRIMARY KEY (`id_bowheer`),
+            UNIQUE KEY `uk_tb_bowheer_po_key` (`bowheer_key`),
+            KEY `idx_tb_bowheer_po_pic` (`pic`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_po_import_batch` (
+            `id_batch` int(11) NOT NULL AUTO_INCREMENT,
+            `source_file` varchar(255) NOT NULL,
+            `imported_at` datetime DEFAULT current_timestamp(),
+            `imported_by` int(11) DEFAULT NULL,
+            `row_count` int(11) DEFAULT 0,
+            `total_effective` decimal(18,2) DEFAULT 0.00,
+            `total_invoiced` decimal(18,2) DEFAULT 0.00,
+            `total_target_2026` decimal(18,2) DEFAULT 0.00,
+            `total_carry_2027` decimal(18,2) DEFAULT 0.00,
+            `status` varchar(30) DEFAULT 'COMMITTED',
+            `notes` text DEFAULT NULL,
+            PRIMARY KEY (`id_batch`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_po_term_claim` (
+            `id_claim` int(11) NOT NULL AUTO_INCREMENT,
+            `id_term` int(11) NOT NULL,
+            `id_allocation` int(11) DEFAULT NULL,
+            `invoice_date` date DEFAULT NULL,
+            `invoice_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+            `claim_source` varchar(30) DEFAULT 'MANUAL',
+            `source_raw` varchar(100) DEFAULT NULL,
+            `created_at` datetime DEFAULT current_timestamp(),
+            `created_by` int(11) DEFAULT NULL,
+            PRIMARY KEY (`id_claim`),
+            KEY `idx_tb_po_term_claim_id_term` (`id_term`),
+            KEY `idx_tb_po_term_claim_invoice_date` (`invoice_date`),
+            CONSTRAINT `fk_tb_po_term_claim_id_term` FOREIGN KEY (`id_term`) REFERENCES `tb_po_term` (`id_term`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_po_term_allocation` (
+            `id_allocation` int(11) NOT NULL AUTO_INCREMENT,
+            `id_term` int(11) NOT NULL,
+            `no_po_sub` varchar(150) DEFAULT NULL,
+            `kota_po` varchar(150) DEFAULT NULL,
+            `detail_po` text NULL,
+            `allocation_value` decimal(18,2) DEFAULT 0.00,
+            `plan_amount` decimal(18,2) DEFAULT 0.00,
+            `submit_raw` varchar(50) DEFAULT NULL,
+            `target_year` int(11) DEFAULT NULL,
+            `target_week` int(11) DEFAULT NULL,
+            `target_week_start` date DEFAULT NULL,
+            `target_week_end` date DEFAULT NULL,
+            `target_status` varchar(30) DEFAULT 'OPEN',
+            `invoice_date` date DEFAULT NULL,
+            `outstanding_amount` decimal(18,2) DEFAULT 0.00,
+            `source_row_no` int(11) DEFAULT NULL,
+            `created_at` datetime DEFAULT current_timestamp(),
+            PRIMARY KEY (`id_allocation`),
+            KEY `idx_tb_po_term_allocation_id_term` (`id_term`),
+            KEY `idx_tb_po_term_allocation_target` (`target_year`, `target_week`),
+            KEY `idx_tb_po_term_allocation_status` (`target_status`),
+            KEY `idx_tb_po_term_allocation_sub` (`no_po_sub`),
+            CONSTRAINT `fk_tb_po_term_allocation_id_term` FOREIGN KEY (`id_term`) REFERENCES `tb_po_term` (`id_term`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_po_target_pipeline` (
+            `id_pipeline` int(11) NOT NULL AUTO_INCREMENT,
+            `id_bowheer` int(11) DEFAULT NULL,
+            `dashboard_bowheer` varchar(150) NOT NULL,
+            `status_po` varchar(30) DEFAULT 'NY PO',
+            `kota_po` varchar(150) DEFAULT NULL,
+            `detail_po` text NULL,
+            `type_project` varchar(150) DEFAULT NULL,
+            `po_date` date DEFAULT NULL,
+            `po_term` varchar(50) DEFAULT NULL,
+            `term_index` int(11) DEFAULT NULL,
+            `plan_amount` decimal(18,2) DEFAULT 0.00,
+            `submit_raw` varchar(50) DEFAULT NULL,
+            `target_year` int(11) DEFAULT NULL,
+            `target_week` int(11) DEFAULT NULL,
+            `target_week_start` date DEFAULT NULL,
+            `target_week_end` date DEFAULT NULL,
+            `target_status` varchar(30) DEFAULT 'OPEN',
+            `ny_po_2026_amount` decimal(18,2) DEFAULT 0.00,
+            `ny_po_2027_amount` decimal(18,2) DEFAULT 0.00,
+            `source_file` varchar(255) DEFAULT NULL,
+            `source_row_no` int(11) DEFAULT NULL,
+            `import_batch_id` int(11) DEFAULT NULL,
+            `source_hash` varchar(64) DEFAULT NULL,
+            `created_at` datetime DEFAULT current_timestamp(),
+            PRIMARY KEY (`id_pipeline`),
+            KEY `idx_tb_po_target_pipeline_bowheer` (`dashboard_bowheer`),
+            KEY `idx_tb_po_target_pipeline_target` (`target_year`, `target_week`),
+            KEY `idx_tb_po_target_pipeline_status` (`target_status`),
+            KEY `idx_tb_po_target_pipeline_batch` (`import_batch_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_po_dashboard_cache` (
+            `id_cache` int(11) NOT NULL AUTO_INCREMENT,
+            `import_batch_id` int(11) DEFAULT NULL,
+            `pic` varchar(100) DEFAULT NULL,
+            `bowheer` varchar(150) NOT NULL,
+            `sort_order` int(11) DEFAULT 999,
+            `all_po` decimal(18,2) DEFAULT 0.00,
+            `all_invoice` decimal(18,2) DEFAULT 0.00,
+            `done_inv_2026` decimal(18,2) DEFAULT 0.00,
+            `outs_2026_on_target` decimal(18,2) DEFAULT 0.00,
+            `ny_po_on_target_2026` decimal(18,2) DEFAULT 0.00,
+            `grandtotal_target` decimal(18,2) DEFAULT 0.00,
+            `ny_po_total` decimal(18,2) DEFAULT 0.00,
+            `co_to_2027` decimal(18,2) DEFAULT 0.00,
+            `total_outs` decimal(18,2) DEFAULT 0.00,
+            `has_data` tinyint(1) DEFAULT 0,
+            `updated_at` datetime DEFAULT current_timestamp(),
+            PRIMARY KEY (`id_cache`),
+            UNIQUE KEY `uk_tb_po_dashboard_cache_bowheer` (`bowheer`),
+            KEY `idx_tb_po_dashboard_cache_sort` (`sort_order`),
+            KEY `idx_tb_po_dashboard_cache_batch` (`import_batch_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->addColumnIfMissing('tb_po', 'source_file', "ALTER TABLE `tb_po` ADD COLUMN `source_file` varchar(255) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po', 'source_row_no', "ALTER TABLE `tb_po` ADD COLUMN `source_row_no` int(11) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po', 'source_hash', "ALTER TABLE `tb_po` ADD COLUMN `source_hash` varchar(64) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po', 'import_batch_id', "ALTER TABLE `tb_po` ADD COLUMN `import_batch_id` int(11) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po', 'status_po', "ALTER TABLE `tb_po` ADD COLUMN `status_po` varchar(30) DEFAULT 'ON PO'");
+        $this->addColumnIfMissing('tb_po', 'dashboard_bowheer', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_bowheer` varchar(150) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po', 'type_project', "ALTER TABLE `tb_po` ADD COLUMN `type_project` varchar(150) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po', 'dashboard_all_invoice', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_all_invoice` decimal(18,2) DEFAULT 0.00");
+        $this->addColumnIfMissing('tb_po', 'dashboard_invoice_2026', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_invoice_2026` decimal(18,2) DEFAULT 0.00");
+        $this->addColumnIfMissing('tb_po', 'dashboard_outs_2026', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_outs_2026` decimal(18,2) DEFAULT 0.00");
+        $this->addColumnIfMissing('tb_po', 'dashboard_co_2027', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_co_2027` decimal(18,2) DEFAULT 0.00");
+        $this->addColumnIfMissing('tb_po_term_claim', 'id_allocation', "ALTER TABLE `tb_po_term_claim` ADD COLUMN `id_allocation` int(11) DEFAULT NULL AFTER `id_term`");
+        $this->addColumnIfMissing('tb_po_term', 'plan_amount', "ALTER TABLE `tb_po_term` ADD COLUMN `plan_amount` decimal(18,2) DEFAULT 0.00");
+        $this->addColumnIfMissing('tb_po_term', 'submit_raw', "ALTER TABLE `tb_po_term` ADD COLUMN `submit_raw` varchar(50) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po_term', 'target_year', "ALTER TABLE `tb_po_term` ADD COLUMN `target_year` int(11) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po_term', 'target_week', "ALTER TABLE `tb_po_term` ADD COLUMN `target_week` int(11) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po_term', 'target_week_start', "ALTER TABLE `tb_po_term` ADD COLUMN `target_week_start` date DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po_term', 'target_week_end', "ALTER TABLE `tb_po_term` ADD COLUMN `target_week_end` date DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po_term', 'target_status', "ALTER TABLE `tb_po_term` ADD COLUMN `target_status` varchar(30) DEFAULT 'OPEN'");
+        $this->addColumnIfMissing('tb_po_term', 'invoice_date', "ALTER TABLE `tb_po_term` ADD COLUMN `invoice_date` date DEFAULT NULL");
+
+        $this->dropIndexIfExists('tb_po', 'uk_tb_po_po_number');
+        $this->addIndexIfMissing('tb_po', 'idx_tb_po_source_hash', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_source_hash` (`source_hash`)");
+        $this->addIndexIfMissing('tb_po', 'idx_tb_po_number_bowheer', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_number_bowheer` (`po_number`, `id_bowheer`)");
+        $this->addIndexIfMissing('tb_po', 'idx_tb_po_dashboard_bowheer', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_dashboard_bowheer` (`dashboard_bowheer`)");
+        $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_target_week', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_target_week` (`target_year`, `target_week`)");
+        $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_status', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_status` (`target_status`)");
+        $this->addIndexIfMissing('tb_po_term_claim', 'idx_tb_po_term_claim_allocation', "ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_allocation` (`id_allocation`)");
+        $this->seedBowheerPo();
+    }
+
+    private function addColumnIfMissing($table, $column, $sql)
+    {
+        if (!$this->db->field_exists($column, $table)) {
+            $this->db->query($sql);
+        }
+    }
+
+    private function addIndexIfMissing($table, $index, $sql)
+    {
+        $row = $this->db->query("SHOW INDEX FROM `$table` WHERE Key_name = " . $this->db->escape($index))->row_array();
+        if (empty($row)) {
+            $this->db->query($sql);
+        }
+    }
+
+    private function dropIndexIfExists($table, $index)
+    {
+        $row = $this->db->query("SHOW INDEX FROM `$table` WHERE Key_name = " . $this->db->escape($index))->row_array();
+        if (!empty($row)) {
+            $this->db->query("ALTER TABLE `$table` DROP INDEX `$index`");
+        }
+    }
+
+    private function seedBowheerPo()
+    {
+        $rows = [
+            [1, 'Bp Zaenul', 'PT BANGTELINDO'],
+            [2, 'Bp Zaenul', 'PT PERSADA SOKKA TAMA'],
+            [3, 'Bp Zaenul', 'PT TELKOM AKSES'],
+            [4, 'Bp Zaenul', 'PT MORATEL'],
+            [5, 'Bp Zaenul', 'PT TBG ( PERMIT )'],
+            [6, 'Bp Zaenul', 'PT XL SMART'],
+            [7, 'Bp Wardani', 'PT MULTIPOLAR'],
+            [8, 'Bp Wardani', 'PT NFT'],
+            [9, 'Bp Wardani', 'PT EMR - NRO'],
+            [10, 'Bp Slamet', 'PT EMR - PU ( NON PPN )'],
+            [11, 'Bp Slamet', 'PT FS - PU'],
+            [12, 'Bp Slamet', 'PT MORATEL - PU'],
+            [13, 'Bp Fringga', 'PT EMR - DONASI'],
+            [14, 'Bp Donny', 'PT FS - OSP'],
+            [15, 'Bp Donny', 'PT FS - DONASI'],
+            [16, 'Bp Sumirat', 'PT IFORTE - FIBERIZATION'],
+            [17, 'Bp Sumirat', 'PT IFORTE - FTTH XL'],
+            [18, 'Bp Sumirat', 'PT IFORTE - FTTH IOH'],
+            [19, 'Bp Sumirat', 'PT IFORTE - REGULAR & CONN'],
+            [20, 'Bp Hendry', 'PT IFORTE - LBS RECTIFIKASI'],
+            [21, 'Bp Wendy', 'PT VGREEN ( EVCS )'],
+            [22, 'Bp Wendy', 'PT VGREEN ( BSS )']
+        ];
+
+        foreach ($rows as $row) {
+            $payload = [
+                'id_bowheer' => $row[0],
+                'no_urut' => $row[0],
+                'pic' => $row[1],
+                'bowheer' => $row[2],
+                'bowheer_key' => $this->normalizeBowheerKey($row[2])
+            ];
+
+            $exists = $this->db->get_where('tb_bowheer_po', ['id_bowheer' => $row[0]])->row_array();
+            if ($exists) {
+                $this->db->where('id_bowheer', $row[0])->update('tb_bowheer_po', $payload);
+            } else {
+                $this->db->insert('tb_bowheer_po', $payload);
+            }
+        }
+    }
+
     public function getPOsSummary()
     {
         $sql = "SELECT
@@ -10,11 +235,15 @@ class MPO_Monitor extends CI_Model
             p.po_number,
             p.po_date,
             p.id_bowheer,
-            COALESCE(b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
+            COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
+            bp.pic AS pic_bowheer,
             p.total_value,
             COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
-            COALESCE((SELECT SUM(ti.invoice_amount) FROM tb_po_term_invoice ti JOIN tb_po_term t ON ti.id_term = t.id_term WHERE t.id_po = p.id_po), 0) AS total_invoiced
+            COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc JOIN tb_po_term t ON tc.id_term = t.id_term WHERE t.id_po = p.id_po), 0) AS total_invoiced,
+            COALESCE((SELECT SUM(COALESCE(NULLIF(t.plan_amount, 0), t.value)) FROM tb_po_term t WHERE t.id_po = p.id_po AND t.target_status = 'TARGET_WEEK'), 0) AS total_target_week,
+            COALESCE((SELECT SUM(COALESCE(NULLIF(t.plan_amount, 0), t.value)) FROM tb_po_term t WHERE t.id_po = p.id_po AND t.target_status = 'CARRY_OVER'), 0) AS total_carry_over
         FROM tb_po p
+        LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
         LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
         ORDER BY p.po_date DESC";
 
@@ -24,14 +253,15 @@ class MPO_Monitor extends CI_Model
     public function getPOSummaryByBowheer()
     {
         $sql = "SELECT
-            COALESCE(b.id_bowheer, 0) AS id_bowheer,
-            COALESCE(b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
+            COALESCE(bp.id_bowheer, b.id_bowheer, 0) AS id_bowheer,
+            COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
             COUNT(p.id_po) AS total_po,
             SUM(COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value)) AS current_release_value,
-            SUM(COALESCE((SELECT SUM(ti.invoice_amount) FROM tb_po_term_invoice ti JOIN tb_po_term t ON ti.id_term = t.id_term WHERE t.id_po = p.id_po), 0)) AS total_invoiced
+            SUM(COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc JOIN tb_po_term t ON tc.id_term = t.id_term WHERE t.id_po = p.id_po), 0)) AS total_invoiced
         FROM tb_po p
+        LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
         LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
-        GROUP BY COALESCE(b.id_bowheer, 0), COALESCE(b.nama_bowheer, 'Tanpa Bowheer')
+        GROUP BY COALESCE(bp.id_bowheer, b.id_bowheer, 0), COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer')
         ORDER BY current_release_value DESC, nama_bowheer ASC";
 
         $rows = $this->db->query($sql)->result_array();
@@ -51,13 +281,14 @@ class MPO_Monitor extends CI_Model
     public function getBowheerTermBreakdown()
     {
         $sql = "SELECT
-            COALESCE(b.id_bowheer, 0) AS id_bowheer,
-            COALESCE(b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
+            COALESCE(bp.id_bowheer, b.id_bowheer, 0) AS id_bowheer,
+            COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
             t.term_index,
             COUNT(DISTINCT p.id_po) AS total_po,
             SUM(COALESCE(t.value, 0)) AS term_value,
-            SUM(COALESCE(ti.invoice_amount, 0)) AS invoiced_amount
+            SUM(COALESCE(tc.invoiced_amount, 0)) AS invoiced_amount
         FROM tb_po p
+        LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
         LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
         LEFT JOIN tb_po_term t ON p.id_po = t.id_po
             AND (
@@ -77,8 +308,12 @@ class MPO_Monitor extends CI_Model
                     )
                 )
             )
-        LEFT JOIN tb_po_term_invoice ti ON t.id_term = ti.id_term
-        GROUP BY COALESCE(b.id_bowheer, 0), COALESCE(b.nama_bowheer, 'Tanpa Bowheer'), t.term_index
+        LEFT JOIN (
+            SELECT id_term, SUM(invoice_amount) AS invoiced_amount
+            FROM tb_po_term_claim
+            GROUP BY id_term
+        ) tc ON t.id_term = tc.id_term
+        GROUP BY COALESCE(bp.id_bowheer, b.id_bowheer, 0), COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer'), t.term_index
         ORDER BY nama_bowheer ASC, t.term_index ASC";
 
         $rows = $this->db->query($sql)->result_array();
@@ -115,6 +350,157 @@ class MPO_Monitor extends CI_Model
         return array_values($result);
     }
 
+    public function getBatchInvoiceTerminRows()
+    {
+        return $this->db->query("SELECT
+                p.id_po,
+                p.po_number,
+                p.po_date,
+                COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
+                t.id_term,
+                t.term_index,
+                COALESCE(t.value, 0) AS term_value,
+                COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
+                GREATEST(COALESCE(t.value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                t.invoice_date
+            FROM tb_po p
+            LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
+            LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
+            JOIN tb_po_term t ON p.id_po = t.id_po
+                AND (
+                    t.id_amend = (
+                        SELECT a.id_amend
+                        FROM tb_po_amend a
+                        WHERE a.id_po = p.id_po
+                        ORDER BY a.amend_no DESC
+                        LIMIT 1
+                    )
+                    OR (
+                        t.id_amend IS NULL
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM tb_po_amend a2
+                            WHERE a2.id_po = p.id_po
+                        )
+                    )
+                )
+            LEFT JOIN (
+                SELECT id_term, SUM(invoice_amount) AS invoiced_amount
+                FROM tb_po_term_claim
+                GROUP BY id_term
+            ) tc ON t.id_term = tc.id_term
+            ORDER BY p.po_number ASC, t.term_index ASC")->result_array();
+    }
+
+    public function getBowheerTermDetail($idBowheer, $metric, $termIndex = 0)
+    {
+        $idBowheer = (int) $idBowheer;
+        $termIndex = (int) $termIndex;
+        $metric = in_array($metric, ['total_po', 'term_value', 'term_done', 'term_remaining', 'outstanding_term'], true)
+            ? $metric
+            : 'outstanding_term';
+
+        $rows = $this->db->query("SELECT
+                p.id_po,
+                p.po_number,
+                p.po_date,
+                COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
+                t.id_term,
+                t.term_index,
+                alloc.no_po_sub,
+                alloc.kota_po,
+                alloc.detail_po,
+                COALESCE(t.value, 0) AS term_value,
+                COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
+                GREATEST(COALESCE(t.value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer
+            FROM tb_po p
+            LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
+            LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
+            LEFT JOIN tb_po_term t ON p.id_po = t.id_po
+                AND (
+                    t.id_amend = (
+                        SELECT a.id_amend
+                        FROM tb_po_amend a
+                        WHERE a.id_po = p.id_po
+                        ORDER BY a.amend_no DESC
+                        LIMIT 1
+                    )
+                    OR (
+                        t.id_amend IS NULL
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM tb_po_amend a2
+                            WHERE a2.id_po = p.id_po
+                        )
+                    )
+                )
+            LEFT JOIN (
+                SELECT id_term, SUM(invoice_amount) AS invoiced_amount
+                FROM tb_po_term_claim
+                GROUP BY id_term
+            ) tc ON t.id_term = tc.id_term
+            LEFT JOIN (
+                SELECT
+                    id_term,
+                    GROUP_CONCAT(DISTINCT NULLIF(no_po_sub, '') ORDER BY source_row_no SEPARATOR ', ') AS no_po_sub,
+                    GROUP_CONCAT(DISTINCT NULLIF(kota_po, '') ORDER BY source_row_no SEPARATOR ', ') AS kota_po,
+                    GROUP_CONCAT(DISTINCT NULLIF(detail_po, '') ORDER BY source_row_no SEPARATOR ', ') AS detail_po
+                FROM tb_po_term_allocation
+                GROUP BY id_term
+            ) alloc ON t.id_term = alloc.id_term
+            WHERE COALESCE(bp.id_bowheer, b.id_bowheer, 0) = ?
+            ORDER BY p.po_date ASC, p.po_number ASC, t.term_index ASC", [$idBowheer])->result_array();
+
+        $filtered = array_values(array_filter($rows, function ($row) use ($metric, $termIndex) {
+            $rowTermIndex = (int) ($row['term_index'] ?? 0);
+            $termValue = (float) ($row['term_value'] ?? 0);
+            $invoiced = (float) ($row['invoiced_amount'] ?? 0);
+            $remaining = (float) ($row['remaining'] ?? 0);
+            $release = (float) ($row['current_release_value'] ?? 0);
+
+            if ($metric !== 'total_po' && $rowTermIndex <= 0) {
+                return false;
+            }
+
+            if ($termIndex > 0 && $rowTermIndex !== $termIndex) {
+                return false;
+            }
+
+            if ($metric === 'total_po') {
+                return $release > 0;
+            }
+
+            if ($metric === 'term_value') {
+                return $termValue > 0;
+            }
+
+            if ($metric === 'term_done') {
+                return $invoiced > 0;
+            }
+
+            return $remaining > 0;
+        }));
+
+        if ($metric === 'total_po') {
+            $uniqueRows = [];
+            foreach ($filtered as $row) {
+                $poKey = (string) ($row['id_po'] ?? '');
+                if ($poKey !== '' && !isset($uniqueRows[$poKey])) {
+                    $row['term_index'] = null;
+                    $row['term_value'] = 0;
+                    $row['invoiced_amount'] = 0;
+                    $row['remaining'] = 0;
+                    $uniqueRows[$poKey] = $row;
+                }
+            }
+
+            return array_values($uniqueRows);
+        }
+
+        return $filtered;
+    }
+
     public function getPOByNumber($po_number)
     {
         return $this->db->get_where('tb_po', ['po_number' => $po_number])->row_array();
@@ -136,9 +522,9 @@ class MPO_Monitor extends CI_Model
             ->get()
             ->row_array();
 
-        $this->db->select('t.*, COALESCE(SUM(ti.invoice_amount),0) AS invoiced_amount', false);
+        $this->db->select('t.*, COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false);
         $this->db->from('tb_po_term t');
-        $this->db->join('tb_po_term_invoice ti', 't.id_term = ti.id_term', 'left');
+        $this->db->join('tb_po_term_claim tc', 't.id_term = tc.id_term', 'left');
         $this->db->where('t.id_po', (int) $id_po);
 
         if (!empty($latestAmend['id_amend'])) {
@@ -151,6 +537,2003 @@ class MPO_Monitor extends CI_Model
         $this->db->order_by('t.term_index', 'ASC');
 
         return $this->db->get()->result_array();
+    }
+
+    public function getPOAllocations($id_po)
+    {
+        $rows = $this->db->select('a.*, t.term_index, COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false)
+            ->from('tb_po_term_allocation a')
+            ->join('tb_po_term t', 't.id_term = a.id_term')
+            ->join('tb_po_term_claim tc', 'tc.id_allocation = a.id_allocation', 'left')
+            ->where('t.id_po', (int) $id_po)
+            ->group_by('a.id_allocation')
+            ->order_by('t.term_index', 'ASC')
+            ->order_by('a.source_row_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $idTerm = (int) $row['id_term'];
+            if (!isset($result[$idTerm])) {
+                $result[$idTerm] = [];
+            }
+            $result[$idTerm][] = $row;
+        }
+
+        return $result;
+    }
+
+    public function getTargetWeekSummary()
+    {
+        $rows = $this->db->query("SELECT
+                target_year,
+                target_week,
+                target_week_start,
+                target_week_end,
+                term_index,
+                COUNT(*) AS total_term,
+                SUM(amount) AS amount
+            FROM (
+                SELECT
+                    a.target_year,
+                    a.target_week,
+                    a.target_week_start,
+                    a.target_week_end,
+                    t.term_index,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount
+                FROM tb_po_term_allocation a
+                JOIN tb_po_term t ON t.id_term = a.id_term
+                WHERE a.target_status = 'TARGET_WEEK'
+                UNION ALL
+                SELECT
+                    t.target_year,
+                    t.target_week,
+                    t.target_week_start,
+                    t.target_week_end,
+                    t.term_index,
+                    COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
+                FROM tb_po_term t
+                WHERE t.target_status = 'TARGET_WEEK'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+                UNION ALL
+                SELECT
+                    pl.target_year,
+                    pl.target_week,
+                    pl.target_week_start,
+                    pl.target_week_end,
+                    pl.term_index,
+                    pl.plan_amount AS amount
+                FROM tb_po_target_pipeline pl
+                WHERE pl.target_status = 'TARGET_WEEK'
+            ) x
+            GROUP BY target_year, target_week, target_week_start, target_week_end, term_index
+            ORDER BY target_year ASC, target_week ASC, term_index ASC")->result_array();
+
+        return $rows;
+    }
+
+    public function getDashboardSummary()
+    {
+        $cachedRows = $this->db
+            ->order_by('sort_order', 'ASC')
+            ->order_by('bowheer', 'ASC')
+            ->get('tb_po_dashboard_cache')
+            ->result_array();
+
+        if (!empty($cachedRows)) {
+            $rows = [];
+            $totals = [
+                'data_count' => 0,
+                'all_po' => 0,
+                'all_invoice' => 0,
+                'done_inv_2026' => 0,
+                'outs_2026_on_target' => 0,
+                'ny_po_on_target_2026' => 0,
+                'grandtotal_target' => 0,
+                'ny_po_total' => 0,
+                'co_to_2027' => 0,
+                'total_outs' => 0
+            ];
+
+            foreach ($cachedRows as $row) {
+                $rows[] = [
+                    'pic' => $row['pic'],
+                    'bowheer' => $row['bowheer'],
+                    'all_po' => (float) $row['all_po'],
+                    'all_invoice' => (float) $row['all_invoice'],
+                    'done_inv_2026' => (float) $row['done_inv_2026'],
+                    'outs_2026_on_target' => (float) $row['outs_2026_on_target'],
+                    'ny_po_on_target_2026' => (float) $row['ny_po_on_target_2026'],
+                    'grandtotal_target' => (float) $row['grandtotal_target'],
+                    'ny_po_total' => (float) $row['ny_po_total'],
+                    'co_to_2027' => (float) $row['co_to_2027'],
+                    'total_outs' => (float) $row['total_outs']
+                ];
+
+                if ((int) $row['has_data'] === 1) {
+                    $totals['data_count']++;
+                }
+
+                foreach (array_keys($totals) as $key) {
+                    if ($key !== 'data_count') {
+                        $totals[$key] += (float) $row[$key];
+                    }
+                }
+            }
+
+            return ['rows' => $rows, 'totals' => $totals];
+        }
+
+        return $this->calculateDashboardSummary();
+    }
+
+    private function calculateDashboardSummary()
+    {
+        $sql = "SELECT
+                dashboard_bowheer,
+                SUM(all_po) AS all_po,
+                SUM(all_invoice) AS all_invoice,
+                SUM(done_inv_2026) AS done_inv_2026,
+                SUM(outs_2026_on_target) AS outs_2026_on_target,
+                SUM(ny_po_on_target_2026) AS ny_po_on_target_2026,
+                SUM(ny_po_2027) AS ny_po_2027,
+                SUM(co_2027_on_po) AS co_2027_on_po
+            FROM (
+                SELECT
+                    COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS dashboard_bowheer,
+                    CASE WHEN YEAR(p.po_date) = 2026 THEN COALESCE(p.total_value, 0) ELSE 0 END AS all_po,
+                    COALESCE(p.dashboard_all_invoice, 0) AS all_invoice,
+                    COALESCE(p.dashboard_invoice_2026, 0) AS done_inv_2026,
+                    COALESCE(p.dashboard_outs_2026, 0) AS outs_2026_on_target,
+                    0 AS ny_po_on_target_2026,
+                    0 AS ny_po_2027,
+                    COALESCE(p.dashboard_co_2027, 0) AS co_2027_on_po
+                FROM tb_po p
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                WHERE COALESCE(p.status_po, 'ON PO') = 'ON PO'
+                UNION ALL
+                SELECT
+                    dashboard_bowheer,
+                    0 AS all_po,
+                    0 AS all_invoice,
+                    0 AS done_inv_2026,
+                    0 AS outs_2026_on_target,
+                    COALESCE(ny_po_2026_amount, 0) AS ny_po_on_target_2026,
+                    COALESCE(ny_po_2027_amount, 0) AS ny_po_2027,
+                    0 AS co_2027_on_po
+                FROM tb_po_target_pipeline
+            ) x
+            GROUP BY dashboard_bowheer";
+
+        $rows = $this->db->query($sql)->result_array();
+        $summaryMap = [];
+        foreach ($rows as $row) {
+            $name = (string) $row['dashboard_bowheer'];
+            $ny2026 = (float) $row['ny_po_on_target_2026'];
+            $co2027 = (float) $row['co_2027_on_po'] + (float) $row['ny_po_2027'];
+            $grandTarget = (float) $row['outs_2026_on_target'] + $ny2026;
+            $summaryMap[$name] = [
+                'pic' => $this->dashboardPic($name),
+                'bowheer' => $name,
+                'all_po' => (float) $row['all_po'],
+                'all_invoice' => (float) $row['all_invoice'],
+                'done_inv_2026' => (float) $row['done_inv_2026'],
+                'outs_2026_on_target' => (float) $row['outs_2026_on_target'],
+                'ny_po_on_target_2026' => $ny2026,
+                'grandtotal_target' => $grandTarget,
+                'ny_po_total' => $ny2026 + $co2027,
+                'co_to_2027' => $co2027,
+                'total_outs' => $grandTarget + $co2027
+            ];
+        }
+
+        $order = $this->dashboardBowheerOrder();
+        foreach ($order as $name => $pic) {
+            if (!isset($summaryMap[$name])) {
+                $summaryMap[$name] = [
+                    'pic' => $pic,
+                    'bowheer' => $name,
+                    'all_po' => 0,
+                    'all_invoice' => 0,
+                    'done_inv_2026' => 0,
+                    'outs_2026_on_target' => 0,
+                    'ny_po_on_target_2026' => 0,
+                    'grandtotal_target' => 0,
+                    'ny_po_total' => 0,
+                    'co_to_2027' => 0,
+                    'total_outs' => 0
+                ];
+            }
+        }
+
+        uksort($summaryMap, function ($a, $b) use ($order) {
+            $ai = isset($order[$a]) ? array_search($a, array_keys($order), true) : 999;
+            $bi = isset($order[$b]) ? array_search($b, array_keys($order), true) : 999;
+            if ($ai === $bi) {
+                return strcmp($a, $b);
+            }
+            return $ai <=> $bi;
+        });
+
+        $result = array_values($summaryMap);
+        $totals = [
+            'data_count' => 0,
+            'all_po' => 0,
+            'all_invoice' => 0,
+            'done_inv_2026' => 0,
+            'outs_2026_on_target' => 0,
+            'ny_po_on_target_2026' => 0,
+            'grandtotal_target' => 0,
+            'ny_po_total' => 0,
+            'co_to_2027' => 0,
+            'total_outs' => 0
+        ];
+
+        foreach ($result as $row) {
+            $hasData = false;
+            foreach (['all_po', 'done_inv_2026', 'outs_2026_on_target', 'ny_po_on_target_2026', 'co_to_2027'] as $key) {
+                if ((float) $row[$key] != 0.0) {
+                    $hasData = true;
+                    break;
+                }
+            }
+            if ($hasData) {
+                $totals['data_count']++;
+            }
+            foreach (array_keys($totals) as $key) {
+                if ($key !== 'data_count') {
+                    $totals[$key] += (float) $row[$key];
+                }
+            }
+        }
+
+        return ['rows' => $result, 'totals' => $totals];
+    }
+
+    private function rebuildDashboardCache($batchId = null)
+    {
+        $summary = $this->calculateDashboardSummary();
+        $order = array_keys($this->dashboardBowheerOrder());
+
+        $this->db->empty_table('tb_po_dashboard_cache');
+        foreach ($summary['rows'] as $row) {
+            $sortOrder = array_search($row['bowheer'], $order, true);
+            if ($sortOrder === false) {
+                $sortOrder = 999;
+            }
+
+            $hasData = 0;
+            foreach (['all_po', 'done_inv_2026', 'outs_2026_on_target', 'ny_po_on_target_2026', 'co_to_2027'] as $key) {
+                if ((float) $row[$key] != 0.0) {
+                    $hasData = 1;
+                    break;
+                }
+            }
+
+            $this->db->insert('tb_po_dashboard_cache', [
+                'import_batch_id' => $batchId ?: null,
+                'pic' => $row['pic'],
+                'bowheer' => $row['bowheer'],
+                'sort_order' => $sortOrder + 1,
+                'all_po' => $row['all_po'],
+                'all_invoice' => $row['all_invoice'],
+                'done_inv_2026' => $row['done_inv_2026'],
+                'outs_2026_on_target' => $row['outs_2026_on_target'],
+                'ny_po_on_target_2026' => $row['ny_po_on_target_2026'],
+                'grandtotal_target' => $row['grandtotal_target'],
+                'ny_po_total' => $row['ny_po_total'],
+                'co_to_2027' => $row['co_to_2027'],
+                'total_outs' => $row['total_outs'],
+                'has_data' => $hasData,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+    }
+
+    public function getDashboardDatatable($post)
+    {
+        $columns = ['sort_order', 'pic', 'bowheer', 'all_po', 'done_inv_2026', 'outs_2026_on_target', 'ny_po_on_target_2026', 'grandtotal_target', 'ny_po_total', 'co_to_2027', 'total_outs'];
+        $mode = strtolower((string) ($post['dashboard_mode'] ?? 'current')) === 'initial' ? 'initial' : 'current';
+        $search = trim((string) ($post['search']['value'] ?? ''));
+        $start = max(0, (int) ($post['start'] ?? 0));
+        $length = (int) ($post['length'] ?? 25);
+        if ($length <= 0 || $length > 100) {
+            $length = 25;
+        }
+
+        $recordsTotal = (int) $this->db->count_all('tb_po_dashboard_cache');
+
+        $rows = $this->db
+            ->select('*')
+            ->order_by('sort_order', 'ASC')
+            ->order_by('bowheer', 'ASC')
+            ->get('tb_po_dashboard_cache')
+            ->result_array();
+
+        if ($mode === 'initial') {
+            $adjustments = $this->getDashboardManualClaimAdjustments();
+            foreach ($rows as &$row) {
+                $key = (string) $row['bowheer'];
+                $manualDone = (float) ($adjustments[$key]['manual_done_2026'] ?? 0);
+                $manualTargetWeek = (float) ($adjustments[$key]['manual_target_week_2026'] ?? 0);
+
+                $row['all_invoice'] = (float) $row['all_invoice'] - $manualDone;
+                $row['done_inv_2026'] = (float) $row['done_inv_2026'] - $manualDone;
+                $row['outs_2026_on_target'] = (float) $row['outs_2026_on_target'] + $manualTargetWeek;
+                $row['grandtotal_target'] = (float) $row['outs_2026_on_target'] + (float) $row['ny_po_on_target_2026'];
+                $row['ny_po_total'] = (float) $row['ny_po_on_target_2026'] + (float) $row['co_to_2027'];
+                $row['total_outs'] = (float) $row['grandtotal_target'] + (float) $row['co_to_2027'];
+            }
+            unset($row);
+        }
+
+        if ($search !== '') {
+            $rows = array_values(array_filter($rows, function ($row) use ($search) {
+                return stripos((string) $row['pic'], $search) !== false || stripos((string) $row['bowheer'], $search) !== false;
+            }));
+        }
+        $recordsFiltered = count($rows);
+
+        $filteredTotals = [
+            'data_count' => 0,
+            'all_po' => 0,
+            'done_inv_2026' => 0,
+            'outs_2026_on_target' => 0,
+            'ny_po_on_target_2026' => 0,
+            'grandtotal_target' => 0,
+            'ny_po_total' => 0,
+            'co_to_2027' => 0,
+            'total_outs' => 0
+        ];
+
+        foreach ($rows as $totalRow) {
+            if ((int) $totalRow['has_data'] === 1) {
+                $filteredTotals['data_count']++;
+            }
+            foreach (array_keys($filteredTotals) as $key) {
+                if ($key !== 'data_count') {
+                    $filteredTotals[$key] += (float) $totalRow[$key];
+                }
+            }
+        }
+
+        $orderIndex = (int) ($post['order'][0]['column'] ?? 0);
+        $orderDir = strtolower((string) ($post['order'][0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+        $orderColumn = $columns[$orderIndex] ?? 'sort_order';
+
+        usort($rows, function ($a, $b) use ($orderColumn, $orderDir) {
+            $av = $a[$orderColumn] ?? null;
+            $bv = $b[$orderColumn] ?? null;
+            $result = is_numeric($av) && is_numeric($bv)
+                ? ((float) $av <=> (float) $bv)
+                : strcmp((string) $av, (string) $bv);
+
+            if ($result === 0 && $orderColumn !== 'sort_order') {
+                $result = ((float) ($a['sort_order'] ?? 999) <=> (float) ($b['sort_order'] ?? 999));
+            }
+
+            return $orderDir === 'DESC' ? -$result : $result;
+        });
+
+        $pageRows = array_slice($rows, $start, $length);
+
+        return [
+            'draw' => (int) ($post['draw'] ?? 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $pageRows,
+            'filteredTotals' => $filteredTotals
+        ];
+    }
+
+    private function getDashboardManualClaimAdjustments()
+    {
+        $rows = $this->db->query("SELECT
+                COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
+                SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 THEN tc.invoice_amount ELSE 0 END) AS manual_done_2026,
+                SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 AND t.target_status = 'TARGET_WEEK' THEN tc.invoice_amount ELSE 0 END) AS manual_target_week_2026
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+            WHERE tc.claim_source = 'MANUAL'
+            GROUP BY COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer')")->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['bowheer']] = [
+                'manual_done_2026' => (float) $row['manual_done_2026'],
+                'manual_target_week_2026' => (float) $row['manual_target_week_2026']
+            ];
+        }
+
+        return $map;
+    }
+
+    public function getDashboardInitialTotals()
+    {
+        $rows = $this->db
+            ->select('bowheer, done_inv_2026, outs_2026_on_target, ny_po_on_target_2026')
+            ->get('tb_po_dashboard_cache')
+            ->result_array();
+        $adjustments = $this->getDashboardManualClaimAdjustments();
+
+        $totals = [
+            'done_inv_2026' => 0,
+            'outs_2026_on_target' => 0,
+            'ny_po_on_target_2026' => 0,
+            'done_outs_ny_2026' => 0
+        ];
+
+        foreach ($rows as $row) {
+            $key = (string) $row['bowheer'];
+            $manualDone = (float) ($adjustments[$key]['manual_done_2026'] ?? 0);
+            $manualTargetWeek = (float) ($adjustments[$key]['manual_target_week_2026'] ?? 0);
+
+            $done = (float) $row['done_inv_2026'] - $manualDone;
+            $outs = (float) $row['outs_2026_on_target'] + $manualTargetWeek;
+            $ny = (float) $row['ny_po_on_target_2026'];
+
+            $totals['done_inv_2026'] += $done;
+            $totals['outs_2026_on_target'] += $outs;
+            $totals['ny_po_on_target_2026'] += $ny;
+        }
+
+        $totals['done_outs_ny_2026'] = $totals['done_inv_2026'] + $totals['outs_2026_on_target'] + $totals['ny_po_on_target_2026'];
+        return $totals;
+    }
+
+    public function getPODatatable($post)
+    {
+        $columns = ['p.id_po', 'p.po_number', 'p.po_date', 'current_release_value', 'total_invoiced', 'remaining', 'nama_bowheer'];
+        $search = trim((string) ($post['search']['value'] ?? ''));
+        $start = max(0, (int) ($post['start'] ?? 0));
+        $length = (int) ($post['length'] ?? 25);
+        if ($length <= 0 || $length > 100) {
+            $length = 25;
+        }
+
+        $baseSelect = "p.id_po, p.po_number, p.po_date, COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS nama_bowheer,
+            COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
+            COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc JOIN tb_po_term t ON tc.id_term = t.id_term WHERE t.id_po = p.id_po), 0) AS total_invoiced";
+
+        $recordsTotal = (int) $this->db->count_all('tb_po');
+
+        $this->db->select($baseSelect, false)
+            ->from('tb_po p')
+            ->join('tb_bowheer_po bp', 'bp.id_bowheer = p.id_bowheer', 'left');
+
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('p.po_number', $search)
+                ->or_like('p.dashboard_bowheer', $search)
+                ->or_like('bp.bowheer', $search)
+                ->group_end();
+        }
+
+        $recordsFiltered = (int) $this->db->count_all_results('', false);
+
+        $orderIndex = (int) ($post['order'][0]['column'] ?? 2);
+        $orderDir = strtolower((string) ($post['order'][0]['dir'] ?? 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $orderColumn = $columns[$orderIndex] ?? 'p.po_date';
+
+        $rows = $this->db
+            ->order_by($orderColumn, $orderDir)
+            ->limit($length, $start)
+            ->get()
+            ->result_array();
+
+        foreach ($rows as &$row) {
+            $remaining = (float) $row['current_release_value'] - (float) $row['total_invoiced'];
+            $row['remaining'] = $remaining > 0 ? $remaining : 0;
+            $row['sla'] = 'AMAN';
+        }
+        unset($row);
+
+        return [
+            'draw' => (int) ($post['draw'] ?? 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $rows
+        ];
+    }
+
+    public function getProjectWeekSummary()
+    {
+        return $this->db->query("SELECT
+                nama_bowheer,
+                target_year,
+                target_week,
+                target_week_start,
+                target_week_end,
+                COUNT(*) AS total_term,
+                SUM(amount) AS amount
+            FROM (
+                SELECT
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    a.target_year,
+                    a.target_week,
+                    a.target_week_start,
+                    a.target_week_end,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount
+                FROM tb_po_term_allocation a
+                JOIN tb_po_term t ON t.id_term = a.id_term
+                JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
+                WHERE a.target_status = 'TARGET_WEEK'
+                UNION ALL
+                SELECT
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.target_year,
+                    t.target_week,
+                    t.target_week_start,
+                    t.target_week_end,
+                    COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
+                FROM tb_po_term t
+                JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
+                WHERE t.target_status = 'TARGET_WEEK'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+                UNION ALL
+                SELECT
+                    CONVERT(pl.dashboard_bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    pl.target_year,
+                    pl.target_week,
+                    pl.target_week_start,
+                    pl.target_week_end,
+                    pl.plan_amount AS amount
+                FROM tb_po_target_pipeline pl
+                WHERE pl.target_status = 'TARGET_WEEK'
+            ) x
+            GROUP BY nama_bowheer, target_year, target_week, target_week_start, target_week_end
+            ORDER BY target_year ASC, target_week ASC, nama_bowheer ASC")->result_array();
+    }
+
+    public function getCarryOverSummary()
+    {
+        return $this->db->query("SELECT
+                nama_bowheer,
+                term_index,
+                COUNT(*) AS total_term,
+                SUM(amount) AS amount
+            FROM (
+                SELECT
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.term_index,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount
+                FROM tb_po_term_allocation a
+                JOIN tb_po_term t ON t.id_term = a.id_term
+                JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
+                WHERE a.target_status = 'CARRY_OVER'
+                UNION ALL
+                SELECT
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.term_index,
+                    COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
+                FROM tb_po_term t
+                JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
+                WHERE t.target_status = 'CARRY_OVER'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+                UNION ALL
+                SELECT
+                    CONVERT(pl.dashboard_bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    pl.term_index,
+                    pl.plan_amount AS amount
+                FROM tb_po_target_pipeline pl
+                WHERE pl.target_status = 'CARRY_OVER'
+            ) x
+            GROUP BY nama_bowheer, term_index
+            ORDER BY nama_bowheer ASC, term_index ASC")->result_array();
+    }
+
+    public function getComparisonMatrix($fromMonth = null, $toMonth = null, $groupBy = 'month', $invoiceOnly = false)
+    {
+        $bounds = $this->resolveComparisonBounds($fromMonth, $toMonth);
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $periods = $groupBy === 'week'
+            ? $this->buildWeekList($bounds['from'], $bounds['to'])
+            : $this->buildMonthList($bounds['from'], $bounds['to']);
+
+        $projects = $this->db
+            ->select('id_bowheer, no_urut, pic, bowheer')
+            ->order_by('no_urut', 'ASC')
+            ->order_by('bowheer', 'ASC')
+            ->get('tb_bowheer_po')
+            ->result_array();
+
+        $projectMap = [];
+        foreach ($projects as $project) {
+            $id = (int) $project['id_bowheer'];
+            $projectMap[$id] = [
+                'id_bowheer' => $id,
+                'project' => $project['bowheer'],
+                'pic' => $project['pic'],
+                'months' => [],
+                'total_target' => 0,
+                'total_achieved' => 0
+            ];
+
+            foreach ($periods as $period) {
+                $projectMap[$id]['months'][$period['key']] = [
+                    'target' => 0,
+                    'achieved' => 0
+                ];
+            }
+        }
+
+        $targetRows = $this->db->query("SELECT
+                p.id_bowheer,
+                a.target_week_start,
+                a.target_week_end,
+                COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount
+            FROM tb_po_term_allocation a
+            JOIN tb_po_term t ON t.id_term = a.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            WHERE a.target_status = 'TARGET_WEEK'
+                AND a.target_week_start IS NOT NULL
+                AND a.target_week_end IS NOT NULL
+            UNION ALL
+            SELECT
+                p.id_bowheer,
+                t.target_week_start,
+                t.target_week_end,
+                COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
+            FROM tb_po_term t
+            JOIN tb_po p ON p.id_po = t.id_po
+            WHERE t.target_status = 'TARGET_WEEK'
+                AND t.target_week_start IS NOT NULL
+                AND t.target_week_end IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                )
+            UNION ALL
+            SELECT
+                pl.id_bowheer,
+                pl.target_week_start,
+                pl.target_week_end,
+                pl.plan_amount AS amount
+            FROM tb_po_target_pipeline pl
+            WHERE pl.target_status = 'TARGET_WEEK'
+                AND pl.target_week_start IS NOT NULL
+                AND pl.target_week_end IS NOT NULL")->result_array();
+
+        foreach ($targetRows as $row) {
+            $id = (int) $row['id_bowheer'];
+            if (!isset($projectMap[$id])) {
+                continue;
+            }
+
+            $periodKey = $groupBy === 'week'
+                ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
+                : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
+
+            if (!isset($projectMap[$id]['months'][$periodKey])) {
+                continue;
+            }
+
+            $amount = (float) $row['amount'];
+            $projectMap[$id]['months'][$periodKey]['target'] += $amount;
+            $projectMap[$id]['total_target'] += $amount;
+        }
+
+        $claimRows = $this->db->query("SELECT
+                p.id_bowheer,
+                tc.invoice_date,
+                tc.invoice_amount
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            WHERE tc.invoice_date IS NOT NULL")->result_array();
+
+        foreach ($claimRows as $row) {
+            $id = (int) $row['id_bowheer'];
+            if (!isset($projectMap[$id])) {
+                continue;
+            }
+
+            $periodKey = $groupBy === 'week'
+                ? $this->weekKeyFromDate($row['invoice_date'])
+                : date('Y-m', strtotime($row['invoice_date']));
+
+            if (!isset($projectMap[$id]['months'][$periodKey])) {
+                continue;
+            }
+
+            $amount = (float) $row['invoice_amount'];
+            $projectMap[$id]['months'][$periodKey]['achieved'] += $amount;
+            $projectMap[$id]['total_achieved'] += $amount;
+        }
+
+        $totals = [
+            'months' => [],
+            'total_target' => 0,
+            'total_achieved' => 0
+        ];
+        foreach ($periods as $period) {
+            $totals['months'][$period['key']] = [
+                'target' => 0,
+                'achieved' => 0
+            ];
+        }
+
+        foreach ($projectMap as &$project) {
+            foreach ($periods as $period) {
+                $target = (float) $project['months'][$period['key']]['target'];
+                $achieved = (float) $project['months'][$period['key']]['achieved'];
+                $project['months'][$period['key']]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
+                $totals['months'][$period['key']]['target'] += $target;
+                $totals['months'][$period['key']]['achieved'] += $achieved;
+            }
+
+            $project['deviasi'] = max($project['total_target'] - $project['total_achieved'], 0);
+            $project['achieved_percent'] = $project['total_target'] > 0 ? ($project['total_achieved'] / $project['total_target']) * 100 : ($project['total_achieved'] > 0 ? 100 : 0);
+            $project['deviasi_percent'] = max(100 - $project['achieved_percent'], 0);
+        }
+        unset($project);
+
+        foreach ($totals['months'] as $monthKey => &$monthTotal) {
+            $monthTotal['percent'] = $monthTotal['target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
+            $totals['total_target'] += $monthTotal['target'];
+            $totals['total_achieved'] += $monthTotal['achieved'];
+        }
+        unset($monthTotal);
+
+        $totals['deviasi'] = max($totals['total_target'] - $totals['total_achieved'], 0);
+        $totals['achieved_percent'] = $totals['total_target'] > 0 ? ($totals['total_achieved'] / $totals['total_target']) * 100 : ($totals['total_achieved'] > 0 ? 100 : 0);
+        $totals['deviasi_percent'] = max(100 - $totals['achieved_percent'], 0);
+
+        $rows = array_values($projectMap);
+        if ($invoiceOnly) {
+            $rows = array_values(array_filter($rows, function ($row) {
+                return (float) $row['total_achieved'] > 0;
+            }));
+        }
+
+        return [
+            'from' => $bounds['from'],
+            'to' => $bounds['to'],
+            'group_by' => $groupBy,
+            'invoice_only' => $invoiceOnly,
+            'months' => $periods,
+            'rows' => $rows,
+            'totals' => $totals
+        ];
+    }
+
+    public function getComparisonDetail($idBowheer, $periodKey, $groupBy, $type)
+    {
+        $idBowheer = (int) $idBowheer;
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $type = $type === 'achieved' ? 'achieved' : 'target';
+
+        if ($type === 'achieved') {
+            return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy);
+        }
+
+        return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy);
+    }
+
+    private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy)
+    {
+        $rows = $this->db->query("SELECT *
+            FROM (
+                SELECT
+                    p.id_bowheer,
+                    p.po_number,
+                    p.po_date,
+                    t.term_index,
+                    a.no_po_sub,
+                    a.kota_po,
+                    a.detail_po,
+                    a.target_week_start,
+                    a.target_week_end,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
+                    'Target Allocation' AS source_label
+                FROM tb_po_term_allocation a
+                JOIN tb_po_term t ON t.id_term = a.id_term
+                JOIN tb_po p ON p.id_po = t.id_po
+                WHERE a.target_status = 'TARGET_WEEK'
+                    AND p.id_bowheer = ?
+                    AND a.target_week_start IS NOT NULL
+                    AND a.target_week_end IS NOT NULL
+                UNION ALL
+                SELECT
+                    p.id_bowheer,
+                    p.po_number,
+                    p.po_date,
+                    t.term_index,
+                    NULL AS no_po_sub,
+                    NULL AS kota_po,
+                    NULL AS detail_po,
+                    t.target_week_start,
+                    t.target_week_end,
+                    COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
+                    'Target Term' AS source_label
+                FROM tb_po_term t
+                JOIN tb_po p ON p.id_po = t.id_po
+                WHERE t.target_status = 'TARGET_WEEK'
+                    AND p.id_bowheer = ?
+                    AND t.target_week_start IS NOT NULL
+                    AND t.target_week_end IS NOT NULL
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+                UNION ALL
+                SELECT
+                    pl.id_bowheer,
+                    '-' AS po_number,
+                    pl.po_date,
+                    pl.term_index,
+                    NULL AS no_po_sub,
+                    pl.kota_po,
+                    pl.detail_po,
+                    pl.target_week_start,
+                    pl.target_week_end,
+                    pl.plan_amount AS amount,
+                    'NY PO Target' AS source_label
+                FROM tb_po_target_pipeline pl
+                WHERE pl.target_status = 'TARGET_WEEK'
+                    AND pl.id_bowheer = ?
+                    AND pl.target_week_start IS NOT NULL
+                    AND pl.target_week_end IS NOT NULL
+            ) x
+            ORDER BY target_week_start ASC, po_number ASC, term_index ASC", [$idBowheer, $idBowheer, $idBowheer])->result_array();
+
+        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+            $rowPeriod = $groupBy === 'week'
+                ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
+                : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
+
+            return $rowPeriod === $periodKey;
+        }));
+    }
+
+    private function getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy)
+    {
+        $rows = $this->db->query("SELECT
+                p.id_bowheer,
+                p.po_number,
+                p.po_date,
+                t.term_index,
+                COALESCE(NULLIF(a.no_po_sub, ''), aa.no_po_sub) AS no_po_sub,
+                COALESCE(NULLIF(a.kota_po, ''), aa.kota_po) AS kota_po,
+                COALESCE(NULLIF(a.detail_po, ''), aa.detail_po) AS detail_po,
+                tc.invoice_date,
+                tc.invoice_amount AS amount,
+                tc.claim_source AS source_label
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN tb_po_term_allocation a ON a.id_allocation = tc.id_allocation
+            LEFT JOIN (
+                SELECT
+                    id_term,
+                    GROUP_CONCAT(DISTINCT NULLIF(no_po_sub, '') ORDER BY source_row_no SEPARATOR ', ') AS no_po_sub,
+                    GROUP_CONCAT(DISTINCT NULLIF(kota_po, '') ORDER BY source_row_no SEPARATOR ', ') AS kota_po,
+                    GROUP_CONCAT(DISTINCT NULLIF(detail_po, '') ORDER BY source_row_no SEPARATOR ', ') AS detail_po
+                FROM tb_po_term_allocation
+                GROUP BY id_term
+            ) aa ON aa.id_term = t.id_term
+            WHERE tc.invoice_date IS NOT NULL
+                AND p.id_bowheer = ?
+            ORDER BY tc.invoice_date ASC, p.po_number ASC, t.term_index ASC", [$idBowheer])->result_array();
+
+        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+            $rowPeriod = $groupBy === 'week'
+                ? $this->weekKeyFromDate($row['invoice_date'])
+                : date('Y-m', strtotime($row['invoice_date']));
+
+            return $rowPeriod === $periodKey;
+        }));
+    }
+
+    private function resolveComparisonBounds($fromMonth, $toMonth)
+    {
+        $from = $this->normalizeMonthInput($fromMonth);
+        $to = $this->normalizeMonthInput($toMonth);
+
+        if ($from === null || $to === null) {
+            $dataBounds = $this->getComparisonDataBounds();
+            $from = $from ?: $dataBounds['from'];
+            $to = $to ?: $dataBounds['to'];
+        }
+
+        if (strtotime($from . '-01') > strtotime($to . '-01')) {
+            $swap = $from;
+            $from = $to;
+            $to = $swap;
+        }
+
+        return ['from' => $from, 'to' => $to];
+    }
+
+    private function getComparisonDataBounds()
+    {
+        $keys = [];
+
+        $targetRows = $this->db->query("SELECT a.target_week_start, a.target_week_end
+            FROM tb_po_term_allocation a
+            WHERE a.target_status = 'TARGET_WEEK'
+                AND a.target_week_start IS NOT NULL
+                AND a.target_week_end IS NOT NULL
+            UNION ALL
+            SELECT t.target_week_start, t.target_week_end
+            FROM tb_po_term t
+            WHERE t.target_status = 'TARGET_WEEK'
+                AND t.target_week_start IS NOT NULL
+                AND t.target_week_end IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                )
+            UNION ALL
+            SELECT pl.target_week_start, pl.target_week_end
+            FROM tb_po_target_pipeline pl
+            WHERE pl.target_status = 'TARGET_WEEK'
+                AND pl.target_week_start IS NOT NULL
+                AND pl.target_week_end IS NOT NULL")->result_array();
+
+        foreach ($targetRows as $row) {
+            $keys[] = $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
+        }
+
+        $claimRows = $this->db
+            ->select('invoice_date')
+            ->where('invoice_date IS NOT NULL', null, false)
+            ->get('tb_po_term_claim')
+            ->result_array();
+
+        foreach ($claimRows as $row) {
+            $keys[] = date('Y-m', strtotime($row['invoice_date']));
+        }
+
+        $keys = array_values(array_filter(array_unique($keys)));
+        sort($keys);
+
+        if (empty($keys)) {
+            $current = date('Y-m');
+            return ['from' => $current, 'to' => $current];
+        }
+
+        return ['from' => $keys[0], 'to' => $keys[count($keys) - 1]];
+    }
+
+    private function normalizeMonthInput($value)
+    {
+        $value = trim((string) $value);
+        return preg_match('/^\d{4}-\d{2}$/', $value) ? $value : null;
+    }
+
+    private function buildMonthList($from, $to)
+    {
+        $months = [];
+        $cursor = new DateTime($from . '-01');
+        $end = new DateTime($to . '-01');
+
+        while ($cursor <= $end) {
+            $months[] = [
+                'key' => $cursor->format('Y-m'),
+                'label' => $this->indonesianMonthName((int) $cursor->format('n')),
+                'year' => $cursor->format('Y')
+            ];
+            $cursor->modify('+1 month');
+        }
+
+        return $months;
+    }
+
+    private function buildWeekList($from, $to)
+    {
+        $weeks = [];
+        $fromTime = strtotime($from . '-01');
+        $toTime = strtotime($to . '-01');
+
+        for ($week = 1; $week <= 53; $week++) {
+            $period = $this->weekPeriod(2026, $week);
+            $majorityMonth = $this->majorityMonthKey($period['start'], $period['end']);
+            $majorityTime = strtotime($majorityMonth . '-01');
+
+            if ($majorityTime < $fromTime || $majorityTime > $toTime) {
+                continue;
+            }
+
+            $weeks[] = [
+                'key' => $this->weekKey(2026, $week),
+                'label' => 'W' . $week,
+                'month_key' => $majorityMonth,
+                'month_label' => $this->indonesianMonthName((int) date('n', strtotime($majorityMonth . '-01'))),
+                'year' => '2026',
+                'period' => $this->indonesianDate($period['start']) . ' s/d ' . $this->indonesianDate($period['end'])
+            ];
+        }
+
+        return $weeks;
+    }
+
+    private function majorityMonthKey($startDate, $endDate)
+    {
+        $start = new DateTime($startDate);
+        $end = new DateTime($endDate);
+        $counts = [];
+
+        while ($start <= $end) {
+            $key = $start->format('Y-m');
+            $counts[$key] = isset($counts[$key]) ? $counts[$key] + 1 : 1;
+            $start->modify('+1 day');
+        }
+
+        arsort($counts);
+        return (string) array_key_first($counts);
+    }
+
+    private function weekNumberFromPeriod($startDate, $endDate)
+    {
+        $start = strtotime($startDate);
+        $end = strtotime($endDate);
+
+        for ($week = 1; $week <= 53; $week++) {
+            $period = $this->weekPeriod(2026, $week);
+            if (strtotime($period['start']) === $start && strtotime($period['end']) === $end) {
+                return $week;
+            }
+        }
+
+        return (int) date('W', $start);
+    }
+
+    private function weekKeyFromDate($date)
+    {
+        $timestamp = strtotime($date);
+        $year = (int) date('Y', $timestamp);
+        $jan1 = new DateTime($year . '-01-01');
+        $weekZeroStart = clone $jan1;
+        $weekZeroStart->modify('-' . (int) $jan1->format('w') . ' days');
+        $invoiceDate = new DateTime(date('Y-m-d', $timestamp));
+        $diffDays = (int) floor(($invoiceDate->getTimestamp() - $weekZeroStart->getTimestamp()) / 86400);
+        $week = (int) floor($diffDays / 7) + 1;
+
+        return $this->weekKey($year, $week);
+    }
+
+    private function weekKey($year, $week)
+    {
+        return sprintf('%04d-W%02d', (int) $year, (int) $week);
+    }
+
+    private function indonesianMonthName($month)
+    {
+        $names = [
+            1 => 'JANUARI',
+            2 => 'FEBRUARI',
+            3 => 'MARET',
+            4 => 'APRIL',
+            5 => 'MEI',
+            6 => 'JUNI',
+            7 => 'JULI',
+            8 => 'AGUSTUS',
+            9 => 'SEPTEMBER',
+            10 => 'OKTOBER',
+            11 => 'NOVEMBER',
+            12 => 'DESEMBER'
+        ];
+
+        return isset($names[$month]) ? $names[$month] : (string) $month;
+    }
+
+    private function indonesianDate($date)
+    {
+        $timestamp = strtotime($date);
+        if (!$timestamp) {
+            return (string) $date;
+        }
+
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
+        ];
+
+        return (int) date('j', $timestamp) . ' ' . $months[(int) date('n', $timestamp)] . ' ' . date('Y', $timestamp);
+    }
+
+    public function claimTerm($idTerm, $invoiceDate, $amount, $userId)
+    {
+        $term = $this->db->get_where('tb_po_term', ['id_term' => (int) $idTerm])->row_array();
+        if (!$term) {
+            return ['status' => false, 'message' => 'Term not found'];
+        }
+
+        $amount = (float) $amount;
+        if ($amount <= 0 || empty($invoiceDate)) {
+            return ['status' => false, 'message' => 'Invoice date and amount are required'];
+        }
+
+        $this->db->trans_begin();
+        $this->db->insert('tb_po_term_claim', [
+            'id_term' => (int) $idTerm,
+            'invoice_date' => $invoiceDate,
+            'invoice_amount' => $amount,
+            'claim_source' => 'MANUAL',
+            'created_by' => $userId ?: null
+        ]);
+
+        $this->db->where('id_term', (int) $idTerm)->update('tb_po_term', [
+            'invoice_date' => $invoiceDate,
+            'submit_raw' => $invoiceDate
+        ]);
+
+        $this->db->set('dashboard_all_invoice', 'COALESCE(dashboard_all_invoice, 0) + ' . $this->db->escape($amount), false);
+        if ((int) date('Y', strtotime($invoiceDate)) === 2026) {
+            $this->db->set('dashboard_invoice_2026', 'COALESCE(dashboard_invoice_2026, 0) + ' . $this->db->escape($amount), false);
+            if (($term['target_status'] ?? '') === 'TARGET_WEEK') {
+                $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) - ' . $this->db->escape($amount) . ', 0)', false);
+            }
+        }
+        $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+
+        $this->rebuildDashboardCache(null);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Failed to claim term'];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => true, 'message' => 'Term claimed'];
+    }
+
+    public function importCsv($filePath, $sourceFile, $userId)
+    {
+        if (!is_readable($filePath)) {
+            return ['status' => false, 'message' => 'CSV file is not readable: ' . $filePath];
+        }
+
+        $handle = fopen($filePath, 'r');
+        if (!$handle) {
+            return ['status' => false, 'message' => 'Unable to open CSV file'];
+        }
+
+        $header = null;
+        $rowNo = 0;
+        while (($line = fgetcsv($handle)) !== false) {
+            $rowNo++;
+            $candidateMap = [];
+            foreach ($line as $index => $name) {
+                $candidateMap[$this->normalizeHeader($name)] = $index;
+            }
+
+            if (isset($candidateMap['BOWHEER']) && isset($candidateMap['NO PO'])) {
+                $header = $line;
+                break;
+            }
+        }
+
+        if (!$header) {
+            fclose($handle);
+            return ['status' => false, 'message' => 'CSV header is missing'];
+        }
+
+        $headerMap = [];
+        foreach ($header as $index => $name) {
+            $headerMap[$this->normalizeHeader($name)] = $index;
+        }
+
+        $rows = [];
+        $pipelineRows = [];
+        while (($line = fgetcsv($handle)) !== false) {
+            $rowNo++;
+            $bowheer = $this->csvValue($line, $headerMap, 'BOWHEER');
+            $poNumber = $this->csvValue($line, $headerMap, 'NO PO');
+            if (trim($bowheer) === '' && trim($poNumber) === '') {
+                continue;
+            }
+
+            $row = [
+                'row_no' => $rowNo,
+                'raw' => $line,
+                'bowheer' => trim($bowheer),
+                'dashboard_bowheer' => trim($bowheer),
+                'status_po' => strtoupper(trim($this->csvValue($line, $headerMap, 'STATUS PO'))) ?: 'ON PO',
+                'po_number' => trim($poNumber),
+                'no_po_sub' => trim($this->csvValue($line, $headerMap, 'NO PO SUB')),
+                'kota_po' => trim($this->csvValue($line, $headerMap, 'KOTA PO')),
+                'detail_po' => trim($this->csvValue($line, $headerMap, 'DETAIL PO')),
+                'type_project' => trim($this->csvValue($line, $headerMap, 'TYPE PROJECT')),
+                'po_date' => $this->parseDate($this->csvValue($line, $headerMap, 'TGL PO')),
+                'po_value' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'PO VALUE')),
+                'po_final_value' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'PO FINAL VALUE')),
+                'po_term' => trim($this->csvValue($line, $headerMap, 'PO TERM')),
+                'outstanding' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'OUTSTANDING TOTAL')),
+                'helper_outs_2026' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'OUTSTANDING ON TARGET 2026')),
+                'helper_co_2027' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'OUTSTANDING CO 2027')),
+                'helper_all_invoice' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'INVOICE ALL')),
+                'helper_invoice_2026' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'INVOICE 2026')),
+                'helper_ny_po_2026' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'NY PO 2026')),
+                'helper_ny_po_2027' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'NY PO 2027'))
+            ];
+
+            for ($i = 1; $i <= 5; $i++) {
+                $row['plan_' . $i] = $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'PLAN ' . $i));
+                $row['submit_' . $i] = trim($this->csvValue($line, $headerMap, 'SUBMIT ' . $i));
+                $row['nilai_' . $i] = $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'NILAI ' . $i));
+            }
+            $row['dashboard_metrics'] = $this->computeDashboardMetrics($row);
+
+            if ($row['status_po'] === 'NY PO') {
+                $pipelineRows[] = $row;
+            } else {
+                $row['bowheer'] = $this->resolveImportBowheerName($row['bowheer'], $row['type_project']);
+                $rows[] = $row;
+            }
+        }
+        fclose($handle);
+
+        if (empty($rows) && empty($pipelineRows)) {
+            return ['status' => false, 'message' => 'No data rows found'];
+        }
+
+        $groups = $this->buildImportGroups($rows);
+
+        $this->db->trans_begin();
+        $this->cleanupImportedPoCsv($sourceFile);
+        $this->db->insert('tb_po_import_batch', [
+            'source_file' => $sourceFile,
+            'imported_by' => $userId ?: null,
+            'row_count' => count($rows) + count($pipelineRows),
+            'status' => 'COMMITTED'
+        ]);
+        $batchId = (int) $this->db->insert_id();
+
+        $summary = [
+            'inserted' => 0,
+            'updated' => 0,
+            'pipeline' => 0,
+            'terms' => 0,
+            'allocations' => 0,
+            'claims' => 0,
+            'target_week' => 0,
+            'carry_over' => 0,
+            'total_effective' => 0,
+            'total_invoiced' => 0,
+            'total_target_2026' => 0,
+            'total_carry_2027' => 0
+        ];
+
+        foreach ($groups as $group) {
+            $row = $group['base'];
+            $effectiveValue = $group['effective_value'];
+            $summary['total_effective'] += $effectiveValue;
+            $sourceHash = $group['source_hash'];
+
+            $idBowheer = $this->resolveBowheerId($row['bowheer']);
+            $existing = $this->db->get_where('tb_po', ['source_hash' => $sourceHash])->row_array();
+            if ($existing) {
+                $idPo = (int) $existing['id_po'];
+                $this->deletePoChildren($idPo);
+                $this->db->where('id_po', $idPo)->update('tb_po', [
+                    'po_number' => $row['po_number'],
+                    'po_date' => $row['po_date'],
+                    'id_bowheer' => $idBowheer,
+                    'total_value' => $group['po_value'],
+                    'status_po' => 'ON PO',
+                    'dashboard_bowheer' => $row['dashboard_bowheer'],
+                    'type_project' => $row['type_project'],
+                    'dashboard_all_invoice' => $group['dashboard_all_invoice'],
+                    'dashboard_invoice_2026' => $group['dashboard_invoice_2026'],
+                    'dashboard_outs_2026' => $group['dashboard_outs_2026'],
+                    'dashboard_co_2027' => $group['dashboard_co_2027'],
+                    'source_file' => $sourceFile,
+                    'source_row_no' => $row['row_no'],
+                    'import_batch_id' => $batchId,
+                    'notes' => 'Imported from PO CSV'
+                ]);
+                $summary['updated']++;
+            } else {
+                $this->db->insert('tb_po', [
+                    'po_number' => $row['po_number'],
+                    'po_date' => $row['po_date'],
+                    'id_bowheer' => $idBowheer,
+                    'total_value' => $group['po_value'],
+                    'status_po' => 'ON PO',
+                    'dashboard_bowheer' => $row['dashboard_bowheer'],
+                    'type_project' => $row['type_project'],
+                    'dashboard_all_invoice' => $group['dashboard_all_invoice'],
+                    'dashboard_invoice_2026' => $group['dashboard_invoice_2026'],
+                    'dashboard_outs_2026' => $group['dashboard_outs_2026'],
+                    'dashboard_co_2027' => $group['dashboard_co_2027'],
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $userId ?: null,
+                    'notes' => 'Imported from PO CSV',
+                    'source_file' => $sourceFile,
+                    'source_row_no' => $row['row_no'],
+                    'source_hash' => $sourceHash,
+                    'import_batch_id' => $batchId
+                ]);
+                $idPo = (int) $this->db->insert_id();
+                $summary['inserted']++;
+            }
+
+            $this->db->insert('tb_po_amend', [
+                'id_po' => $idPo,
+                'amend_no' => 1,
+                'release_value' => $effectiveValue,
+                'release_date' => $row['po_date'],
+                'notes' => $group['has_final_value'] ? 'CSV effective value from PO FINAL VALUE' : 'CSV initial value'
+            ]);
+            $idAmend = (int) $this->db->insert_id();
+
+            $percents = $this->parseTermPercents($row['po_term']);
+            $termBuckets = $this->buildImportTermBuckets($group);
+            for ($i = 1; $i <= 5; $i++) {
+                if (empty($termBuckets[$i])) {
+                    continue;
+                }
+
+                $bucket = $termBuckets[$i];
+                $termMeta = $bucket['term_meta'];
+
+                $this->db->insert('tb_po_term', [
+                    'id_po' => $idPo,
+                    'id_amend' => $idAmend,
+                    'term_index' => $i,
+                    'percent' => isset($percents[$i]) ? $percents[$i] : 0,
+                    'value' => $bucket['value'],
+                    'plan_amount' => $bucket['plan_amount'],
+                    'submit_raw' => $termMeta['submit_raw'],
+                    'target_year' => $termMeta['target_year'],
+                    'target_week' => $termMeta['target_week'],
+                    'target_week_start' => $termMeta['target_week_start'],
+                    'target_week_end' => $termMeta['target_week_end'],
+                    'target_status' => $termMeta['target_status'],
+                    'invoice_date' => $termMeta['invoice_date']
+                ]);
+                $idTerm = (int) $this->db->insert_id();
+                $summary['terms']++;
+
+                if ($group['has_allocations']) {
+                    foreach ($bucket['allocations'] as $allocation) {
+                        $meta = $allocation['meta'];
+                        $this->db->insert('tb_po_term_allocation', [
+                            'id_term' => $idTerm,
+                            'no_po_sub' => $allocation['row']['no_po_sub'],
+                            'kota_po' => $allocation['row']['kota_po'],
+                            'detail_po' => $allocation['row']['detail_po'],
+                            'allocation_value' => $allocation['amount'],
+                            'plan_amount' => $allocation['plan_amount'],
+                            'submit_raw' => $meta['submit_raw'],
+                            'target_year' => $meta['target_year'],
+                            'target_week' => $meta['target_week'],
+                            'target_week_start' => $meta['target_week_start'],
+                            'target_week_end' => $meta['target_week_end'],
+                            'target_status' => $meta['target_status'],
+                            'invoice_date' => $meta['invoice_date'],
+                            'outstanding_amount' => $allocation['row']['outstanding'],
+                            'source_row_no' => $allocation['row']['row_no']
+                        ]);
+                        $idAllocation = (int) $this->db->insert_id();
+                        $summary['allocations']++;
+                        $this->addSubmitMetaToSummary($meta, $allocation['amount'], $allocation['nilai'], $summary);
+
+                        if ($meta['target_status'] === 'INVOICED' && $allocation['nilai'] > 0) {
+                            $this->db->insert('tb_po_term_claim', [
+                                'id_term' => $idTerm,
+                                'id_allocation' => $idAllocation,
+                                'invoice_date' => $meta['invoice_date'],
+                                'invoice_amount' => $allocation['nilai'],
+                                'claim_source' => 'IMPORT',
+                                'source_raw' => $meta['submit_raw'],
+                                'created_by' => $userId ?: null
+                            ]);
+                            $summary['claims']++;
+                        }
+                    }
+                } else {
+                    $this->addSubmitMetaToSummary($termMeta, $bucket['value'], $bucket['nilai'], $summary);
+                }
+
+                if (!$group['has_allocations'] && $termMeta['target_status'] === 'INVOICED' && $bucket['nilai'] > 0) {
+                    $this->db->insert('tb_po_term_claim', [
+                        'id_term' => $idTerm,
+                        'invoice_date' => $termMeta['invoice_date'],
+                        'invoice_amount' => $bucket['nilai'],
+                        'claim_source' => 'IMPORT',
+                        'source_raw' => $termMeta['submit_raw'],
+                        'created_by' => $userId ?: null
+                    ]);
+                    $summary['claims']++;
+                }
+            }
+        }
+
+        foreach ($pipelineRows as $pipelineRow) {
+            $idBowheer = $this->resolveBowheerId($this->resolveImportBowheerName($pipelineRow['bowheer'], $pipelineRow['type_project']));
+            for ($i = 1; $i <= 5; $i++) {
+                $plan = (float) $pipelineRow['plan_' . $i];
+                $submit = trim((string) $pipelineRow['submit_' . $i]);
+                if ($plan <= 0 && $submit === '') {
+                    continue;
+                }
+
+                $meta = $this->resolveSubmitMeta($submit);
+                $hasWeek = stripos($submit, 'W') !== false;
+                $sourceHash = hash('sha256', implode('|', [
+                    'NY',
+                    $pipelineRow['dashboard_bowheer'],
+                    $pipelineRow['row_no'],
+                    $i,
+                    number_format($plan, 2, '.', ''),
+                    $submit
+                ]));
+
+                $this->db->insert('tb_po_target_pipeline', [
+                    'id_bowheer' => $idBowheer,
+                    'dashboard_bowheer' => $pipelineRow['dashboard_bowheer'],
+                    'status_po' => 'NY PO',
+                    'kota_po' => $pipelineRow['kota_po'],
+                    'detail_po' => $pipelineRow['detail_po'],
+                    'type_project' => $pipelineRow['type_project'],
+                    'po_date' => $pipelineRow['po_date'],
+                    'po_term' => $pipelineRow['po_term'],
+                    'term_index' => $i,
+                    'plan_amount' => $plan,
+                    'submit_raw' => $submit,
+                    'target_year' => $hasWeek ? 2026 : 2027,
+                    'target_week' => $hasWeek ? $meta['target_week'] : null,
+                    'target_week_start' => $hasWeek ? $meta['target_week_start'] : null,
+                    'target_week_end' => $hasWeek ? $meta['target_week_end'] : null,
+                    'target_status' => $hasWeek ? 'TARGET_WEEK' : 'CARRY_OVER',
+                    'ny_po_2026_amount' => $hasWeek ? $plan : 0,
+                    'ny_po_2027_amount' => $hasWeek ? 0 : $plan,
+                    'source_file' => $sourceFile,
+                    'source_row_no' => $pipelineRow['row_no'],
+                    'import_batch_id' => $batchId,
+                    'source_hash' => $sourceHash
+                ]);
+                $summary['pipeline']++;
+                if ($hasWeek) {
+                    $summary['target_week']++;
+                    $summary['total_target_2026'] += $plan;
+                } else {
+                    $summary['carry_over']++;
+                    $summary['total_carry_2027'] += $plan;
+                }
+            }
+        }
+
+        $this->rebuildDashboardCache($batchId);
+
+        $this->db->where('id_batch', $batchId)->update('tb_po_import_batch', [
+            'total_effective' => $summary['total_effective'],
+            'total_invoiced' => $summary['total_invoiced'],
+            'total_target_2026' => $summary['total_target_2026'],
+            'total_carry_2027' => $summary['total_carry_2027']
+        ]);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Database error while importing CSV'];
+        }
+
+        $this->db->trans_commit();
+        $summary['batch_id'] = $batchId;
+        return ['status' => true, 'message' => 'CSV imported', 'summary' => $summary];
+    }
+
+    private function buildImportGroups($rows)
+    {
+        $groups = [];
+
+        foreach ($rows as $row) {
+            $hasSub = trim((string) $row['no_po_sub']) !== ''
+                || trim((string) $row['kota_po']) !== ''
+                || trim((string) $row['detail_po']) !== '';
+            $keyParts = $hasSub
+                ? ['sub', $row['bowheer'], $row['po_number'], $row['po_date'], $row['po_term']]
+                : ['row', $row['bowheer'], $row['po_number'], $row['po_date'], $row['row_no']];
+            $groupKey = hash('sha256', implode('|', $keyParts));
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'base' => $row,
+                    'rows' => [],
+                    'has_allocations' => $hasSub,
+                    'source_hash' => $groupKey,
+                    'po_value' => 0,
+                    'effective_value' => 0,
+                    'has_final_value' => false,
+                    'dashboard_all_invoice' => 0,
+                    'dashboard_invoice_2026' => 0,
+                    'dashboard_outs_2026' => 0,
+                    'dashboard_co_2027' => 0
+                ];
+            }
+
+            $effectiveValue = $row['po_final_value'] > 0 ? $row['po_final_value'] : $row['po_value'];
+            $metrics = $row['dashboard_metrics'];
+            $groups[$groupKey]['rows'][] = $row;
+            $groups[$groupKey]['po_value'] += (float) $row['po_value'];
+            $groups[$groupKey]['effective_value'] += $effectiveValue;
+            $groups[$groupKey]['has_final_value'] = $groups[$groupKey]['has_final_value'] || $row['po_final_value'] > 0;
+            $groups[$groupKey]['dashboard_all_invoice'] += (float) $metrics['all_invoice'];
+            $groups[$groupKey]['dashboard_invoice_2026'] += (float) $metrics['invoice_2026'];
+            $groups[$groupKey]['dashboard_outs_2026'] += (float) $metrics['outs_2026'];
+            $groups[$groupKey]['dashboard_co_2027'] += (float) $metrics['co_2027'];
+        }
+
+        return array_values($groups);
+    }
+
+    private function computeDashboardMetrics($row)
+    {
+        $status = strtoupper(trim((string) $row['status_po']));
+        $result = [
+            'outs_2026' => 0,
+            'co_2027' => 0,
+            'all_invoice' => 0,
+            'invoice_2026' => 0,
+            'ny_po_2026' => 0,
+            'ny_po_2027' => 0
+        ];
+
+        for ($i = 1; $i <= 5; $i++) {
+            $plan = (float) $row['plan_' . $i];
+            $nilai = (float) $row['nilai_' . $i];
+            $submit = trim((string) $row['submit_' . $i]);
+            $hasWeek = stripos($submit, 'W') !== false;
+
+            if ($status === 'ON PO') {
+                $result['all_invoice'] += $nilai;
+                if ($hasWeek) {
+                    $result['outs_2026'] += $plan;
+                } else {
+                    $result['co_2027'] += $plan;
+                }
+
+                $invoiceDate = $this->parseDate($submit);
+                if ($invoiceDate !== null && (int) date('Y', strtotime($invoiceDate)) === 2026) {
+                    $result['invoice_2026'] += $nilai;
+                }
+            } elseif ($status === 'NY PO') {
+                if ($hasWeek) {
+                    $result['ny_po_2026'] += $plan;
+                } else {
+                    $result['ny_po_2027'] += $plan;
+                }
+            }
+        }
+
+        $helperKeys = [
+            'helper_outs_2026' => 'outs_2026',
+            'helper_co_2027' => 'co_2027',
+            'helper_all_invoice' => 'all_invoice',
+            'helper_invoice_2026' => 'invoice_2026',
+            'helper_ny_po_2026' => 'ny_po_2026',
+            'helper_ny_po_2027' => 'ny_po_2027'
+        ];
+
+        foreach ($helperKeys as $sourceKey => $targetKey) {
+            if (isset($row[$sourceKey]) && (float) $row[$sourceKey] != 0.0) {
+                $result[$targetKey] = (float) $row[$sourceKey];
+            }
+        }
+
+        return $result;
+    }
+
+    private function buildImportTermBuckets($group)
+    {
+        $buckets = [];
+
+        foreach ($group['rows'] as $row) {
+            for ($i = 1; $i <= 5; $i++) {
+                $plan = (float) $row['plan_' . $i];
+                $nilai = (float) $row['nilai_' . $i];
+                $submit = trim((string) $row['submit_' . $i]);
+                $amount = $plan > 0 ? $plan : $nilai;
+
+                if ($amount <= 0 && $submit === '') {
+                    continue;
+                }
+
+                $meta = $this->resolveSubmitMeta($submit);
+                if (!isset($buckets[$i])) {
+                    $buckets[$i] = [
+                        'value' => 0,
+                        'plan_amount' => 0,
+                        'nilai' => 0,
+                        'allocations' => [],
+                        'term_meta' => null,
+                        'metas' => []
+                    ];
+                }
+
+                $buckets[$i]['value'] += $amount;
+                $buckets[$i]['plan_amount'] += $plan;
+                $buckets[$i]['nilai'] += $nilai;
+                $buckets[$i]['metas'][] = $meta;
+
+                if ($group['has_allocations']) {
+                    $buckets[$i]['allocations'][] = [
+                        'row' => $row,
+                        'amount' => $amount,
+                        'plan_amount' => $plan,
+                        'nilai' => $nilai,
+                        'meta' => $meta
+                    ];
+                }
+            }
+        }
+
+        foreach ($buckets as &$bucket) {
+            $bucket['term_meta'] = $this->resolveTermMeta($bucket['metas']);
+        }
+        unset($bucket);
+
+        return $buckets;
+    }
+
+    private function resolveSubmitMeta($submit)
+    {
+        $submit = trim((string) $submit);
+        $meta = [
+            'submit_raw' => $submit,
+            'target_status' => 'OPEN',
+            'target_year' => null,
+            'target_week' => null,
+            'target_week_start' => null,
+            'target_week_end' => null,
+            'invoice_date' => null
+        ];
+
+        if (preg_match('/^W(\d{1,2})$/i', $submit, $match)) {
+            $period = $this->weekPeriod(2026, (int) $match[1]);
+            $meta['target_status'] = 'TARGET_WEEK';
+            $meta['target_year'] = 2026;
+            $meta['target_week'] = (int) $match[1];
+            $meta['target_week_start'] = $period['start'];
+            $meta['target_week_end'] = $period['end'];
+            return $meta;
+        }
+
+        if ($submit === '2027') {
+            $meta['target_status'] = 'CARRY_OVER';
+            $meta['target_year'] = 2027;
+            return $meta;
+        }
+
+        $invoiceDate = $this->parseDate($submit);
+        if ($invoiceDate !== null) {
+            $meta['target_status'] = 'INVOICED';
+            $meta['invoice_date'] = $invoiceDate;
+        }
+
+        return $meta;
+    }
+
+    private function resolveTermMeta($metas)
+    {
+        if (empty($metas)) {
+            return $this->resolveSubmitMeta('');
+        }
+
+        $first = $metas[0];
+        foreach ($metas as $meta) {
+            if ($meta != $first) {
+                return [
+                    'submit_raw' => 'MIXED',
+                    'target_status' => 'OPEN',
+                    'target_year' => null,
+                    'target_week' => null,
+                    'target_week_start' => null,
+                    'target_week_end' => null,
+                    'invoice_date' => null
+                ];
+            }
+        }
+
+        return $first;
+    }
+
+    private function addSubmitMetaToSummary($meta, $amount, $invoiceAmount, &$summary)
+    {
+        if ($meta['target_status'] === 'TARGET_WEEK') {
+            $summary['target_week']++;
+            $summary['total_target_2026'] += (float) $amount;
+        } elseif ($meta['target_status'] === 'CARRY_OVER') {
+            $summary['carry_over']++;
+            $summary['total_carry_2027'] += (float) $amount;
+        } elseif ($meta['target_status'] === 'INVOICED') {
+            $summary['total_invoiced'] += (float) $invoiceAmount;
+        }
+    }
+
+    private function normalizeHeader($value)
+    {
+        $value = preg_replace('/^\xEF\xBB\xBF/', '', (string) $value);
+        return strtoupper(trim(preg_replace('/\s+/', ' ', $value)));
+    }
+
+    private function csvValue($row, $headerMap, $name)
+    {
+        $key = $this->normalizeHeader($name);
+        if (!isset($headerMap[$key])) {
+            return '';
+        }
+
+        $index = $headerMap[$key];
+        return isset($row[$index]) ? $row[$index] : '';
+    }
+
+    private function normalizeAmountLocal($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0.0;
+        }
+
+        $isNegative = preg_match('/^\s*\(.*\)\s*$/', $value) === 1;
+        $value = preg_replace('/[^\d,.\-]/', '', $value);
+        $value = str_replace(',', '', $value);
+        if (!is_numeric($value)) {
+            return 0.0;
+        }
+
+        $amount = (float) $value;
+        return $isNegative && $amount > 0 ? -$amount : $amount;
+    }
+
+    private function parseDate($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (is_numeric($value) && (float) $value > 30000) {
+            $timestamp = ((float) $value - 25569) * 86400;
+            return gmdate('Y-m-d', (int) $timestamp);
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function parseTermPercents($term)
+    {
+        $result = [];
+        $parts = preg_split('/\s*:\s*/', trim((string) $term));
+        $index = 1;
+        foreach ($parts as $part) {
+            if ($part === '') {
+                continue;
+            }
+            $result[$index] = (float) $part;
+            $index++;
+        }
+
+        return $result;
+    }
+
+    private function weekPeriod($year, $week)
+    {
+        $jan1 = new DateTime($year . '-01-01');
+        $start = clone $jan1;
+        $start->modify('-' . (int) $jan1->format('w') . ' days');
+        $start->modify('+' . (($week - 1) * 7) . ' days');
+        $end = clone $start;
+        $end->modify('+6 days');
+
+        return [
+            'start' => $start->format('Y-m-d'),
+            'end' => $end->format('Y-m-d')
+        ];
+    }
+
+    private function resolveBowheerId($name)
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return null;
+        }
+
+        foreach ($this->bowheerKeyCandidates($name) as $key) {
+            $row = $this->db->get_where('tb_bowheer_po', ['bowheer_key' => $key])->row_array();
+            if ($row) {
+                return (int) $row['id_bowheer'];
+            }
+        }
+
+        $row = $this->db->get_where('tb_master_bowheer_bilco', ['nama_bowheer' => $name])->row_array();
+        if ($row) {
+            return (int) $row['id_bowheer'];
+        }
+
+        $this->db->insert('tb_bowheer_po', [
+            'bowheer' => $name,
+            'bowheer_key' => $this->normalizeBowheerKey($name)
+        ]);
+        return (int) $this->db->insert_id();
+    }
+
+    private function resolveImportBowheerName($name, $typeProject)
+    {
+        $name = trim((string) $name);
+        $type = strtoupper(trim((string) $typeProject));
+
+        if ($this->normalizeBowheerKey($name) === 'PT VGREEN') {
+            if ($type === 'EVCS') {
+                return 'PT VGREEN ( EVCS )';
+            }
+            if ($type === 'BSS') {
+                return 'PT VGREEN ( BSS )';
+            }
+        }
+
+        return $name;
+    }
+
+    private function dashboardBowheerOrder()
+    {
+        return [
+            'PT BANGTELINDO' => 'Bp Zaenul',
+            'PT PERSADA SOKKA TAMA' => 'Bp Zaenul',
+            'PT TELKOM AKSES' => 'Bp Zaenul',
+            'PT MORATEL' => 'Bp Zaenul',
+            'PT TBG ( PERMIT )' => 'Bp Zaenul',
+            'PT XL SMART' => 'Bp Zaenul',
+            'PT MULTIPOLAR' => 'Bp Wardani',
+            'PT NET' => 'Bp Wardani',
+            'PT EMR - NRO' => 'Bp Wardani',
+            'PT EMR - PU ( NON PPN )' => 'Bp Slamet',
+            'PT FS - PU' => 'Bp Slamet',
+            'PT MORATEL - PU' => 'Bp Slamet',
+            'PT EMR - DONASI' => 'Bp Fringga',
+            'PT FS - OSP' => 'Bp Donny',
+            'PT FS - DONASI' => 'Bp Donny',
+            'PT IFORTE - FIBERIZATION' => 'Bp Sumirat',
+            'PT IFORTE - FTTH XL' => 'Bp Sumirat',
+            'PT IFORTE - FTTH IOH' => 'Bp Sumirat',
+            'PT IFORTE - REGULAR & CONN' => 'Bp Sumirat',
+            'PT IFORTE - LBS RECTIFIKASI' => 'Bp Hendry',
+            'PT VGREEN' => 'Bp Wendy',
+            'PT ADT' => 'LOGISTIK',
+            'PT DIAN KARYA' => 'LOGISTIK',
+            'PT INTI PKPU' => 'Bp Thomas'
+        ];
+    }
+
+    private function dashboardPic($name)
+    {
+        $order = $this->dashboardBowheerOrder();
+        if (isset($order[$name])) {
+            return $order[$name];
+        }
+
+        $row = $this->db
+            ->select('pic')
+            ->where('bowheer_key', $this->normalizeBowheerKey($name))
+            ->get('tb_bowheer_po')
+            ->row_array();
+
+        return !empty($row['pic']) ? $row['pic'] : '-';
+    }
+
+    private function bowheerKeyCandidates($name)
+    {
+        $key = $this->normalizeBowheerKey($name);
+        $candidates = [$key];
+
+        if (strpos($key, 'PT PT ') === 0) {
+            $candidates[] = 'PT ' . substr($key, 6);
+        } elseif (strpos($key, 'PT ') === 0 && strpos($key, 'PT PT ') !== 0) {
+            $candidates[] = 'PT PT ' . substr($key, 3);
+        }
+
+        return array_values(array_unique($candidates));
+    }
+
+    private function normalizeBowheerKey($name)
+    {
+        $name = strtoupper(trim((string) $name));
+        $name = str_replace('.', '', $name);
+        $name = preg_replace('/\s+/', ' ', $name);
+        return trim($name);
+    }
+
+    private function deletePoChildren($idPo)
+    {
+        $terms = $this->db->select('id_term')->get_where('tb_po_term', ['id_po' => (int) $idPo])->result_array();
+        foreach ($terms as $term) {
+            $this->db->delete('tb_po_term_allocation', ['id_term' => (int) $term['id_term']]);
+            $this->db->delete('tb_po_term_claim', ['id_term' => (int) $term['id_term']]);
+        }
+        $this->db->delete('tb_po_term', ['id_po' => (int) $idPo]);
+        $this->db->delete('tb_po_amend', ['id_po' => (int) $idPo]);
+    }
+
+    private function cleanupImportedPoCsv($sourceFile)
+    {
+        $this->db->group_start()
+            ->where('source_file', $sourceFile)
+            ->or_like('source_file', 'DATABASE PO CSV', 'after')
+            ->group_end();
+        $this->db->delete('tb_po_target_pipeline');
+
+        $this->db->group_start()
+            ->where('source_file', $sourceFile)
+            ->or_like('source_file', 'DATABASE PO CSV', 'after')
+            ->group_end()
+            ->where('notes', 'Imported from PO CSV');
+
+        $rows = $this->db->select('id_po')->get('tb_po')->result_array();
+        foreach ($rows as $row) {
+            $idPo = (int) $row['id_po'];
+            $this->deletePoChildren($idPo);
+            $this->db->delete('tb_po', ['id_po' => $idPo]);
+        }
+    }
+
+    public function purgeStandaloneData()
+    {
+        $before = [
+            'po' => $this->db->table_exists('tb_po') ? (int) $this->db->count_all('tb_po') : 0,
+            'pipeline' => $this->db->table_exists('tb_po_target_pipeline') ? (int) $this->db->count_all('tb_po_target_pipeline') : 0
+        ];
+
+        $this->db->trans_begin();
+
+        $this->deleteAllIfTableExists('tb_po_term_invoice');
+        $this->deleteAllIfTableExists('tb_po_term_allocation');
+        $this->deleteAllIfTableExists('tb_po_term_claim');
+        $this->deleteAllIfTableExists('tb_po_term');
+        $this->deleteAllIfTableExists('tb_po_amend');
+        $this->deleteAllIfTableExists('tb_po');
+        $this->deleteAllIfTableExists('tb_po_target_pipeline');
+        $this->deleteAllIfTableExists('tb_po_dashboard_cache');
+        $this->deleteAllIfTableExists('tb_po_import_batch');
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return [
+                'status' => false,
+                'message' => 'Gagal menghapus data PO Monitor.'
+            ];
+        }
+
+        $this->db->trans_commit();
+
+        return [
+            'status' => true,
+            'message' => 'Semua data PO Monitor berhasil dihapus. PO: ' . number_format($before['po'], 0, ',', '.') . ', NY PO pipeline: ' . number_format($before['pipeline'], 0, ',', '.') . '. Data PO_MyRep tidak terpengaruh.'
+        ];
+    }
+
+    private function deleteAllIfTableExists($table)
+    {
+        if ($this->db->table_exists($table)) {
+            $this->db->empty_table($table);
+        }
     }
 
     /**

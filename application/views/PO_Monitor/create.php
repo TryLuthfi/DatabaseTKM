@@ -39,7 +39,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
                                 <select name="id_bowheer" class="form-control">
                                     <option value="0">-- pilih (opsional) --</option>
                                     <?php foreach ($bowheers as $b): ?>
-                                        <option value="<?= $b['id_bowheer'] ?>"><?= htmlspecialchars($b['nama_bowheer']) ?></option>
+                                        <option value="<?= $b['id_bowheer'] ?>"><?= htmlspecialchars($b['nama_bowheer'] . (!empty($b['pic']) ? ' - ' . $b['pic'] : '')) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>

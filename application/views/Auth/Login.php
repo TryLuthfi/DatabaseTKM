@@ -49,7 +49,7 @@
         .auth-shell {
             display: flex;
             width: 100%;
-            height: 100vh;
+            height: 100vh;gab
             height: 100dvh;
             overflow: hidden;
         }
