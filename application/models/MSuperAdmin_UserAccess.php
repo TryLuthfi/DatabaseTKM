@@ -760,7 +760,11 @@ class MSuperAdmin_UserAccess extends CI_Model
                 continue;
             }
             if (!in_array($normalizedModule, $allowedModules, true)) {
-                continue;
+                $spaceNormalizedModule = str_replace('_', ' ', $normalizedModule);
+                if (!in_array($spaceNormalizedModule, $allowedModules, true)) {
+                    continue;
+                }
+                $normalizedModule = $spaceNormalizedModule;
             }
             if (!in_array($normalizedModule, $selectedNormalized, true)) {
                 $selectedNormalized[] = $normalizedModule;
@@ -899,7 +903,7 @@ class MSuperAdmin_UserAccess extends CI_Model
 
             $grantedModules = [];
             foreach ($allowedModules as $moduleKey) {
-                if (empty($rowModules[$moduleKey])) {
+                if (!$this->isPostedModuleChecked($rowModules, $moduleKey)) {
                     continue;
                 }
                 $grantedModules[] = $moduleKey;
@@ -929,6 +933,24 @@ class MSuperAdmin_UserAccess extends CI_Model
             'user_count' => count($validUserIds),
             'grant_count' => $insertCount,
         ];
+    }
+
+    private function isPostedModuleChecked(array $rowModules, $moduleKey)
+    {
+        $moduleKey = (string) $moduleKey;
+        $candidates = [
+            $moduleKey,
+            str_replace(' ', '_', $moduleKey),
+            str_replace('_', ' ', $moduleKey),
+        ];
+
+        foreach (array_unique($candidates) as $candidate) {
+            if (isset($rowModules[$candidate]) && !empty($rowModules[$candidate])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function syncMyRepConfigToUserAccess()

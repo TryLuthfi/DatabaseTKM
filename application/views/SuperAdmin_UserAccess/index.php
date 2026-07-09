@@ -130,6 +130,7 @@ sort($homebaseOptions, SORT_NATURAL | SORT_FLAG_CASE);
                                             <?php foreach ($menuModuleOptions as $moduleOption): ?>
                                                 <?php
                                                 $moduleKey = (string) $moduleOption;
+                                                $moduleInputKey = preg_replace('/[^A-Za-z0-9_]/', '_', $moduleKey);
                                                 $isChecked = !empty($accessMatrix[$userId][$moduleKey]);
                                                 ?>
                                                 <td class="text-center align-middle">
@@ -137,7 +138,7 @@ sort($homebaseOptions, SORT_NATURAL | SORT_FLAG_CASE);
                                                         type="checkbox"
                                                         class="js-module-cell"
                                                         data-module="<?= htmlspecialchars($moduleKey, ENT_QUOTES) ?>"
-                                                        name="matrix[<?= $userId ?>][<?= htmlspecialchars($moduleKey, ENT_QUOTES) ?>]"
+                                                        name="matrix[<?= $userId ?>][<?= htmlspecialchars($moduleInputKey, ENT_QUOTES) ?>]"
                                                         value="1"
                                                         <?= $isChecked ? 'checked' : '' ?>>
                                                 </td>
