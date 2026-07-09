@@ -319,10 +319,7 @@ class PO_Monitor extends CI_Controller
         $sourceFile = null;
 
         $serverPath = trim((string) $this->input->post('server_path'));
-        if ($serverPath !== '') {
-            $filePath = $this->resolveReadableCsvPath($serverPath);
-            $sourceFile = basename($filePath ?: $serverPath);
-        } elseif (!empty($_FILES['file_csv']['name'])) {
+        if (!empty($_FILES['file_csv']['name'])) {
             $uploadDir = FCPATH . 'uploads/po_monitor_import';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0775, true);
@@ -348,6 +345,14 @@ class PO_Monitor extends CI_Controller
             $uploadData = $this->upload->data();
             $filePath = $uploadData['full_path'];
             $sourceFile = $uploadData['client_name'];
+        } elseif ($serverPath !== '' && $this->isLocalAccess()) {
+            $filePath = $this->resolveReadableCsvPath($serverPath);
+            $sourceFile = basename($filePath ?: $serverPath);
+        } elseif ($serverPath !== '') {
+            $this->session->set_flashdata('status', false);
+            $this->session->set_flashdata('error_log', 'Server path hanya bisa dipakai dari akses lokal. Untuk production, upload file CSV langsung.');
+            redirect('PO_Monitor');
+            return;
         }
 
         if (empty($filePath)) {

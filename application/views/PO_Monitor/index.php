@@ -1198,12 +1198,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     <label>File CSV</label>
                                     <input type="file" name="file_csv" class="form-control" accept=".csv,text/csv">
                                 </div>
-                                <div class="po-monitor-field">
-                                    <label>Server Path</label>
-                                    <input type="text" name="server_path" class="form-control" value="D:\ZEYN\DATABASE PO TKM\DATABASE PO CSV - ZEYN - PT. TKM.csv">
-                                </div>
+                                <?php if (!empty($isLocalAccess)): ?>
+                                    <div class="po-monitor-field">
+                                        <label>Server Path</label>
+                                        <input type="text" name="server_path" class="form-control" value="D:\ZEYN\DATABASE PO TKM\DATABASE PO CSV - ZEYN - PT. TKM.csv">
+                                    </div>
+                                <?php endif; ?>
                                 <div>
-                                    <button type="submit" class="btn btn-primary btn-block">Import</button>
+                                    <button type="submit" class="btn btn-primary btn-block"><?= !empty($isLocalAccess) ? 'Import' : 'Import CSV' ?></button>
                                 </div>
                             </div>
                         </form>
