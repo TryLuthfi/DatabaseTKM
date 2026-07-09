@@ -683,7 +683,7 @@ class MPO_Monitor extends CI_Model
                 SUM(co_2027_on_po) AS co_2027_on_po
             FROM (
                 SELECT
-                    COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS dashboard_bowheer,
+                    CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS dashboard_bowheer,
                     CASE WHEN YEAR(p.po_date) = 2026 THEN COALESCE(p.total_value, 0) ELSE 0 END AS all_po,
                     COALESCE(p.dashboard_all_invoice, 0) AS all_invoice,
                     COALESCE(p.dashboard_invoice_2026, 0) AS done_inv_2026,
@@ -696,7 +696,7 @@ class MPO_Monitor extends CI_Model
                 WHERE COALESCE(p.status_po, 'ON PO') = 'ON PO'
                 UNION ALL
                 SELECT
-                    dashboard_bowheer,
+                    CONVERT(dashboard_bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci AS dashboard_bowheer,
                     0 AS all_po,
                     0 AS all_invoice,
                     0 AS done_inv_2026,
@@ -1332,16 +1332,16 @@ class MPO_Monitor extends CI_Model
             FROM (
                 SELECT
                     p.id_bowheer,
-                    p.po_number,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
                     p.po_date,
                     t.term_index,
-                    a.no_po_sub,
-                    a.kota_po,
-                    a.detail_po,
+                    CONVERT(a.no_po_sub USING utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
+                    CONVERT(a.kota_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
+                    CONVERT(a.detail_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     a.target_week_start,
                     a.target_week_end,
                     COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
-                    'Target Allocation' AS source_label
+                    CONVERT('Target Allocation' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_term_allocation a
                 JOIN tb_po_term t ON t.id_term = a.id_term
                 JOIN tb_po p ON p.id_po = t.id_po
@@ -1352,16 +1352,16 @@ class MPO_Monitor extends CI_Model
                 UNION ALL
                 SELECT
                     p.id_bowheer,
-                    p.po_number,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
                     p.po_date,
                     t.term_index,
-                    NULL AS no_po_sub,
-                    NULL AS kota_po,
-                    NULL AS detail_po,
+                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
+                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
+                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     t.target_week_start,
                     t.target_week_end,
                     COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
-                    'Target Term' AS source_label
+                    CONVERT('Target Term' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_term t
                 JOIN tb_po p ON p.id_po = t.id_po
                 WHERE t.target_status = 'TARGET_WEEK'
@@ -1374,16 +1374,16 @@ class MPO_Monitor extends CI_Model
                 UNION ALL
                 SELECT
                     pl.id_bowheer,
-                    '-' AS po_number,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
                     pl.po_date,
                     pl.term_index,
-                    NULL AS no_po_sub,
-                    pl.kota_po,
-                    pl.detail_po,
+                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
+                    CONVERT(pl.kota_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
+                    CONVERT(pl.detail_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     pl.target_week_start,
                     pl.target_week_end,
                     pl.plan_amount AS amount,
-                    'NY PO Target' AS source_label
+                    CONVERT('NY PO Target' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_target_pipeline pl
                 WHERE pl.target_status = 'TARGET_WEEK'
                     AND pl.id_bowheer = ?
