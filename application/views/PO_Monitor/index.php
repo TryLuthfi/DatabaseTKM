@@ -2,7 +2,7 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 $isLocalAccess = $isLocalAccess ?? false;
-$canManagePoImport = (string) $this->session->userdata('id_user') === '9999';
+$canManagePoImport = !empty($canManagePoImport);
 $batchInvoiceRows = is_array($batchInvoiceRows ?? null) ? $batchInvoiceRows : [];
 $comparisonMatrix = $comparisonMatrix ?? [
     'from' => date('Y-m'),

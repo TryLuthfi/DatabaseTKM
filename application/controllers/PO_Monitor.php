@@ -45,6 +45,7 @@ class PO_Monitor extends CI_Controller
         $data['selectedBowheer'] = $selectedBowheer;
         $data['selectedSla'] = $selectedSla;
         $data['isLocalAccess'] = $this->isLocalAccess();
+        $data['canManagePoImport'] = $this->canManagePoImport();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -310,7 +311,29 @@ class PO_Monitor extends CI_Controller
 
     private function canManagePoImport()
     {
-        return (string) $this->session->userdata('id_user') === '9999';
+        return $this->getCurrentUserNik() === '9999';
+    }
+
+    private function getCurrentUserNik()
+    {
+        $sessionNik = trim((string) $this->session->userdata('nik'));
+        if ($sessionNik !== '') {
+            return $sessionNik;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new')) {
+            return '';
+        }
+
+        $row = $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->get()
+            ->row_array();
+
+        return trim((string) ($row['nik'] ?? ''));
     }
 
     public function batch_add_po()

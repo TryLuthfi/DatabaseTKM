@@ -57,6 +57,7 @@ class MAuth extends CI_Model
                 $data =
                     [
                         'id_user' => $akun['id'],
+                        'nik' => $akun['nik'] ?? '',
                         'id_level' => isset($akun['id_level']) ? (int) $akun['id_level'] : 0,
                         'nama_user' => $akun['nama_user'],
                         'username_user' => $akun['username_user'],
