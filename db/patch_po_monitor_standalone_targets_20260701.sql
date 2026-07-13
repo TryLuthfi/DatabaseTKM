@@ -104,7 +104,6 @@ INSERT INTO `tb_bowheer_po` (`id_bowheer`, `no_urut`, `pic`, `bowheer`, `bowheer
 (4, 4, 'Bp Zaenul', 'PT MORATEL', 'PT MORATEL'),
 (5, 5, 'Bp Zaenul', 'PT TBG ( PERMIT )', 'PT TBG ( PERMIT )'),
 (6, 6, 'Bp Zaenul', 'PT XL SMART', 'PT XL SMART'),
-(7, 7, 'Bp Wardani', 'PT MULTIPOLAR', 'PT MULTIPOLAR'),
 (8, 8, 'Bp Wardani', 'PT NFT', 'PT NFT'),
 (9, 9, 'Bp Wardani', 'PT EMR - NRO', 'PT EMR - NRO'),
 (10, 10, 'Bp Slamet', 'PT EMR - PU ( NON PPN )', 'PT EMR - PU ( NON PPN )'),
@@ -121,9 +120,7 @@ INSERT INTO `tb_bowheer_po` (`id_bowheer`, `no_urut`, `pic`, `bowheer`, `bowheer
 (21, 21, 'Bp Wendy', 'PT VGREEN ( EVCS )', 'PT VGREEN ( EVCS )'),
 (22, 22, 'Bp Wendy', 'PT VGREEN ( BSS )', 'PT VGREEN ( BSS )'),
 (23, 23, 'LOGISTIK', 'PT ADT', 'PT ADT'),
-(24, 24, 'LOGISTIK', 'PT DIAN KARYA', 'PT DIAN KARYA'),
-(25, 25, 'Bp Wardani', 'PT INTI PKPU', 'PT INTI PKPU'),
-(26, 26, 'Bp Thomas', 'PT NET', 'PT NET')
+(24, 24, 'LOGISTIK', 'PT DIAN KARYA', 'PT DIAN KARYA')
 ON DUPLICATE KEY UPDATE
   `no_urut` = VALUES(`no_urut`),
   `pic` = VALUES(`pic`),

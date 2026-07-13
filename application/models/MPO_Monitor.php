@@ -210,7 +210,6 @@ class MPO_Monitor extends CI_Model
             [4, 'Bp Zaenul', 'PT MORATEL'],
             [5, 'Bp Zaenul', 'PT TBG ( PERMIT )'],
             [6, 'Bp Zaenul', 'PT XL SMART'],
-            [7, 'Bp Wardani', 'PT MULTIPOLAR'],
             [8, 'Bp Wardani', 'PT NFT'],
             [9, 'Bp Wardani', 'PT EMR - NRO'],
             [10, 'Bp Slamet', 'PT EMR - PU ( NON PPN )'],
@@ -2751,8 +2750,6 @@ class MPO_Monitor extends CI_Model
             'PT MORATEL' => 'Bp Zaenul',
             'PT TBG ( PERMIT )' => 'Bp Zaenul',
             'PT XL SMART' => 'Bp Zaenul',
-            'PT MULTIPOLAR' => 'Bp Wardani',
-            'PT NET' => 'Bp Wardani',
             'PT EMR - NRO' => 'Bp Wardani',
             'PT EMR - PU ( NON PPN )' => 'Bp Slamet',
             'PT FS - PU' => 'Bp Slamet',
@@ -2767,8 +2764,7 @@ class MPO_Monitor extends CI_Model
             'PT IFORTE - LBS RECTIFIKASI' => 'Bp Hendry',
             'PT VGREEN' => 'Bp Wendy',
             'PT ADT' => 'LOGISTIK',
-            'PT DIAN KARYA' => 'LOGISTIK',
-            'PT INTI PKPU' => 'Bp Thomas'
+            'PT DIAN KARYA' => 'LOGISTIK'
         ];
     }
 
