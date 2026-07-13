@@ -52,8 +52,10 @@ class MPO_Monitor extends CI_Model
             `id_allocation` int(11) NOT NULL AUTO_INCREMENT,
             `id_term` int(11) NOT NULL,
             `no_po_sub` varchar(150) DEFAULT NULL,
+            `regional` varchar(150) DEFAULT NULL,
             `kota_po` varchar(150) DEFAULT NULL,
             `detail_po` text NULL,
+            `remarks` text NULL,
             `allocation_value` decimal(18,2) DEFAULT 0.00,
             `plan_amount` decimal(18,2) DEFAULT 0.00,
             `submit_raw` varchar(50) DEFAULT NULL,
@@ -79,8 +81,10 @@ class MPO_Monitor extends CI_Model
             `id_bowheer` int(11) DEFAULT NULL,
             `dashboard_bowheer` varchar(150) NOT NULL,
             `status_po` varchar(30) DEFAULT 'NY PO',
+            `regional` varchar(150) DEFAULT NULL,
             `kota_po` varchar(150) DEFAULT NULL,
             `detail_po` text NULL,
+            `remarks` text NULL,
             `type_project` varchar(150) DEFAULT NULL,
             `po_date` date DEFAULT NULL,
             `po_term` varchar(50) DEFAULT NULL,
@@ -141,6 +145,10 @@ class MPO_Monitor extends CI_Model
         $this->addColumnIfMissing('tb_po', 'dashboard_outs_2026', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_outs_2026` decimal(18,2) DEFAULT 0.00");
         $this->addColumnIfMissing('tb_po', 'dashboard_co_2027', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_co_2027` decimal(18,2) DEFAULT 0.00");
         $this->addColumnIfMissing('tb_po_term_claim', 'id_allocation', "ALTER TABLE `tb_po_term_claim` ADD COLUMN `id_allocation` int(11) DEFAULT NULL AFTER `id_term`");
+        $this->addColumnIfMissing('tb_po_term_allocation', 'regional', "ALTER TABLE `tb_po_term_allocation` ADD COLUMN `regional` varchar(150) DEFAULT NULL AFTER `no_po_sub`");
+        $this->addColumnIfMissing('tb_po_term_allocation', 'remarks', "ALTER TABLE `tb_po_term_allocation` ADD COLUMN `remarks` text NULL AFTER `detail_po`");
+        $this->addColumnIfMissing('tb_po_target_pipeline', 'regional', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `regional` varchar(150) DEFAULT NULL AFTER `status_po`");
+        $this->addColumnIfMissing('tb_po_target_pipeline', 'remarks', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `remarks` text NULL AFTER `detail_po`");
         $this->addColumnIfMissing('tb_po_term', 'plan_amount', "ALTER TABLE `tb_po_term` ADD COLUMN `plan_amount` decimal(18,2) DEFAULT 0.00");
         $this->addColumnIfMissing('tb_po_term', 'submit_raw', "ALTER TABLE `tb_po_term` ADD COLUMN `submit_raw` varchar(50) DEFAULT NULL");
         $this->addColumnIfMissing('tb_po_term', 'target_year', "ALTER TABLE `tb_po_term` ADD COLUMN `target_year` int(11) DEFAULT NULL");
@@ -417,8 +425,10 @@ class MPO_Monitor extends CI_Model
                 t.id_term,
                 t.term_index,
                 alloc.no_po_sub,
+                alloc.regional,
                 alloc.kota_po,
                 alloc.detail_po,
+                alloc.remarks,
                 COALESCE(t.value, 0) AS term_value,
                 COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
                 GREATEST(COALESCE(t.value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
@@ -453,8 +463,10 @@ class MPO_Monitor extends CI_Model
                 SELECT
                     id_term,
                     GROUP_CONCAT(DISTINCT NULLIF(no_po_sub, '') ORDER BY source_row_no SEPARATOR ', ') AS no_po_sub,
+                    GROUP_CONCAT(DISTINCT NULLIF(regional, '') ORDER BY source_row_no SEPARATOR ', ') AS regional,
                     GROUP_CONCAT(DISTINCT NULLIF(kota_po, '') ORDER BY source_row_no SEPARATOR ', ') AS kota_po,
-                    GROUP_CONCAT(DISTINCT NULLIF(detail_po, '') ORDER BY source_row_no SEPARATOR ', ') AS detail_po
+                    GROUP_CONCAT(DISTINCT NULLIF(detail_po, '') ORDER BY source_row_no SEPARATOR ', ') AS detail_po,
+                    GROUP_CONCAT(DISTINCT NULLIF(remarks, '') ORDER BY source_row_no SEPARATOR ', ') AS remarks
                 FROM tb_po_term_allocation
                 GROUP BY id_term
             ) alloc ON t.id_term = alloc.id_term
@@ -1345,8 +1357,10 @@ class MPO_Monitor extends CI_Model
                     p.po_date,
                     t.term_index,
                     CONVERT(a.no_po_sub USING utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
+                    CONVERT(a.regional USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
                     CONVERT(a.kota_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
                     CONVERT(a.detail_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CONVERT(a.remarks USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
                     a.target_week_start,
                     a.target_week_end,
                     COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
@@ -1365,8 +1379,10 @@ class MPO_Monitor extends CI_Model
                     p.po_date,
                     t.term_index,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
+                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
                     t.target_week_start,
                     t.target_week_end,
                     COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
@@ -1387,8 +1403,10 @@ class MPO_Monitor extends CI_Model
                     pl.po_date,
                     pl.term_index,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
+                    CONVERT(pl.regional USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
                     CONVERT(pl.kota_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
                     CONVERT(pl.detail_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CONVERT(pl.remarks USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
                     pl.target_week_start,
                     pl.target_week_end,
                     pl.plan_amount AS amount,
@@ -1418,8 +1436,10 @@ class MPO_Monitor extends CI_Model
                 p.po_date,
                 t.term_index,
                 COALESCE(NULLIF(a.no_po_sub, ''), aa.no_po_sub) AS no_po_sub,
+                COALESCE(NULLIF(a.regional, ''), aa.regional) AS regional,
                 COALESCE(NULLIF(a.kota_po, ''), aa.kota_po) AS kota_po,
                 COALESCE(NULLIF(a.detail_po, ''), aa.detail_po) AS detail_po,
+                COALESCE(NULLIF(a.remarks, ''), aa.remarks) AS remarks,
                 tc.invoice_date,
                 tc.invoice_amount AS amount,
                 tc.claim_source AS source_label
@@ -1431,8 +1451,10 @@ class MPO_Monitor extends CI_Model
                 SELECT
                     id_term,
                     GROUP_CONCAT(DISTINCT NULLIF(no_po_sub, '') ORDER BY source_row_no SEPARATOR ', ') AS no_po_sub,
+                    GROUP_CONCAT(DISTINCT NULLIF(regional, '') ORDER BY source_row_no SEPARATOR ', ') AS regional,
                     GROUP_CONCAT(DISTINCT NULLIF(kota_po, '') ORDER BY source_row_no SEPARATOR ', ') AS kota_po,
-                    GROUP_CONCAT(DISTINCT NULLIF(detail_po, '') ORDER BY source_row_no SEPARATOR ', ') AS detail_po
+                    GROUP_CONCAT(DISTINCT NULLIF(detail_po, '') ORDER BY source_row_no SEPARATOR ', ') AS detail_po,
+                    GROUP_CONCAT(DISTINCT NULLIF(remarks, '') ORDER BY source_row_no SEPARATOR ', ') AS remarks
                 FROM tb_po_term_allocation
                 GROUP BY id_term
             ) aa ON aa.id_term = t.id_term
@@ -1712,6 +1734,267 @@ class MPO_Monitor extends CI_Model
         return ['status' => true, 'message' => 'Term claimed'];
     }
 
+    public function createBatchPo(array $rows, $userId)
+    {
+        $summary = [
+            'inserted' => 0,
+            'skipped' => 0,
+            'terms' => 0,
+            'allocations' => 0,
+            'errors' => []
+        ];
+
+        if (empty($rows)) {
+            return ['status' => false, 'message' => 'Tidak ada data PO.', 'summary' => $summary];
+        }
+
+        $groups = $this->buildBatchPoGroups($rows, $summary);
+        if (empty($groups)) {
+            return ['status' => false, 'message' => 'Tidak ada data PO valid.', 'summary' => $summary];
+        }
+
+        $this->db->trans_begin();
+
+        foreach ($groups as $groupIndex => $group) {
+            $row = $group['base'];
+            $poNumber = $group['po_number'];
+            $bowheer = $group['bowheer'];
+            $poDate = $group['po_date'];
+            $poValue = $group['po_value'];
+            $poFinalValue = $group['po_final_value'];
+            $effectiveValue = $group['effective_value'];
+            $statusPo = $group['status_po'];
+            $idBowheer = $this->resolveBowheerId($bowheer);
+            $sourceHash = hash('sha256', implode('|', [
+                'MANUAL_BATCH_PO',
+                $poNumber,
+                $idBowheer,
+                $poDate,
+                number_format($poValue, 2, '.', ''),
+                number_format($poFinalValue, 2, '.', ''),
+                $group['allocation_hash']
+            ]));
+
+            $existing = $this->db->get_where('tb_po', ['source_hash' => $sourceHash])->row_array();
+            if ($existing) {
+                $summary['skipped']++;
+                continue;
+            }
+
+            $this->db->insert('tb_po', [
+                'po_number' => $poNumber,
+                'po_date' => $poDate,
+                'id_bowheer' => $idBowheer,
+                'total_value' => $poValue > 0 ? $poValue : $effectiveValue,
+                'status_po' => $statusPo,
+                'dashboard_bowheer' => $bowheer,
+                'type_project' => trim((string) ($row['type_project'] ?? '')),
+                'dashboard_all_invoice' => 0,
+                'dashboard_invoice_2026' => 0,
+                'dashboard_outs_2026' => 0,
+                'dashboard_co_2027' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $userId ?: null,
+                'notes' => 'Batch manual tambah PO',
+                'source_file' => 'BATCH_MANUAL_PO',
+                'source_row_no' => $group['first_row_no'],
+                'source_hash' => $sourceHash
+            ]);
+            $idPo = (int) $this->db->insert_id();
+
+            $this->db->insert('tb_po_amend', [
+                'id_po' => $idPo,
+                'amend_no' => 1,
+                'release_value' => $effectiveValue,
+                'release_date' => $poDate,
+                'notes' => $poFinalValue > 0 ? 'Batch manual from PO FINAL VALUE' : 'Batch manual initial value'
+            ]);
+            $idAmend = (int) $this->db->insert_id();
+
+            $splits = $this->buildTermSplitsFromPoTerm((string) ($row['po_term'] ?? ''), $effectiveValue);
+
+            foreach ($splits as $split) {
+                $this->db->insert('tb_po_term', [
+                    'id_po' => $idPo,
+                    'id_amend' => $idAmend,
+                    'term_index' => (int) $split['term_index'],
+                    'percent' => (float) $split['percent'],
+                    'value' => (float) $split['value'],
+                    'plan_amount' => (float) $split['value'],
+                    'target_status' => 'OPEN'
+                ]);
+                $idTerm = (int) $this->db->insert_id();
+                $summary['terms']++;
+
+                if ($group['has_allocations']) {
+                    $remainingAllocationValue = (float) $split['value'];
+                    $allocationCount = count($group['allocations']);
+                    foreach ($group['allocations'] as $allocationIndex => $allocation) {
+                        if ($allocationIndex === $allocationCount - 1) {
+                            $allocationValue = $remainingAllocationValue;
+                        } else {
+                            $allocationValue = $effectiveValue > 0 ? round(((float) $split['value'] * (float) $allocation['effective_value']) / $effectiveValue, 2) : 0;
+                            $remainingAllocationValue -= $allocationValue;
+                        }
+
+                        $this->db->insert('tb_po_term_allocation', [
+                            'id_term' => $idTerm,
+                            'no_po_sub' => $allocation['no_po_sub'],
+                            'regional' => $allocation['regional'],
+                            'kota_po' => $allocation['kota_po'],
+                            'detail_po' => $allocation['detail_po'],
+                            'remarks' => $allocation['remarks'],
+                            'allocation_value' => $allocationValue,
+                            'plan_amount' => $allocationValue,
+                            'target_status' => 'OPEN',
+                            'source_row_no' => $allocation['row_no']
+                        ]);
+                        $summary['allocations']++;
+                    }
+                }
+            }
+
+            $summary['inserted']++;
+        }
+
+        $this->rebuildDashboardCache(null);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Gagal menyimpan batch PO.', 'summary' => $summary];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => $summary['inserted'] > 0, 'message' => 'Batch PO selesai.', 'summary' => $summary];
+    }
+
+    private function buildBatchPoGroups(array $rows, array &$summary)
+    {
+        $groups = [];
+
+        foreach ($rows as $index => $row) {
+            $poNumber = trim((string) ($row['po_number'] ?? ''));
+            $bowheer = $this->resolveImportBowheerName((string) ($row['bowheer'] ?? ''), (string) ($row['type_project'] ?? ''));
+            $poDate = $this->parseDate((string) ($row['po_date'] ?? ''));
+            $poValue = $this->normalizeAmountLocal($row['po_value'] ?? 0);
+            $poFinalValue = $this->normalizeAmountLocal($row['po_final_value'] ?? 0);
+            $effectiveValue = $poFinalValue > 0 ? $poFinalValue : $poValue;
+            $statusPo = strtoupper(trim((string) ($row['status_po'] ?? 'ON PO'))) ?: 'ON PO';
+
+            if ($poNumber === '' || $bowheer === '' || $effectiveValue <= 0) {
+                $summary['skipped']++;
+                $summary['errors'][] = 'Row ' . ($index + 1) . ' wajib isi NO PO, BOWHEER, dan nilai PO.';
+                continue;
+            }
+
+            $groupKey = hash('sha256', implode('|', [
+                $bowheer,
+                $poNumber,
+                $poDate,
+                trim((string) ($row['po_term'] ?? '')),
+                trim((string) ($row['type_project'] ?? '')),
+                $statusPo
+            ]));
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'base' => $row,
+                    'po_number' => $poNumber,
+                    'bowheer' => $bowheer,
+                    'po_date' => $poDate,
+                    'status_po' => $statusPo,
+                    'po_value' => 0,
+                    'po_final_value' => 0,
+                    'effective_value' => 0,
+                    'has_allocations' => false,
+                    'allocations' => [],
+                    'first_row_no' => $index + 1,
+                    'allocation_hash' => ''
+                ];
+            }
+
+            $groups[$groupKey]['po_value'] += $poValue;
+            $groups[$groupKey]['po_final_value'] += $poFinalValue;
+            $groups[$groupKey]['effective_value'] += $effectiveValue;
+
+            $hasAllocation = trim((string) ($row['no_po_sub'] ?? '')) !== ''
+                || trim((string) ($row['regional'] ?? '')) !== ''
+                || trim((string) ($row['kota_po'] ?? '')) !== ''
+                || trim((string) ($row['detail_po'] ?? '')) !== ''
+                || trim((string) ($row['remarks'] ?? '')) !== '';
+            if ($hasAllocation) {
+                $groups[$groupKey]['has_allocations'] = true;
+                $groups[$groupKey]['allocations'][] = [
+                    'no_po_sub' => trim((string) ($row['no_po_sub'] ?? '')),
+                    'regional' => trim((string) ($row['regional'] ?? '')),
+                    'kota_po' => trim((string) ($row['kota_po'] ?? '')),
+                    'detail_po' => trim((string) ($row['detail_po'] ?? '')),
+                    'remarks' => trim((string) ($row['remarks'] ?? '')),
+                    'effective_value' => $effectiveValue,
+                    'row_no' => $index + 1
+                ];
+            }
+        }
+
+        foreach ($groups as &$group) {
+            $allocationHashParts = [];
+            foreach ($group['allocations'] as $allocation) {
+                $allocationHashParts[] = implode('|', [
+                    $allocation['no_po_sub'],
+                    $allocation['regional'],
+                    $allocation['kota_po'],
+                    $allocation['detail_po'],
+                    $allocation['remarks'],
+                    number_format((float) $allocation['effective_value'], 2, '.', '')
+                ]);
+            }
+            $group['allocation_hash'] = hash('sha256', implode('~', $allocationHashParts));
+        }
+        unset($group);
+
+        return array_values($groups);
+    }
+
+    private function buildTermSplitsFromPoTerm($poTerm, $totalValue)
+    {
+        $percents = array_values($this->parseTermPercents($poTerm));
+        $percents = array_values(array_filter($percents, static function ($percent) {
+            return (float) $percent > 0;
+        }));
+
+        if (empty($percents)) {
+            $percents = [100.0];
+        }
+
+        $percents = array_slice($percents, 0, 5);
+        $sumPercent = array_sum($percents);
+        if ($sumPercent <= 0) {
+            $percents = [100.0];
+            $sumPercent = 100.0;
+        }
+
+        $result = [];
+        $remainingValue = (float) $totalValue;
+        $count = count($percents);
+        foreach ($percents as $idx => $percent) {
+            $normalizedPercent = ((float) $percent / $sumPercent) * 100;
+            if ($idx === $count - 1) {
+                $value = $remainingValue;
+            } else {
+                $value = round(((float) $totalValue * $normalizedPercent) / 100, 2);
+                $remainingValue -= $value;
+            }
+
+            $result[] = [
+                'term_index' => $idx + 1,
+                'percent' => round($normalizedPercent, 2),
+                'value' => $value
+            ];
+        }
+
+        return $result;
+    }
+
     public function importCsv($filePath, $sourceFile, $userId)
     {
         if (!is_readable($filePath)) {
@@ -1766,8 +2049,10 @@ class MPO_Monitor extends CI_Model
                 'status_po' => strtoupper(trim($this->csvValue($line, $headerMap, 'STATUS PO'))) ?: 'ON PO',
                 'po_number' => trim($poNumber),
                 'no_po_sub' => trim($this->csvValue($line, $headerMap, 'NO PO SUB')),
+                'regional' => trim($this->csvValue($line, $headerMap, 'REGIONAL')),
                 'kota_po' => trim($this->csvValue($line, $headerMap, 'KOTA PO')),
                 'detail_po' => trim($this->csvValue($line, $headerMap, 'DETAIL PO')),
+                'remarks' => trim($this->csvValue($line, $headerMap, 'REMARKS')),
                 'type_project' => trim($this->csvValue($line, $headerMap, 'TYPE PROJECT')),
                 'po_date' => $this->parseDate($this->csvValue($line, $headerMap, 'TGL PO')),
                 'po_value' => $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'PO VALUE')),
@@ -1926,8 +2211,10 @@ class MPO_Monitor extends CI_Model
                         $this->db->insert('tb_po_term_allocation', [
                             'id_term' => $idTerm,
                             'no_po_sub' => $allocation['row']['no_po_sub'],
+                            'regional' => $allocation['row']['regional'],
                             'kota_po' => $allocation['row']['kota_po'],
                             'detail_po' => $allocation['row']['detail_po'],
+                            'remarks' => $allocation['row']['remarks'],
                             'allocation_value' => $allocation['amount'],
                             'plan_amount' => $allocation['plan_amount'],
                             'submit_raw' => $meta['submit_raw'],
@@ -1999,8 +2286,10 @@ class MPO_Monitor extends CI_Model
                     'id_bowheer' => $idBowheer,
                     'dashboard_bowheer' => $pipelineRow['dashboard_bowheer'],
                     'status_po' => 'NY PO',
+                    'regional' => $pipelineRow['regional'],
                     'kota_po' => $pipelineRow['kota_po'],
                     'detail_po' => $pipelineRow['detail_po'],
+                    'remarks' => $pipelineRow['remarks'],
                     'type_project' => $pipelineRow['type_project'],
                     'po_date' => $pipelineRow['po_date'],
                     'po_term' => $pipelineRow['po_term'],
@@ -2055,8 +2344,10 @@ class MPO_Monitor extends CI_Model
 
         foreach ($rows as $row) {
             $hasSub = trim((string) $row['no_po_sub']) !== ''
+                || trim((string) $row['regional']) !== ''
                 || trim((string) $row['kota_po']) !== ''
-                || trim((string) $row['detail_po']) !== '';
+                || trim((string) $row['detail_po']) !== ''
+                || trim((string) $row['remarks']) !== '';
             $keyParts = $hasSub
                 ? ['sub', $row['bowheer'], $row['po_number'], $row['po_date'], $row['po_term']]
                 : ['row', $row['bowheer'], $row['po_number'], $row['po_date'], $row['row_no']];
@@ -2302,13 +2593,37 @@ class MPO_Monitor extends CI_Model
         }
 
         $isNegative = preg_match('/^\s*\(.*\)\s*$/', $value) === 1;
-        $value = preg_replace('/[^\d,.\-]/', '', $value);
-        $value = str_replace(',', '', $value);
-        if (!is_numeric($value)) {
+        $normalized = preg_replace('/[^\d,.\-]/', '', $value);
+        $lastDot = strrpos($normalized, '.');
+        $lastComma = strrpos($normalized, ',');
+
+        if ($lastDot !== false && $lastComma !== false) {
+            if ($lastDot > $lastComma) {
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                $normalized = str_replace('.', '', $normalized);
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } elseif ($lastComma !== false) {
+            $parts = explode(',', $normalized);
+            if (count($parts) > 2 || strlen(end($parts)) === 3) {
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                $normalized = str_replace('.', '', $normalized);
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } else {
+            $parts = explode('.', $normalized);
+            if (count($parts) > 2 || (count($parts) === 2 && strlen(end($parts)) === 3)) {
+                $normalized = str_replace('.', '', $normalized);
+            }
+        }
+
+        if (!is_numeric($normalized)) {
             return 0.0;
         }
 
-        $amount = (float) $value;
+        $amount = (float) $normalized;
         return $isNegative && $amount > 0 ? -$amount : $amount;
     }
 

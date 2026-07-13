@@ -170,8 +170,10 @@ CREATE TABLE IF NOT EXISTS `tb_po_term_allocation` (
   `id_allocation` int(11) NOT NULL AUTO_INCREMENT,
   `id_term` int(11) NOT NULL,
   `no_po_sub` varchar(150) DEFAULT NULL,
+  `regional` varchar(150) DEFAULT NULL,
   `kota_po` varchar(150) DEFAULT NULL,
   `detail_po` text NULL,
+  `remarks` text NULL,
   `allocation_value` decimal(18,2) DEFAULT 0.00,
   `plan_amount` decimal(18,2) DEFAULT 0.00,
   `submit_raw` varchar(50) DEFAULT NULL,
@@ -199,8 +201,10 @@ CREATE TABLE IF NOT EXISTS `tb_po_target_pipeline` (
   `id_bowheer` int(11) DEFAULT NULL,
   `dashboard_bowheer` varchar(150) NOT NULL,
   `status_po` varchar(30) DEFAULT 'NY PO',
+  `regional` varchar(150) DEFAULT NULL,
   `kota_po` varchar(150) DEFAULT NULL,
   `detail_po` text NULL,
+  `remarks` text NULL,
   `type_project` varchar(150) DEFAULT NULL,
   `po_date` date DEFAULT NULL,
   `po_term` varchar(50) DEFAULT NULL,
@@ -286,8 +290,10 @@ ALTER TABLE `tb_po_term_claim`
 
 ALTER TABLE `tb_po_term_allocation`
   ADD COLUMN IF NOT EXISTS `no_po_sub` varchar(150) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `regional` varchar(150) DEFAULT NULL AFTER `no_po_sub`,
   ADD COLUMN IF NOT EXISTS `kota_po` varchar(150) DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `detail_po` text NULL,
+  ADD COLUMN IF NOT EXISTS `remarks` text NULL AFTER `detail_po`,
   ADD COLUMN IF NOT EXISTS `plan_amount` decimal(18,2) DEFAULT 0.00,
   ADD COLUMN IF NOT EXISTS `submit_raw` varchar(50) DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `target_year` int(11) DEFAULT NULL,
@@ -298,6 +304,10 @@ ALTER TABLE `tb_po_term_allocation`
   ADD COLUMN IF NOT EXISTS `invoice_date` date DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `outstanding_amount` decimal(18,2) DEFAULT 0.00,
   ADD COLUMN IF NOT EXISTS `source_row_no` int(11) DEFAULT NULL;
+
+ALTER TABLE `tb_po_target_pipeline`
+  ADD COLUMN IF NOT EXISTS `regional` varchar(150) DEFAULT NULL AFTER `status_po`,
+  ADD COLUMN IF NOT EXISTS `remarks` text NULL AFTER `detail_po`;
 
 -- =========================================================
 -- 5. INDEX PATCH

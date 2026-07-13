@@ -272,8 +272,8 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
-        if (!$this->isLocalAccess()) {
-            show_error('Fitur hapus semua data PO hanya tersedia dari akses lokal.', 403);
+        if (!$this->canManagePoImport()) {
+            show_error('Fitur hapus semua data PO hanya tersedia untuk user khusus.', 403);
             return;
         }
 
@@ -308,10 +308,87 @@ class PO_Monitor extends CI_Controller
             || strpos($host, '127.0.0.1') !== false;
     }
 
+    private function canManagePoImport()
+    {
+        return (string) $this->session->userdata('id_user') === '9999';
+    }
+
+    public function batch_add_po()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            show_404();
+            return;
+        }
+
+        $fields = [
+            'bowheer',
+            'status_po',
+            'po_number',
+            'no_po_sub',
+            'regional',
+            'kota_po',
+            'detail_po',
+            'remarks',
+            'type_project',
+            'po_date',
+            'po_value',
+            'po_final_value',
+            'po_term'
+        ];
+
+        $posted = [];
+        $maxRows = 0;
+        foreach ($fields as $field) {
+            $value = $this->input->post($field);
+            $posted[$field] = is_array($value) ? $value : [];
+            $maxRows = max($maxRows, count($posted[$field]));
+        }
+
+        $rows = [];
+        for ($i = 0; $i < $maxRows; $i++) {
+            $row = [];
+            $hasValue = false;
+            foreach ($fields as $field) {
+                $row[$field] = isset($posted[$field][$i]) ? trim((string) $posted[$field][$i]) : '';
+                if ($row[$field] !== '') {
+                    $hasValue = true;
+                }
+            }
+            if ($hasValue) {
+                $rows[] = $row;
+            }
+        }
+
+        $result = $this->MPO_Monitor->createBatchPo($rows, $this->session->userdata('id_user'));
+        $summary = (array) ($result['summary'] ?? []);
+        $this->session->set_flashdata('status', !empty($result['status']));
+
+        $message = 'Batch tambah PO selesai. Insert: ' . (int) ($summary['inserted'] ?? 0)
+            . ', skip: ' . (int) ($summary['skipped'] ?? 0)
+            . ', terms: ' . (int) ($summary['terms'] ?? 0)
+            . ', allocations: ' . (int) ($summary['allocations'] ?? 0) . '.';
+        if (!empty($summary['errors'])) {
+            $message .= ' Catatan: ' . implode('; ', array_slice((array) $summary['errors'], 0, 5));
+        }
+
+        $this->session->set_flashdata('error_log', $message);
+        redirect('PO_Monitor');
+    }
+
     public function import_csv()
     {
         if (empty($this->session->userdata('id_user'))) {
             redirect('Auth');
+            return;
+        }
+
+        if (!$this->canManagePoImport()) {
+            show_error('Fitur import PO hanya tersedia untuk user khusus.', 403);
             return;
         }
 
@@ -529,7 +606,7 @@ class PO_Monitor extends CI_Controller
         $html .= '</div>';
         $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
         $html .= '<thead><tr>';
-        $html .= '<th>No</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Target Period') . '</th><th>Source</th><th class="text-right">Amount</th>';
+        $html .= '<th>No</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Regional</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Target Period') . '</th><th>Source</th><th class="text-right">Amount</th>';
         $html .= '</tr></thead><tbody>';
 
         foreach ($rows as $index => $row) {
@@ -545,8 +622,10 @@ class PO_Monitor extends CI_Controller
             $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($this->formatIndonesianDate($row['po_date'] ?? '')) . '</td>';
             $html .= '<td>' . htmlspecialchars($row['no_po_sub'] ?: '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['regional'] ?: '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($row['kota_po'] ?: '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
             $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($period) . '</td>';
             $html .= '<td>' . htmlspecialchars($row['source_label'] ?: '-') . '</td>';
@@ -554,7 +633,7 @@ class PO_Monitor extends CI_Controller
             $html .= '</tr>';
         }
 
-        $html .= '</tbody><tfoot><tr><th colspan="9" class="text-right">TOTAL</th><th class="text-right">' . number_format($total, 0, ',', '.') . '</th></tr></tfoot>';
+        $html .= '</tbody><tfoot><tr><th colspan="11" class="text-right">TOTAL</th><th class="text-right">' . number_format($total, 0, ',', '.') . '</th></tr></tfoot>';
         $html .= '</table></div>';
         $html = str_replace('<span class="po-monitor-modal-stat__value js-po-monitor-modal-total">0</span>', '<span class="po-monitor-modal-stat__value">' . number_format($total, 0, ',', '.') . '</span>', $html);
         return $html;
@@ -596,7 +675,7 @@ class PO_Monitor extends CI_Controller
         $html .= '</div>';
         $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
         $html .= '<thead><tr>';
-        $html .= '<th>No</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Term</th><th class="text-right">PO Value</th><th class="text-right">Nilai Term</th><th class="text-right">Sudah Ditagih</th><th class="text-right">Sisa</th>';
+        $html .= '<th>No</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Regional</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th class="text-right">PO Value</th><th class="text-right">Nilai Term</th><th class="text-right">Sudah Ditagih</th><th class="text-right">Sisa</th>';
         $html .= '</tr></thead><tbody>';
 
         foreach ($rows as $index => $row) {
@@ -606,8 +685,10 @@ class PO_Monitor extends CI_Controller
             $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($this->formatIndonesianDate($row['po_date'] ?? '')) . '</td>';
             $html .= '<td>' . htmlspecialchars($row['no_po_sub'] ?: '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['regional'] ?: '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($row['kota_po'] ?: '-') . '</td>';
             $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
             $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
             $html .= '<td class="text-right">' . number_format((float) ($row['current_release_value'] ?? 0), 0, ',', '.') . '</td>';
             $html .= '<td class="text-right">' . number_format((float) ($row['term_value'] ?? 0), 0, ',', '.') . '</td>';
@@ -617,7 +698,7 @@ class PO_Monitor extends CI_Controller
         }
 
         $html .= '</tbody><tfoot><tr>';
-        $html .= '<th colspan="7" class="text-right">TOTAL</th>';
+        $html .= '<th colspan="9" class="text-right">TOTAL</th>';
         $html .= '<th class="text-right">' . number_format($totalRelease, 0, ',', '.') . '</th>';
         $html .= '<th class="text-right">' . number_format($totalTerm, 0, ',', '.') . '</th>';
         $html .= '<th class="text-right">' . number_format($totalInvoiced, 0, ',', '.') . '</th>';

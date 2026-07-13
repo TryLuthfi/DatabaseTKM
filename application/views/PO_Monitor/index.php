@@ -2,6 +2,7 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 $isLocalAccess = $isLocalAccess ?? false;
+$canManagePoImport = (string) $this->session->userdata('id_user') === '9999';
 $batchInvoiceRows = is_array($batchInvoiceRows ?? null) ? $batchInvoiceRows : [];
 $comparisonMatrix = $comparisonMatrix ?? [
     'from' => date('Y-m'),
@@ -1104,6 +1105,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 <a href="<?= site_url('PO_Monitor/create') ?>" class="btn btn-light btn-sm font-weight-bold">
                                     <i class="fas fa-plus mr-1"></i> Tambah PO
                                 </a>
+                                <button type="button" class="btn btn-light btn-sm font-weight-bold" data-toggle="modal" data-target="#po_monitor_batch_po_modal">
+                                    <i class="fas fa-layer-group mr-1"></i> Batch Tambah PO
+                                </button>
                                 <button type="button" class="btn btn-light btn-sm font-weight-bold" data-toggle="modal" data-target="#po_monitor_batch_invoice_modal">
                                     <i class="fas fa-file-invoice-dollar mr-1"></i> Batch Input Invoice Termin
                                 </button>
@@ -1147,7 +1151,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     </div>
                 <?php endif; ?>
 
-                <?php if (false): ?>
+                <?php if ($canManagePoImport): ?>
                 <div class="po-monitor-panel">
                     <div class="po-monitor-panel__head">
                         <div>
@@ -1210,7 +1214,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 </div>
                             </div>
                         </form>
-                        <?php if (!empty($isLocalAccess)): ?>
+                        <?php if ($canManagePoImport): ?>
                             <div class="border-top mt-3 pt-3 d-flex flex-wrap align-items-center justify-content-between">
                                 <div class="text-muted small mb-2 mb-md-0">
                                     Hapus semua data PO Monitor standalone. Data PO_MyRep tidak ikut terhapus.
@@ -1749,6 +1753,155 @@ if (!function_exists('po_monitor_term_amount_link')) {
     </div>
 </div>
 
+<div class="modal fade" id="po_monitor_batch_po_modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= site_url('PO_Monitor/batch_add_po') ?>" id="po-monitor-batch-po-form">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span class="po-monitor-modal-eyebrow">Batch PO</span>Batch Tambah PO</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <datalist id="po-monitor-batch-po-bowheer-options">
+                        <?php foreach ($uniqueBowheer as $bowheerName): ?>
+                            <option value="<?= htmlspecialchars($bowheerName, ENT_QUOTES) ?>"></option>
+                        <?php endforeach; ?>
+                    </datalist>
+
+                    <ul class="nav nav-tabs" id="po-monitor-batch-po-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="po-monitor-batch-po-manual-tab" data-toggle="pill" href="#po-monitor-batch-po-manual-pane" role="tab">Input Manual</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="po-monitor-batch-po-paste-tab" data-toggle="pill" href="#po-monitor-batch-po-paste-pane" role="tab">Paste dari Excel</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content border-left border-right border-bottom p-3 mb-3">
+                        <div class="tab-pane fade show active" id="po-monitor-batch-po-manual-pane" role="tabpanel">
+                            <div class="po-monitor-filter-grid">
+                                <div class="po-monitor-field">
+                                    <label>BOWHEER</label>
+                                    <input type="text" id="po-monitor-batch-po-bowheer" class="form-control" list="po-monitor-batch-po-bowheer-options">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>STATUS PO</label>
+                                    <select id="po-monitor-batch-po-status" class="form-control">
+                                        <option value="ON PO">ON PO</option>
+                                        <option value="NY PO">NY PO</option>
+                                    </select>
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>NO PO</label>
+                                    <input type="text" id="po-monitor-batch-po-number-new" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>TGL PO</label>
+                                    <input type="date" id="po-monitor-batch-po-date" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>PO VALUE</label>
+                                    <input type="text" id="po-monitor-batch-po-value" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>PO FINAL VALUE</label>
+                                    <input type="text" id="po-monitor-batch-po-final-value" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>PO TERM</label>
+                                    <input type="text" id="po-monitor-batch-po-term" class="form-control" placeholder="100 atau 50:50 atau 30:30:40">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>TYPE PROJECT</label>
+                                    <input type="text" id="po-monitor-batch-po-type-project" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>NO PO SUB</label>
+                                    <input type="text" id="po-monitor-batch-po-sub" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>REGIONAL</label>
+                                    <input type="text" id="po-monitor-batch-po-regional" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>KOTA PO</label>
+                                    <input type="text" id="po-monitor-batch-po-city" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>DETAIL PO</label>
+                                    <input type="text" id="po-monitor-batch-po-detail" class="form-control">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>REMARKS</label>
+                                    <input type="text" id="po-monitor-batch-po-remarks" class="form-control">
+                                </div>
+                                <div class="po-monitor-field d-flex align-items-end">
+                                    <button type="button" class="btn btn-outline-primary btn-block" id="po-monitor-batch-po-add-row">Tambah Row</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="po-monitor-batch-po-paste-pane" role="tabpanel">
+                            <div class="form-group">
+                                <label>Data PO</label>
+                                <textarea id="po-monitor-batch-po-paste" class="form-control po-monitor-batch-paste" placeholder="BOWHEER[TAB]STATUS PO[TAB]NO PO[TAB]NO PO SUB[TAB]REGIONAL[TAB]KOTA PO[TAB]DETAIL PO[TAB]REMARKS[TAB]TYPE PROJECT[TAB]TGL PO[TAB]PO VALUE[TAB]PO FINAL VALUE[TAB]PO TERM&#10;PT BANGTELINDO[TAB]ON PO[TAB]PO. 123[TAB]-[TAB]JABODETABEK[TAB]Jakarta[TAB]Detail pekerjaan[TAB]Catatan[TAB]-[TAB]2026-07-10[TAB]100000000[TAB][TAB]50:50"></textarea>
+                                <small class="form-text text-muted">Bisa paste dengan header CSV/Excel. Kolom utama: BOWHEER, STATUS PO, NO PO, NO PO SUB, REGIONAL, KOTA PO, DETAIL PO, REMARKS, TYPE PROJECT, TGL PO, PO VALUE, PO FINAL VALUE, PO TERM.</small>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                <button type="button" class="btn btn-outline-secondary" id="po-monitor-batch-po-parse-paste">Preview PO</button>
+                                <button type="button" class="btn btn-outline-danger" id="po-monitor-batch-po-clear-list" disabled>Hapus List</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="po-monitor-batch-summary">
+                        <div class="po-monitor-batch-summary-card">
+                            <span class="po-monitor-batch-summary-card__label">Total Row <span class="po-monitor-batch-summary-card__count" id="po-monitor-batch-po-summary-count">0</span></span>
+                            <span class="po-monitor-batch-summary-card__value" id="po-monitor-batch-po-summary-value">0</span>
+                        </div>
+                        <div class="po-monitor-batch-summary-card po-monitor-batch-summary-card--total">
+                            <span class="po-monitor-batch-summary-card__label">Total Term <span class="po-monitor-batch-summary-card__count" id="po-monitor-batch-po-summary-term-count">0</span></span>
+                            <span class="po-monitor-batch-summary-card__value">OPEN</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0" id="po-monitor-batch-po-table">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width:50px;">No</th>
+                                    <th>BOWHEER</th>
+                                    <th>NO PO</th>
+                                    <th>TGL PO</th>
+                                    <th>VALUE</th>
+                                    <th>TERM</th>
+                                    <th>PREVIEW TERM</th>
+                                    <th>REGIONAL/LOKASI/DETAIL</th>
+                                    <th>STATUS</th>
+                                    <th style="width:80px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="po-monitor-batch-po-empty-row">
+                                    <td colspan="10" class="text-center text-muted">Belum ada row PO.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <div class="text-muted small">Submit hanya membuat PO dan term OPEN. Tidak membuat target week atau claim invoice.</div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn btn-dark" id="po-monitor-batch-po-submit" disabled>Simpan Batch PO</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="po_monitor_batch_invoice_modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -2278,6 +2431,195 @@ if (!function_exists('po_monitor_term_amount_link')) {
             });
 
             updateBatchInvoiceState();
+
+            function normalizeBatchPoHeader(value) {
+                return String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
+            }
+
+            function normalizeBatchPoTerm(term) {
+                var parts = String(term || '').split(/\s*:\s*/).map(function(part) {
+                    var match = String(part || '').match(/-?\d+(?:[.,]\d+)?/);
+                    if (!match) {
+                        return 0;
+                    }
+                    return Math.max(0, Math.min(100, parseFloat(match[0].replace(',', '.')) || 0));
+                }).filter(function(value) {
+                    return value > 0;
+                }).slice(0, 5);
+
+                return parts.length ? parts : [100];
+            }
+
+            function buildBatchPoTermPreview(term, value) {
+                var percents = normalizeBatchPoTerm(term);
+                var sum = percents.reduce(function(total, item) { return total + item; }, 0) || 100;
+                var remaining = Number(value || 0);
+                return percents.map(function(percent, index) {
+                    var normalizedPercent = (percent / sum) * 100;
+                    var amount = index === percents.length - 1 ? remaining : Math.round(((Number(value || 0) * normalizedPercent) / 100) * 100) / 100;
+                    remaining -= amount;
+                    return 'T' + (index + 1) + ' ' + Math.round(normalizedPercent) + '%: ' + formatLocaleNumber(amount);
+                }).join('<br>');
+            }
+
+            function updateBatchPoState() {
+                var count = 0;
+                var totalValue = 0;
+                var totalTerms = 0;
+                var rowNo = 1;
+                $('#po-monitor-batch-po-table tbody tr.po-monitor-batch-po-row').each(function() {
+                    var $row = $(this);
+                    $row.find('td:first').text(rowNo++);
+                    count++;
+                    totalValue += Number($row.data('effective-value') || 0);
+                    totalTerms += Number($row.data('term-count') || 0);
+                });
+
+                $('#po-monitor-batch-po-summary-count').text(count);
+                $('#po-monitor-batch-po-summary-value').text(formatLocaleNumber(totalValue));
+                $('#po-monitor-batch-po-summary-term-count').text(totalTerms);
+                $('#po-monitor-batch-po-submit').prop('disabled', count === 0);
+                $('#po-monitor-batch-po-clear-list').prop('disabled', count === 0);
+                $('.po-monitor-batch-po-empty-row').toggle(count === 0);
+            }
+
+            function addBatchPoRow(row) {
+                row = row || {};
+                var bowheer = String(row.bowheer || '').trim();
+                var poNumber = String(row.po_number || '').trim();
+                var poValue = parseLocaleNumber(row.po_value || 0);
+                var poFinalValue = parseLocaleNumber(row.po_final_value || 0);
+                var effectiveValue = poFinalValue > 0 ? poFinalValue : poValue;
+                var term = String(row.po_term || '').trim() || '100';
+                var termCount = normalizeBatchPoTerm(term).length;
+                var isValid = bowheer !== '' && poNumber !== '' && effectiveValue > 0;
+
+                var fields = ['bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
+                var hiddenInputs = '';
+                if (isValid) {
+                    fields.forEach(function(field) {
+                        hiddenInputs += '<input type="hidden" name="' + field + '[]" value="' + escapeHtml(row[field] || '') + '">';
+                    });
+                }
+
+                var html = '<tr class="po-monitor-batch-po-row ' + (isValid ? 'table-success' : 'table-danger') + '" data-effective-value="' + escapeHtml(effectiveValue) + '" data-term-count="' + escapeHtml(termCount) + '">' +
+                    '<td></td>' +
+                    '<td>' + escapeHtml(bowheer) + hiddenInputs + '</td>' +
+                    '<td>' + escapeHtml(poNumber) + '</td>' +
+                    '<td>' + escapeHtml(row.po_date || '-') + '</td>' +
+                    '<td class="text-right">' + formatLocaleNumber(effectiveValue) + '</td>' +
+                    '<td>' + escapeHtml(term) + '</td>' +
+                    '<td>' + buildBatchPoTermPreview(term, effectiveValue) + '</td>' +
+                    '<td>' + escapeHtml([row.no_po_sub, row.regional, row.kota_po, row.detail_po, row.remarks].filter(Boolean).join(' | ') || '-') + '</td>' +
+                    '<td><span class="badge badge-' + (isValid ? 'success' : 'danger') + '">' + (isValid ? 'Valid' : 'Wajib Bowheer, No PO, Value') + '</span></td>' +
+                    '<td><button type="button" class="btn btn-sm btn-outline-danger po-monitor-batch-po-remove-row">Hapus</button></td>' +
+                    '</tr>';
+
+                $('#po-monitor-batch-po-table tbody').append(html);
+                updateBatchPoState();
+                return isValid;
+            }
+
+            function readBatchPoManualRow() {
+                return {
+                    bowheer: $('#po-monitor-batch-po-bowheer').val(),
+                    status_po: $('#po-monitor-batch-po-status').val(),
+                    po_number: $('#po-monitor-batch-po-number-new').val(),
+                    no_po_sub: $('#po-monitor-batch-po-sub').val(),
+                    regional: $('#po-monitor-batch-po-regional').val(),
+                    kota_po: $('#po-monitor-batch-po-city').val(),
+                    detail_po: $('#po-monitor-batch-po-detail').val(),
+                    remarks: $('#po-monitor-batch-po-remarks').val(),
+                    type_project: $('#po-monitor-batch-po-type-project').val(),
+                    po_date: $('#po-monitor-batch-po-date').val(),
+                    po_value: $('#po-monitor-batch-po-value').val(),
+                    po_final_value: $('#po-monitor-batch-po-final-value').val(),
+                    po_term: $('#po-monitor-batch-po-term').val()
+                };
+            }
+
+            $('#po-monitor-batch-po-add-row').off('click.poMonitorBatchPo').on('click.poMonitorBatchPo', function() {
+                if (addBatchPoRow(readBatchPoManualRow())) {
+                    $('#po-monitor-batch-po-number-new, #po-monitor-batch-po-sub, #po-monitor-batch-po-regional, #po-monitor-batch-po-city, #po-monitor-batch-po-detail, #po-monitor-batch-po-remarks, #po-monitor-batch-po-value, #po-monitor-batch-po-final-value').val('');
+                    $('#po-monitor-batch-po-number-new').focus();
+                }
+            });
+
+            $('#po-monitor-batch-po-value, #po-monitor-batch-po-final-value').off('input.poMonitorBatchPoFormat').on('input.poMonitorBatchPoFormat', function() {
+                var value = $(this).val();
+                if (value !== '') {
+                    $(this).val(formatLocaleNumber(parseLocaleNumber(value)));
+                }
+            });
+
+            $('#po-monitor-batch-po-parse-paste').off('click.poMonitorBatchPoPaste').on('click.poMonitorBatchPoPaste', function() {
+                var lines = String($('#po-monitor-batch-po-paste').val() || '').split(/\r?\n/).filter(function(line) {
+                    return line.trim() !== '';
+                });
+                if (!lines.length) {
+                    return;
+                }
+
+                var defaultOrder = ['bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
+                var headerMap = {
+                    'BOWHEER': 'bowheer',
+                    'STATUS PO': 'status_po',
+                    'NO PO': 'po_number',
+                    'NO PO SUB': 'no_po_sub',
+                    'REGIONAL': 'regional',
+                    'KOTA PO': 'kota_po',
+                    'DETAIL PO': 'detail_po',
+                    'REMARKS': 'remarks',
+                    'TYPE PROJECT': 'type_project',
+                    'TGL PO': 'po_date',
+                    'PO VALUE': 'po_value',
+                    'PO FINAL VALUE': 'po_final_value',
+                    'PO TERM': 'po_term'
+                };
+                var firstColumns = lines[0].split(/\t/);
+                var firstHeader = firstColumns.map(normalizeBatchPoHeader);
+                var hasHeader = firstHeader.some(function(item) { return headerMap[item]; });
+                var columnOrder = defaultOrder;
+                var startIndex = 0;
+
+                if (hasHeader) {
+                    columnOrder = firstHeader.map(function(header) {
+                        return headerMap[header] || '';
+                    });
+                    startIndex = 1;
+                }
+
+                for (var i = startIndex; i < lines.length; i++) {
+                    var columns = lines[i].split(/\t/);
+                    var row = {};
+                    columnOrder.forEach(function(field, index) {
+                        if (field) {
+                            row[field] = columns[index] || '';
+                        }
+                    });
+                    addBatchPoRow(row);
+                }
+            });
+
+            $('#po-monitor-batch-po-clear-list').off('click.poMonitorBatchPoClear').on('click.poMonitorBatchPoClear', function() {
+                $('#po-monitor-batch-po-table tbody tr.po-monitor-batch-po-row').remove();
+                updateBatchPoState();
+            });
+
+            $(document).off('click.poMonitorBatchPoRemove', '.po-monitor-batch-po-remove-row').on('click.poMonitorBatchPoRemove', '.po-monitor-batch-po-remove-row', function() {
+                $(this).closest('tr').remove();
+                updateBatchPoState();
+            });
+
+            $('#po-monitor-batch-po-form').off('submit.poMonitorBatchPoSubmit').on('submit.poMonitorBatchPoSubmit', function(e) {
+                if ($('#po-monitor-batch-po-table tbody tr.po-monitor-batch-po-row.table-success').length === 0) {
+                    e.preventDefault();
+                    return false;
+                }
+                return true;
+            });
+
+            updateBatchPoState();
 
             initServerSideTable($, '#table_po_dashboard_excel', '<?= site_url('PO_Monitor/dashboard_datatable') ?>', [[0, 'asc']], 25);
 

@@ -103,8 +103,10 @@ defined('BASEPATH') or exit('No direct script access allowed');
                                                     <thead>
                                                         <tr>
                                                             <th>NO PO SUB</th>
+                                                            <th>Regional</th>
                                                             <th>Kota</th>
                                                             <th>Detail</th>
+                                                            <th>Remarks</th>
                                                             <th>Value</th>
                                                             <th>Invoiced</th>
                                                             <th>Outstanding</th>
@@ -124,8 +126,10 @@ defined('BASEPATH') or exit('No direct script access allowed');
                                                             ?>
                                                             <tr>
                                                                 <td><?= htmlspecialchars($allocation['no_po_sub'] ?: '-') ?></td>
+                                                                <td><?= htmlspecialchars($allocation['regional'] ?: '-') ?></td>
                                                                 <td><?= htmlspecialchars($allocation['kota_po'] ?: '-') ?></td>
                                                                 <td><?= htmlspecialchars($allocation['detail_po'] ?: '-') ?></td>
+                                                                <td><?= htmlspecialchars($allocation['remarks'] ?: '-') ?></td>
                                                                 <td><?= number_format(floatval($allocation['allocation_value']),0,',','.') ?></td>
                                                                 <td><?= number_format(floatval($allocation['invoiced_amount']),0,',','.') ?></td>
                                                                 <td><?= number_format(floatval($allocation['outstanding_amount']),0,',','.') ?></td>
