@@ -100,6 +100,7 @@ INSERT INTO `tb_bowheer_po` (`id_bowheer`, `no_urut`, `pic`, `bowheer`, `bowheer
 (1, 1, 'Bp Zaenul', 'PT BANGTELINDO', 'PT BANGTELINDO'),
 (2, 2, 'Bp Zaenul', 'PT PERSADA SOKKA TAMA', 'PT PERSADA SOKKA TAMA'),
 (3, 3, 'Bp Zaenul', 'PT TELKOM AKSES', 'PT TELKOM AKSES'),
+(27, 27, 'Bp Hendry', 'PT TELKOM AKSES - STAR', 'PT TELKOM AKSES - STAR'),
 (4, 4, 'Bp Zaenul', 'PT MORATEL', 'PT MORATEL'),
 (5, 5, 'Bp Zaenul', 'PT TBG ( PERMIT )', 'PT TBG ( PERMIT )'),
 (6, 6, 'Bp Zaenul', 'PT XL SMART', 'PT XL SMART'),

@@ -206,6 +206,7 @@ class MPO_Monitor extends CI_Model
             [1, 'Bp Zaenul', 'PT BANGTELINDO'],
             [2, 'Bp Zaenul', 'PT PERSADA SOKKA TAMA'],
             [3, 'Bp Zaenul', 'PT TELKOM AKSES'],
+            [27, 'Bp Hendry', 'PT TELKOM AKSES - STAR'],
             [4, 'Bp Zaenul', 'PT MORATEL'],
             [5, 'Bp Zaenul', 'PT TBG ( PERMIT )'],
             [6, 'Bp Zaenul', 'PT XL SMART'],
@@ -2614,7 +2615,9 @@ class MPO_Monitor extends CI_Model
             }
         } else {
             $parts = explode('.', $normalized);
-            if (count($parts) > 2 || (count($parts) === 2 && strlen(end($parts)) === 3)) {
+            if (count($parts) > 2) {
+                $normalized = str_replace('.', '', $normalized);
+            } elseif (count($parts) === 2 && strlen(end($parts)) === 3 && strlen($parts[0]) <= 3) {
                 $normalized = str_replace('.', '', $normalized);
             }
         }
@@ -2744,6 +2747,7 @@ class MPO_Monitor extends CI_Model
             'PT BANGTELINDO' => 'Bp Zaenul',
             'PT PERSADA SOKKA TAMA' => 'Bp Zaenul',
             'PT TELKOM AKSES' => 'Bp Zaenul',
+            'PT TELKOM AKSES - STAR' => 'Bp Hendry',
             'PT MORATEL' => 'Bp Zaenul',
             'PT TBG ( PERMIT )' => 'Bp Zaenul',
             'PT XL SMART' => 'Bp Zaenul',

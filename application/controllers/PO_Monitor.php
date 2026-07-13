@@ -138,7 +138,7 @@ class PO_Monitor extends CI_Controller
             $parts = explode('.', $normalized);
             if (count($parts) > 2) {
                 $normalized = str_replace('.', '', $normalized);
-            } elseif (count($parts) === 2 && strlen($parts[1]) === 3) {
+            } elseif (count($parts) === 2 && strlen($parts[1]) === 3 && strlen($parts[0]) <= 3) {
                 $normalized = str_replace('.', '', $normalized);
             }
         }
