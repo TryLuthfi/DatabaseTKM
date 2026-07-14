@@ -149,6 +149,7 @@ class MPO_Monitor extends CI_Model
         $this->addColumnIfMissing('tb_po_term_allocation', 'remarks', "ALTER TABLE `tb_po_term_allocation` ADD COLUMN `remarks` text NULL AFTER `detail_po`");
         $this->addColumnIfMissing('tb_po_target_pipeline', 'regional', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `regional` varchar(150) DEFAULT NULL AFTER `status_po`");
         $this->addColumnIfMissing('tb_po_target_pipeline', 'remarks', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `remarks` text NULL AFTER `detail_po`");
+        $this->addColumnIfMissing('tb_po_target_pipeline', 'type_project', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `type_project` varchar(150) DEFAULT NULL AFTER `remarks`");
         $this->addColumnIfMissing('tb_po_term', 'plan_amount', "ALTER TABLE `tb_po_term` ADD COLUMN `plan_amount` decimal(18,2) DEFAULT 0.00");
         $this->addColumnIfMissing('tb_po_term', 'submit_raw', "ALTER TABLE `tb_po_term` ADD COLUMN `submit_raw` varchar(50) DEFAULT NULL");
         $this->addColumnIfMissing('tb_po_term', 'target_year', "ALTER TABLE `tb_po_term` ADD COLUMN `target_year` int(11) DEFAULT NULL");
@@ -420,6 +421,7 @@ class MPO_Monitor extends CI_Model
         $rows = $this->db->query("SELECT
                 p.id_po,
                 p.po_number,
+                p.type_project,
                 p.po_date,
                 COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
                 t.id_term,
@@ -1354,6 +1356,7 @@ class MPO_Monitor extends CI_Model
                 SELECT
                     p.id_bowheer,
                     CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(p.type_project USING utf8mb4) COLLATE utf8mb4_unicode_ci AS type_project,
                     p.po_date,
                     t.term_index,
                     CONVERT(a.no_po_sub USING utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
@@ -1376,6 +1379,7 @@ class MPO_Monitor extends CI_Model
                 SELECT
                     p.id_bowheer,
                     CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(p.type_project USING utf8mb4) COLLATE utf8mb4_unicode_ci AS type_project,
                     p.po_date,
                     t.term_index,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
@@ -1400,6 +1404,7 @@ class MPO_Monitor extends CI_Model
                 SELECT
                     pl.id_bowheer,
                     CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(pl.type_project USING utf8mb4) COLLATE utf8mb4_unicode_ci AS type_project,
                     pl.po_date,
                     pl.term_index,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
@@ -1433,6 +1438,7 @@ class MPO_Monitor extends CI_Model
         $rows = $this->db->query("SELECT
                 p.id_bowheer,
                 p.po_number,
+                p.type_project,
                 p.po_date,
                 t.term_index,
                 COALESCE(NULLIF(a.no_po_sub, ''), aa.no_po_sub) AS no_po_sub,

@@ -621,44 +621,56 @@ class PO_Monitor extends CI_Controller
             return '<div class="alert alert-info mb-0">Tidak ada detail PO untuk periode ini.</div>';
         }
 
-        $total = 0;
+        $grouped = $this->groupRowsByRegional($rows, 'amount');
+        $total = $grouped['total_amount'];
         $html = '<div class="po-monitor-modal-summary">';
-        $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Total Row</span><span class="po-monitor-modal-stat__value">' . number_format(count($rows), 0, ',', '.') . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Total Row</span><span class="po-monitor-modal-stat__value js-po-detail-total-row">' . number_format(count($rows), 0, ',', '.') . '</span></div>';
         $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Jenis</span><span class="po-monitor-modal-stat__value">' . ($type === 'achieved' ? 'Achieved' : 'Target') . '</span></div>';
-        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Total Amount</span><span class="po-monitor-modal-stat__value js-po-monitor-modal-total">0</span></div>';
+        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Total Amount</span><span class="po-monitor-modal-stat__value js-po-detail-total-amount">' . number_format($total, 0, ',', '.') . '</span></div>';
         $html .= '</div>';
-        $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
-        $html .= '<thead><tr>';
-        $html .= '<th>No</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Regional</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Target Period') . '</th><th>Source</th><th class="text-right">Amount</th>';
-        $html .= '</tr></thead><tbody>';
 
-        foreach ($rows as $index => $row) {
-            $amount = (float) ($row['amount'] ?? 0);
-            $total += $amount;
-            $period = $type === 'achieved'
-                ? $this->formatIndonesianDate($row['invoice_date'] ?? '')
-                : $this->formatIndonesianDate($row['target_week_start'] ?? '') . ' s/d ' . $this->formatIndonesianDate($row['target_week_end'] ?? '');
-            $termIndex = (int) ($row['term_index'] ?? 0);
+        $html .= $this->renderRegionalSummaryHtml($grouped['summary'], 'Amount');
+        $html .= $this->renderTermSummaryHtml($rows, 'amount', 'Amount');
 
-            $html .= '<tr>';
-            $html .= '<td>' . ($index + 1) . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($this->formatIndonesianDate($row['po_date'] ?? '')) . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['no_po_sub'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['regional'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['kota_po'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
-            $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($period) . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['source_label'] ?: '-') . '</td>';
-            $html .= '<td class="text-right">' . number_format($amount, 0, ',', '.') . '</td>';
-            $html .= '</tr>';
+        foreach ($grouped['groups'] as $regional => $regionalRows) {
+            if (empty($regionalRows)) {
+                continue;
+            }
+
+            $regionalTotal = (float) ($grouped['summary'][$regional]['amount'] ?? 0);
+            $html .= $this->renderRegionalSectionHeader($regional, count($regionalRows), $regionalTotal);
+            $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
+            $html .= '<thead><tr>';
+            $html .= '<th>No</th><th>Type Project</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Target Period') . '</th><th class="text-right">Amount</th>';
+            $html .= '</tr></thead><tbody>';
+
+            foreach ($regionalRows as $index => $row) {
+                $amount = (float) ($row['amount'] ?? 0);
+                $period = $type === 'achieved'
+                    ? $this->formatIndonesianDate($row['invoice_date'] ?? '')
+                    : $this->formatIndonesianDate($row['target_week_start'] ?? '') . ' s/d ' . $this->formatIndonesianDate($row['target_week_end'] ?? '');
+                $termIndex = (int) ($row['term_index'] ?? 0);
+
+                $html .= '<tr data-term-index="' . $termIndex . '" data-filter-amount="' . htmlspecialchars((string) $amount) . '">';
+                $html .= '<td>' . ($index + 1) . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['type_project'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($this->formatIndonesianDate($row['po_date'] ?? '')) . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['no_po_sub'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['kota_po'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
+                $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($period) . '</td>';
+                $html .= '<td class="text-right">' . number_format($amount, 0, ',', '.') . '</td>';
+                $html .= '</tr>';
+            }
+
+            $html .= '</tbody><tfoot><tr><th colspan="10" class="text-right">TOTAL ' . htmlspecialchars($regional) . '</th><th class="text-right">' . number_format($regionalTotal, 0, ',', '.') . '</th></tr></tfoot>';
+            $html .= '</table></div>';
+            $html .= $this->closeRegionalSection();
         }
 
-        $html .= '</tbody><tfoot><tr><th colspan="11" class="text-right">TOTAL</th><th class="text-right">' . number_format($total, 0, ',', '.') . '</th></tr></tfoot>';
-        $html .= '</table></div>';
-        $html = str_replace('<span class="po-monitor-modal-stat__value js-po-monitor-modal-total">0</span>', '<span class="po-monitor-modal-stat__value">' . number_format($total, 0, ',', '.') . '</span>', $html);
         return $html;
     }
 
@@ -691,44 +703,251 @@ class PO_Monitor extends CI_Controller
             $metricTotal = $totalRemaining;
         }
 
+        $grouped = $this->groupRowsByRegional($rows, $this->termMetricAmountKey($metric));
+
         $html = '<div class="po-monitor-modal-summary">';
-        $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Total Row</span><span class="po-monitor-modal-stat__value">' . number_format(count($rows), 0, ',', '.') . '</span></div>';
-        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Total Angka</span><span class="po-monitor-modal-stat__value">' . number_format($metricTotal, 0, ',', '.') . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Total Row</span><span class="po-monitor-modal-stat__value js-po-detail-total-row">' . number_format(count($rows), 0, ',', '.') . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Total Angka</span><span class="po-monitor-modal-stat__value js-po-detail-total-amount">' . number_format($metricTotal, 0, ',', '.') . '</span></div>';
         $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Outstanding</span><span class="po-monitor-modal-stat__value">' . number_format($totalRemaining, 0, ',', '.') . '</span></div>';
         $html .= '</div>';
-        $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
-        $html .= '<thead><tr>';
-        $html .= '<th>No</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Regional</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th class="text-right">PO Value</th><th class="text-right">Nilai Term</th><th class="text-right">Sudah Ditagih</th><th class="text-right">Sisa</th>';
-        $html .= '</tr></thead><tbody>';
 
-        foreach ($rows as $index => $row) {
-            $termIndex = (int) ($row['term_index'] ?? 0);
-            $html .= '<tr>';
-            $html .= '<td>' . ($index + 1) . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($this->formatIndonesianDate($row['po_date'] ?? '')) . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['no_po_sub'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['regional'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['kota_po'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
-            $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
-            $html .= '<td class="text-right">' . number_format((float) ($row['current_release_value'] ?? 0), 0, ',', '.') . '</td>';
-            $html .= '<td class="text-right">' . number_format((float) ($row['term_value'] ?? 0), 0, ',', '.') . '</td>';
-            $html .= '<td class="text-right">' . number_format((float) ($row['invoiced_amount'] ?? 0), 0, ',', '.') . '</td>';
-            $html .= '<td class="text-right">' . number_format((float) ($row['remaining'] ?? 0), 0, ',', '.') . '</td>';
-            $html .= '</tr>';
+        $html .= $this->renderRegionalSummaryHtml($grouped['summary'], 'Total Angka');
+        $html .= $this->renderTermSummaryHtml($rows, $this->termMetricAmountKey($metric), 'Total Angka');
+
+        foreach ($grouped['groups'] as $regional => $regionalRows) {
+            if (empty($regionalRows)) {
+                continue;
+            }
+
+            $regionalRelease = 0;
+            $regionalTerm = 0;
+            $regionalInvoiced = 0;
+            $regionalRemaining = 0;
+            foreach ($regionalRows as $row) {
+                $regionalRelease += (float) ($row['current_release_value'] ?? 0);
+                $regionalTerm += (float) ($row['term_value'] ?? 0);
+                $regionalInvoiced += (float) ($row['invoiced_amount'] ?? 0);
+                $regionalRemaining += (float) ($row['remaining'] ?? 0);
+            }
+
+            $html .= $this->renderRegionalSectionHeader($regional, count($regionalRows), (float) ($grouped['summary'][$regional]['amount'] ?? 0));
+            $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
+            $html .= '<thead><tr>';
+            $html .= '<th>No</th><th>Type Project</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th class="text-right">PO Value</th><th class="text-right">Nilai Term</th><th class="text-right">Sudah Ditagih</th><th class="text-right">Sisa</th>';
+            $html .= '</tr></thead><tbody>';
+
+            foreach ($regionalRows as $index => $row) {
+                $termIndex = (int) ($row['term_index'] ?? 0);
+                $filterAmount = (float) ($row[$this->termMetricAmountKey($metric)] ?? 0);
+                $html .= '<tr data-term-index="' . $termIndex . '" data-filter-amount="' . htmlspecialchars((string) $filterAmount) . '">';
+                $html .= '<td>' . ($index + 1) . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['type_project'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($this->formatIndonesianDate($row['po_date'] ?? '')) . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['no_po_sub'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['kota_po'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
+                $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
+                $html .= '<td class="text-right">' . number_format((float) ($row['current_release_value'] ?? 0), 0, ',', '.') . '</td>';
+                $html .= '<td class="text-right">' . number_format((float) ($row['term_value'] ?? 0), 0, ',', '.') . '</td>';
+                $html .= '<td class="text-right">' . number_format((float) ($row['invoiced_amount'] ?? 0), 0, ',', '.') . '</td>';
+                $html .= '<td class="text-right">' . number_format((float) ($row['remaining'] ?? 0), 0, ',', '.') . '</td>';
+                $html .= '</tr>';
+            }
+
+            $html .= '</tbody><tfoot><tr>';
+            $html .= '<th colspan="9" class="text-right">TOTAL ' . htmlspecialchars($regional) . '</th>';
+            $html .= '<th class="text-right">' . number_format($regionalRelease, 0, ',', '.') . '</th>';
+            $html .= '<th class="text-right">' . number_format($regionalTerm, 0, ',', '.') . '</th>';
+            $html .= '<th class="text-right">' . number_format($regionalInvoiced, 0, ',', '.') . '</th>';
+            $html .= '<th class="text-right">' . number_format($regionalRemaining, 0, ',', '.') . '</th>';
+            $html .= '</tr></tfoot></table></div>';
+            $html .= $this->closeRegionalSection();
         }
 
-        $html .= '</tbody><tfoot><tr>';
-        $html .= '<th colspan="9" class="text-right">TOTAL</th>';
-        $html .= '<th class="text-right">' . number_format($totalRelease, 0, ',', '.') . '</th>';
-        $html .= '<th class="text-right">' . number_format($totalTerm, 0, ',', '.') . '</th>';
-        $html .= '<th class="text-right">' . number_format($totalInvoiced, 0, ',', '.') . '</th>';
-        $html .= '<th class="text-right">' . number_format($totalRemaining, 0, ',', '.') . '</th>';
-        $html .= '</tr></tfoot></table></div>';
+        return $html;
+    }
+
+    private function regionalLabels()
+    {
+        return ['REGIONAL 1', 'REGIONAL 2', 'REGIONAL 3', 'REGIONAL 4', 'REGIONAL 5'];
+    }
+
+    private function normalizeRegionalLabel($regional)
+    {
+        $value = strtoupper(trim((string) $regional));
+        $value = preg_replace('/[\s_\-]+/', ' ', $value);
+
+        if (preg_match('/(?:REGIONAL|REGION|REG)\s*([1-5])\b/', $value, $match)) {
+            return 'REGIONAL ' . $match[1];
+        }
+
+        if (preg_match('/^R?([1-5])$/', $value, $match)) {
+            return 'REGIONAL ' . $match[1];
+        }
+
+        return $value !== '' ? $value : 'TANPA REGIONAL';
+    }
+
+    private function groupRowsByRegional($rows, $amountKey)
+    {
+        $groups = [];
+        $summary = [];
+        foreach ($this->regionalLabels() as $label) {
+            $groups[$label] = [];
+            $summary[$label] = ['count' => 0, 'amount' => 0];
+        }
+
+        $totalAmount = 0;
+        $rows = $this->sortRowsByCityAndTerm($rows);
+
+        foreach ($rows as $row) {
+            $regional = $this->normalizeRegionalLabel($row['regional'] ?? '');
+            if (!isset($groups[$regional])) {
+                $groups[$regional] = [];
+                $summary[$regional] = ['count' => 0, 'amount' => 0];
+            }
+
+            $amount = (float) ($row[$amountKey] ?? 0);
+            $groups[$regional][] = $row;
+            $summary[$regional]['count']++;
+            $summary[$regional]['amount'] += $amount;
+            $totalAmount += $amount;
+        }
+
+        return [
+            'groups' => $groups,
+            'summary' => $summary,
+            'total_amount' => $totalAmount
+        ];
+    }
+
+    private function sortRowsByCityAndTerm($rows)
+    {
+        usort($rows, function ($a, $b) {
+            $cityA = strtoupper(trim((string) ($a['kota_po'] ?? '')));
+            $cityB = strtoupper(trim((string) ($b['kota_po'] ?? '')));
+            if ($cityA === '') {
+                $cityA = 'ZZZ';
+            }
+            if ($cityB === '') {
+                $cityB = 'ZZZ';
+            }
+
+            $cityCompare = strcmp($cityA, $cityB);
+            if ($cityCompare !== 0) {
+                return $cityCompare;
+            }
+
+            $termCompare = ((int) ($a['term_index'] ?? 0)) <=> ((int) ($b['term_index'] ?? 0));
+            if ($termCompare !== 0) {
+                return $termCompare;
+            }
+
+            return strcmp((string) ($a['po_number'] ?? ''), (string) ($b['po_number'] ?? ''));
+        });
+
+        return $rows;
+    }
+
+    private function renderRegionalSummaryHtml($summary, $valueLabel)
+    {
+        $html = '<div class="po-monitor-summary-band po-monitor-summary-band--regional">';
+        $html .= '<div class="po-monitor-summary-band__header"><span>Filter Regional</span><b>Pilih salah satu regional untuk menyaring detail</b></div>';
+        $html .= '<div class="po-monitor-regional-summary">';
+        foreach ($this->regionalLabels() as $index => $regional) {
+            $item = $summary[$regional] ?? ['count' => 0, 'amount' => 0];
+            $html .= '<button type="button" class="po-monitor-regional-card po-monitor-regional-card--r' . ($index + 1) . '" data-regional-key="' . htmlspecialchars($this->regionalDomKey($regional)) . '">';
+            $html .= '<span class="po-monitor-regional-card__label">' . htmlspecialchars($regional) . '<b>' . number_format((int) $item['count'], 0, ',', '.') . '</b></span>';
+            $html .= '<span class="po-monitor-regional-card__value">' . number_format((float) $item['amount'], 0, ',', '.') . '</span>';
+            $html .= '<span class="po-monitor-regional-card__caption">' . htmlspecialchars($valueLabel) . '</span>';
+            $html .= '</button>';
+        }
+        $html .= '</div></div>';
+
+        foreach ($summary as $regional => $item) {
+            if (in_array($regional, $this->regionalLabels(), true) || (int) $item['count'] <= 0) {
+                continue;
+            }
+
+            $html .= '<div class="po-monitor-regional-extra">';
+            $html .= '<strong>' . htmlspecialchars($regional) . '</strong>';
+            $html .= '<span>' . number_format((int) $item['count'], 0, ',', '.') . ' row</span>';
+            $html .= '<span>' . number_format((float) $item['amount'], 0, ',', '.') . '</span>';
+            $html .= '</div>';
+        }
 
         return $html;
+    }
+
+    private function renderTermSummaryHtml($rows, $amountKey, $valueLabel)
+    {
+        $summary = [];
+        for ($term = 1; $term <= 5; $term++) {
+            $summary[$term] = ['count' => 0, 'amount' => 0];
+        }
+
+        foreach ($rows as $row) {
+            $termIndex = (int) ($row['term_index'] ?? 0);
+            if ($termIndex < 1 || $termIndex > 5) {
+                continue;
+            }
+
+            $summary[$termIndex]['count']++;
+            $summary[$termIndex]['amount'] += (float) ($row[$amountKey] ?? 0);
+        }
+
+        $html = '<div class="po-monitor-summary-band po-monitor-summary-band--term">';
+        $html .= '<div class="po-monitor-summary-band__header"><span>Filter Term</span><b>Pilih term untuk melihat sebaran regional terkait</b></div>';
+        $html .= '<div class="po-monitor-term-summary">';
+        for ($term = 1; $term <= 5; $term++) {
+            $item = $summary[$term];
+            $html .= '<button type="button" class="po-monitor-term-card po-monitor-term-card--t' . $term . '" data-term-index="' . $term . '">';
+            $html .= '<span class="po-monitor-term-card__label">Term ' . $term . '<b>' . number_format((int) $item['count'], 0, ',', '.') . '</b></span>';
+            $html .= '<span class="po-monitor-term-card__value">' . number_format((float) $item['amount'], 0, ',', '.') . '</span>';
+            $html .= '<span class="po-monitor-term-card__caption">' . htmlspecialchars($valueLabel) . '</span>';
+            $html .= '</button>';
+        }
+        $html .= '</div></div>';
+
+        return $html;
+    }
+
+    private function renderRegionalSectionHeader($regional, $count, $amount)
+    {
+        return '<div class="po-monitor-regional-group" data-regional-key="' . htmlspecialchars($this->regionalDomKey($regional)) . '">'
+            . '<div class="po-monitor-regional-section">'
+            . '<div><span>Regional</span><strong>' . htmlspecialchars($regional) . '</strong></div>'
+            . '<div><span>Row</span><strong class="js-po-regional-section-row">' . number_format((int) $count, 0, ',', '.') . '</strong></div>'
+            . '<div><span>Total</span><strong class="js-po-regional-section-total">' . number_format((float) $amount, 0, ',', '.') . '</strong></div>'
+            . '</div>';
+    }
+
+    private function closeRegionalSection()
+    {
+        return '</div>';
+    }
+
+    private function regionalDomKey($regional)
+    {
+        $key = strtolower(trim((string) $regional));
+        $key = preg_replace('/[^a-z0-9]+/', '-', $key);
+        return trim($key, '-') ?: 'tanpa-regional';
+    }
+
+    private function termMetricAmountKey($metric)
+    {
+        if ($metric === 'total_po') {
+            return 'current_release_value';
+        }
+        if ($metric === 'term_value') {
+            return 'term_value';
+        }
+        if ($metric === 'term_done') {
+            return 'invoiced_amount';
+        }
+        return 'remaining';
     }
 
     private function termDetailMetricLabel($metric, $termIndex)

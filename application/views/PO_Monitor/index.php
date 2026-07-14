@@ -505,11 +505,26 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
     #po_compare_detail_modal .modal-dialog {
         max-width: 78vw;
+        margin-top: 1rem;
     }
 
     #po_compare_detail_modal .modal-body {
-        max-height: 72vh;
+        max-height: 76vh;
         overflow: auto;
+    }
+
+    #po_compare_detail_modal .modal-footer {
+        border-top: 1px solid rgba(148, 163, 184, 0.22);
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+    }
+
+    .po-monitor-modal-download-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        justify-content: flex-end;
+        width: 100%;
     }
 
     #po_compare_detail_modal .modal-content,
@@ -560,7 +575,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.75rem;
-        margin-bottom: 0.85rem;
+        margin-bottom: 1rem;
     }
 
     .po-monitor-modal-stat {
@@ -597,6 +612,314 @@ if (!function_exists('po_monitor_term_amount_link')) {
         line-height: 1.2;
     }
 
+    .po-monitor-summary-band {
+        position: relative;
+        margin: 0 0 1.05rem;
+        padding: 0.86rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 10px;
+        background: #ffffff;
+    }
+
+    .po-monitor-summary-band::before {
+        content: "";
+        position: absolute;
+        left: 0.85rem;
+        right: 0.85rem;
+        top: -0.52rem;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.72), transparent);
+    }
+
+    .po-monitor-summary-band--regional {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .po-monitor-summary-band--term {
+        margin-top: 1.15rem;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfffb 100%);
+    }
+
+    .po-monitor-summary-band__header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.7rem;
+        padding-bottom: 0.55rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+    }
+
+    .po-monitor-summary-band__header span {
+        color: #0f2c49;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .po-monitor-summary-band__header b {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .po-monitor-regional-summary {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin: 0;
+    }
+
+    .po-monitor-regional-card {
+        display: block;
+        width: 100%;
+        min-height: 82px;
+        padding: 0.72rem 0.78rem;
+        border: 1px solid rgba(148, 163, 184, 0.26);
+        border-left: 5px solid #2563eb;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #fff, #f8fafc);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+        cursor: pointer;
+        text-align: left;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    }
+
+    .po-monitor-regional-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(15, 23, 42, 0.11);
+    }
+
+    .po-monitor-regional-card:focus {
+        outline: 3px solid rgba(37, 99, 235, 0.24);
+        outline-offset: 2px;
+    }
+
+    .po-monitor-regional-card.is-active {
+        border-color: rgba(37, 99, 235, 0.62);
+        background: linear-gradient(135deg, #eff6ff, #ffffff);
+        box-shadow:
+            0 0 0 3px rgba(37, 99, 235, 0.18),
+            0 0 28px rgba(37, 99, 235, 0.24),
+            0 18px 34px rgba(15, 23, 42, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .po-monitor-regional-card--r2 {
+        border-left-color: #16a34a;
+    }
+
+    .po-monitor-regional-card--r3 {
+        border-left-color: #f59e0b;
+    }
+
+    .po-monitor-regional-card--r4 {
+        border-left-color: #8b5cf6;
+    }
+
+    .po-monitor-regional-card--r5 {
+        border-left-color: #0f766e;
+    }
+
+    .po-monitor-regional-card__label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.45rem;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .po-monitor-regional-card__label b {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 22px;
+        padding: 0 0.4rem;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.1);
+        color: #1d4ed8;
+        font-size: 0.72rem;
+        letter-spacing: 0;
+    }
+
+    .po-monitor-regional-card__value {
+        display: block;
+        margin-top: 0.48rem;
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 900;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .po-monitor-regional-card__caption {
+        display: block;
+        margin-top: 0.22rem;
+        color: #64748b;
+        font-size: 0.7rem;
+        font-weight: 800;
+    }
+
+    .po-monitor-regional-extra {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0 0 0.85rem;
+        padding: 0.5rem 0.7rem;
+        border: 1px solid rgba(245, 158, 11, 0.32);
+        border-radius: 8px;
+        background: #fffbeb;
+        color: #78350f;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .po-monitor-term-summary {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin: 0;
+    }
+
+    .po-monitor-term-card {
+        display: block;
+        width: 100%;
+        min-height: 76px;
+        padding: 0.68rem 0.76rem;
+        border: 1px solid rgba(148, 163, 184, 0.26);
+        border-bottom: 5px solid #2563eb;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #fff, #f8fafc);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+        cursor: pointer;
+        text-align: left;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    }
+
+    .po-monitor-term-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(15, 23, 42, 0.11);
+    }
+
+    .po-monitor-term-card:focus {
+        outline: 3px solid rgba(37, 99, 235, 0.24);
+        outline-offset: 2px;
+    }
+
+    .po-monitor-term-card--t2 {
+        border-bottom-color: #16a34a;
+    }
+
+    .po-monitor-term-card--t3 {
+        border-bottom-color: #f59e0b;
+    }
+
+    .po-monitor-term-card--t4 {
+        border-bottom-color: #8b5cf6;
+    }
+
+    .po-monitor-term-card--t5 {
+        border-bottom-color: #0f766e;
+    }
+
+    .po-monitor-term-card.is-active {
+        border-color: rgba(37, 99, 235, 0.62);
+        background: linear-gradient(135deg, #eef6ff, #ffffff);
+        box-shadow:
+            0 0 0 3px rgba(37, 99, 235, 0.16),
+            0 0 28px rgba(37, 99, 235, 0.22),
+            0 18px 34px rgba(15, 23, 42, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .po-monitor-term-card__label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.45rem;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .po-monitor-term-card__label b {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 22px;
+        padding: 0 0.4rem;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.1);
+        color: #0f766e;
+        font-size: 0.72rem;
+        letter-spacing: 0;
+    }
+
+    .po-monitor-term-card__value {
+        display: block;
+        margin-top: 0.44rem;
+        color: #0f172a;
+        font-size: 0.96rem;
+        font-weight: 900;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .po-monitor-term-card__caption {
+        display: block;
+        margin-top: 0.22rem;
+        color: #64748b;
+        font-size: 0.7rem;
+        font-weight: 800;
+    }
+
+    .po-monitor-regional-section {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) 120px minmax(180px, 0.7fr);
+        gap: 0.75rem;
+        align-items: center;
+        margin: 1rem 0 0.45rem;
+        padding: 0.68rem 0.78rem;
+        border: 1px solid rgba(15, 44, 73, 0.12);
+        border-radius: 8px;
+        background: linear-gradient(135deg, #102f50, #27588d);
+        color: #fff;
+    }
+
+    .po-monitor-regional-group.is-hidden {
+        display: none;
+    }
+
+    .po-monitor-detail-table tr.is-hidden {
+        display: none;
+    }
+
+    .po-monitor-regional-section span {
+        display: block;
+        color: rgba(226, 232, 240, 0.76);
+        font-size: 0.65rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .po-monitor-regional-section strong {
+        display: block;
+        margin-top: 0.16rem;
+        color: #fff;
+        font-size: 0.92rem;
+        font-weight: 900;
+    }
+
     .po-monitor-detail-table {
         border-collapse: collapse !important;
         font-size: 12px;
@@ -621,6 +944,30 @@ if (!function_exists('po_monitor_term_amount_link')) {
         background: #0bb35f !important;
         color: #000;
         font-weight: 900;
+    }
+
+    @media (max-width: 1199.98px) {
+        .po-monitor-regional-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .po-monitor-term-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .po-monitor-regional-section {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .po-monitor-regional-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .po-monitor-term-summary {
+            grid-template-columns: 1fr;
+        }
     }
 
     .po-monitor-batch-toolbar {
@@ -1738,7 +2085,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
 </div>
 
 <div class="modal fade" id="po_compare_detail_modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><span class="po-monitor-modal-eyebrow">Detail</span>Detail PO</h5>
@@ -1748,6 +2095,16 @@ if (!function_exists('po_monitor_term_amount_link')) {
             </div>
             <div class="modal-body">
                 <div class="text-muted">Loading...</div>
+            </div>
+            <div class="modal-footer">
+                <div class="po-monitor-modal-download-actions">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="po-monitor-detail-capture">
+                        <i class="fas fa-camera mr-1"></i> Copy Image
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="po-monitor-detail-excel">
+                        <i class="fas fa-file-excel mr-1"></i> Download Excel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2083,7 +2440,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
         }
 
         function formatLocaleNumber(value) {
-            return Number(value || 0).toLocaleString('id-ID');
+            return Number(value || 0).toLocaleString('id-ID', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
         }
 
         function escapeHtml(value) {
@@ -2649,6 +3009,657 @@ if (!function_exists('po_monitor_term_amount_link')) {
             compareTables.month = initCompareTable('#table_po_target_invoice_compare_month');
             compareTables.week = initCompareTable('#table_po_target_invoice_compare_week');
 
+            function applyDetailFilters($modal) {
+                var activeRegional = String($modal.data('active-regional-key') || '');
+                var activeTerm = String($modal.data('active-term-index') || '');
+                var $regionalCards = $modal.find('.po-monitor-regional-card');
+                var $termCards = $modal.find('.po-monitor-term-card');
+                var $groups = $modal.find('.po-monitor-regional-group');
+                var regionalSummary = {};
+                var termSummary = {};
+                var visibleCount = 0;
+                var visibleAmount = 0;
+
+                $regionalCards.each(function() {
+                    regionalSummary[String($(this).data('regional-key') || '')] = {
+                        count: 0,
+                        amount: 0
+                    };
+                });
+
+                $termCards.each(function() {
+                    termSummary[String($(this).data('term-index') || '')] = {
+                        count: 0,
+                        amount: 0
+                    };
+                });
+
+                $regionalCards.removeClass('is-active');
+                $termCards.removeClass('is-active');
+                if (activeRegional !== '') {
+                    $regionalCards.filter('[data-regional-key="' + activeRegional + '"]').addClass('is-active');
+                }
+                if (activeTerm !== '') {
+                    $termCards.filter('[data-term-index="' + activeTerm + '"]').addClass('is-active');
+                }
+
+                $groups.each(function() {
+                    var $group = $(this);
+                    var regionalMatches = activeRegional === '' || String($group.data('regional-key')) === activeRegional;
+                    var hasVisibleRows = false;
+                    var visibleRowNo = 1;
+                    var groupVisibleCount = 0;
+                    var groupVisibleAmount = 0;
+
+                    $group.find('.po-monitor-detail-table tbody tr').each(function() {
+                        var $row = $(this);
+                        var rowRegional = String($group.data('regional-key') || '');
+                        var rowTerm = String($row.data('term-index') || '');
+                        var amount = Number($row.data('filter-amount') || 0);
+                        var termMatches = activeTerm === '' || rowTerm === activeTerm;
+                        var visible = regionalMatches && termMatches;
+                        $row.toggleClass('is-hidden', !visible);
+
+                        if (termMatches && regionalSummary[rowRegional]) {
+                            regionalSummary[rowRegional].count++;
+                            regionalSummary[rowRegional].amount += amount;
+                        }
+
+                        if (regionalMatches && termSummary[rowTerm]) {
+                            termSummary[rowTerm].count++;
+                            termSummary[rowTerm].amount += amount;
+                        }
+
+                        if (visible) {
+                            hasVisibleRows = true;
+                            groupVisibleCount++;
+                            groupVisibleAmount += amount;
+                            visibleCount++;
+                            visibleAmount += amount;
+                            $row.children('td').eq(0).text(visibleRowNo++);
+                        }
+                    });
+
+                    $group.find('.js-po-regional-section-row').text(formatLocaleNumber(groupVisibleCount));
+                    $group.find('.js-po-regional-section-total').text(formatLocaleNumber(groupVisibleAmount));
+                    $group.toggleClass('is-hidden', !regionalMatches || !hasVisibleRows);
+                });
+
+                $regionalCards.each(function() {
+                    var $card = $(this);
+                    var key = String($card.data('regional-key') || '');
+                    var item = regionalSummary[key] || { count: 0, amount: 0 };
+                    $card.find('.po-monitor-regional-card__label b').text(formatLocaleNumber(item.count));
+                    $card.find('.po-monitor-regional-card__value').text(formatLocaleNumber(item.amount));
+                });
+
+                $termCards.each(function() {
+                    var $card = $(this);
+                    var key = String($card.data('term-index') || '');
+                    var item = termSummary[key] || { count: 0, amount: 0 };
+                    $card.find('.po-monitor-term-card__label b').text(formatLocaleNumber(item.count));
+                    $card.find('.po-monitor-term-card__value').text(formatLocaleNumber(item.amount));
+                });
+
+                $modal.find('.js-po-detail-total-row').text(formatLocaleNumber(visibleCount));
+                $modal.find('.js-po-detail-total-amount').text(formatLocaleNumber(visibleAmount));
+            }
+
+            function resetDetailFilters($modal) {
+                $modal.data('active-regional-key', '');
+                $modal.data('active-term-index', '');
+                applyDetailFilters($modal);
+            }
+
+            function cleanDetailText(value) {
+                return String(value || '').replace(/\s+/g, ' ').trim();
+            }
+
+            function detailActiveLabel($modal, selector, fallback) {
+                var $active = $modal.find(selector + '.is-active').first();
+                if (!$active.length) {
+                    return fallback || '';
+                }
+
+                var cloned = $active.clone();
+                cloned.find('b, .po-monitor-regional-card__value, .po-monitor-regional-card__caption, .po-monitor-term-card__value, .po-monitor-term-card__caption').remove();
+                return cleanDetailText(cloned.text())
+                    .replace(/\bTERM\b/g, 'Term')
+                    .replace(/\bREGIONAL\b/g, 'Regional');
+            }
+
+            function detailExportTitle($modal) {
+                var regional = detailActiveLabel($modal, '.po-monitor-regional-card', '');
+                var term = detailActiveLabel($modal, '.po-monitor-term-card', '');
+
+                if (term && regional) {
+                    return 'Detail ' + term + ' - ' + regional;
+                }
+                if (term) {
+                    return 'Detail ' + term;
+                }
+                if (regional) {
+                    return 'Detail ' + regional;
+                }
+
+                var title = $modal.find('.modal-title').clone();
+                title.find('.po-monitor-modal-eyebrow').remove();
+                return cleanDetailText(title.text()) || 'Detail PO';
+            }
+
+            function firstVisibleDetailColumnValue($modal, columnName) {
+                var targetIndex = -1;
+                columnName = String(columnName || '').toUpperCase();
+
+                $modal.find('.po-monitor-regional-group:not(.is-hidden) .po-monitor-detail-table').each(function() {
+                    if (targetIndex >= 0) {
+                        return false;
+                    }
+
+                    $(this).find('thead th').each(function(index) {
+                        if (cleanDetailText($(this).text()).toUpperCase() === columnName) {
+                            targetIndex = index;
+                            return false;
+                        }
+                    });
+                });
+
+                if (targetIndex < 0) {
+                    return '';
+                }
+
+                var value = '';
+                $modal.find('.po-monitor-regional-group:not(.is-hidden) .po-monitor-detail-table tbody tr:not(.is-hidden)').each(function() {
+                    value = cleanDetailText($(this).children('td').eq(targetIndex).text());
+                    return value === '';
+                });
+
+                return value;
+            }
+
+            function detailCaptureMonthLabel($modal, fallbackPeriod) {
+                var periodText = firstVisibleDetailColumnValue($modal, 'TARGET PERIOD') || fallbackPeriod || '';
+                var monthNames = [
+                    'JANUARI',
+                    'FEBRUARI',
+                    'MARET',
+                    'APRIL',
+                    'MEI',
+                    'JUNI',
+                    'JULI',
+                    'AGUSTUS',
+                    'SEPTEMBER',
+                    'OKTOBER',
+                    'NOVEMBER',
+                    'DESEMBER'
+                ];
+                var upper = String(periodText).toUpperCase();
+
+                for (var i = 0; i < monthNames.length; i++) {
+                    if (upper.indexOf(monthNames[i]) >= 0) {
+                        return monthNames[i];
+                    }
+                }
+
+                return cleanDetailText(fallbackPeriod).replace(/\d{4}/g, '').trim().toUpperCase() || 'PERIODE';
+            }
+
+            function detailCaptureHeaderInfo($modal) {
+                var title = $modal.find('.modal-title').clone();
+                title.find('.po-monitor-modal-eyebrow').remove();
+                var rawTitle = cleanDetailText(title.text()) || detailExportTitle($modal);
+                var parts = rawTitle.split(/\s+-\s+/);
+                var type = parts.length > 1 ? parts.shift() : 'Target';
+                var period = parts.length > 1 ? parts.pop() : '';
+                var project = parts.length ? parts.join(' - ') : rawTitle;
+                var weekMatch = String(period).match(/Week\s+(\d+)/i);
+                var monthLabel = detailCaptureMonthLabel($modal, period);
+                var periodLabel = weekMatch ? (monthLabel + ' W' + parseInt(weekMatch[1], 10)) : monthLabel;
+                var typeLabel = String(type).toUpperCase() === 'ACHIEVED' ? 'ACHIEVED INVOICE 2026' : 'TARGET INVOICE 2026';
+                var projectLabel = cleanDetailText(project)
+                    .replace(/^PT\.?\s+/i, '')
+                    .replace(/\s+-\s+/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .toUpperCase();
+                var regionalLabel = (detailActiveLabel($modal, '.po-monitor-regional-card', 'All Regional') || 'All Regional').toUpperCase();
+                var termLabel = (detailActiveLabel($modal, '.po-monitor-term-card', 'All Term') || 'All Term').toUpperCase();
+
+                return {
+                    title: typeLabel + ' - ' + periodLabel,
+                    project: 'PROJECT ' + (projectLabel || 'PO'),
+                    regional: regionalLabel,
+                    term: termLabel,
+                    generatedAt: new Date().toLocaleString('id-ID')
+                };
+            }
+
+            function safeDownloadName(value, extension) {
+                var base = cleanDetailText(value)
+                    .replace(/[\\/:*?"<>|]+/g, '-')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '')
+                    .toLowerCase();
+                return (base || 'detail-po') + extension;
+            }
+
+            function cloneVisibleDetailContent($modal) {
+                var $clone = $('<div class="po-monitor-export-surface"></div>');
+                var title = detailExportTitle($modal);
+                $clone.append('<div class="po-monitor-export-title">' + escapeHtml(title) + '</div>');
+                $clone.append('<div class="po-monitor-export-subtitle">' + escapeHtml(new Date().toLocaleString('id-ID')) + '</div>');
+
+                var bodyClone = $modal.find('.modal-body').clone();
+                bodyClone.find('.is-hidden').remove();
+                bodyClone.find('.po-monitor-regional-card:not(.is-active), .po-monitor-term-card:not(.is-active)').each(function() {
+                    if ($(this).closest('.po-monitor-summary-band').find('.is-active').length) {
+                        $(this).remove();
+                    }
+                });
+                $clone.append(bodyClone.children());
+                return $clone;
+            }
+
+            function downloadBlob(content, mimeType, fileName) {
+                var blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.setTimeout(function() {
+                    URL.revokeObjectURL(url);
+                }, 500);
+            }
+
+            function setCaptureButtonState(message, isBusy) {
+                var $button = $('#po-monitor-detail-capture');
+                if (!$button.data('original-html')) {
+                    $button.data('original-html', $button.html());
+                }
+
+                if (message) {
+                    $button.html(message);
+                } else {
+                    $button.html($button.data('original-html'));
+                }
+                $button.prop('disabled', !!isBusy);
+            }
+
+            function openImagePreview(blob) {
+                var url = URL.createObjectURL(blob);
+                var preview = window.open('', '_blank');
+                if (preview) {
+                    preview.document.write('<!doctype html><title>Preview Capture</title><body style="margin:0;background:#f8fafc;display:flex;align-items:flex-start;justify-content:center;padding:20px;"><img src="' + url + '" style="max-width:100%;height:auto;border:1px solid #cbd5e1;box-shadow:0 20px 50px rgba(15,23,42,.18);"></body>');
+                    preview.document.close();
+                }
+                window.setTimeout(function() {
+                    URL.revokeObjectURL(url);
+                }, 60000);
+            }
+
+            function copyImageBlobToClipboard(blob) {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    return navigator.clipboard.write([
+                        new ClipboardItem({
+                            'image/png': blob
+                        })
+                    ]);
+                }
+
+                openImagePreview(blob);
+                return Promise.reject(new Error('Browser belum support copy image otomatis.'));
+            }
+
+
+            function escapeXml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&apos;');
+            }
+
+            function truncateForImage(value, maxLength) {
+                var text = cleanDetailText(value);
+                if (text.length <= maxLength) {
+                    return text;
+                }
+                return text.substring(0, Math.max(0, maxLength - 1)) + '...';
+            }
+
+            function svgText(x, y, text, options) {
+                options = options || {};
+                return '<text x="' + x + '" y="' + y + '" font-size="' + (options.size || 12) + '" fill="' + (options.fill || '#0f172a') + '" font-weight="' + (options.weight || 400) + '" text-anchor="' + (options.anchor || 'start') + '">' + escapeXml(text) + '</text>';
+            }
+
+            var poMonitorCaptureLogos = {
+                zeyn: '<?= file_exists(FCPATH . 'assets/dist/img/zeyn-logo.png') ? 'data:image/png;base64,' . base64_encode(file_get_contents(FCPATH . 'assets/dist/img/zeyn-logo.png')) : '' ?>',
+                tkm: '<?= file_exists(FCPATH . 'assets/dist/img/logotkmsolid.png') ? 'data:image/png;base64,' . base64_encode(file_get_contents(FCPATH . 'assets/dist/img/logotkmsolid.png')) : '' ?>'
+            };
+
+            function captureDetailImage() {
+                var $modal = $('#po_compare_detail_modal');
+                var title = detailExportTitle($modal);
+                var headerInfo = detailCaptureHeaderInfo($modal);
+                setCaptureButtonState('<i class="fas fa-spinner fa-spin mr-1"></i> Copying...', true);
+                var width = 2200;
+                var margin = 34;
+                var y = 32;
+                var parts = [];
+                var rowHeight = 40;
+                var headerHeight = 38;
+                var tableWidth = width - (margin * 2);
+                var now = new Date().toLocaleString('id-ID');
+
+                parts.push('<rect width="100%" height="100%" fill="#ffffff"/>');
+                parts.push('<rect x="' + margin + '" y="' + y + '" width="' + tableWidth + '" height="112" rx="14" fill="#ffffff" stroke="#e2e8f0"/>');
+                if (poMonitorCaptureLogos.zeyn) {
+                    parts.push('<image href="' + poMonitorCaptureLogos.zeyn + '" x="' + (margin + 18) + '" y="' + (y + 24) + '" width="150" height="56" preserveAspectRatio="xMinYMid meet"/>');
+                }
+                if (poMonitorCaptureLogos.tkm) {
+                    parts.push('<image href="' + poMonitorCaptureLogos.tkm + '" x="' + (width - margin - 178) + '" y="' + (y + 24) + '" width="160" height="56" preserveAspectRatio="xMaxYMid meet"/>');
+                }
+                parts.push(svgText(width / 2, y + 34, headerInfo.title, { size: 32, weight: 900, anchor: 'middle' }));
+                parts.push(svgText(width / 2, y + 64, headerInfo.project, { size: 22, fill: '#163d66', weight: 900, anchor: 'middle' }));
+                parts.push(svgText(width / 2, y + 90, headerInfo.regional + ' | ' + headerInfo.term, { size: 18, fill: '#334155', weight: 900, anchor: 'middle' }));
+                y += 136;
+
+                var totalRow = $modal.find('.js-po-detail-total-row').first().text();
+                var totalAmount = $modal.find('.js-po-detail-total-amount').first().text();
+                var summaryCards = [
+                    ['Total Row', totalRow],
+                    ['Total Amount', totalAmount],
+                    ['Filter', title]
+                ];
+                var cardGap = 12;
+                var cardWidth = (tableWidth - (cardGap * (summaryCards.length - 1))) / summaryCards.length;
+                summaryCards.forEach(function(card, index) {
+                    var x = margin + (index * (cardWidth + cardGap));
+                    parts.push('<rect x="' + x + '" y="' + y + '" width="' + cardWidth + '" height="72" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>');
+                    parts.push(svgText(x + 16, y + 25, card[0], { size: 14, fill: '#64748b', weight: 900 }));
+                    parts.push(svgText(x + 16, y + 54, truncateForImage(card[1], index === 2 ? 62 : 34), { size: 20, fill: '#0f172a', weight: 900 }));
+                });
+                y += 100;
+
+                $modal.find('.po-monitor-regional-group:not(.is-hidden)').each(function() {
+                    var $group = $(this);
+                    var $section = $group.find('.po-monitor-regional-section').first();
+                    var sectionValues = [];
+                    $section.find('strong').each(function() {
+                        sectionValues.push(cleanDetailText($(this).text()));
+                    });
+                    var regionalName = sectionValues[0] || 'Regional';
+                    var regionalRows = sectionValues[1] || '';
+                    var regionalTotal = sectionValues[2] || '';
+                    var $table = $group.find('.po-monitor-detail-table').first();
+                    var headers = [];
+                    var rows = [];
+
+                    $table.find('thead th').each(function() {
+                        headers.push(cleanDetailText($(this).text()));
+                    });
+
+                    $table.find('tbody tr:not(.is-hidden)').each(function() {
+                        var row = [];
+                        $(this).children('td').each(function() {
+                            row.push(cleanDetailText($(this).text()));
+                        });
+                        rows.push(row);
+                    });
+
+                    if (!rows.length) {
+                        return;
+                    }
+
+                    var cols = Math.max(headers.length, rows[0] ? rows[0].length : 0);
+                    var defaultWidths = cols === 13
+                        ? [60, 145, 145, 135, 125, 140, 360, 130, 90, 145, 145, 155, 155]
+                        : [60, 145, 145, 135, 125, 140, 430, 130, 90, 210, 160];
+                    var widthSum = defaultWidths.slice(0, cols).reduce(function(total, item) {
+                        return total + item;
+                    }, 0);
+                    var scale = tableWidth / widthSum;
+                    var colWidths = defaultWidths.slice(0, cols).map(function(item) {
+                        return item * scale;
+                    });
+
+                    parts.push('<rect x="' + margin + '" y="' + y + '" width="' + tableWidth + '" height="58" rx="10" fill="#163d66"/>');
+                    parts.push(svgText(margin + 16, y + 24, 'Regional', { size: 13, fill: '#cbd5e1', weight: 900 }));
+                    parts.push(svgText(margin + 16, y + 46, truncateForImage(regionalName, 42), { size: 20, fill: '#ffffff', weight: 900 }));
+                    parts.push(svgText(margin + tableWidth - 430, y + 24, 'Row', { size: 13, fill: '#cbd5e1', weight: 900 }));
+                    parts.push(svgText(margin + tableWidth - 430, y + 46, regionalRows, { size: 20, fill: '#ffffff', weight: 900 }));
+                    parts.push(svgText(margin + tableWidth - 260, y + 24, 'Total', { size: 13, fill: '#cbd5e1', weight: 900 }));
+                    parts.push(svgText(margin + tableWidth - 260, y + 46, regionalTotal, { size: 20, fill: '#ffffff', weight: 900 }));
+                    y += 70;
+
+                    parts.push('<rect x="' + margin + '" y="' + y + '" width="' + tableWidth + '" height="' + headerHeight + '" fill="#e2e8f0" stroke="#cbd5e1"/>');
+                    var currentX = margin;
+                    headers.forEach(function(header, index) {
+                        var x = currentX;
+                        var colWidth = colWidths[index] || (tableWidth / cols);
+                        parts.push('<line x1="' + x + '" y1="' + y + '" x2="' + x + '" y2="' + (y + headerHeight) + '" stroke="#cbd5e1"/>');
+                        parts.push(svgText(x + 8, y + 25, truncateForImage(header, Math.max(8, Math.floor(colWidth / 9))), { size: 14, fill: '#0f172a', weight: 900 }));
+                        currentX += colWidth;
+                    });
+                    parts.push('<line x1="' + (margin + tableWidth) + '" y1="' + y + '" x2="' + (margin + tableWidth) + '" y2="' + (y + headerHeight) + '" stroke="#cbd5e1"/>');
+                    y += headerHeight;
+
+                    rows.forEach(function(row, rowIndex) {
+                        var fill = rowIndex % 2 === 0 ? '#ffffff' : '#f8fafc';
+                        parts.push('<rect x="' + margin + '" y="' + y + '" width="' + tableWidth + '" height="' + rowHeight + '" fill="' + fill + '" stroke="#e2e8f0"/>');
+                        var currentX = margin;
+                        for (var index = 0; index < cols; index++) {
+                            var x = currentX;
+                            var colWidth = colWidths[index] || (tableWidth / cols);
+                            parts.push('<line x1="' + x + '" y1="' + y + '" x2="' + x + '" y2="' + (y + rowHeight) + '" stroke="#e2e8f0"/>');
+                            parts.push(svgText(x + 8, y + 25, truncateForImage(row[index] || '', Math.max(8, Math.floor(colWidth / 9))), { size: 14, fill: '#0f172a', weight: 500 }));
+                            currentX += colWidth;
+                        }
+                        parts.push('<line x1="' + (margin + tableWidth) + '" y1="' + y + '" x2="' + (margin + tableWidth) + '" y2="' + (y + rowHeight) + '" stroke="#e2e8f0"/>');
+                        y += rowHeight;
+                    });
+
+                    y += 20;
+                });
+
+                y += 8;
+                parts.push(svgText(width / 2, y + 15, 'Supported by aplication Zeyn', { size: 11, fill: 'rgba(100,116,139,0.45)', weight: 700, anchor: 'middle' }));
+
+                var exportHeight = Math.min(18000, y + 34);
+                var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + exportHeight + '" viewBox="0 0 ' + width + ' ' + exportHeight + '"><style>text{font-family:Arial,Helvetica,sans-serif;dominant-baseline:auto;}</style>' + parts.join('') + '</svg>';
+                var image = new Image();
+                var svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+                var url = URL.createObjectURL(svgBlob);
+
+                image.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = exportHeight;
+                    var ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(image, 0, 0);
+                    URL.revokeObjectURL(url);
+                    try {
+                        canvas.toBlob(function(blob) {
+                            if (!blob) {
+                                setCaptureButtonState(null, false);
+                                window.alert('Capture image gagal dibuat.');
+                                return;
+                            }
+
+                            copyImageBlobToClipboard(blob)
+                                .then(function() {
+                                    setCaptureButtonState('<i class="fas fa-check mr-1"></i> Copied', false);
+                                    window.setTimeout(function() {
+                                        setCaptureButtonState(null, false);
+                                    }, 1400);
+                                })
+                                .catch(function() {
+                                    setCaptureButtonState(null, false);
+                                    window.alert('Browser belum mengizinkan copy image otomatis. Preview gambar dibuka, bisa copy manual dari sana.');
+                                });
+                        }, 'image/png');
+                    } catch (error) {
+                        setCaptureButtonState(null, false);
+                        var svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+                        openImagePreview(svgBlob);
+                        window.alert('Browser belum mengizinkan copy image otomatis. Preview gambar dibuka, bisa copy manual dari sana.');
+                    }
+                };
+                image.onerror = function() {
+                    URL.revokeObjectURL(url);
+                    setCaptureButtonState(null, false);
+                    window.alert('Capture image gagal dirender oleh browser.');
+                };
+                image.src = url;
+            }
+
+            function downloadDetailExcel() {
+                var $modal = $('#po_compare_detail_modal');
+                var title = detailExportTitle($modal);
+                var totalRow = $modal.find('.js-po-detail-total-row').first().text();
+                var totalAmount = $modal.find('.js-po-detail-total-amount').first().text();
+                var generatedAt = new Date().toLocaleString('id-ID');
+                var activeRegional = detailActiveLabel($modal, '.po-monitor-regional-card', 'All Regional') || 'All Regional';
+                var activeTerm = detailActiveLabel($modal, '.po-monitor-term-card', 'All Term') || 'All Term';
+                var html = '';
+                var textCellStyle = ' style="mso-number-format:\\@;"';
+
+                html += '<html><head><meta charset="utf-8"><style>';
+                html += 'body{font-family:Arial,sans-serif;}';
+                html += 'table{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}';
+                html += 'th,td{border:1px solid #999;padding:5px 7px;font-size:11pt;vertical-align:top;}';
+                html += '.title{font-size:18pt;font-weight:bold;border:0;padding:0 0 4px 0;}';
+                html += '.subtitle{font-size:10pt;color:#666;border:0;padding:0 0 12px 0;}';
+                html += '.summary-label{background:#d9eaf7;font-weight:bold;text-transform:uppercase;}';
+                html += '.summary-value{font-weight:bold;}';
+                html += '.section{background:#163d66;color:#fff;font-weight:bold;font-size:12pt;}';
+                html += '.head{background:#d9e2f3;font-weight:bold;text-align:center;}';
+                html += '.total{background:#00b050;color:#000;font-weight:bold;}';
+                html += '.right{text-align:right;}';
+                html += '.center{text-align:center;}';
+                html += '</style></head><body>';
+
+                html += '<table>';
+                html += '<tr><td colspan="11" class="title">' + escapeHtml(title) + '</td></tr>';
+                html += '<tr><td colspan="11" class="subtitle">' + escapeHtml(generatedAt) + '</td></tr>';
+                html += '<tr>';
+                html += '<td class="summary-label">Total Row</td><td class="summary-value right"' + textCellStyle + '>' + escapeHtml(totalRow) + '</td>';
+                html += '<td class="summary-label">Total Amount</td><td class="summary-value right"' + textCellStyle + '>' + escapeHtml(totalAmount) + '</td>';
+                html += '<td class="summary-label">Regional</td><td class="summary-value">' + escapeHtml(activeRegional) + '</td>';
+                html += '<td class="summary-label">Term</td><td class="summary-value">' + escapeHtml(activeTerm) + '</td>';
+                html += '<td colspan="3"></td>';
+                html += '</tr>';
+                html += '<tr><td colspan="11" style="border:0;height:10px;"></td></tr>';
+
+                $modal.find('.po-monitor-regional-group:not(.is-hidden)').each(function() {
+                    var $group = $(this);
+                    var $section = $group.find('.po-monitor-regional-section').first();
+                    var sectionValues = [];
+                    $section.find('strong').each(function() {
+                        sectionValues.push(cleanDetailText($(this).text()));
+                    });
+
+                    var regionalName = sectionValues[0] || 'Regional';
+                    var regionalRows = sectionValues[1] || '0';
+                    var regionalTotal = sectionValues[2] || '0';
+                    var $table = $group.find('.po-monitor-detail-table').first();
+                    var headers = [];
+                    var rows = [];
+                    var footerCells = [];
+
+                    $table.find('thead th').each(function() {
+                        headers.push(cleanDetailText($(this).text()));
+                    });
+
+                    $table.find('tbody tr:not(.is-hidden)').each(function() {
+                        var row = [];
+                        $(this).children('td').each(function() {
+                            row.push(cleanDetailText($(this).text()));
+                        });
+                        rows.push(row);
+                    });
+
+                    $table.find('tfoot th').each(function() {
+                        footerCells.push(cleanDetailText($(this).text()));
+                    });
+
+                    if (!rows.length) {
+                        return;
+                    }
+
+                    html += '<tr><td colspan="' + headers.length + '" class="section">Regional: ' + escapeHtml(regionalName) + ' | Row: ' + escapeHtml(regionalRows) + ' | Total: ' + escapeHtml(regionalTotal) + '</td></tr>';
+                    html += '<tr>';
+                    headers.forEach(function(header) {
+                        html += '<th class="head">' + escapeHtml(header) + '</th>';
+                    });
+                    html += '</tr>';
+
+                    rows.forEach(function(row) {
+                        html += '<tr>';
+                        headers.forEach(function(header, index) {
+                            var value = row[index] || '';
+                            var className = index === headers.length - 1 ? ' class="right"' : '';
+                            html += '<td' + className + textCellStyle + '>' + escapeHtml(value) + '</td>';
+                        });
+                        html += '</tr>';
+                    });
+
+                    if (footerCells.length) {
+                        html += '<tr>';
+                        if (footerCells.length === 2) {
+                            html += '<td colspan="' + Math.max(1, headers.length - 1) + '" class="total right">' + escapeHtml(footerCells[0]) + '</td>';
+                            html += '<td class="total right"' + textCellStyle + '>' + escapeHtml(footerCells[1]) + '</td>';
+                        } else {
+                            footerCells.forEach(function(value) {
+                                html += '<td class="total"' + textCellStyle + '>' + escapeHtml(value) + '</td>';
+                            });
+                        }
+                        html += '</tr>';
+                    }
+
+                    html += '<tr><td colspan="' + headers.length + '" style="border:0;height:12px;"></td></tr>';
+                });
+
+                html += '</table></body></html>';
+                downloadBlob(html, 'application/vnd.ms-excel;charset=utf-8', safeDownloadName(title, '.xls'));
+            }
+
+            $(document)
+                .off('click.poMonitorDetailCapture', '#po-monitor-detail-capture')
+                .on('click.poMonitorDetailCapture', '#po-monitor-detail-capture', captureDetailImage);
+
+            $(document)
+                .off('click.poMonitorDetailExcel', '#po-monitor-detail-excel')
+                .on('click.poMonitorDetailExcel', '#po-monitor-detail-excel', downloadDetailExcel);
+
+            $(document)
+                .off('click.poMonitorRegionalFilter', '#po_compare_detail_modal .po-monitor-regional-card')
+                .on('click.poMonitorRegionalFilter', '#po_compare_detail_modal .po-monitor-regional-card', function() {
+                    var $button = $(this);
+                    var $modal = $('#po_compare_detail_modal');
+                    var key = String($button.data('regional-key') || '');
+                    var isActive = $button.hasClass('is-active');
+                    $modal.data('active-regional-key', isActive ? '' : key);
+                    applyDetailFilters($modal);
+                });
+
+            $(document)
+                .off('click.poMonitorTermFilter', '#po_compare_detail_modal .po-monitor-term-card')
+                .on('click.poMonitorTermFilter', '#po_compare_detail_modal .po-monitor-term-card', function() {
+                    var $button = $(this);
+                    var $modal = $('#po_compare_detail_modal');
+                    var termIndex = String($button.data('term-index') || '');
+                    var isActive = $button.hasClass('is-active');
+                    $modal.data('active-term-index', isActive ? '' : termIndex);
+                    applyDetailFilters($modal);
+                });
+
             $(document)
                 .off('click.poCompareDetail', '.po-compare-detail-link')
                 .on('click.poCompareDetail', '.po-compare-detail-link', function() {
@@ -2672,6 +3683,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     }).done(function(response) {
                         $modal.find('.modal-title').html(response && response.title ? response.title : '<span class="po-monitor-modal-eyebrow">Detail Perbandingan</span>Detail PO');
                         $modal.find('.modal-body').html(response && response.html ? response.html : '<div class="alert alert-warning mb-0">Detail tidak tersedia.</div>');
+                        resetDetailFilters($modal);
                     }).fail(function() {
                         $modal.find('.modal-body').html('<div class="alert alert-danger mb-0">Gagal mengambil detail PO.</div>');
                     });
@@ -2699,6 +3711,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     }).done(function(response) {
                         $modal.find('.modal-title').html(response && response.title ? response.title : '<span class="po-monitor-modal-eyebrow">Detail Term</span>Detail PO');
                         $modal.find('.modal-body').html(response && response.html ? response.html : '<div class="alert alert-warning mb-0">Detail tidak tersedia.</div>');
+                        resetDetailFilters($modal);
                     }).fail(function() {
                         $modal.find('.modal-body').html('<div class="alert alert-danger mb-0">Gagal mengambil detail PO.</div>');
                     });
