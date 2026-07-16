@@ -306,21 +306,67 @@ ALTER TABLE `tb_po_term_allocation`
 
 ALTER TABLE `tb_po_target_pipeline`
   ADD COLUMN IF NOT EXISTS `regional` varchar(150) DEFAULT NULL AFTER `status_po`,
-  ADD COLUMN IF NOT EXISTS `remarks` text NULL AFTER `detail_po`;
+  ADD COLUMN IF NOT EXISTS `remarks` text NULL AFTER `detail_po`,
+  ADD COLUMN IF NOT EXISTS `type_project` varchar(150) DEFAULT NULL AFTER `remarks`;
 
 -- =========================================================
 -- 5. INDEX PATCH
--- Jalankan sekali. Jika index sudah ada, bagian ini bisa di-skip.
+-- Aman dijalankan berulang: DROP/ADD index dibuat conditional.
 -- =========================================================
 
-ALTER TABLE `tb_po` DROP INDEX `uk_tb_po_po_number`;
-ALTER TABLE `tb_po` ADD KEY `idx_tb_po_source_hash` (`source_hash`);
-ALTER TABLE `tb_po` ADD KEY `idx_tb_po_number_bowheer` (`po_number`, `id_bowheer`);
-ALTER TABLE `tb_po` ADD KEY `idx_tb_po_dashboard_bowheer` (`dashboard_bowheer`);
-ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_target_week` (`target_year`, `target_week`);
-ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_status` (`target_status`);
-ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_allocation` (`id_allocation`);
-ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_source` (`claim_source`, `source_raw`);
+SET @idx_exists := (
+  SELECT COUNT(1)
+  FROM information_schema.statistics
+  WHERE table_schema = DATABASE()
+    AND table_name = 'tb_po'
+    AND index_name = 'uk_tb_po_po_number'
+);
+SET @sql := IF(@idx_exists > 0, 'ALTER TABLE `tb_po` DROP INDEX `uk_tb_po_po_number`', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po' AND index_name = 'idx_tb_po_source_hash');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po` ADD KEY `idx_tb_po_source_hash` (`source_hash`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po' AND index_name = 'idx_tb_po_number_bowheer');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po` ADD KEY `idx_tb_po_number_bowheer` (`po_number`, `id_bowheer`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po' AND index_name = 'idx_tb_po_dashboard_bowheer');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po` ADD KEY `idx_tb_po_dashboard_bowheer` (`dashboard_bowheer`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po_term' AND index_name = 'idx_tb_po_term_target_week');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_target_week` (`target_year`, `target_week`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po_term' AND index_name = 'idx_tb_po_term_status');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_status` (`target_status`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po_term_claim' AND index_name = 'idx_tb_po_term_claim_allocation');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_allocation` (`id_allocation`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists := (SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'tb_po_term_claim' AND index_name = 'idx_tb_po_term_claim_source');
+SET @sql := IF(@idx_exists = 0, 'ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_source` (`claim_source`, `source_raw`)', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- =========================================================
 -- 6. OPTIONAL: EMPTY PO MONITOR STANDALONE DATA
