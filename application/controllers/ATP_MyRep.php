@@ -29,30 +29,14 @@ class ATP_MyRep extends CI_Controller
 
         $mainfeederId = (int) $mainfeederId;
         if ($mainfeederId <= 0) {
-            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
-            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
-            $data['title'] = 'ATP Mainfeeder';
-            $data['section'] = 'atp';
-            $data['moduleTitle'] = 'ATP Mainfeeder';
-            $data['detailBase'] = 'ATP_MyRep/mainfeeder';
-            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
-            $data['selectedCity'] = $selectedCity;
-            $data['selectedStatus'] = $selectedStatus;
-            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
-            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
-            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Mainfeeder_MyRep/module_index', $data);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
+            redirect('ATP_MyRep?project_type=MAINFEEDER');
             return;
         }
 
         $mainfeeder = $this->MMainfeeder_MyRep->getById($mainfeederId);
         if (empty($mainfeeder)) {
             $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
-            redirect('ATP_MyRep/mainfeeder');
+            redirect('ATP_MyRep?project_type=MAINFEEDER');
             return;
         }
 
@@ -78,6 +62,10 @@ class ATP_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->get('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
         $selectedStage = trim((string) $this->input->get('stage'));
         $stageOptions = $this->MATP_MyRep->getStageOptions();
         if ($selectedStage !== '' && !in_array($selectedStage, $stageOptions, true)) {
@@ -92,12 +80,13 @@ class ATP_MyRep extends CI_Controller
         $data['schemaReady'] = $schemaReady;
         $data['selectedCity'] = $selectedCity;
         $data['selectedRegional'] = $selectedRegional;
+        $data['selectedProjectType'] = $selectedProjectType;
         $data['selectedStage'] = $selectedStage;
         $data['stageOptions'] = $stageOptions;
         $data['cityOptions'] = $this->MATP_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MATP_MyRep->getRegionalOptions();
         $data['clusterList'] = $schemaReady
-            ? $this->MATP_MyRep->getClusterRows($selectedCity, $selectedRegional, $selectedStage)
+            ? $this->MATP_MyRep->getClusterRows($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType)
             : [];
 
         $this->load->view('Templates/01_Header', $data);
@@ -116,11 +105,15 @@ class ATP_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->post('filter_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->post('filter_regional')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->post('filter_project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
         $selectedStage = trim((string) $this->input->post('filter_stage'));
 
         if (!$this->MATP_MyRep->supportsAtpColumns() || !$this->MATP_MyRep->supportsAtpFileTable()) {
             $this->session->set_flashdata('error', 'Kolom ATP belum tersedia. Jalankan query patch ATP terlebih dahulu.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
@@ -132,32 +125,32 @@ class ATP_MyRep extends CI_Controller
 
         if ($clusterId <= 0) {
             $this->session->set_flashdata('error', 'Cluster ATP tidak valid.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
         if (!in_array($statusAtp, $allowedStatuses, true)) {
             $this->session->set_flashdata('error', 'Status ATP tidak dikenali.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
         if ($actualAtpDate !== null && $emailAtpDate === null) {
             $this->session->set_flashdata('error', 'Tanggal email ATP wajib diisi sebelum tanggal ATP.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
         if ($statusAtp !== '' && $actualAtpDate === null) {
             $this->session->set_flashdata('error', 'Tanggal ATP wajib diisi sebelum status ATP.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
         $cluster = $this->MATP_MyRep->getClusterById($clusterId);
         if (empty($cluster)) {
             $this->session->set_flashdata('error', 'Data cluster tidak ditemukan.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
@@ -169,13 +162,13 @@ class ATP_MyRep extends CI_Controller
 
         if ($statusAtp === 'PUNCLIST' && !$recordPunclistExists && !$hasRecordPunclistUpload) {
             $this->session->set_flashdata('error', 'Status ATP PUNCLIST wajib upload Record Punclist.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
         if ($existingStatusAtp === 'PUNCLIST' && $statusAtp === 'DONE' && !$baRectificationExists && !$hasBaRectificationUpload) {
             $this->session->set_flashdata('error', 'Perubahan ATP dari PUNCLIST ke DONE wajib upload BA Rectification.');
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
@@ -188,14 +181,14 @@ class ATP_MyRep extends CI_Controller
         $uploadError = $this->handleAtpEvidenceUpload($clusterId, 'record_punclist_file', 'RECORD_PUNCLIST', trim((string) $this->input->post('record_punclist_remark')));
         if ($uploadError !== '') {
             $this->session->set_flashdata('error', $uploadError);
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
         $uploadError = $this->handleAtpEvidenceUpload($clusterId, 'ba_rectification_file', 'BA_RECTIFICATION', trim((string) $this->input->post('ba_rectification_remark')));
         if ($uploadError !== '') {
             $this->session->set_flashdata('error', $uploadError);
-            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+            redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
             return;
         }
 
@@ -203,7 +196,7 @@ class ATP_MyRep extends CI_Controller
         $this->MATP_MyRep->syncMyrepCurrentStatusFromAtp($clusterId, $statusAtp, $actualAtpDate);
 
         $this->session->set_flashdata('success', 'Data ATP cluster berhasil diperbarui.');
-        redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));
+        redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage, $selectedProjectType));
     }
 
     public function previewFile($fileId = 0)
@@ -245,6 +238,22 @@ class ATP_MyRep extends CI_Controller
         exit;
     }
 
+    public function previewMainfeederFile($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MATP_MyRep->getMainfeederAtpFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $this->streamPreviewFile((string) $file['file_path']);
+    }
+
     private function normalizeDateInput($date)
     {
         $date = trim((string) $date);
@@ -255,9 +264,41 @@ class ATP_MyRep extends CI_Controller
         return $date;
     }
 
-    private function buildRedirectUrl($city = '', $regional = '', $stage = '')
+    private function streamPreviewFile($filePath)
+    {
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+
+        header('Content-Type: ' . ($mimeMap[$extension] ?? 'application/octet-stream'));
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
+    private function buildRedirectUrl($city = '', $regional = '', $stage = '', $projectType = '')
     {
         $params = [];
+        $projectType = strtoupper(trim((string) $projectType));
+        if (in_array($projectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $params['project_type'] = $projectType;
+        }
         if ($regional !== '') {
             $params['regional'] = $regional;
         }

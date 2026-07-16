@@ -46,6 +46,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->get('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
 
         try {
             // Sync bridge bisa berat; jangan sampai memblokir render halaman monitoring.
@@ -58,10 +62,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['atpSchemaReady'] = $this->MChecklist_Dokument_MyRep->supportsAtpColumns();
         $data['selectedCity'] = $selectedCity;
         $data['selectedRegional'] = $selectedRegional;
+        $data['selectedProjectType'] = $selectedProjectType;
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
         $data['clusterList'] = $isFocusMode
-            ? $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional)
+            ? $this->MChecklist_Dokument_MyRep->getChecklistProjectRows($selectedCity, $selectedRegional, $selectedProjectType)
             : [];
         $data['renderClusterRows'] = (bool) $isFocusMode;
         $data['isClusterTableFocus'] = (bool) $isFocusMode;
@@ -92,13 +97,19 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
-        $cacheKey = 'checklist_doc_dashboard_' . md5($selectedCity . '|' . $selectedRegional);
+        $selectedProjectType = strtoupper(trim((string) $this->input->post('selected_project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
+        $cacheKey = 'checklist_doc_dashboard_' . md5($selectedCity . '|' . $selectedRegional . '|' . $selectedProjectType);
 
         try {
             $cachedPayload = $this->getChecklistCache($cacheKey);
             if (!is_array($cachedPayload)) {
-                $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
-                $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
+                $clusterList = $this->MChecklist_Dokument_MyRep->getChecklistProjectRows($selectedCity, $selectedRegional, $selectedProjectType);
+                $documentItemList = in_array($selectedProjectType, ['MAINFEEDER', 'FWA'], true)
+                    ? []
+                    : $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
                 $cachedPayload = [
                     'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
                     'itemFilterOptions' => $this->buildItemFilterOptions($documentItemList),
@@ -1915,22 +1926,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
-        $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
-
-        $data['title'] = 'Checklist Dokument Mainfeeder';
-        $data['selectedCity'] = $selectedCity;
-        $data['selectedRegional'] = $selectedRegional;
-        $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
-        $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
-        $data['targetOptions'] = $this->MChecklist_Dokument_MyRep->getTargetOptions($selectedCity, $selectedRegional);
-        $data['mainfeederList'] = $this->MChecklist_Dokument_MyRep->getMainfeederList($selectedCity, $selectedRegional);
-
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('Checklist_Dokument_MyRep/mainfeeder_index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+        redirect('Checklist_Dokument_MyRep?project_type=MAINFEEDER');
     }
 
     public function saveMainfeeder()
@@ -1941,6 +1937,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $idTarget = (int) $this->input->post('id_target');
+        $projectType = strtoupper(trim((string) $this->input->post('project_type')));
+        if (!in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            $projectType = 'MAINFEEDER';
+        }
         $mainfeederName = trim((string) $this->input->post('mainfeeder_name'));
         $lengthMeter = (float) $this->input->post('length_meter');
         $atpDate = $this->normalizeDateInput($this->input->post('atp_date'));
@@ -1952,6 +1952,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $this->MChecklist_Dokument_MyRep->saveMainfeeder([
+            'project_type' => $projectType,
             'id_target' => $idTarget,
             'mainfeeder_name' => $mainfeederName,
             'length_meter' => $lengthMeter,
@@ -1960,7 +1961,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'updated_by' => (int) $this->session->userdata('id_user'),
         ]);
 
-        $this->session->set_flashdata('success', 'Mainfeeder berhasil ditambahkan.');
+        $this->session->set_flashdata('success', ($projectType === 'FWA' ? 'FWA' : 'Mainfeeder') . ' berhasil ditambahkan.');
         redirect('Checklist_Dokument_MyRep/mainfeeder');
     }
 
@@ -1973,14 +1974,21 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $mainfeederId = (int) $mainfeederId;
         if ($mainfeederId <= 0) {
-            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            redirect('Checklist_Dokument_MyRep?project_type=MAINFEEDER');
             return;
         }
 
         $mainfeeder = $this->MChecklist_Dokument_MyRep->getMainfeederDetail($mainfeederId);
         if (empty($mainfeeder)) {
             $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
-            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            redirect('Checklist_Dokument_MyRep?project_type=MAINFEEDER');
+            return;
+        }
+        $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? 'DRM')));
+        if (!in_array($currentStatus, ['CHECKLIST', 'DONE'], true)) {
+            $projectType = strtoupper(trim((string) ($mainfeeder['project_type'] ?? 'MAINFEEDER'))) === 'FWA' ? 'FWA' : 'MAINFEEDER';
+            $this->session->set_flashdata('error', ($projectType === 'FWA' ? 'FWA' : 'Mainfeeder') . ' belum bisa masuk Checklist Dokument karena ATP belum DONE.');
+            redirect('Checklist_Dokument_MyRep?project_type=' . $projectType);
             return;
         }
 
@@ -3237,7 +3245,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $remark = trim((string) ($document['remark'] ?? ''));
         $isNoDocumentRequired = !empty($document['is_document_not_required']);
         $fileLabel = $isNoDocumentRequired ? '[Tanpa Dokumen - Not Required]' : ($fileName !== '' ? $fileName : '-');
-        $clusterLabel = strtoupper($type) === 'MAINFEEDER' ? 'Mainfeeder ' . trim((string) ($entity['title'] ?? '-')) : trim((string) ($entity['title'] ?? '-'));
+        $typeUpper = strtoupper(trim((string) $type));
+        $clusterLabel = in_array($typeUpper, ['MAINFEEDER', 'FWA'], true)
+            ? $typeUpper . ' ' . trim((string) ($entity['title'] ?? '-'))
+            : trim((string) ($entity['title'] ?? '-'));
         $siteLabel = trim((string) ($entity['site'] ?? '-'));
         $projectLabel = trim((string) ($entity['project'] ?? '-'));
         $categoryLabel = trim((string) ($entity['category'] ?? '-'));
@@ -3397,10 +3408,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return $reviewer;
         }
 
-        $table = strtoupper(trim((string) $type)) === 'MAINFEEDER'
+        $typeUpper = strtoupper(trim((string) $type));
+        $table = in_array($typeUpper, ['MAINFEEDER', 'FWA'], true)
             ? 'md_rfs_myrep_mainfeeder_doc_item'
             : 'md_rfs_myrep_doc_item';
-        $idField = strtoupper(trim((string) $type)) === 'MAINFEEDER'
+        $idField = in_array($typeUpper, ['MAINFEEDER', 'FWA'], true)
             ? 'id_doc_item_mainfeeder'
             : 'id_doc_item';
 

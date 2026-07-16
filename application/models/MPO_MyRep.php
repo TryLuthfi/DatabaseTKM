@@ -53,6 +53,7 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
+        $cities = [];
         $rows = $this->db
             ->distinct()
             ->select('c.city_name')
@@ -68,15 +69,37 @@ class MPO_MyRep extends CI_Model
 
         $rows = $this->db->get()->result_array();
 
-        $cities = [];
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($cityName !== '') {
-                $cities[] = $cityName;
+                $cities[$cityName] = $cityName;
             }
         }
 
-        return array_values(array_unique($cities));
+        if ($this->hasMainfeederPoSupport()) {
+            $this->db
+                ->distinct()
+                ->select('mf.city_name')
+                ->from('tb_rfs_myrep_mainfeeder mf')
+                ->join('tb_myrep_po_header p', 'p.id_mainfeeder = mf.id_mainfeeder', 'inner')
+                ->where('mf.city_name IS NOT NULL', null, false)
+                ->where("TRIM(mf.city_name) !=", '')
+                ->order_by('mf.city_name', 'ASC');
+
+            if (!$this->applyAllowedCityRestriction('mf.city_name')) {
+                return array_values($cities);
+            }
+
+            foreach ($this->db->get()->result_array() as $row) {
+                $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+                if ($cityName !== '') {
+                    $cities[$cityName] = $cityName;
+                }
+            }
+        }
+
+        ksort($cities);
+        return array_values($cities);
     }
 
     public function getEligibleClusterOptions()
@@ -174,7 +197,88 @@ class MPO_MyRep extends CI_Model
             $filtered[] = $mergedRow;
         }
 
+        foreach ($this->getMainfeederMonitorRows($city, $status) as $mainfeederRow) {
+            $filtered[] = $mainfeederRow;
+        }
+
         return $filtered;
+    }
+
+    private function getMainfeederMonitorRows($city = '', $status = '')
+    {
+        if (!$this->hasMainfeederPoSupport()) {
+            return [];
+        }
+
+        $poRows = array_values(array_filter($this->getPoListRows($city, ''), static function ($row) {
+            return in_array(strtoupper(trim((string) ($row['po_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true);
+        }));
+        if (empty($poRows)) {
+            return [];
+        }
+
+        $grouped = [];
+        foreach ($poRows as $row) {
+            $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+            if ($mainfeederId <= 0) {
+                continue;
+            }
+            if (!isset($grouped[$mainfeederId])) {
+                $grouped[$mainfeederId] = [
+                    'id_myrep_cluster' => 0,
+                    'id_mainfeeder' => $mainfeederId,
+                    'cluster_name' => (string) ($row['cluster_name'] ?? '-'),
+                    'cluster_code' => '',
+                    'regional_name' => (string) ($row['regional_name'] ?? ''),
+                    'province_name' => '',
+                    'city_name' => (string) ($row['city_name'] ?? ''),
+                    'team_name' => strtoupper(trim((string) ($row['po_type'] ?? ''))) === 'FWA' ? 'FWA' : 'Mainfeeder',
+                    'rpm' => '',
+                    'sm' => '',
+                    'spv' => '',
+                    'status_current' => (string) ($row['status_current'] ?? 'PO'),
+                    'created_at' => '',
+                    'id_drm' => 0,
+                    'drm_date' => null,
+                    'homepass_drm' => 0,
+                    'po_count' => 0,
+                    'po_cluster_count' => 0,
+                    'po_subfeeder_count' => 0,
+                    'po_mainfeeder_count' => 0,
+                    'po_total_value' => 0,
+                    'termin_total_count' => 0,
+                    'termin_progress_count' => 0,
+                    'termin_paid_count' => 0,
+                    'last_po_date' => null,
+                    'po_summary_status' => 'NOT ISSUED',
+                    'po_stage_status' => 'NOT ISSUED',
+                ];
+            }
+
+            $grouped[$mainfeederId]['po_count']++;
+            $grouped[$mainfeederId]['po_mainfeeder_count']++;
+            $grouped[$mainfeederId]['po_total_value'] += (float) ($row['po_value'] ?? 0);
+            $grouped[$mainfeederId]['termin_total_count'] += (int) ($row['termin_total_count'] ?? 0);
+            $grouped[$mainfeederId]['termin_progress_count'] += (int) ($row['termin_progress_count'] ?? 0);
+            $grouped[$mainfeederId]['termin_paid_count'] += (int) ($row['termin_paid_count'] ?? 0);
+            if (!empty($row['po_date']) && (empty($grouped[$mainfeederId]['last_po_date']) || $row['po_date'] > $grouped[$mainfeederId]['last_po_date'])) {
+                $grouped[$mainfeederId]['last_po_date'] = $row['po_date'];
+            }
+            $grouped[$mainfeederId]['po_stage_status'] = $this->mergeStageStatus(
+                (string) ($grouped[$mainfeederId]['po_stage_status'] ?? 'NOT ISSUED'),
+                (string) ($row['po_stage_status'] ?? 'NOT ISSUED')
+            );
+            $grouped[$mainfeederId]['po_summary_status'] = $grouped[$mainfeederId]['po_stage_status'];
+        }
+
+        $status = strtoupper(trim((string) $status));
+        if ($status !== '') {
+            $grouped = array_filter($grouped, static function ($row) use ($status) {
+                return strtoupper((string) ($row['po_stage_status'] ?? 'NOT ISSUED')) === $status;
+            });
+        }
+
+        return array_values($grouped);
     }
 
     public function getPoListRows($city = '', $status = '')
@@ -187,6 +291,7 @@ class MPO_MyRep extends CI_Model
             ->select('
                 p.id_po_header,
                 p.id_myrep_cluster,
+                NULL AS id_mainfeeder,
                 p.po_type,
                 p.po_category,
                 p.po_number,
@@ -198,7 +303,7 @@ class MPO_MyRep extends CI_Model
                 c.city_name,
                 c.regional_name,
                 c.status_current
-            ')
+            ', false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
 
@@ -209,15 +314,49 @@ class MPO_MyRep extends CI_Model
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
-        if ($status !== '') {
-            $this->db->where('UPPER(p.status_po)', strtoupper($status));
-        }
 
         $rows = $this->db
             ->order_by('p.po_date', 'DESC')
             ->order_by('p.po_number', 'ASC')
             ->get()
             ->result_array();
+
+        if ($this->hasMainfeederPoSupport()) {
+            $this->db
+                ->select('
+                    p.id_po_header,
+                    p.id_myrep_cluster,
+                    p.id_mainfeeder,
+                    p.po_type,
+                    p.po_category,
+                    p.po_number,
+                    p.po_date,
+                    p.po_value,
+                    p.status_po,
+                    p.po_version_label,
+                    mf.mainfeeder_name AS cluster_name,
+                    mf.city_name,
+                    mf.regional_name,
+                    mf.current_status AS status_current
+                ')
+                ->from('tb_myrep_po_header p')
+                ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'inner')
+                ->where("UPPER(TRIM(COALESCE(p.po_type, ''))) IN ('MAINFEEDER','FWA')", null, false);
+
+            if (!$this->applyAllowedCityRestriction('mf.city_name')) {
+                return $rows;
+            }
+
+            if ($city !== '') {
+                $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+            }
+
+            $rows = array_merge($rows, $this->db
+                ->order_by('p.po_date', 'DESC')
+                ->order_by('p.po_number', 'ASC')
+                ->get()
+                ->result_array());
+        }
 
         if (empty($rows)) {
             return [];
@@ -226,9 +365,7 @@ class MPO_MyRep extends CI_Model
         $allRows = $rows;
         $groupHeaderMap = [];
         foreach ($allRows as $sourceRow) {
-            $groupKey = ((int) ($sourceRow['id_myrep_cluster'] ?? 0)) . '|' .
-                strtoupper(trim((string) ($sourceRow['po_type'] ?? 'CLUSTER'))) . '|' .
-                strtoupper(trim((string) ($sourceRow['po_number'] ?? '')));
+            $groupKey = $this->buildPoHeaderGroupKey($sourceRow);
             if (!isset($groupHeaderMap[$groupKey])) {
                 $groupHeaderMap[$groupKey] = [];
             }
@@ -358,9 +495,7 @@ class MPO_MyRep extends CI_Model
 
         foreach ($rows as &$row) {
             $headerId = (int) ($row['id_po_header'] ?? 0);
-            $groupKey = ((int) ($row['id_myrep_cluster'] ?? 0)) . '|' .
-                strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER'))) . '|' .
-                strtoupper(trim((string) ($row['po_number'] ?? '')));
+            $groupKey = $this->buildPoHeaderGroupKey($row);
             $meta = $terminMapByGroup[$groupKey] ?? $terminMap[$headerId] ?? [
                 'total' => 0,
                 'progress' => 0,
@@ -396,6 +531,13 @@ class MPO_MyRep extends CI_Model
             $row['po_stage_status'] = $this->resolveStageStatus($stageTerms);
         }
         unset($row);
+
+        $status = strtoupper(trim((string) $status));
+        if ($status !== '') {
+            $rows = array_values(array_filter($rows, static function ($row) use ($status) {
+                return strtoupper((string) ($row['po_stage_status'] ?? 'NOT ISSUED')) === $status;
+            }));
+        }
 
         return $rows;
     }
@@ -2281,7 +2423,7 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('p.id_po_header, p.id_myrep_cluster, p.po_type, p.po_category, p.po_value, p.po_date')
+            ->select('p.id_po_header, p.id_myrep_cluster, NULL AS id_mainfeeder, p.po_type, p.po_category, p.po_value, p.po_date', false)
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
 
@@ -2297,6 +2439,26 @@ class MPO_MyRep extends CI_Model
         }
 
         $headerRows = $this->db->get()->result_array();
+        if ($this->hasMainfeederPoSupport()) {
+            $this->db
+                ->select('p.id_po_header, p.id_myrep_cluster, p.id_mainfeeder, p.po_type, p.po_category, p.po_value, p.po_date')
+                ->from('tb_myrep_po_header p')
+                ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'inner')
+                ->where("UPPER(TRIM(COALESCE(p.po_type, ''))) IN ('MAINFEEDER','FWA')", null, false);
+
+            if (!$this->applyAllowedCityRestriction('mf.city_name')) {
+                return [];
+            }
+
+            if ($city !== '') {
+                $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+            }
+            if ($status !== '') {
+                $this->db->where('UPPER(p.status_po)', strtoupper($status));
+            }
+
+            $headerRows = array_merge($headerRows, $this->db->get()->result_array());
+        }
         if (empty($headerRows)) {
             return [];
         }
@@ -2352,10 +2514,30 @@ class MPO_MyRep extends CI_Model
                 'total_invoiced_value' => 0,
                 'outstanding_value' => 0,
             ],
+            'MAINFEEDER' => [
+                'po_type' => 'MAINFEEDER',
+                'total_po_count' => 0,
+                'total_po_value' => 0,
+                'term_done_count' => 0,
+                'done_invoice_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'total_invoiced_value' => 0,
+                'outstanding_value' => 0,
+            ],
+            'FWA' => [
+                'po_type' => 'FWA',
+                'total_po_count' => 0,
+                'total_po_value' => 0,
+                'term_done_count' => 0,
+                'done_invoice_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'total_invoiced_value' => 0,
+                'outstanding_value' => 0,
+            ],
         ];
 
         foreach ($headerMeta as $meta) {
-            $type = $meta['po_type'] === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            $type = in_array($meta['po_type'], ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true) ? $meta['po_type'] : 'CLUSTER';
             $result[$type]['total_po_count']++;
             $result[$type]['total_po_value'] += (float) $meta['po_value'];
         }
@@ -2366,7 +2548,7 @@ class MPO_MyRep extends CI_Model
                 continue;
             }
 
-            $type = $headerMeta[$headerId]['po_type'] === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            $type = in_array($headerMeta[$headerId]['po_type'], ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true) ? $headerMeta[$headerId]['po_type'] : 'CLUSTER';
             $terminNo = (int) ($terminRow['termin_no'] ?? 0);
             $terminValue = $this->resolveDoneInvoiceValue($terminRow);
             $terminStatus = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
@@ -2398,37 +2580,74 @@ class MPO_MyRep extends CI_Model
         }
 
         $poType = strtoupper(trim((string) $poType));
-        if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+        if (!in_array($poType, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
             $poType = 'CLUSTER';
         }
 
-        $this->db
-            ->select('
-                p.id_po_header,
-                p.po_number,
-                p.po_date,
-                p.po_type,
-                p.po_category,
-                p.po_value,
-                p.status_po,
-                c.id_myrep_cluster,
-                c.cluster_name,
-                c.city_name,
-                c.regional_name
-            ')
-            ->from('tb_myrep_po_header p')
-            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
-            ->where('UPPER(p.po_type)', $poType);
+        if (in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
+            if (!$this->hasMainfeederPoSupport()) {
+                return [];
+            }
 
-        if (!$this->applyAllowedCityRestriction('c.city_name')) {
-            return [];
-        }
+            $this->db
+                ->select('
+                    p.id_po_header,
+                    p.po_number,
+                    p.po_date,
+                    p.po_type,
+                    p.po_category,
+                    p.po_value,
+                    p.status_po,
+                    p.id_myrep_cluster,
+                    p.id_mainfeeder,
+                    mf.mainfeeder_name AS cluster_name,
+                    mf.city_name,
+                    mf.regional_name
+                ')
+                ->from('tb_myrep_po_header p')
+                ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'inner')
+                ->where('UPPER(TRIM(COALESCE(p.po_type, \'\'))) = ' . $this->db->escape($poType), null, false);
 
-        if ($city !== '') {
-            $this->db->where('UPPER(c.city_name)', strtoupper($city));
-        }
-        if ($status !== '') {
-            $this->db->where('UPPER(p.status_po)', strtoupper($status));
+            if (!$this->applyAllowedCityRestriction('mf.city_name')) {
+                return [];
+            }
+
+            if ($city !== '') {
+                $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+            }
+            if ($status !== '') {
+                $this->db->where('UPPER(p.status_po)', strtoupper($status));
+            }
+        } else {
+            $this->db
+                ->select('
+                    p.id_po_header,
+                    p.po_number,
+                    p.po_date,
+                    p.po_type,
+                    p.po_category,
+                    p.po_value,
+                    p.status_po,
+                    p.id_myrep_cluster,
+                    NULL AS id_mainfeeder,
+                    c.cluster_name,
+                    c.city_name,
+                    c.regional_name
+                ', false)
+                ->from('tb_myrep_po_header p')
+                ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+                ->where('UPPER(TRIM(COALESCE(p.po_type, \'\'))) = ' . $this->db->escape($poType), null, false);
+
+            if (!$this->applyAllowedCityRestriction('c.city_name')) {
+                return [];
+            }
+
+            if ($city !== '') {
+                $this->db->where('UPPER(c.city_name)', strtoupper($city));
+            }
+            if ($status !== '') {
+                $this->db->where('UPPER(p.status_po)', strtoupper($status));
+            }
         }
 
         $headerRows = $this->db
@@ -2938,7 +3157,7 @@ class MPO_MyRep extends CI_Model
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
         if (in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
-            $this->db->where('UPPER(p.po_type)', $poType);
+            $this->db->where('UPPER(TRIM(COALESCE(p.po_type, \'\'))) = ' . $this->db->escape($poType), null, false);
         }
         if ($termNo >= 2 && $termNo <= 5) {
             $this->db->where('t.termin_no', $termNo);
@@ -3794,15 +4013,19 @@ class MPO_MyRep extends CI_Model
 
         foreach ($headers as $header) {
             $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+            $mainfeederId = (int) ($header['id_mainfeeder'] ?? 0);
             $type = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
-            $poNumber = strtoupper(trim((string) ($header['po_number'] ?? '')));
-            if ($clusterId <= 0) {
+            if (in_array($type, ['MAINFEEDER', 'FWA'], true)) {
+                if ($mainfeederId <= 0) {
+                    continue;
+                }
+            } elseif ($clusterId <= 0) {
                 continue;
             }
-            if (!in_array($type, ['CLUSTER', 'SUBFEEDER'], true)) {
+            if (!in_array($type, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
                 $type = 'CLUSTER';
             }
-            $groupKey = $clusterId . '|' . $type . '|' . ($poNumber !== '' ? $poNumber : ('HEADER:' . (int) ($header['id_po_header'] ?? 0)));
+            $groupKey = $this->buildPoHeaderGroupKey($header);
             $grouped[$groupKey][] = $header;
         }
 
@@ -3828,6 +4051,29 @@ class MPO_MyRep extends CI_Model
         }
 
         return $active;
+    }
+
+    private function buildPoHeaderGroupKey(array $header)
+    {
+        $type = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
+        if (!in_array($type, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
+            $type = 'CLUSTER';
+        }
+
+        $entityPrefix = in_array($type, ['MAINFEEDER', 'FWA'], true) ? ($type === 'FWA' ? 'FWA' : 'MF') : 'CL';
+        $entityId = in_array($type, ['MAINFEEDER', 'FWA'], true)
+            ? (int) ($header['id_mainfeeder'] ?? 0)
+            : (int) ($header['id_myrep_cluster'] ?? 0);
+        $poNumber = strtoupper(trim((string) ($header['po_number'] ?? '')));
+
+        return $entityPrefix . ':' . $entityId . '|' . $type . '|' . ($poNumber !== '' ? $poNumber : ('HEADER:' . (int) ($header['id_po_header'] ?? 0)));
+    }
+
+    private function hasMainfeederPoSupport()
+    {
+        return $this->db->table_exists('tb_rfs_myrep_mainfeeder')
+            && $this->db->field_exists('id_mainfeeder', 'tb_rfs_myrep_mainfeeder')
+            && $this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header');
     }
 
     private function carryForwardTerminProgress($clusterId, $poType, $poNumber, $newPoHeaderId, $userId = 0)
@@ -3973,6 +4219,7 @@ class MPO_MyRep extends CI_Model
             'po_count' => 0,
             'po_cluster_count' => 0,
             'po_subfeeder_count' => 0,
+            'po_mainfeeder_count' => 0,
             'po_total_value' => 0,
             'termin_total_count' => 0,
             'termin_progress_count' => 0,
@@ -4122,6 +4369,28 @@ class MPO_MyRep extends CI_Model
         }
 
         return 'CLOSED';
+    }
+
+    private function mergeStageStatus($current, $candidate)
+    {
+        $order = [
+            'NOT ISSUED' => 0,
+            'DP' => 1,
+            'ATP CW' => 2,
+            'FULL OPM' => 3,
+            'RFS' => 4,
+            'FAC' => 5,
+            'CLOSED' => 6,
+        ];
+
+        $current = strtoupper(trim((string) $current));
+        $candidate = strtoupper(trim((string) $candidate));
+        $currentRank = $order[$current] ?? 0;
+        $candidateRank = $order[$candidate] ?? 0;
+
+        return $candidateRank > 0 && ($currentRank === 0 || $candidateRank < $currentRank)
+            ? $candidate
+            : ($current !== '' ? $current : 'NOT ISSUED');
     }
 
     private function buildEmptyTerminPicSummary()

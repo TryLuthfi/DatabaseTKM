@@ -5,6 +5,47 @@ class MMainfeeder_MyRep extends CI_Model
 {
     private $defaultTerminPercents = [20, 25, 15, 30, 10];
 
+    public function standaloneProjectTypes()
+    {
+        return ['MAINFEEDER', 'FWA'];
+    }
+
+    public function normalizeStandaloneProjectType($projectType)
+    {
+        $projectType = strtoupper(trim((string) $projectType));
+        return in_array($projectType, $this->standaloneProjectTypes(), true) ? $projectType : 'MAINFEEDER';
+    }
+
+    private function standaloneProjectTypeSql($alias = '')
+    {
+        $prefix = $alias !== '' ? rtrim((string) $alias, '.') . '.' : '';
+        if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+            return "COALESCE(NULLIF(UPPER(TRIM({$prefix}project_type)), ''), 'MAINFEEDER')";
+        }
+        return "'MAINFEEDER'";
+    }
+
+    public function getProjectTypeById($mainfeederId)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0 || !$this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
+            return 'MAINFEEDER';
+        }
+        if (!$this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+            return 'MAINFEEDER';
+        }
+
+        $row = $this->db
+            ->select('project_type')
+            ->from('tb_rfs_myrep_mainfeeder')
+            ->where('id_mainfeeder', $mainfeederId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return $this->normalizeStandaloneProjectType($row['project_type'] ?? 'MAINFEEDER');
+    }
+
     public function tablesReady()
     {
         return $this->db->table_exists('tb_rfs_myrep_mainfeeder')
@@ -33,7 +74,7 @@ class MMainfeeder_MyRep extends CI_Model
             ->select('city_name')
             ->from('tb_rfs_myrep_mainfeeder')
             ->where('city_name IS NOT NULL', null, false)
-            ->where("TRIM(city_name) <> ''", null, false)
+            ->where('CHAR_LENGTH(TRIM(city_name)) > 0', null, false)
             ->order_by('city_name', 'ASC')
             ->get()
             ->result_array();
@@ -41,15 +82,27 @@ class MMainfeeder_MyRep extends CI_Model
         return $this->extractUpperValues($rows, 'city_name');
     }
 
-    public function getRows($city = '', $status = '')
+    public function getRows($city = '', $status = '', $projectType = '')
     {
         if (!$this->tablesReady()) {
             return [];
         }
 
+        $projectType = strtoupper(trim((string) $projectType));
+        if ($projectType !== '' && !in_array($projectType, $this->standaloneProjectTypes(), true)) {
+            $projectType = '';
+        }
+        $projectTypeSelect = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
+            ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
+            : "'MAINFEEDER'";
+        $poJoinTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
+            ? "((COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER') = 'FWA' AND UPPER(COALESCE(po.po_type, '')) = 'FWA') OR (COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER') <> 'FWA' AND UPPER(COALESCE(po.po_type, '')) = 'MAINFEEDER'))"
+            : "UPPER(COALESCE(po.po_type, '')) = 'MAINFEEDER'";
+
         $query = $this->db
             ->select("
                 mf.*,
+                {$projectTypeSelect} AS project_type,
                 COALESCE(mf.city_name, mt.city_name) AS city_name,
                 COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
                 COALESCE(mf.province_name, mt.province_name) AS province_name,
@@ -68,7 +121,7 @@ class MMainfeeder_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
             ->join('tb_myrep_mainfeeder_drm drm', 'drm.id_mainfeeder = mf.id_mainfeeder', 'left')
             ->join('tb_myrep_mainfeeder_drm_boq boq', 'boq.id_mainfeeder = mf.id_mainfeeder', 'left')
-            ->join('tb_myrep_po_header po', "po.id_mainfeeder = mf.id_mainfeeder AND UPPER(COALESCE(po.po_type, '')) = 'MAINFEEDER'", 'left', false)
+            ->join('tb_myrep_po_header po', "po.id_mainfeeder = mf.id_mainfeeder AND {$poJoinTypeSql}", 'left', false)
             ->group_by('mf.id_mainfeeder');
 
         if ($city !== '') {
@@ -76,6 +129,11 @@ class MMainfeeder_MyRep extends CI_Model
         }
         if ($status !== '') {
             $query->where('UPPER(mf.current_status)', strtoupper($status));
+        }
+        if ($projectType !== '' && $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+            $query->where("COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER') = " . $this->db->escape($projectType), null, false);
+        } elseif ($projectType === 'FWA') {
+            return [];
         }
 
         return $query
@@ -129,6 +187,7 @@ class MMainfeeder_MyRep extends CI_Model
 
         $clusterCode = strtoupper(trim((string) ($payload['cluster_code'] ?? '')));
         $name = trim((string) ($payload['mainfeeder_name'] ?? ''));
+        $projectType = $this->normalizeStandaloneProjectType($payload['project_type'] ?? 'MAINFEEDER');
         if ($clusterCode === '' || $name === '') {
             return 0;
         }
@@ -179,6 +238,9 @@ class MMainfeeder_MyRep extends CI_Model
             'remark_mainfeeder' => trim((string) ($payload['remark_mainfeeder'] ?? '')),
             'updated_by' => (int) ($payload['updated_by'] ?? 0),
         ];
+        if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+            $row['project_type'] = $projectType;
+        }
 
         if (!empty($existing['id_mainfeeder'])) {
             $this->db->where('id_mainfeeder', (int) $existing['id_mainfeeder'])->update('tb_rfs_myrep_mainfeeder', $row);
@@ -197,11 +259,12 @@ class MMainfeeder_MyRep extends CI_Model
         if ($mainfeederId <= 0 || $poNumber === '' || !$this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')) {
             return 0;
         }
+        $poType = $this->normalizeStandaloneProjectType($payload['po_type'] ?? $payload['project_type'] ?? $this->getProjectTypeById($mainfeederId));
 
         $existing = $this->db
             ->from('tb_myrep_po_header')
             ->where('id_mainfeeder', $mainfeederId)
-            ->where('UPPER(po_type)', 'MAINFEEDER')
+            ->where('UPPER(po_type)', $poType)
             ->where('UPPER(po_number)', strtoupper($poNumber))
             ->get()
             ->row_array();
@@ -209,10 +272,10 @@ class MMainfeeder_MyRep extends CI_Model
         $poValue = (float) ($payload['po_value'] ?? 0);
         $header = [
             'id_myrep_cluster' => null,
-            'project_type' => 'MAINFEEDER',
+            'project_type' => $poType,
             'id_mainfeeder' => $mainfeederId,
             'parent_po_header_id' => !empty($payload['parent_po_header_id']) ? (int) $payload['parent_po_header_id'] : null,
-            'po_type' => 'MAINFEEDER',
+            'po_type' => $poType,
             'po_category' => (string) ($payload['po_category'] ?? 'INITIAL'),
             'po_number' => $poNumber,
             'po_date' => $payload['po_date'] ?? null,
@@ -737,10 +800,11 @@ class MMainfeeder_MyRep extends CI_Model
 
     public function getPoHeaders($mainfeederId)
     {
+        $poType = $this->getProjectTypeById($mainfeederId);
         return $this->db
             ->from('tb_myrep_po_header')
             ->where('id_mainfeeder', (int) $mainfeederId)
-            ->where('UPPER(po_type)', 'MAINFEEDER')
+            ->where('UPPER(po_type)', $poType)
             ->order_by('po_date', 'DESC')
             ->order_by('id_po_header', 'DESC')
             ->get()
@@ -754,14 +818,15 @@ class MMainfeeder_MyRep extends CI_Model
             return 0;
         }
 
+        $poType = $this->getProjectTypeById($mainfeederId);
         $poValue = (float) ($payload['po_value'] ?? 0);
         $this->db->trans_start();
         $header = [
             'id_myrep_cluster' => null,
-            'project_type' => 'MAINFEEDER',
+            'project_type' => $poType,
             'id_mainfeeder' => $mainfeederId,
             'parent_po_header_id' => !empty($payload['parent_po_header_id']) ? (int) $payload['parent_po_header_id'] : null,
-            'po_type' => 'MAINFEEDER',
+            'po_type' => $poType,
             'po_category' => (string) ($payload['po_category'] ?? 'INITIAL'),
             'po_number' => (string) ($payload['po_number'] ?? ''),
             'po_date' => $payload['po_date'] ?? null,

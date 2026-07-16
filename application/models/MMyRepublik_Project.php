@@ -98,13 +98,16 @@ class MMyRepublik_Project extends CI_Model
         return array_values($cities);
     }
 
-    public function getClusterRows($selectedCity = '', $selectedStatus = '', $metricMode = 'HP')
+    public function getClusterRows($selectedCity = '', $selectedStatus = '', $metricMode = 'HP', $selectedProjectType = '')
     {
         if (!$this->tablesReady()) {
             return [];
         }
 
-        $rows = $this->getNewFlowRows($selectedCity, $selectedStatus);
+        $selectedProjectType = $this->normalizeProjectTypeFilter($selectedProjectType);
+        $rows = in_array($selectedProjectType, ['', 'CLUSTER'], true)
+            ? $this->getNewFlowRows($selectedCity, $selectedStatus)
+            : [];
 
         $poMap = $this->getPoMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
@@ -117,7 +120,9 @@ class MMyRepublik_Project extends CI_Model
         }
         unset($row);
 
-        $legacyRows = $this->getLegacyRfsRows($selectedCity, $selectedStatus);
+        $legacyRows = in_array($selectedProjectType, ['', 'CLUSTER'], true)
+            ? $this->getLegacyRfsRows($selectedCity, $selectedStatus)
+            : [];
         $mappedRfsIds = [];
         $existingKeys = [];
         foreach ($rows as $row) {
@@ -142,7 +147,9 @@ class MMyRepublik_Project extends CI_Model
             $rows[] = $legacyRow;
         }
 
-        $mainfeederRows = $this->getMainfeederRows($selectedCity, $selectedStatus, $metricMode);
+        $mainfeederRows = in_array($selectedProjectType, ['', 'MAINFEEDER', 'FWA'], true)
+            ? $this->getMainfeederRows($selectedCity, $selectedStatus, $metricMode, $selectedProjectType)
+            : [];
         foreach ($mainfeederRows as $mainfeederRow) {
             $rows[] = $mainfeederRow;
         }
@@ -166,9 +173,9 @@ class MMyRepublik_Project extends CI_Model
         return $rows;
     }
 
-    public function getClusterRowsPage($selectedCity = '', $selectedStatus = '', $metricMode = 'HP', $start = 0, $length = 10, $search = '', array $order = [])
+    public function getClusterRowsPage($selectedCity = '', $selectedStatus = '', $metricMode = 'HP', $start = 0, $length = 10, $search = '', array $order = [], $selectedProjectType = '')
     {
-        $rows = $this->getClusterRows($selectedCity, $selectedStatus, $metricMode);
+        $rows = $this->getClusterRows($selectedCity, $selectedStatus, $metricMode, $selectedProjectType);
         $recordsTotal = count($rows);
 
         $search = strtoupper(trim((string) $search));
@@ -205,15 +212,23 @@ class MMyRepublik_Project extends CI_Model
         ];
     }
 
-    private function getMainfeederRows($selectedCity = '', $selectedStatus = '', $metricMode = 'HP')
+    private function getMainfeederRows($selectedCity = '', $selectedStatus = '', $metricMode = 'HP', $selectedProjectType = '')
     {
         if (!$this->hasMainfeederTables()) {
             return [];
         }
 
+        $selectedProjectType = $this->normalizeProjectTypeFilter($selectedProjectType);
+        if ($selectedProjectType === 'CLUSTER') {
+            return [];
+        }
+        $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
+            ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
+            : "'MAINFEEDER'";
         $query = $this->db
             ->select("
                 mf.id_mainfeeder,
+                " . $projectTypeSql . " AS project_type,
                 mf.cluster_code,
                 mf.mainfeeder_name,
                 mf.current_status,
@@ -251,6 +266,13 @@ class MMyRepublik_Project extends CI_Model
         if ($selectedStatus !== '') {
             $query->where('UPPER(mf.current_status)', $selectedStatus);
         }
+        if (in_array($selectedProjectType, ['MAINFEEDER', 'FWA'], true)) {
+            if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+                $query->where($projectTypeSql . ' = ' . $this->db->escape($selectedProjectType), null, false);
+            } elseif ($selectedProjectType === 'FWA') {
+                return [];
+            }
+        }
 
         $rows = $query
             ->order_by('mf.city_name', 'ASC')
@@ -262,7 +284,7 @@ class MMyRepublik_Project extends CI_Model
         foreach ($rows as &$row) {
             $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
             $status = strtoupper(trim((string) ($row['current_status'] ?? 'DRM')));
-            $row['project_type'] = 'MAINFEEDER';
+            $row['project_type'] = strtoupper(trim((string) ($row['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
             $row['id_myrep_cluster'] = 0;
             $row['legacy_rfs_cluster_id'] = 0;
             $row['rfs_cluster_id'] = 0;
@@ -349,7 +371,7 @@ class MMyRepublik_Project extends CI_Model
 
     private function resolveDisplayStatus($row)
     {
-        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+        if (in_array(strtoupper(trim((string) ($row['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
             return strtoupper(trim((string) ($row['status_current'] ?? 'DRM'))) ?: 'DRM';
         }
 
@@ -386,7 +408,7 @@ class MMyRepublik_Project extends CI_Model
                 $overview['total_rfs']++;
             } elseif ($status === 'ATP') {
                 $overview['total_atp']++;
-            } elseif (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER' && $status === 'CHECKLIST') {
+            } elseif (in_array(strtoupper(trim((string) ($row['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true) && $status === 'CHECKLIST') {
                 $overview['total_atp']++;
             }
         }
@@ -814,7 +836,7 @@ class MMyRepublik_Project extends CI_Model
             return (float) ($row['po_total_value'] ?? 0);
         }
 
-        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+        if (in_array(strtoupper(trim((string) ($row['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
             return (float) ($row['length_meter'] ?? $row['hp_plan'] ?? 0);
         }
 
@@ -988,6 +1010,12 @@ class MMyRepublik_Project extends CI_Model
         }
 
         return $rows;
+    }
+
+    private function normalizeProjectTypeFilter($projectType)
+    {
+        $projectType = strtoupper(trim((string) $projectType));
+        return in_array($projectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true) ? $projectType : '';
     }
 
     private function getLegacyRfsRows($selectedCity = '', $selectedStatus = '')
@@ -1224,7 +1252,7 @@ class MMyRepublik_Project extends CI_Model
             ->select('id_mainfeeder, COUNT(id_po_header) AS po_count, COALESCE(SUM(po_value),0) AS po_total_value')
             ->from('tb_myrep_po_header')
             ->where_in('id_mainfeeder', $mainfeederIds)
-            ->where('po_type', 'MAINFEEDER')
+            ->where_in('po_type', ['MAINFEEDER', 'FWA'])
             ->group_by('id_mainfeeder')
             ->get()
             ->result_array();

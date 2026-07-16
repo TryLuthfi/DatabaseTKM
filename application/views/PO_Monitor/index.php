@@ -514,6 +514,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
     }
 
     #po_compare_detail_modal .modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
         border-top: 1px solid rgba(148, 163, 184, 0.22);
         background: #f8fafc;
         padding: 0.75rem 1rem;
@@ -524,7 +528,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
         flex-wrap: wrap;
         gap: 0.55rem;
         justify-content: flex-end;
-        width: 100%;
+    }
+
+    .po-monitor-modal-filter-actions {
+        display: flex;
+        align-items: center;
+        min-width: 220px;
     }
 
     #po_compare_detail_modal .modal-content,
@@ -944,6 +953,16 @@ if (!function_exists('po_monitor_term_amount_link')) {
         background: #0bb35f !important;
         color: #000;
         font-weight: 900;
+    }
+
+    .po-monitor-detail-table tbody tr.po-monitor-detail-row-invoiced td {
+        background: #86efac !important;
+        color: #052e16 !important;
+        font-weight: 800;
+    }
+
+    .po-monitor-detail-table tbody tr.po-monitor-detail-row-invoiced td:first-child {
+        box-shadow: inset 4px 0 0 #16a34a;
     }
 
     @media (max-width: 1199.98px) {
@@ -1574,17 +1593,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     </button>
                                 </form>
                             </div>
-                            <div class="border-top mt-3 pt-3 d-flex flex-wrap align-items-center justify-content-between">
-                                <div class="text-muted small mb-2 mb-md-0">
-                                    Rebuild claim PO Monitor dari PO_MyRep mulai 1 Juli 2026. Target PO Monitor tidak ikut berubah.
-                                </div>
-                                <form method="post" action="<?= site_url('PO_Monitor/sync_myrep_claims') ?>" class="mb-0 js-po-myrep-sync-form d-flex flex-wrap align-items-center" style="gap: 8px;">
-                                    <input type="date" name="cutoff_date" class="form-control form-control-sm" value="2026-07-01" style="width: 150px;">
-                                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold">
-                                        <i class="fas fa-sync-alt mr-1"></i> Sync MyRep Claim
-                                    </button>
-                                </form>
-                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -2109,6 +2117,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 <div class="text-muted">Loading...</div>
             </div>
             <div class="modal-footer">
+                <div class="po-monitor-modal-filter-actions">
+                    <label class="po-monitor-switch mb-0 d-none" id="po-monitor-detail-uninvoiced-wrap">
+                        <input type="checkbox" id="po-monitor-detail-uninvoiced-only">
+                        <span class="po-monitor-switch-slider"></span>
+                        <span>Belum invoice saja</span>
+                    </label>
+                </div>
                 <div class="po-monitor-modal-download-actions">
                     <button type="button" class="btn btn-outline-primary btn-sm" id="po-monitor-detail-capture">
                         <i class="fas fa-camera mr-1"></i> Copy Image
@@ -2632,14 +2647,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 return true;
             });
 
-            $('.js-po-myrep-sync-form').off('submit.poMyrepSync').on('submit.poMyrepSync', function(e) {
-                if (!window.confirm('Rebuild claim PO Monitor dari PO_MyRep mulai tanggal cutoff? Claim MYREP_SYNC lama setelah cutoff akan dibuat ulang.')) {
-                    e.preventDefault();
-                    return false;
-                }
-                return true;
-            });
-
             $('#dashboard_initial_toggle').off('change.poDashboardMode').on('change.poDashboardMode', function() {
                 var table = $('#table_po_dashboard_excel').DataTable();
                 table.ajax.reload(null, false);
@@ -2693,6 +2700,36 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 }
 
                 return { valid: true, code: 'success', label: 'Valid', amount: amount, remaining: remaining, poNumber: lookup.po_number, key: key };
+            }
+
+            function getBatchInvoiceRemaining(poNumber, termNo) {
+                var poKey = String(poNumber || '').trim().toUpperCase();
+                var lookup = poMonitorBatchTerminLookup[poKey] || null;
+                if (!lookup || !lookup.terms || !lookup.terms[String(termNo)]) {
+                    return null;
+                }
+
+                var key = poKey + '|' + termNo;
+                var remaining = Number(lookup.terms[String(termNo)].remaining || 0) - getBatchCurrentUsed(key);
+                return remaining > 0 ? remaining : 0;
+            }
+
+            function syncBatchInvoiceAutoAmount(force) {
+                var $amount = $('#po-monitor-batch-invoice-value');
+                if (!force && String($amount.val() || '').trim() !== '') {
+                    return;
+                }
+
+                var termNo = normalizeBatchTerm($('#po-monitor-batch-term-no').val());
+                var remaining = getBatchInvoiceRemaining($('#po-monitor-batch-po-number').val(), termNo);
+                if (remaining === null) {
+                    if (force) {
+                        $amount.val('');
+                    }
+                    return;
+                }
+
+                $amount.val(remaining > 0 ? formatLocaleNumber(remaining) : '');
             }
 
             function updateBatchInvoiceState() {
@@ -2758,6 +2795,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
             }
 
             $('#po-monitor-batch-add-row').off('click.poMonitorBatch').on('click.poMonitorBatch', function() {
+                syncBatchInvoiceAutoAmount(false);
                 var added = addBatchInvoiceRow(
                     $('#po-monitor-batch-po-number').val(),
                     $('#po-monitor-batch-term-no').val(),
@@ -2768,6 +2806,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     $('#po-monitor-batch-invoice-value').val('');
                 }
             });
+
+            $('#po-monitor-batch-po-number, #po-monitor-batch-term-no')
+                .off('input.poMonitorBatchAuto change.poMonitorBatchAuto blur.poMonitorBatchAuto')
+                .on('input.poMonitorBatchAuto change.poMonitorBatchAuto blur.poMonitorBatchAuto', function() {
+                    syncBatchInvoiceAutoAmount(true);
+                });
 
             $('#po-monitor-batch-invoice-value').off('input.poMonitorBatchFormat').on('input.poMonitorBatchFormat', function() {
                 var value = $(this).val();
@@ -2795,11 +2839,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
             $('#po-monitor-batch-clear-list').off('click.poMonitorBatchClear').on('click.poMonitorBatchClear', function() {
                 $('#po-monitor-batch-invoice-table tbody tr.po-monitor-batch-row').remove();
                 updateBatchInvoiceState();
+                syncBatchInvoiceAutoAmount(true);
             });
 
             $(document).off('click.poMonitorBatchRemove', '.po-monitor-batch-remove-row').on('click.poMonitorBatchRemove', '.po-monitor-batch-remove-row', function() {
                 $(this).closest('tr').remove();
                 updateBatchInvoiceState();
+                syncBatchInvoiceAutoAmount(true);
             });
 
             $('#po-monitor-batch-invoice-form').off('submit.poMonitorBatchSubmit').on('submit.poMonitorBatchSubmit', function(e) {
@@ -3032,6 +3078,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
             function applyDetailFilters($modal) {
                 var activeRegional = String($modal.data('active-regional-key') || '');
                 var activeTerm = String($modal.data('active-term-index') || '');
+                var uninvoicedOnly = $('#po-monitor-detail-uninvoiced-only').is(':checked');
                 var $regionalCards = $modal.find('.po-monitor-regional-card');
                 var $termCards = $modal.find('.po-monitor-term-card');
                 var $groups = $modal.find('.po-monitor-regional-group');
@@ -3075,17 +3122,19 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         var $row = $(this);
                         var rowRegional = String($group.data('regional-key') || '');
                         var rowTerm = String($row.data('term-index') || '');
+                        var rowInvoiced = String($row.data('invoiced') || '') === '1';
                         var amount = Number($row.data('filter-amount') || 0);
                         var termMatches = activeTerm === '' || rowTerm === activeTerm;
-                        var visible = regionalMatches && termMatches;
+                        var invoiceMatches = !uninvoicedOnly || !rowInvoiced;
+                        var visible = regionalMatches && termMatches && invoiceMatches;
                         $row.toggleClass('is-hidden', !visible);
 
-                        if (termMatches && regionalSummary[rowRegional]) {
+                        if (termMatches && invoiceMatches && regionalSummary[rowRegional]) {
                             regionalSummary[rowRegional].count++;
                             regionalSummary[rowRegional].amount += amount;
                         }
 
-                        if (regionalMatches && termSummary[rowTerm]) {
+                        if (regionalMatches && invoiceMatches && termSummary[rowTerm]) {
                             termSummary[rowTerm].count++;
                             termSummary[rowTerm].amount += amount;
                         }
@@ -3128,6 +3177,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
             function resetDetailFilters($modal) {
                 $modal.data('active-regional-key', '');
                 $modal.data('active-term-index', '');
+                var hasInvoicedTargetRows = $modal.find('.po-monitor-detail-table tbody tr[data-invoiced="1"]').length > 0;
+                $('#po-monitor-detail-uninvoiced-only').prop('checked', false);
+                $('#po-monitor-detail-uninvoiced-wrap').toggleClass('d-none', !hasInvoicedTargetRows);
                 applyDetailFilters($modal);
             }
 
@@ -3657,6 +3709,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
             $(document)
                 .off('click.poMonitorDetailExcel', '#po-monitor-detail-excel')
                 .on('click.poMonitorDetailExcel', '#po-monitor-detail-excel', downloadDetailExcel);
+
+            $(document)
+                .off('change.poMonitorDetailUninvoiced', '#po-monitor-detail-uninvoiced-only')
+                .on('change.poMonitorDetailUninvoiced', '#po-monitor-detail-uninvoiced-only', function() {
+                    applyDetailFilters($('#po_compare_detail_modal'));
+                });
 
             $(document)
                 .off('click.poMonitorRegionalFilter', '#po_compare_detail_modal .po-monitor-regional-card')

@@ -1371,10 +1371,23 @@ class MPO_Monitor extends CI_Model
                     a.target_week_start,
                     a.target_week_end,
                     COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
+                    COALESCE(tc_alloc.invoice_amount, tc_term.invoice_amount, 0) AS invoiced_amount,
+                    COALESCE(tc_alloc.invoice_date, tc_term.invoice_date) AS claim_invoice_date,
                     CONVERT('Target Allocation' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_term_allocation a
                 JOIN tb_po_term t ON t.id_term = a.id_term
                 JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN (
+                    SELECT id_allocation, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
+                    FROM tb_po_term_claim
+                    WHERE id_allocation IS NOT NULL
+                    GROUP BY id_allocation
+                ) tc_alloc ON tc_alloc.id_allocation = a.id_allocation
+                LEFT JOIN (
+                    SELECT id_term, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
+                    FROM tb_po_term_claim
+                    GROUP BY id_term
+                ) tc_term ON tc_term.id_term = t.id_term
                 WHERE a.target_status = 'TARGET_WEEK'
                     AND p.id_bowheer = ?
                     AND a.target_week_start IS NOT NULL
@@ -1394,9 +1407,16 @@ class MPO_Monitor extends CI_Model
                     t.target_week_start,
                     t.target_week_end,
                     COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
+                    COALESCE(tc.invoice_amount, 0) AS invoiced_amount,
+                    tc.invoice_date AS claim_invoice_date,
                     CONVERT('Target Term' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_term t
                 JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN (
+                    SELECT id_term, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
+                    FROM tb_po_term_claim
+                    GROUP BY id_term
+                ) tc ON tc.id_term = t.id_term
                 WHERE t.target_status = 'TARGET_WEEK'
                     AND p.id_bowheer = ?
                     AND t.target_week_start IS NOT NULL
@@ -1419,6 +1439,8 @@ class MPO_Monitor extends CI_Model
                     pl.target_week_start,
                     pl.target_week_end,
                     pl.plan_amount AS amount,
+                    0 AS invoiced_amount,
+                    CAST(NULL AS DATE) AS claim_invoice_date,
                     CONVERT('NY PO Target' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_target_pipeline pl
                 WHERE pl.target_status = 'TARGET_WEEK'
@@ -1797,7 +1819,7 @@ class MPO_Monitor extends CI_Model
             JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
             WHERE t.invoice_date IS NOT NULL
                 AND DATE(t.invoice_date) >= ?
-                AND UPPER(TRIM(COALESCE(t.status_termin, ''))) IN ('BILLED', 'PAID')
+                AND UPPER(TRIM(COALESCE(t.status_termin, ''))) IN ('READY BILLING', 'BILLED', 'PAID')
             ORDER BY t.invoice_date ASC, p.po_number ASC, t.termin_no ASC", [$cutoffDate])->result_array();
 
         $summary = [
@@ -1907,7 +1929,7 @@ class MPO_Monitor extends CI_Model
         $isSyncable = $invoiceDate !== null
             && strtotime($invoiceDate) >= strtotime($cutoffDate)
             && $amount > 0
-            && in_array($statusTermin, ['BILLED', 'PAID'], true);
+            && in_array($statusTermin, ['READY BILLING', 'BILLED', 'PAID'], true);
 
         if (!$isSyncable) {
             if (!empty($existingClaim)) {

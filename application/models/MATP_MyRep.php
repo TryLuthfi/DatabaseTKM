@@ -14,6 +14,12 @@ class MATP_MyRep extends CI_Model
             && $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster');
     }
 
+    public function supportsMainfeederAtp()
+    {
+        return $this->db->table_exists('tb_rfs_myrep_mainfeeder')
+            && $this->db->table_exists('tb_myrep_mainfeeder_atp_file');
+    }
+
     public function getStageOptions()
     {
         return [
@@ -39,7 +45,17 @@ class MATP_MyRep extends CI_Model
             ->get()
             ->result_array();
 
-        return $this->extractDistinctUpperValues($rows, 'city_name');
+        $cities = $this->extractDistinctUpperValues($rows, 'city_name');
+        foreach ($this->getMainfeederRegionalCityRows() as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $cities[] = $cityName;
+            }
+        }
+
+        $cities = array_values(array_unique($cities));
+        sort($cities);
+        return $cities;
     }
 
     public function getRegionalOptions()
@@ -54,7 +70,17 @@ class MATP_MyRep extends CI_Model
             ->get()
             ->result_array();
 
-        return $this->extractDistinctUpperValues($rows, 'regional_name');
+        $regionals = $this->extractDistinctUpperValues($rows, 'regional_name');
+        foreach ($this->getMainfeederRegionalCityRows() as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regionalName !== '') {
+                $regionals[] = $regionalName;
+            }
+        }
+
+        $regionals = array_values(array_unique($regionals));
+        sort($regionals);
+        return $regionals;
     }
 
     public function getClusterById($clusterId)
@@ -69,9 +95,21 @@ class MATP_MyRep extends CI_Model
         return $row;
     }
 
-    public function getClusterRows($city = '', $regional = '', $stage = '')
+    public function getClusterRows($city = '', $regional = '', $stage = '', $projectType = '')
     {
-        $rows = $this->fetchBaseRows(0, $city, $regional);
+        $projectType = strtoupper(trim((string) $projectType));
+        if (!in_array($projectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $projectType = '';
+        }
+
+        $rows = in_array($projectType, ['MAINFEEDER', 'FWA'], true)
+            ? $this->fetchMainfeederRows($city, $regional, $projectType)
+            : $this->fetchBaseRows(0, $city, $regional);
+
+        if ($projectType === '') {
+            $rows = array_merge($rows, $this->fetchMainfeederRows($city, $regional));
+        }
+
         $filteredRows = [];
 
         foreach ($rows as $row) {
@@ -186,6 +224,19 @@ class MATP_MyRep extends CI_Model
         ]);
     }
 
+    public function getMainfeederAtpFileById($fileId)
+    {
+        if (!$this->supportsMainfeederAtp()) {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_myrep_mainfeeder_atp_file')
+            ->where('id_atp_file_mainfeeder', (int) $fileId)
+            ->get()
+            ->row_array();
+    }
+
     public function deriveStage($row, $today = null)
     {
         $today = $today ?: date('Y-m-d');
@@ -281,6 +332,7 @@ class MATP_MyRep extends CI_Model
             $clusterIdKey = (int) ($row['id_cluster'] ?? 0);
             $punclistFile = $fileMap[$clusterIdKey]['RECORD_PUNCLIST'] ?? [];
             $rectificationFile = $fileMap[$clusterIdKey]['BA_RECTIFICATION'] ?? [];
+            $row['project_type'] = 'CLUSTER';
             $row['email_atp_date'] = $this->normalizeDate($row['email_atp_date'] ?? null);
             $row['actual_atp_date'] = $this->normalizeDate($row['actual_atp_date'] ?? null);
             $row['tanggal_rfs'] = $this->normalizeDate($row['rfs_date'] ?? null);
@@ -289,6 +341,89 @@ class MATP_MyRep extends CI_Model
             $row['record_punclist_file_name'] = (string) ($punclistFile['file_name'] ?? '');
             $row['record_punclist_uploaded_at'] = (string) ($punclistFile['uploaded_at'] ?? '');
             $row['ba_rectification_file_id'] = (int) ($rectificationFile['id_atp_file'] ?? 0);
+            $row['ba_rectification_file_name'] = (string) ($rectificationFile['file_name'] ?? '');
+            $row['ba_rectification_uploaded_at'] = (string) ($rectificationFile['uploaded_at'] ?? '');
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private function fetchMainfeederRows($city = '', $regional = '', $projectType = '')
+    {
+        if (!$this->supportsMainfeederAtp()) {
+            return [];
+        }
+
+        $projectType = strtoupper(trim((string) $projectType));
+        if (!in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            $projectType = '';
+        }
+        $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
+            ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
+            : "'MAINFEEDER'";
+
+        $query = $this->db
+            ->select("
+                mf.id_mainfeeder,
+                0 AS id_cluster,
+                {$projectTypeSql} AS project_type,
+                mf.mainfeeder_name AS cluster_name,
+                mf.length_meter AS homepass,
+                mf.current_status AS status_rfs,
+                mf.email_atp_date,
+                mf.status_atp,
+                COALESCE(mf.city_name, mt.city_name) AS city_name,
+                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                COALESCE(mf.province_name, mt.province_name) AS province_name,
+                COALESCE(mf.chief, mt.chief) AS chief,
+                COALESCE(mf.rpm, mt.rpm) AS rpm,
+                COALESCE(mf.sm, mt.sm) AS sm,
+                COALESCE(mf.spv, mt.spv) AS spv,
+                NULL AS rfs_date,
+                mf.atp_date AS actual_atp_date
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left');
+
+        if ($projectType !== '') {
+            if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+                $query->where($projectTypeSql . ' = ' . $this->db->escape($projectType), null, false);
+            } elseif ($projectType === 'FWA') {
+                return [];
+            }
+        }
+
+        if ($city !== '') {
+            $query->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
+        }
+
+        if ($regional !== '') {
+            $query->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+        }
+
+        $rows = $query
+            ->order_by('regional_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->order_by('mf.mainfeeder_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $fileMap = $this->getLatestAtpFilesByMainfeederIds(array_column($rows, 'id_mainfeeder'));
+
+        foreach ($rows as &$row) {
+            $mainfeederIdKey = (int) ($row['id_mainfeeder'] ?? 0);
+            $punclistFile = $fileMap[$mainfeederIdKey]['RECORD_PUNCLIST'] ?? [];
+            $rectificationFile = $fileMap[$mainfeederIdKey]['BA_RECTIFICATION'] ?? [];
+            $row['project_type'] = strtoupper(trim((string) ($row['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
+            $row['email_atp_date'] = $this->normalizeDate($row['email_atp_date'] ?? null);
+            $row['actual_atp_date'] = $this->normalizeDate($row['actual_atp_date'] ?? null);
+            $row['tanggal_rfs'] = null;
+            $row['status_atp'] = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+            $row['record_punclist_file_id'] = (int) ($punclistFile['id_atp_file_mainfeeder'] ?? 0);
+            $row['record_punclist_file_name'] = (string) ($punclistFile['file_name'] ?? '');
+            $row['record_punclist_uploaded_at'] = (string) ($punclistFile['uploaded_at'] ?? '');
+            $row['ba_rectification_file_id'] = (int) ($rectificationFile['id_atp_file_mainfeeder'] ?? 0);
             $row['ba_rectification_file_name'] = (string) ($rectificationFile['file_name'] ?? '');
             $row['ba_rectification_uploaded_at'] = (string) ($rectificationFile['uploaded_at'] ?? '');
         }
@@ -324,6 +459,59 @@ class MATP_MyRep extends CI_Model
         }
 
         return $result;
+    }
+
+    private function getLatestAtpFilesByMainfeederIds($mainfeederIds)
+    {
+        if (empty($mainfeederIds) || !$this->supportsMainfeederAtp()) {
+            return [];
+        }
+
+        $mainfeederIds = array_values(array_filter(array_map('intval', (array) $mainfeederIds)));
+        if (empty($mainfeederIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->from('tb_myrep_mainfeeder_atp_file')
+            ->where_in('id_mainfeeder', $mainfeederIds)
+            ->order_by('id_atp_file_mainfeeder', 'DESC')
+            ->get()
+            ->result_array();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+            $docType = strtoupper(trim((string) ($row['doc_type'] ?? '')));
+            if ($mainfeederId <= 0 || $docType === '') {
+                continue;
+            }
+
+            if (!isset($result[$mainfeederId][$docType])) {
+                $result[$mainfeederId][$docType] = $row;
+            }
+        }
+
+        return $result;
+    }
+
+    private function getMainfeederRegionalCityRows()
+    {
+        if (!$this->supportsMainfeederAtp()) {
+            return [];
+        }
+
+        return $this->db
+            ->distinct()
+            ->select('COALESCE(mf.regional_name, mt.regional_name) AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('COALESCE(mf.city_name, mt.city_name) IS NOT NULL', null, false)
+            ->where('CHAR_LENGTH(TRIM(COALESCE(mf.city_name, mt.city_name))) > 0', null, false)
+            ->order_by('regional_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->get()
+            ->result_array();
     }
 
     private function normalizeDate($date)

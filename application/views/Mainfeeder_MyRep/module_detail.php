@@ -21,7 +21,9 @@ if (!function_exists('mfModuleDetailNum')) {
 $section = strtolower((string) ($section ?? ''));
 $mainfeederId = (int) ($mainfeeder['id_mainfeeder'] ?? 0);
 $returnUrl = current_url();
-$moduleTitle = (string) ($moduleTitle ?? 'Mainfeeder');
+$projectType = strtoupper(trim((string) ($mainfeeder['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
+$projectLabel = $projectType === 'FWA' ? 'FWA' : 'Mainfeeder';
+$moduleTitle = (string) ($moduleTitle ?? $projectLabel);
 $sectionMeta = [
     'drm' => ['icon' => 'fas fa-clipboard-check', 'label' => 'DRM', 'accent' => 'primary'],
     'implementasi' => ['icon' => 'fas fa-tools', 'label' => 'Implementasi', 'accent' => 'success'],
@@ -31,11 +33,17 @@ $sectionMeta = [
 $meta = $sectionMeta[$section] ?? ['icon' => 'fas fa-project-diagram', 'label' => 'Mainfeeder', 'accent' => 'primary'];
 $stageLinks = [
     ['key' => 'drm', 'label' => 'DRM', 'url' => 'DRM_MyRep/mainfeeder/' . $mainfeederId],
-    ['key' => 'implementasi', 'label' => 'Implementasi', 'url' => 'Implementasi_BOQ_MyRep/mainfeeder/' . $mainfeederId],
     ['key' => 'atp', 'label' => 'ATP', 'url' => 'ATP_MyRep/mainfeeder/' . $mainfeederId],
     ['key' => 'checklist', 'label' => 'Checklist', 'url' => 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId],
     ['key' => 'po', 'label' => 'PO', 'url' => 'PO_MyRep/mainfeeder/' . $mainfeederId],
 ];
+if ($projectType !== 'FWA') {
+    array_splice($stageLinks, 1, 0, [[
+        'key' => 'implementasi',
+        'label' => 'Implementasi',
+        'url' => 'Implementasi_BOQ_MyRep/mainfeeder/' . $mainfeederId,
+    ]]);
+}
 $apdBoqDocItemId = 0;
 foreach (($drmDocuments ?? []) as $docRow) {
     if (strtoupper(trim((string) ($docRow['doc_name'] ?? ''))) === 'APD BOQ') {
@@ -195,7 +203,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
                     <div class="row align-items-center">
                         <div class="col-md-5">
                             <h4 class="mb-2"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></h4>
-                            <span class="badge badge-dark">MAINFEEDER</span>
+                            <span class="badge badge-dark"><?= mfModuleDetailHtml($projectType) ?></span>
                             <span class="badge badge-info"><?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?></span>
                         </div>
                         <div class="col-md-7 mf-project-meta">
@@ -219,7 +227,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
             <?php if ($section === 'drm'): ?>
                 <div class="card card-outline card-primary shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">DRM Mainfeeder</h3></div>
+                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">DRM <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveDrm/' . $mainfeederId) ?>" class="row mb-4">
                             <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
@@ -268,7 +276,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
                 </div>
 
                 <div class="card card-outline card-warning shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">BOQ DRM Mainfeeder</h3></div>
+                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">BOQ DRM <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('Mainfeeder_MyRep/uploadDrmBoq/' . $mainfeederId) ?>" enctype="multipart/form-data" class="form-inline mb-3">
                             <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
@@ -296,7 +304,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
             <?php if ($section === 'implementasi'): ?>
                 <div class="card card-outline card-success shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">Implementasi Mainfeeder</h3></div>
+                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">Implementasi <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveDailyActivity/' . $mainfeederId) ?>" enctype="multipart/form-data" class="row">
                             <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
@@ -322,7 +330,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
             <?php if ($section === 'atp'): ?>
                 <div class="card card-outline card-info shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">ATP Mainfeeder</h3></div>
+                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">ATP <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveAtp/' . $mainfeederId) ?>" enctype="multipart/form-data" class="row">
                             <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
@@ -341,7 +349,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
             <?php if ($section === 'po'): ?>
                 <div class="card card-outline card-dark shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">PO Mainfeeder</h3></div>
+                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">PO <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
                     <div class="card-body">
                         <form method="post" action="<?= base_url('Mainfeeder_MyRep/savePo/' . $mainfeederId) ?>" class="row">
                             <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">

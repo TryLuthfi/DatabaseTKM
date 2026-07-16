@@ -31,23 +31,7 @@ class PO_MyRep extends CI_Controller
 
         $mainfeederId = (int) $mainfeederId;
         if ($mainfeederId <= 0) {
-            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
-            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
-            $data['title'] = 'PO Mainfeeder';
-            $data['section'] = 'po';
-            $data['moduleTitle'] = 'PO Mainfeeder';
-            $data['detailBase'] = 'PO_MyRep/mainfeeder';
-            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
-            $data['selectedCity'] = $selectedCity;
-            $data['selectedStatus'] = $selectedStatus;
-            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
-            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
-            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Mainfeeder_MyRep/module_index', $data);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
+            redirect('PO_MyRep?po_type=MAINFEEDER');
             return;
         }
 
@@ -64,9 +48,11 @@ class PO_MyRep extends CI_Controller
         }
         unset($poHeader);
 
-        $data['title'] = 'PO Mainfeeder';
+        $projectType = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($mainfeeder['project_type'] ?? 'MAINFEEDER');
+        $projectLabel = $projectType === 'FWA' ? 'FWA' : 'Mainfeeder';
+        $data['title'] = 'PO ' . $projectLabel;
         $data['section'] = 'po';
-        $data['moduleTitle'] = 'PO Mainfeeder';
+        $data['moduleTitle'] = 'PO ' . $projectLabel;
         $data['mainfeeder'] = $mainfeeder;
         $data['poHeaders'] = $poHeaders;
         $data['poCategoryOptions'] = ['INITIAL' => 'PO Initial', 'FINAL' => 'PO Final', 'AMANDMENT' => 'PO Amandement'];
@@ -89,10 +75,12 @@ class PO_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $selectedPoType = strtoupper(trim((string) $this->input->get('po_type')));
 
         $data['title'] = 'PO MyRep';
         $data['selectedCity'] = $selectedCity;
         $data['selectedStatus'] = $selectedStatus;
+        $data['selectedPoType'] = in_array($selectedPoType, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true) ? $selectedPoType : '';
         $data['isReady'] = $this->MPO_MyRep->tablesReady();
         $data['cityOptions'] = $this->MPO_MyRep->getCityOptions();
         $data['clusterRows'] = $data['isReady']
@@ -152,7 +140,8 @@ class PO_MyRep extends CI_Controller
             $terminTotal = (int) ($row['termin_total_count'] ?? 0);
             $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
             $terminPercent = $terminTotal > 0 ? min(100, round(($terminProgress / $terminTotal) * 100)) : 0;
-            $detailUrl = base_url('PO_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
+            $detailUrl = $this->getPoDetailUrl($row);
+            $mainfeederCount = (int) ($row['po_mainfeeder_count'] ?? 0);
 
             $rows[] = [
                 $request['start'] + $index + 1,
@@ -160,7 +149,7 @@ class PO_MyRep extends CI_Controller
                 htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
                 '<span class="badge badge-info">' . htmlspecialchars((string) ($row['status_current'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</span>',
-                '<div>Cluster: ' . (int) ($row['po_cluster_count'] ?? 0) . '</div><div>Subfeeder: ' . (int) ($row['po_subfeeder_count'] ?? 0) . '</div><div><span class="badge badge-' . $this->stageBadgeClass($summaryStatus) . '">' . htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') . '</span></div>',
+                '<div>Cluster: ' . (int) ($row['po_cluster_count'] ?? 0) . '</div><div>Subfeeder: ' . (int) ($row['po_subfeeder_count'] ?? 0) . '</div>' . ($mainfeederCount > 0 ? '<div>Mainfeeder: ' . $mainfeederCount . '</div>' : '') . '<div><span class="badge badge-' . $this->stageBadgeClass($summaryStatus) . '">' . htmlspecialchars($summaryStatus, ENT_QUOTES, 'UTF-8') . '</span></div>',
                 $this->formatNumber((float) ($row['po_total_value'] ?? 0)),
                 '<div class="po-mini-progress"><div class="po-mini-progress__head"><span>Termin Billed/Paid</span><span>' . $terminPercent . '%</span></div><div class="po-mini-progress__track"><span style="width: ' . $terminPercent . '%;"></span></div><div class="po-mini-progress__meta"><span>' . $terminProgress . ' billed/paid</span><span>' . $terminTotal . ' termin</span></div></div>',
                 !empty($row['last_po_date']) ? htmlspecialchars((string) $row['last_po_date'], ENT_QUOTES, 'UTF-8') : '-',
@@ -202,11 +191,12 @@ class PO_MyRep extends CI_Controller
             $statusPo = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
             $terminTotal = (int) ($row['termin_total_count'] ?? 0);
             $terminProgress = (int) ($row['termin_progress_count'] ?? 0);
-            $detailUrl = base_url('PO_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
+            $detailUrl = $this->getPoDetailUrl($row);
+            $typeBadge = in_array($tipePo, ['MAINFEEDER', 'FWA'], true) ? 'dark' : ($tipePo === 'SUBFEEDER' ? 'warning' : 'primary');
 
             $rows[] = [
                 $request['start'] + $index + 1,
-                '<span class="badge badge-' . ($tipePo === 'SUBFEEDER' ? 'warning' : 'primary') . '">' . htmlspecialchars($tipePo, ENT_QUOTES, 'UTF-8') . '</span>',
+                '<span class="badge badge-' . $typeBadge . '">' . htmlspecialchars($tipePo, ENT_QUOTES, 'UTF-8') . '</span>',
                 '<strong><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['po_number'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a></strong><div class="small text-muted">' . htmlspecialchars((string) ($row['po_category'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</div>',
                 !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date'], ENT_QUOTES, 'UTF-8') : '-',
                 '<a href="' . htmlspecialchars($detailUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8') . '</a>',
@@ -1014,6 +1004,17 @@ class PO_MyRep extends CI_Controller
         }
 
         return 'secondary';
+    }
+
+    private function getPoDetailUrl(array $row)
+    {
+        $poType = strtoupper(trim((string) ($row['po_type'] ?? '')));
+        $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+        if (in_array($poType, ['MAINFEEDER', 'FWA'], true) || $mainfeederId > 0) {
+            return base_url('PO_MyRep/mainfeeder/' . $mainfeederId);
+        }
+
+        return base_url('PO_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
     }
 
     private function formatNumber($value)

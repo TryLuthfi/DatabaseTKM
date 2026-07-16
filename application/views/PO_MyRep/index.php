@@ -1069,9 +1069,13 @@ if (is_array($terminBreakdownRows ?? null)) {
                                     </button>
                                 <?php endif; ?>
                             <?php endif; ?>
-                            <a href="<?= base_url('PO_MyRep/mainfeeder') ?>" class="po-btn po-btn--light">
+                            <a href="<?= base_url('PO_MyRep?po_type=MAINFEEDER') ?>" class="po-btn po-btn--light">
                                 <i class="fas fa-project-diagram"></i>
-                                PO Mainfeeder
+                                Filter Mainfeeder
+                            </a>
+                            <a href="<?= base_url('PO_MyRep?po_type=FWA') ?>" class="po-btn po-btn--light">
+                                <i class="fas fa-broadcast-tower"></i>
+                                Filter FWA
                             </a>
                         </div>
                     </div>
@@ -1085,7 +1089,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                         <div class="po-hero-stat">
                             <span class="po-hero-stat__label">PO Aktif</span>
                             <span class="po-hero-stat__value"><?= poMyRepNumber($poTotalRows) ?></span>
-                            <span class="po-hero-stat__hint">Baris PO cluster dan subfeeder tersedia.</span>
+                            <span class="po-hero-stat__hint">Baris PO cluster, subfeeder, mainfeeder, dan FWA tersedia.</span>
                         </div>
                         <div class="po-hero-stat">
                             <span class="po-hero-stat__label">Regional</span>
@@ -1520,6 +1524,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                                                 <th>
                                                     <div>Cluster: <span id="po-footer-cluster-count">0</span></div>
                                                     <div>Subfeeder: <span id="po-footer-subfeeder-count">0</span></div>
+                                                    <div>Mainfeeder: <span id="po-footer-mainfeeder-count">0</span></div>
                                                 </th>
                                                 <th class="text-right" id="po-footer-nilai-po">0</th>
                                                 <th colspan="3"></th>
@@ -1536,6 +1541,8 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             <option value="">Semua Tipe</option>
                                             <option value="CLUSTER">CLUSTER</option>
                                             <option value="SUBFEEDER">SUBFEEDER</option>
+                                            <option value="MAINFEEDER">MAINFEEDER</option>
+                                            <option value="FWA">FWA</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -1699,7 +1706,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                             </div>
                             <div class="tab-pane fade" id="po-batch-header-paste-pane" role="tabpanel" aria-labelledby="po-batch-header-paste-tab">
                                 <div class="form-group">
-                                    <label>Data PO Initial / Final</label>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
+                                        <label class="mb-0">Data PO Initial / Final</label>
+                                        <div class="d-flex flex-wrap" style="gap:8px;">
+                                            <button type="button" class="btn btn-sm btn-outline-info" id="po-header-copy-example">Copy Contoh</button>
+                                        </div>
+                                    </div>
                                     <textarea id="po-header-paste" class="form-control po-batch-invoice__paste" placeholder="Cluster[TAB]Tipe PO[TAB]Kategori[TAB]Nomor PO[TAB]Tanggal PO[TAB]Nilai PO&#10;CL001 | Cluster A | BANDUNG[TAB]CLUSTER[TAB]INITIAL[TAB]7400123456[TAB]2026-06-29[TAB]100000000"></textarea>
                                     <small class="form-text text-muted">Format: Cluster, Tipe PO, Kategori, Nomor PO, Tanggal PO, Nilai PO. Kategori hanya INITIAL atau FINAL.</small>
                                 </div>
@@ -1845,7 +1857,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                             </div>
                             <div class="tab-pane fade" id="po-batch-paste-pane" role="tabpanel" aria-labelledby="po-batch-paste-tab">
                                 <div class="form-group">
-                                    <label>Data Invoice</label>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
+                                        <label class="mb-0">Data Invoice</label>
+                                        <button type="button" class="btn btn-sm btn-outline-info" id="po-batch-copy-example">Copy Contoh</button>
+                                    </div>
                                     <textarea id="po-batch-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO-001[TAB]1[TAB]1000000&#10;PO-002[TAB]Term 2"></textarea>
                                     <small class="form-text text-muted">Nilai invoice boleh kosong jika memakai estimasi PO dan term.</small>
                                 </div>
@@ -1991,7 +2006,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                             </div>
                             <div class="tab-pane fade" id="po-cert-paste-pane" role="tabpanel" aria-labelledby="po-cert-paste-tab">
                                 <div class="form-group">
-                                    <label>Data Sertifikat</label>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
+                                        <label class="mb-0">Data Sertifikat</label>
+                                        <button type="button" class="btn btn-sm btn-outline-info" id="po-cert-copy-example">Copy Contoh</button>
+                                    </div>
                                     <textarea id="po-cert-paste" class="form-control po-batch-invoice__paste" placeholder="PO Number[TAB]Term[TAB]Status/Tanggal Sertifikat&#10;7400127996[TAB]2[TAB]FULL UPLOAD&#10;7400127996[TAB]4[TAB]2026-06-18"></textarea>
                                     <small class="form-text text-muted">Tanggal berarti claim sertifikat. Jika dokumen ASTRI belum full approved, row masuk Need Full Approve.</small>
                                 </div>
@@ -2253,6 +2271,7 @@ if (is_array($terminBreakdownRows ?? null)) {
         var poDetailBaseUrl = "<?= base_url('PO_MyRep/detail/') ?>";
         var selectedCity = "<?= htmlspecialchars((string) $selectedCity, ENT_QUOTES) ?>";
         var selectedStatus = "<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>";
+        var selectedPoType = "<?= htmlspecialchars((string) ($selectedPoType ?? ''), ENT_QUOTES) ?>";
         var poMonitorDataUrl = "<?= base_url('PO_MyRep/datatableMonitor') ?>";
         var poListDataUrl = "<?= base_url('PO_MyRep/datatablePo') ?>";
         var poTerminBreakdownDebugRows = <?= json_encode($poTerminBreakdownConsoleRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
@@ -2280,6 +2299,25 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
             echo json_encode($poBatchTerminLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
+        var poBatchInvoiceExampleRows = <?php
+            $poBatchInvoiceExampleRows = [];
+            foreach (($poListRows ?? []) as $poBatchExampleRow) {
+                $examplePoNumber = trim((string) ($poBatchExampleRow['po_number'] ?? ''));
+                if ($examplePoNumber === '') {
+                    continue;
+                }
+
+                $poBatchInvoiceExampleRows[] = [
+                    $examplePoNumber,
+                    (string) ((count($poBatchInvoiceExampleRows) % 5) + 1),
+                    '1000000',
+                ];
+                if (count($poBatchInvoiceExampleRows) >= 5) {
+                    break;
+                }
+            }
+            echo json_encode($poBatchInvoiceExampleRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
         var poBatchCertificateReleaseLookup = <?php
             $poBatchCertificateReleaseLookup = [];
             foreach (($certificateBatchRows ?? []) as $certificateBatchRow) {
@@ -2301,6 +2339,26 @@ if (is_array($terminBreakdownRows ?? null)) {
                 ];
             }
             echo json_encode($poBatchCertificateReleaseLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
+        var poBatchCertificateExampleRows = <?php
+            $poBatchCertificateExampleRows = [];
+            foreach (($certificateBatchRows ?? []) as $poCertExampleRow) {
+                $exampleCertPoNumber = trim((string) ($poCertExampleRow['po_number'] ?? ''));
+                $exampleCertTermNo = (int) ($poCertExampleRow['termin_no'] ?? 0);
+                if ($exampleCertPoNumber === '' || $exampleCertTermNo < 2 || $exampleCertTermNo > 5) {
+                    continue;
+                }
+
+                $poBatchCertificateExampleRows[] = [
+                    $exampleCertPoNumber,
+                    (string) $exampleCertTermNo,
+                    date('Y-m-d'),
+                ];
+                if (count($poBatchCertificateExampleRows) >= 5) {
+                    break;
+                }
+            }
+            echo json_encode($poBatchCertificateExampleRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
         var poBatchClusterLookup = <?php
             $poBatchClusterLookup = [];
@@ -2350,6 +2408,37 @@ if (is_array($terminBreakdownRows ?? null)) {
                 $poExistingHeaderLookup[$existingClusterId . '|' . $existingPoType . '|' . $existingPoCategory . '|' . $existingPoNumber] = true;
             }
             echo json_encode($poExistingHeaderLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
+        var poHeaderPasteExampleRows = <?php
+            $poHeaderPasteExampleRows = [];
+            foreach (($clusterRows ?? []) as $poHeaderExampleRow) {
+                $exampleClusterId = (int) ($poHeaderExampleRow['id_myrep_cluster'] ?? 0);
+                if ($exampleClusterId <= 0) {
+                    continue;
+                }
+
+                $exampleClusterCode = trim((string) ($poHeaderExampleRow['cluster_code'] ?? ''));
+                $exampleClusterName = trim((string) ($poHeaderExampleRow['cluster_name'] ?? ''));
+                $exampleCityName = trim((string) ($poHeaderExampleRow['city_name'] ?? ''));
+                $exampleClusterLabel = trim($exampleClusterCode . ' | ' . $exampleClusterName . ' | ' . $exampleCityName, " \t\n\r\0\x0B|");
+                if ($exampleClusterLabel === '') {
+                    continue;
+                }
+
+                $exampleIndex = count($poHeaderPasteExampleRows) + 1;
+                $poHeaderPasteExampleRows[] = [
+                    $exampleClusterLabel,
+                    $exampleIndex % 2 === 0 ? 'SUBFEEDER' : 'CLUSTER',
+                    $exampleIndex % 2 === 0 ? 'FINAL' : 'INITIAL',
+                    'CONTOHPO' . date('Ymd') . str_pad((string) $exampleIndex, 2, '0', STR_PAD_LEFT),
+                    date('Y-m-d'),
+                    (string) (100000000 + (($exampleIndex - 1) * 1000000)),
+                ];
+                if (count($poHeaderPasteExampleRows) >= 5) {
+                    break;
+                }
+            }
+            echo json_encode($poHeaderPasteExampleRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
         var poAllowedCertificateStatuses = ['REVISI', 'FULL UPLOAD', 'APPROVED 1', 'LOGISTIK', 'PLANNING', 'TEAM LEADER', 'WASPANG', 'PERMIT'];
         var poHeaderActiveStatusFilter = '';
@@ -2436,6 +2525,61 @@ if (is_array($terminBreakdownRows ?? null)) {
         function resolveBatchCluster(value) {
             var key = String(value || '').trim().toUpperCase();
             return key ? (poBatchClusterLookup[key] || null) : null;
+        }
+
+        function buildTsvExample(headerRow, rows, fallbackRows) {
+            var sourceRows = rows && rows.length ? rows : fallbackRows;
+            return [headerRow].concat(sourceRows).map(function (row) {
+                return row.join('\t');
+            }).join('\n');
+        }
+
+        var poHeaderPasteExample = buildTsvExample(['Cluster', 'Tipe PO', 'Kategori', 'Nomor PO', 'Tanggal PO', 'Nilai PO'], poHeaderPasteExampleRows, [
+            ['CL001 | Cluster A | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO001', '<?= date('Y-m-d') ?>', '100000000'],
+            ['CL002 | Cluster B | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO002', '<?= date('Y-m-d') ?>', '101000000'],
+            ['CL003 | Cluster C | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO003', '<?= date('Y-m-d') ?>', '102000000'],
+            ['CL004 | Cluster D | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO004', '<?= date('Y-m-d') ?>', '103000000'],
+            ['CL005 | Cluster E | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO005', '<?= date('Y-m-d') ?>', '104000000']
+        ]);
+        var poBatchInvoiceExample = buildTsvExample(['PO Number', 'Term', 'Nilai Invoice'], poBatchInvoiceExampleRows, [
+            ['PO-001', '1', '1000000'],
+            ['PO-002', '2', '1000000'],
+            ['PO-003', '3', '1000000'],
+            ['PO-004', '4', '1000000'],
+            ['PO-005', '5', '1000000']
+        ]);
+        var poBatchCertificateExample = buildTsvExample(['PO Number', 'Term', 'Status/Tanggal Sertifikat'], poBatchCertificateExampleRows, [
+            ['7400127996', '2', '<?= date('Y-m-d') ?>'],
+            ['7400127997', '3', '<?= date('Y-m-d') ?>'],
+            ['7400127998', '4', '<?= date('Y-m-d') ?>'],
+            ['7400127999', '5', '<?= date('Y-m-d') ?>'],
+            ['7400128000', '2', '<?= date('Y-m-d') ?>']
+        ]);
+
+        function copyPoHeaderTemplateText(text, successMessage) {
+            text = String(text || '');
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function () {
+                    alert(successMessage || 'Berhasil dicopy.');
+                }).catch(function () {
+                    fallbackCopyPoHeaderTemplateText(text, successMessage);
+                });
+                return;
+            }
+            fallbackCopyPoHeaderTemplateText(text, successMessage);
+        }
+
+        function fallbackCopyPoHeaderTemplateText(text, successMessage) {
+            var $temp = $('<textarea readonly></textarea>').css({
+                position: 'fixed',
+                left: '-9999px',
+                top: '0'
+            }).val(text);
+            $('body').append($temp);
+            $temp[0].select();
+            document.execCommand('copy');
+            $temp.remove();
+            alert(successMessage || 'Berhasil dicopy.');
         }
 
         function getBatchHeaderCheck(clusterInput, poType, poCategory, poNumber, poDate, poValue) {
@@ -2667,6 +2811,18 @@ if (is_array($terminBreakdownRows ?? null)) {
             formatBatchInvoiceInput($(this));
         });
 
+        $('#po-header-copy-example').on('click', function () {
+            copyPoHeaderTemplateText(poHeaderPasteExample, '5 row contoh PO berhasil dicopy. Paste ke Excel atau textarea.');
+        });
+
+        $('#po-batch-copy-example').on('click', function () {
+            copyPoHeaderTemplateText(poBatchInvoiceExample, '5 row contoh invoice berhasil dicopy. Paste ke Excel atau textarea.');
+        });
+
+        $('#po-cert-copy-example').on('click', function () {
+            copyPoHeaderTemplateText(poBatchCertificateExample, '5 row contoh sertifikat tanggal berhasil dicopy. Paste ke Excel atau textarea.');
+        });
+
         $('#po-header-parse-paste').on('click', function () {
             var lines = String($('#po-header-paste').val() || '').split(/\r?\n/);
             var addedCount = 0;
@@ -2682,6 +2838,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                     : trimmedLine.split(',');
 
                 if (columns.length < 6) {
+                    return;
+                }
+
+                var normalizedFirstColumn = String(columns[0] || '').trim().toUpperCase();
+                var normalizedFourthColumn = String(columns[3] || '').trim().toUpperCase();
+                if (normalizedFirstColumn === 'CLUSTER' && normalizedFourthColumn === 'NOMOR PO') {
                     return;
                 }
 
@@ -2993,6 +3155,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                     return;
                 }
 
+                if (String(columns[0] || '').trim().toUpperCase() === 'PO NUMBER' && String(columns[1] || '').trim().toUpperCase() === 'TERM') {
+                    return;
+                }
+
                 addBatchInvoiceRow(columns[0], columns[1], columns.length >= 3 ? columns.slice(2).join(' ') : '');
                 checkedCount++;
             });
@@ -3270,6 +3436,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                     columns = line.split(/\s{2,}/);
                 }
                 if (columns.length < 3) {
+                    return;
+                }
+
+                if (String(columns[0] || '').trim().toUpperCase() === 'PO NUMBER' && String(columns[1] || '').trim().toUpperCase() === 'TERM') {
                     return;
                 }
 
@@ -3554,12 +3724,20 @@ if (is_array($terminBreakdownRows ?? null)) {
                     var totalPoSubfeeder = api.column(5, { page: 'current' }).data().reduce(function (acc, value) {
                         return acc + extractPoCount(value, 'Subfeeder');
                     }, 0);
+                    var totalPoMainfeeder = api.column(5, { page: 'current' }).data().reduce(function (acc, value) {
+                        return acc + extractPoCount(value, 'Mainfeeder');
+                    }, 0);
 
                     $('#po-footer-cluster-count').text(totalPoCluster.toLocaleString('id-ID'));
                     $('#po-footer-subfeeder-count').text(totalPoSubfeeder.toLocaleString('id-ID'));
+                    $('#po-footer-mainfeeder-count').text(totalPoMainfeeder.toLocaleString('id-ID'));
                     $('#po-footer-nilai-po').text(totalNilaiPo.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                 }
             }) : null;
+
+            if (selectedPoType) {
+                $('#po-list-filter-type').val(selectedPoType);
+            }
 
             var tablePoList = $('#table_po_list_only').length ? $('#table_po_list_only').DataTable({
                 processing: true,

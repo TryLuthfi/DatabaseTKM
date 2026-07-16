@@ -303,6 +303,14 @@ class MChecklist_Dokument_MyRep extends CI_Model
             }
         }
 
+        foreach ($this->getMainfeederRegionalCityRows() as $row) {
+            $city = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($city !== '') {
+                $cities[$city] = $city;
+            }
+        }
+
+        ksort($cities);
         return array_values($cities);
     }
 
@@ -343,7 +351,55 @@ class MChecklist_Dokument_MyRep extends CI_Model
             }
         }
 
+        foreach ($this->getMainfeederRegionalCityRows() as $row) {
+            $regional = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regional !== '') {
+                $regionals[$regional] = $regional;
+            }
+        }
+
+        ksort($regionals);
         return array_values($regionals);
+    }
+
+    public function getChecklistProjectRows($city = '', $regional = '', $projectType = '')
+    {
+        $projectType = strtoupper(trim((string) $projectType));
+        if (!in_array($projectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $projectType = '';
+        }
+
+        $rows = [];
+        if (!in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            foreach ($this->getFullRfsClusters($city, $regional) as $row) {
+                $row['project_type'] = 'CLUSTER';
+                $rows[] = $row;
+            }
+        }
+
+        if ($projectType !== 'CLUSTER') {
+            foreach ($this->getMainfeederList($city, $regional, $projectType) as $row) {
+                $row['project_type'] = strtoupper(trim((string) ($row['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
+                $row['id_cluster'] = 0;
+                $row['cluster_name'] = (string) ($row['mainfeeder_name'] ?? '');
+                $row['homepass'] = (float) ($row['length_meter'] ?? 0);
+                $row['tanggal_rfs'] = null;
+                $row['plan_atp_date'] = $row['atp_date'] ?? null;
+                $row['actual_atp_date'] = $row['atp_date'] ?? null;
+                $row['aging_atp_days'] = $this->calculateAgingDays($row['plan_atp_date'], $row['actual_atp_date']);
+                $rows[] = $row;
+            }
+        }
+
+        usort($rows, static function ($left, $right) {
+            $cityCompare = strcmp((string) ($left['city_name'] ?? ''), (string) ($right['city_name'] ?? ''));
+            if ($cityCompare !== 0) {
+                return $cityCompare;
+            }
+            return strcmp((string) ($left['cluster_name'] ?? ''), (string) ($right['cluster_name'] ?? ''));
+        });
+
+        return $rows;
     }
 
     public function getFullRfsClusters($city = '', $regional = '')
@@ -1269,6 +1325,93 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ]);
     }
 
+    public function getMainfeederCertificateReadiness($mainfeederId, $terminNo, $term4CertificateValue = '')
+    {
+        $mainfeederId = (int) $mainfeederId;
+        $terminNo = (int) $terminNo;
+        $sowTypeMap = [
+            2 => 'CW ATP',
+            3 => 'FULL OPM',
+            4 => 'RFS',
+        ];
+
+        if ($terminNo === 5) {
+            return $this->buildFacReadiness((string) $term4CertificateValue);
+        }
+
+        $sowType = $sowTypeMap[$terminNo] ?? '';
+        if ($mainfeederId <= 0 || $sowType === '') {
+            return [
+                'required_docs' => 0,
+                'submitted_docs' => 0,
+                'approved_docs' => 0,
+                'is_ready' => false,
+                'sow_type' => $sowType,
+            ];
+        }
+
+        $groups = $this->getMainfeederDocumentGroups();
+        $targetGroupIds = [];
+        $requiredDocs = 0;
+        foreach ($groups as $group) {
+            if (strtoupper(trim((string) ($group['sow_type'] ?? ''))) !== $sowType) {
+                continue;
+            }
+            $targetGroupIds[] = (int) ($group['id_doc_group_mainfeeder'] ?? 0);
+            $requiredDocs += (int) ($group['required_docs'] ?? 0);
+        }
+
+        if (empty($targetGroupIds) || $requiredDocs <= 0) {
+            return [
+                'required_docs' => $requiredDocs,
+                'submitted_docs' => 0,
+                'approved_docs' => 0,
+                'is_ready' => false,
+                'sow_type' => $sowType,
+            ];
+        }
+
+        $packageRows = $this->db
+            ->select('id_doc_package_mainfeeder')
+            ->from('tb_rfs_myrep_mainfeeder_doc_package')
+            ->where('id_mainfeeder', $mainfeederId)
+            ->where_in('id_doc_group_mainfeeder', $targetGroupIds)
+            ->get()
+            ->result_array();
+        $packageIds = array_values(array_filter(array_map('intval', array_column($packageRows, 'id_doc_package_mainfeeder'))));
+        if (empty($packageIds)) {
+            return [
+                'required_docs' => $requiredDocs,
+                'submitted_docs' => 0,
+                'approved_docs' => 0,
+                'is_ready' => false,
+                'sow_type' => $sowType,
+            ];
+        }
+
+        $summary = $this->db
+            ->select("
+                SUM(CASE WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK') THEN 1 ELSE 0 END) AS submitted_docs,
+                SUM(CASE WHEN f.astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('md_rfs_myrep_mainfeeder_doc_item i', 'i.id_doc_group_mainfeeder = p.id_doc_group_mainfeeder AND i.is_active = 1 AND i.is_required = 1', 'inner')
+            ->join('tb_rfs_myrep_mainfeeder_doc_file f', 'f.id_doc_package_mainfeeder = p.id_doc_package_mainfeeder AND f.id_doc_item_mainfeeder = i.id_doc_item_mainfeeder', 'left')
+            ->where_in('p.id_doc_package_mainfeeder', $packageIds)
+            ->get()
+            ->row_array();
+
+        $submittedDocs = (int) ($summary['submitted_docs'] ?? 0);
+        $approvedDocs = (int) ($summary['approved_docs'] ?? 0);
+        return [
+            'required_docs' => $requiredDocs,
+            'submitted_docs' => $submittedDocs,
+            'approved_docs' => $approvedDocs,
+            'is_ready' => $requiredDocs > 0 && $submittedDocs >= $requiredDocs && $approvedDocs >= $requiredDocs,
+            'sow_type' => $sowType,
+        ];
+    }
+
     public function normalizeCertificateDateForRelease($value)
     {
         return $this->normalizeCertificateDateValue($value);
@@ -1845,14 +1988,19 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function saveMainfeeder($data)
     {
-        $this->db->insert('tb_rfs_myrep_mainfeeder', [
+        $payload = [
             'id_target' => (int) $data['id_target'],
             'mainfeeder_name' => $data['mainfeeder_name'],
             'length_meter' => (float) $data['length_meter'],
             'atp_date' => $data['atp_date'],
             'created_by' => (int) $data['created_by'],
             'updated_by' => (int) $data['updated_by'],
-        ]);
+        ];
+        if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+            $payload['project_type'] = strtoupper(trim((string) ($data['project_type'] ?? ''))) === 'FWA' ? 'FWA' : 'MAINFEEDER';
+        }
+
+        $this->db->insert('tb_rfs_myrep_mainfeeder', $payload);
 
         $mainfeederId = (int) $this->db->insert_id();
         $this->ensureMainfeederPackages($mainfeederId, $data['atp_date']);
@@ -1860,36 +2008,54 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $mainfeederId;
     }
 
-    public function getMainfeederList($city = '', $regional = '')
+    public function getMainfeederList($city = '', $regional = '', $projectType = '')
     {
+        $projectType = strtoupper(trim((string) $projectType));
+        if (!in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            $projectType = '';
+        }
+        $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
+            ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
+            : "'MAINFEEDER'";
+
         $query = $this->db
             ->select('
                 mf.id_mainfeeder,
                 mf.id_target,
+                ' . $projectTypeSql . ' AS project_type,
                 mf.mainfeeder_name,
                 mf.length_meter,
                 mf.atp_date,
-                mt.city_name,
-                mt.regional_name,
-                mt.province_name
-            ')
+                COALESCE(mf.city_name, mt.city_name) AS city_name,
+                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                COALESCE(mf.province_name, mt.province_name) AS province_name
+            ', false)
             ->from('tb_rfs_myrep_mainfeeder mf')
-            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner');
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left');
 
-        if (!$this->applyAllowedCityRestriction('mt.city_name')) {
+        $query->where("UPPER(COALESCE(NULLIF(TRIM(mf.current_status), ''), 'DRM')) IN ('CHECKLIST','DONE')", null, false);
+
+        if (!$this->applyAllowedCityRestriction('COALESCE(mf.city_name, mt.city_name)')) {
             return [];
         }
 
         if ($city !== '') {
-            $query->where('UPPER(mt.city_name)', strtoupper($city));
+            $query->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(mt.regional_name)', strtoupper($regional));
+            $query->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+        }
+        if ($projectType !== '') {
+            if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+                $query->where($projectTypeSql . ' = ' . $this->db->escape($projectType), null, false);
+            } elseif ($projectType === 'FWA') {
+                return [];
+            }
         }
 
         $rows = $query
-            ->order_by('mt.city_name', 'ASC')
+            ->order_by('city_name', 'ASC')
             ->order_by('mf.mainfeeder_name', 'ASC')
             ->get()
             ->result_array();
@@ -1903,18 +2069,20 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->select('
                 mf.id_mainfeeder,
                 mf.id_target,
+                ' . ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder') ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')" : "'MAINFEEDER'") . ' AS project_type,
                 mf.mainfeeder_name,
+                mf.current_status,
                 mf.length_meter,
                 mf.atp_date,
-                mt.city_name,
-                mt.regional_name,
-                mt.province_name,
+                COALESCE(mf.city_name, mt.city_name) AS city_name,
+                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                COALESCE(mf.province_name, mt.province_name) AS province_name,
                 mt.id_user_pic_ho,
                 u_ho.nama_karyawan AS ho_pic_name,
                 u_ho.telegram_user_id AS ho_pic_telegram_user_id
-            ')
+            ', false)
             ->from('tb_rfs_myrep_mainfeeder mf')
-            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
             ->join('tb_master_user_new u_ho', 'u_ho.id = mt.id_user_pic_ho', 'left')
             ->where('mf.id_mainfeeder', (int) $mainfeederId)
             ->get()
@@ -2325,6 +2493,31 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $result;
+    }
+
+    private function getMainfeederRegionalCityRows()
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
+            return [];
+        }
+
+        $this->db
+            ->distinct()
+            ->select('COALESCE(mf.regional_name, mt.regional_name) AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('COALESCE(mf.city_name, mt.city_name) IS NOT NULL', null, false)
+            ->where('CHAR_LENGTH(TRIM(COALESCE(mf.city_name, mt.city_name))) > 0', null, false);
+
+        if (!$this->applyAllowedCityRestriction('COALESCE(mf.city_name, mt.city_name)')) {
+            return [];
+        }
+
+        return $this->db
+            ->order_by('regional_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->get()
+            ->result_array();
     }
 
     private function getMainfeederDocumentGroups()

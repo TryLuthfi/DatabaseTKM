@@ -101,6 +101,53 @@ class MMyRep_Cleanup extends CI_Model
         return $this->deleteWholeCluster((int) $cluster['id_myrep_cluster']);
     }
 
+    public function deleteWholeMainfeeder($mainfeederId)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0 || !$this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
+            return false;
+        }
+
+        $mainfeeder = $this->db
+            ->select('id_mainfeeder')
+            ->from('tb_rfs_myrep_mainfeeder')
+            ->where('id_mainfeeder', $mainfeederId)
+            ->get()
+            ->row_array();
+
+        if (empty($mainfeeder['id_mainfeeder'])) {
+            return false;
+        }
+
+        $pathsToDelete = $this->collectMainfeederFilePaths($mainfeederId);
+
+        $this->db->trans_start();
+
+        $this->deleteMainfeederChecklistData($mainfeederId);
+        $this->deleteMainfeederFlowDocuments($mainfeederId);
+        $this->deleteMainfeederImplementationData($mainfeederId);
+        $this->deleteMainfeederBoqData($mainfeederId);
+        $this->deleteMainfeederPoData($mainfeederId);
+
+        if ($this->db->table_exists('tb_myrep_mainfeeder_atp_file')) {
+            $this->db->where('id_mainfeeder', $mainfeederId)->delete('tb_myrep_mainfeeder_atp_file');
+        }
+        if ($this->db->table_exists('tb_myrep_mainfeeder_drm')) {
+            $this->db->where('id_mainfeeder', $mainfeederId)->delete('tb_myrep_mainfeeder_drm');
+        }
+
+        $this->db->where('id_mainfeeder', $mainfeederId)->delete('tb_rfs_myrep_mainfeeder');
+
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return false;
+        }
+
+        $this->deletePhysicalFiles($pathsToDelete);
+        return true;
+    }
+
     private function collectMyrepFilePaths($myrepClusterId)
     {
         $paths = [];
@@ -174,6 +221,68 @@ class MMyRep_Cleanup extends CI_Model
         return $paths;
     }
 
+    private function collectMainfeederFilePaths($mainfeederId)
+    {
+        $paths = [];
+
+        if ($this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_package') && $this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file')) {
+            $rows = $this->db
+                ->select('f.file_path')
+                ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+                ->join('tb_rfs_myrep_mainfeeder_doc_file f', 'f.id_doc_package_mainfeeder = p.id_doc_package_mainfeeder', 'inner')
+                ->where('p.id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($rows as $row) {
+                $paths[] = (string) ($row['file_path'] ?? '');
+            }
+        }
+
+        if ($this->db->table_exists('tb_myrep_mainfeeder_doc_package') && $this->db->table_exists('tb_myrep_mainfeeder_doc_file')) {
+            $rows = $this->db
+                ->select('f.file_path')
+                ->from('tb_myrep_mainfeeder_doc_package p')
+                ->join('tb_myrep_mainfeeder_doc_file f', 'f.id_doc_package_mainfeeder_flow = p.id_doc_package_mainfeeder_flow', 'inner')
+                ->where('p.id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($rows as $row) {
+                $paths[] = (string) ($row['file_path'] ?? '');
+            }
+        }
+
+        if ($this->db->table_exists('tb_myrep_mainfeeder_impl_daily_activity') && $this->db->table_exists('tb_myrep_mainfeeder_impl_daily_activity_photo')) {
+            $rows = $this->db
+                ->select('photo.file_path')
+                ->from('tb_myrep_mainfeeder_impl_daily_activity activity')
+                ->join('tb_myrep_mainfeeder_impl_daily_activity_photo photo', 'photo.id_daily_activity_mainfeeder = activity.id_daily_activity_mainfeeder', 'inner')
+                ->where('activity.id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($rows as $row) {
+                $paths[] = (string) ($row['file_path'] ?? '');
+            }
+        }
+
+        if ($this->db->table_exists('tb_myrep_mainfeeder_atp_file')) {
+            $rows = $this->db
+                ->select('file_path')
+                ->from('tb_myrep_mainfeeder_atp_file')
+                ->where('id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($rows as $row) {
+                $paths[] = (string) ($row['file_path'] ?? '');
+            }
+        }
+
+        return $paths;
+    }
+
     private function deleteRfsChecklistData($rfsClusterId)
     {
         if ($rfsClusterId <= 0) {
@@ -216,6 +325,158 @@ class MMyRep_Cleanup extends CI_Model
 
         if ($this->db->table_exists('tb_rfs_myrep_cluster')) {
             $this->db->where('id_cluster', (int) $rfsClusterId)->delete('tb_rfs_myrep_cluster');
+        }
+    }
+
+    private function deleteMainfeederChecklistData($mainfeederId)
+    {
+        $packageIds = [];
+        if ($this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_package')) {
+            $packageRows = $this->db
+                ->select('id_doc_package_mainfeeder')
+                ->from('tb_rfs_myrep_mainfeeder_doc_package')
+                ->where('id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($packageRows as $row) {
+                $packageIds[] = (int) $row['id_doc_package_mainfeeder'];
+            }
+        }
+
+        if (!empty($packageIds) && $this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file_log')) {
+            $this->db->where_in('id_doc_package_mainfeeder', $packageIds)->delete('tb_rfs_myrep_mainfeeder_doc_file_log');
+        }
+        if (!empty($packageIds) && $this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file')) {
+            $this->db->where_in('id_doc_package_mainfeeder', $packageIds)->delete('tb_rfs_myrep_mainfeeder_doc_file');
+        }
+        if (!empty($packageIds) && $this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_package')) {
+            $this->db->where_in('id_doc_package_mainfeeder', $packageIds)->delete('tb_rfs_myrep_mainfeeder_doc_package');
+        }
+    }
+
+    private function deleteMainfeederFlowDocuments($mainfeederId)
+    {
+        $packageIds = [];
+        if ($this->db->table_exists('tb_myrep_mainfeeder_doc_package')) {
+            $packageRows = $this->db
+                ->select('id_doc_package_mainfeeder_flow')
+                ->from('tb_myrep_mainfeeder_doc_package')
+                ->where('id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($packageRows as $row) {
+                $packageIds[] = (int) $row['id_doc_package_mainfeeder_flow'];
+            }
+        }
+
+        if (!empty($packageIds) && $this->db->table_exists('tb_myrep_mainfeeder_doc_file_log')) {
+            $this->db->where_in('id_doc_package_mainfeeder_flow', $packageIds)->delete('tb_myrep_mainfeeder_doc_file_log');
+        }
+        if (!empty($packageIds) && $this->db->table_exists('tb_myrep_mainfeeder_doc_file')) {
+            $this->db->where_in('id_doc_package_mainfeeder_flow', $packageIds)->delete('tb_myrep_mainfeeder_doc_file');
+        }
+        if (!empty($packageIds) && $this->db->table_exists('tb_myrep_mainfeeder_doc_package')) {
+            $this->db->where_in('id_doc_package_mainfeeder_flow', $packageIds)->delete('tb_myrep_mainfeeder_doc_package');
+        }
+    }
+
+    private function deleteMainfeederImplementationData($mainfeederId)
+    {
+        $activityIds = [];
+        if ($this->db->table_exists('tb_myrep_mainfeeder_impl_daily_activity')) {
+            $activityRows = $this->db
+                ->select('id_daily_activity_mainfeeder')
+                ->from('tb_myrep_mainfeeder_impl_daily_activity')
+                ->where('id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($activityRows as $row) {
+                $activityIds[] = (int) $row['id_daily_activity_mainfeeder'];
+            }
+        }
+
+        if (!empty($activityIds) && $this->db->table_exists('tb_myrep_mainfeeder_impl_daily_activity_photo')) {
+            $this->db->where_in('id_daily_activity_mainfeeder', $activityIds)->delete('tb_myrep_mainfeeder_impl_daily_activity_photo');
+        }
+        if (!empty($activityIds) && $this->db->table_exists('tb_myrep_mainfeeder_impl_daily_activity')) {
+            $this->db->where_in('id_daily_activity_mainfeeder', $activityIds)->delete('tb_myrep_mainfeeder_impl_daily_activity');
+        }
+        if ($this->db->table_exists('tb_myrep_mainfeeder_boq_progress_item')) {
+            $this->db->where('id_mainfeeder', (int) $mainfeederId)->delete('tb_myrep_mainfeeder_boq_progress_item');
+        }
+    }
+
+    private function deleteMainfeederBoqData($mainfeederId)
+    {
+        $baselineIds = [];
+        if ($this->db->table_exists('tb_myrep_mainfeeder_boq_baseline')) {
+            $baselineRows = $this->db
+                ->select('id_mainfeeder_boq_baseline')
+                ->from('tb_myrep_mainfeeder_boq_baseline')
+                ->where('id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($baselineRows as $row) {
+                $baselineIds[] = (int) $row['id_mainfeeder_boq_baseline'];
+            }
+        }
+
+        if (!empty($baselineIds) && $this->db->table_exists('tb_myrep_mainfeeder_boq_baseline_item')) {
+            $this->db->where_in('id_mainfeeder_boq_baseline', $baselineIds)->delete('tb_myrep_mainfeeder_boq_baseline_item');
+        }
+        if (!empty($baselineIds) && $this->db->table_exists('tb_myrep_mainfeeder_boq_baseline')) {
+            $this->db->where_in('id_mainfeeder_boq_baseline', $baselineIds)->delete('tb_myrep_mainfeeder_boq_baseline');
+        }
+
+        $boqIds = [];
+        if ($this->db->table_exists('tb_myrep_mainfeeder_drm_boq')) {
+            $boqRows = $this->db
+                ->select('id_mainfeeder_drm_boq')
+                ->from('tb_myrep_mainfeeder_drm_boq')
+                ->where('id_mainfeeder', (int) $mainfeederId)
+                ->get()
+                ->result_array();
+
+            foreach ($boqRows as $row) {
+                $boqIds[] = (int) $row['id_mainfeeder_drm_boq'];
+            }
+        }
+
+        if (!empty($boqIds) && $this->db->table_exists('tb_myrep_mainfeeder_drm_boq_item')) {
+            $this->db->where_in('id_mainfeeder_drm_boq', $boqIds)->delete('tb_myrep_mainfeeder_drm_boq_item');
+        }
+        if (!empty($boqIds) && $this->db->table_exists('tb_myrep_mainfeeder_drm_boq')) {
+            $this->db->where_in('id_mainfeeder_drm_boq', $boqIds)->delete('tb_myrep_mainfeeder_drm_boq');
+        }
+    }
+
+    private function deleteMainfeederPoData($mainfeederId)
+    {
+        if (!$this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')) {
+            return;
+        }
+
+        $poIds = [];
+        $poRows = $this->db
+            ->select('id_po_header')
+            ->from('tb_myrep_po_header')
+            ->where('id_mainfeeder', (int) $mainfeederId)
+            ->get()
+            ->result_array();
+
+        foreach ($poRows as $row) {
+            $poIds[] = (int) $row['id_po_header'];
+        }
+
+        if (!empty($poIds) && $this->db->table_exists('tb_myrep_po_termin')) {
+            $this->db->where_in('id_po_header', $poIds)->delete('tb_myrep_po_termin');
+        }
+        if (!empty($poIds) && $this->db->table_exists('tb_myrep_po_header')) {
+            $this->db->where_in('id_po_header', $poIds)->delete('tb_myrep_po_header');
         }
     }
 

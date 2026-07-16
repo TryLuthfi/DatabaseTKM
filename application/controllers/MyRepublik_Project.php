@@ -35,6 +35,9 @@ class MyRepublik_Project extends CI_Controller
             $this->myrepAccess->enforceByMethod('MyRepublik_Project', (string) $this->router->fetch_method(), [
                 'previewCutoffImport' => 'TAMBAH',
                 'previewPoCertificateImport' => 'TAMBAH',
+                'deleteCluster' => 'HAPUS',
+                'deleteMainfeeder' => 'HAPUS',
+                'deleteAllClusters' => 'HAPUS',
             ]);
         }
     }
@@ -48,6 +51,10 @@ class MyRepublik_Project extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->get('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
         $metricMode = strtoupper(trim((string) $this->input->get('metric')));
         if (!in_array($metricMode, ['HP', 'PO'], true)) {
             $metricMode = 'HP';
@@ -56,13 +63,15 @@ class MyRepublik_Project extends CI_Controller
         $data['title'] = 'Dashboard MyRep';
         $data['selectedCity'] = $selectedCity;
         $data['selectedStatus'] = $selectedStatus;
+        $data['selectedProjectType'] = $selectedProjectType;
         $data['metricMode'] = $metricMode;
         $data['isReady'] = $this->MMyRepublik_Project->tablesReady();
         $data['cityOptions'] = $this->MMyRepublik_Project->getCityOptions();
         $data['statusOptions'] = $this->MMyRepublik_Project->getStatusOptions();
         $data['clusterRows'] = [];
-        $data['deleteClusterRows'] = ($data['isReady'] && (string) $this->session->userdata('nama_level') === 'Super Admin')
-            ? $this->MMyRepublik_Project->getClusterRows('', '', $metricMode)
+        $data['canDeleteCluster'] = $this->canDeleteCluster();
+        $data['deleteClusterRows'] = ($data['isReady'] && $data['canDeleteCluster'])
+            ? $this->MMyRepublik_Project->getClusterRows('', '', $metricMode, $selectedProjectType)
             : [];
         $data['clusterStageSummaryRows'] = [];
         $data['overview'] = $this->emptyOverview();
@@ -89,6 +98,10 @@ class MyRepublik_Project extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->post('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->post('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
         $metricMode = strtoupper(trim((string) $this->input->post('metric')));
         if (!in_array($metricMode, ['HP', 'PO'], true)) {
             $metricMode = 'HP';
@@ -96,7 +109,7 @@ class MyRepublik_Project extends CI_Controller
 
         try {
             $rows = $this->MMyRepublik_Project->tablesReady()
-                ? $this->MMyRepublik_Project->getClusterRows($selectedCity, $selectedStatus, $metricMode)
+                ? $this->MMyRepublik_Project->getClusterRows($selectedCity, $selectedStatus, $metricMode, $selectedProjectType)
                 : [];
 
             $this->jsonResponse(true, 'Dashboard berhasil dimuat.', [
@@ -123,6 +136,10 @@ class MyRepublik_Project extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->post('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->post('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
         $metricMode = strtoupper(trim((string) $this->input->post('metric')));
         if (!in_array($metricMode, ['HP', 'PO'], true)) {
             $metricMode = 'HP';
@@ -153,14 +170,15 @@ class MyRepublik_Project extends CI_Controller
                 $start,
                 $length,
                 $searchValue,
-                $order
+                $order,
+                $selectedProjectType
             );
 
-            $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+            $canDeleteCluster = $this->canDeleteCluster();
             $data = [];
             $no = $start + 1;
             foreach (($page['rows'] ?? []) as $row) {
-                $data[] = $this->buildClusterTableRow($row, $no++, $metricMode, $isSuperAdmin);
+                $data[] = $this->buildClusterTableRow($row, $no++, $metricMode, $canDeleteCluster);
             }
 
             $this->jsonDataTableResponse((int) ($page['recordsTotal'] ?? 0), (int) ($page['recordsFiltered'] ?? 0), $data);
@@ -182,7 +200,7 @@ class MyRepublik_Project extends CI_Controller
             ]));
     }
 
-    private function buildClusterTableRow(array $row, $no, $metricMode, $isSuperAdmin)
+    private function buildClusterTableRow(array $row, $no, $metricMode, $canDeleteCluster)
     {
         $detailUrl = $this->clusterDetailUrl($row);
         $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
@@ -196,21 +214,27 @@ class MyRepublik_Project extends CI_Controller
         } else {
             $clusterHtml .= $this->html($clusterName);
         }
-        $badgeClass = $projectType === 'MAINFEEDER' ? 'badge-warning' : 'badge-dark';
+        $badgeClass = in_array($projectType, ['MAINFEEDER', 'FWA'], true) ? 'badge-warning' : 'badge-dark';
         $clusterHtml .= '</strong><div class="small text-muted"><span class="badge ' . $badgeClass . '">' . $this->html($projectType) . '</span> ' . $this->html($row['team_name'] ?? '-') . '</div>';
 
         $metricValue = (float) ($row['metric_value'] ?? 0);
-        $metricSuffix = strtoupper((string) $metricMode) === 'PO' ? '' : ($projectType === 'MAINFEEDER' ? ' M' : ' HP');
+        $metricSuffix = strtoupper((string) $metricMode) === 'PO' ? '' : (in_array($projectType, ['MAINFEEDER', 'FWA'], true) ? ' M' : ' HP');
         $metricHtml = $this->formatNumber($metricValue) . $metricSuffix;
 
         $actionHtml = $detailUrl !== '#'
             ? '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-primary">Detail</a>'
             : '<span class="text-muted">-</span>';
 
-        if ($isSuperAdmin && (int) ($row['id_myrep_cluster'] ?? 0) > 0) {
+        $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+        if ($canDeleteCluster && (int) ($row['id_myrep_cluster'] ?? 0) > 0) {
             $actionHtml .= '<form method="post" action="' . base_url('MyRepublik_Project/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini? Seluruh flow MyRep dari BAK sampai Checklist Dokument akan ikut terhapus.\');">'
                 . '<input type="hidden" name="cluster_id" value="' . (int) $row['id_myrep_cluster'] . '">'
                 . '<button type="submit" class="btn btn-sm btn-danger">Hapus Cluster</button>'
+                . '</form>';
+        } elseif ($canDeleteCluster && $mainfeederId > 0 && in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            $actionHtml .= '<form method="post" action="' . base_url('MyRepublik_Project/deleteMainfeeder') . '" class="d-inline" onsubmit="return confirm(\'Hapus project ini? Seluruh flow, PO, dokumen, dan progress terkait akan ikut terhapus.\');">'
+                . '<input type="hidden" name="mainfeeder_id" value="' . $mainfeederId . '">'
+                . '<button type="submit" class="btn btn-sm btn-danger">Hapus Project</button>'
                 . '</form>';
         }
 
@@ -230,7 +254,7 @@ class MyRepublik_Project extends CI_Controller
 
     private function clusterDetailUrl(array $row)
     {
-        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+        if (in_array(strtoupper(trim((string) ($row['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
             $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
             return $mainfeederId > 0 ? base_url('Mainfeeder_MyRep/detail/' . $mainfeederId) : '#';
         }
@@ -372,6 +396,17 @@ class MyRepublik_Project extends CI_Controller
         redirect('MyRepublik_Project/detail/' . $clusterId);
     }
 
+    private function canDeleteCluster()
+    {
+        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        return isset($this->myrepAccess)
+            ? $this->myrepAccess->hasPermission('MyRepublik_Project', 'HAPUS')
+            : false;
+    }
+
     public function deleteCluster()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -379,8 +414,8 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
-        if ((string) $this->session->userdata('nama_level') !== 'Super Admin') {
-            $this->session->set_flashdata('error', 'Menu hapus cluster MyRep hanya untuk Super Admin.');
+        if (!$this->canDeleteCluster()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses hapus cluster MyRep.');
             redirect('MyRepublik_Project');
             return;
         }
@@ -402,6 +437,36 @@ class MyRepublik_Project extends CI_Controller
         redirect('MyRepublik_Project');
     }
 
+    public function deleteMainfeeder()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->canDeleteCluster()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses hapus mainfeeder MyRep.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $mainfeederId = (int) $this->input->post('mainfeeder_id');
+        if ($mainfeederId <= 0) {
+            $this->session->set_flashdata('error', 'Mainfeeder MyRep tidak valid.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $deleted = $this->MMyRep_Cleanup->deleteWholeMainfeeder($mainfeederId);
+        $this->session->set_flashdata(
+            $deleted ? 'success' : 'error',
+            $deleted
+                ? 'Mainfeeder berhasil dihapus. Flow Mainfeeder, PO, dokumen, dan progress terkait ikut terhapus.'
+                : 'Gagal menghapus mainfeeder MyRep.'
+        );
+        redirect('MyRepublik_Project');
+    }
+
     public function deleteAllClusters()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -409,8 +474,8 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
-        if ((string) $this->session->userdata('nama_level') !== 'Super Admin') {
-            $this->session->set_flashdata('error', 'Menu hapus all cluster MyRep hanya untuk Super Admin.');
+        if (!$this->canDeleteCluster()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses hapus cluster MyRep.');
             redirect('MyRepublik_Project');
             return;
         }
@@ -1904,7 +1969,7 @@ class MyRepublik_Project extends CI_Controller
 
     private function resolveClusterHomepassValue(array $clusterRow)
     {
-        if (strtoupper(trim((string) ($clusterRow['project_type'] ?? ''))) === 'MAINFEEDER') {
+        if (in_array(strtoupper(trim((string) ($clusterRow['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
             return (float) ($clusterRow['length_meter'] ?? $clusterRow['metric_value'] ?? 0);
         }
 

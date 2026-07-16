@@ -1,7 +1,8 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
-$statusOptions = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED', 'RELEASED', 'DRM', 'RFS', 'ATP', 'DONE BATCH APPROVAL'];
+$selectedProjectType = strtoupper(trim((string) ($selectedProjectType ?? '')));
+$statusOptions = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED', 'RELEASED', 'DRM', 'IMPLEMENTASI', 'RFS', 'ATP', 'CHECKLIST', 'DONE', 'DONE BATCH APPROVAL'];
 $today = date('Y-m-d');
 $summaryNyDrm = 0;
 $summaryOnProses = 0;
@@ -78,12 +79,14 @@ $buildDrmStatusSummary = static function (array $rows) {
     foreach ($rows as $row) {
         $clusterStatus = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
         $subfeederStatus = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? '')));
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
         $clusterStatus = $clusterStatus !== '' ? $clusterStatus : 'WAITING INPUT';
-        $subfeederStatus = $subfeederStatus !== '' ? $subfeederStatus : 'WAITING INPUT';
-        $statusSet = array_unique([
-            $clusterStatus,
-            $subfeederStatus,
-        ]);
+        $statusSet = [$clusterStatus];
+        if (!in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            $subfeederStatus = $subfeederStatus !== '' ? $subfeederStatus : 'WAITING INPUT';
+            $statusSet[] = $subfeederStatus;
+        }
+        $statusSet = array_unique($statusSet);
 
         if (in_array('WAITING INPUT', $statusSet, true)) {
             $summary['waitingInputCount']++;
@@ -162,18 +165,26 @@ if (!function_exists('drmScopeStatusLabel')) {
 $renderDrmTableRows = static function (array $rows) {
     foreach ($rows as $index => $row) {
         $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
+        $detailUrl = $isMainfeeder
+            ? base_url('DRM_MyRep/mainfeeder/' . (int) ($row['id_mainfeeder'] ?? 0))
+            : base_url('DRM_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
         $clusterStatusLabel = drmScopeStatusLabel($row['drm_cluster_status'] ?? '');
         $subfeederStatusLabel = drmScopeStatusLabel($row['drm_subfeeder_status'] ?? '');
         ?>
         <tr>
             <td><?= $index + 1 ?></td>
             <td>
-                <?php if (!empty($row['id_myrep_cluster'])): ?>
-                    <a href="<?= base_url('DRM_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="font-weight-bold">
+                <?php if (!empty($row['id_myrep_cluster']) || !empty($row['id_mainfeeder'])): ?>
+                    <a href="<?= $detailUrl ?>" class="font-weight-bold">
                         <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
                     </a>
                 <?php else: ?>
                     <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php endif; ?>
+                <?php if ($isMainfeeder): ?>
+                    <div><span class="badge badge-warning"><?= htmlspecialchars($projectType, ENT_QUOTES, 'UTF-8') ?></span></div>
                 <?php endif; ?>
                 <div class="text-muted small"><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></div>
             </td>
@@ -184,20 +195,24 @@ $renderDrmTableRows = static function (array $rows) {
             <td>
                 <div class="drm-status-scope">
                     <div class="drm-status-scope__item">
-                        <span class="drm-status-scope__name">Cluster :</span>
+                        <span class="drm-status-scope__name"><?= $isMainfeeder ? 'Mainfeeder' : 'Cluster' ?> :</span>
                         <span class="badge badge-<?= drmBadgeClass($clusterStatusLabel) ?> drm-status-scope__badge"><?= htmlspecialchars($clusterStatusLabel) ?></span>
                     </div>
-                    <div class="drm-status-scope__item">
-                        <span class="drm-status-scope__name">Subfeeder :</span>
-                        <span class="badge badge-<?= drmBadgeClass($subfeederStatusLabel) ?> drm-status-scope__badge"><?= htmlspecialchars($subfeederStatusLabel) ?></span>
-                    </div>
+                    <?php if (!$isMainfeeder): ?>
+                        <div class="drm-status-scope__item">
+                            <span class="drm-status-scope__name">Subfeeder :</span>
+                            <span class="badge badge-<?= drmBadgeClass($subfeederStatusLabel) ?> drm-status-scope__badge"><?= htmlspecialchars($subfeederStatusLabel) ?></span>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </td>
             <td><?= (int) ($row['doc_approved'] ?? 0) ?>/<?= (int) ($row['doc_total'] ?? 0) ?> approved</td>
             <td><span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span></td>
             <td>
-                <?php if ($hasDrm): ?>
-                    <a href="<?= base_url('DRM_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-primary">Detail</a>
+                <?php if ($isMainfeeder): ?>
+                    <a href="<?= $detailUrl ?>" class="btn btn-sm btn-outline-primary"><?= $hasDrm ? 'Detail' : 'Input DRM' ?></a>
+                <?php elseif ($hasDrm): ?>
+                    <a href="<?= $detailUrl ?>" class="btn btn-sm btn-outline-primary">Detail</a>
                     <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
@@ -261,9 +276,6 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                 <div class="col-sm-6">
                     <h1 class="m-0 text-dark">DRM MyRep</h1>
                 </div>
-                <div class="col-sm-6 text-right">
-                    <a href="<?= base_url('DRM_MyRep/mainfeeder') ?>" class="btn btn-dark">DRM Mainfeeder</a>
-                </div>
             </div>
         </div>
     </section>
@@ -297,7 +309,18 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                         <div class="card-body">
                             <form method="get" action="<?= base_url('DRM_MyRep') ?>">
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label class="drm-field-label">Tipe Project</label>
+                                            <select name="project_type" class="form-control drm-input">
+                                                <option value="">Semua Tipe</option>
+                                                <option value="CLUSTER" <?= $selectedProjectType === 'CLUSTER' ? 'selected' : '' ?>>Cluster</option>
+                                                <option value="MAINFEEDER" <?= $selectedProjectType === 'MAINFEEDER' ? 'selected' : '' ?>>Mainfeeder</option>
+                                                <option value="FWA" <?= $selectedProjectType === 'FWA' ? 'selected' : '' ?>>FWA</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label class="drm-field-label">Kota</label>
                                             <select name="city" class="form-control drm-input">
@@ -308,7 +331,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label class="drm-field-label">Status</label>
                                             <select name="status" class="form-control drm-input">
@@ -319,7 +342,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-end">
+                                    <div class="col-md-3 d-flex align-items-end">
                                         <div class="form-group mb-0 w-100 d-flex justify-content-between drm-filter-actions">
                                             <a href="<?= base_url('DRM_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
@@ -1200,6 +1223,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         var drmCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
         var drmRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
         var drmSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
+        var drmSelectedProjectType = '<?= htmlspecialchars((string) $selectedProjectType, ENT_QUOTES) ?>';
         var drmStatusSummaryByTab = <?= json_encode($drmStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var importedDrmRows = [];
 
@@ -1839,6 +1863,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 var params = new URLSearchParams();
                 if (drmSelectedStatus) {
                     params.set('status', drmSelectedStatus);
+                }
+                if (drmSelectedProjectType) {
+                    params.set('project_type', drmSelectedProjectType);
                 }
                 regionalValues.forEach(function (regional) { params.append('regional[]', regional); });
                 cityValues.forEach(function (city) { params.append('city[]', city); });

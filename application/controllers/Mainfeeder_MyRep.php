@@ -25,7 +25,8 @@ class Mainfeeder_MyRep extends CI_Controller
         $userId = (int) $this->session->userdata('id_user');
         $payload = $this->collectMainfeederPayload($userId);
         $id = $this->MMainfeeder_MyRep->saveMainfeeder($payload);
-        $this->session->set_flashdata($id > 0 ? 'success' : 'error', $id > 0 ? 'Mainfeeder berhasil disimpan.' : 'Mainfeeder gagal disimpan.');
+        $projectLabel = $this->projectTypeLabel($payload['project_type'] ?? 'MAINFEEDER');
+        $this->session->set_flashdata($id > 0 ? 'success' : 'error', $id > 0 ? $projectLabel . ' berhasil disimpan.' : $projectLabel . ' gagal disimpan.');
         redirect($id > 0 ? 'DRM_MyRep/mainfeeder/' . $id : 'MyRepublik_Project');
     }
 
@@ -171,7 +172,7 @@ class Mainfeeder_MyRep extends CI_Controller
             return;
         }
 
-        $this->jsonResponse(true, $saved . ' mainfeeder berhasil diimport, ' . $poSaved . ' PO diproses, ' . $terminSaved . ' termin diupdate. ' . $skipped . ' baris dilewati.', [
+        $this->jsonResponse(true, $saved . ' project standalone berhasil diimport, ' . $poSaved . ' PO diproses, ' . $terminSaved . ' termin diupdate. ' . $skipped . ' baris dilewati.', [
             'saved' => $saved,
             'po_saved' => $poSaved,
             'termin_saved' => $terminSaved,
@@ -187,8 +188,8 @@ class Mainfeeder_MyRep extends CI_Controller
         $filename = 'template_import_myrep_mainfeeder_' . date('Ymd_His') . '.csv';
         $headers = $this->getMainfeederImportHeaders();
         $examples = [
-            ['DRM', 'MALANG', '', '', 'Main Feeder - OLT A to OLT B', '', '5328/FEEDER/PROCUREMENT/VII/2024', '2024-07-29', '1200', '2024-09-24', 'OLT A', 'Contoh DRM', '', '', '', '', '', '', '', 'INITIAL', 'PARTIAL PAYMENT', '0', '7400000001', '2024-10-10', '100000000', '', 'Contoh PO', '2024-10-25', '20000000', '20000000', '2024-11-25', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-            ['CHECKLIST DOKUMENT', 'MANADO', '', '', 'Main Feeder - OLT C to OLT D', 'FMND0001', '5759/FEEDER/PROCUREMENT/VIII/2024', '2024-08-30', '900', '2024-09-24', '', '', '2026-01-14', '2026-01-14', 'DONE', 'CLOSED', 'CLOSED', 'CLOSED', '', 'FINAL', 'PARTIAL PAYMENT', '0', '7400000002', '2024-10-10', '120000000', '110000000', '', '2024-10-25', '24000000', '24000000', '2026-04-30', '2026-04-30', '', '30000000', '2026-04-30', '2026-06-18', '', '18000000', '', 'FULL UPLOAD', '', '36000000', '', '', '', '12000000'],
+            ['MAINFEEDER', 'DRM', 'MALANG', '', '', 'Main Feeder - OLT A to OLT B', '', '5328/FEEDER/PROCUREMENT/VII/2024', '2024-07-29', '1200', '2024-09-24', 'OLT A', 'Contoh DRM', '', '', '', '', '', '', '', 'INITIAL', 'PARTIAL PAYMENT', '0', '7400000001', '2024-10-10', '100000000', '', 'Contoh PO', '2024-10-25', '20000000', '20000000', '2024-11-25', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+            ['FWA', 'CHECKLIST DOKUMENT', 'MANADO', '', '', 'FWA Site C', 'FWA0001', '5759/FWA/PROCUREMENT/VIII/2024', '2024-08-30', '900', '2024-09-24', '', '', '2026-01-14', '2026-01-14', 'DONE', 'CLOSED', 'CLOSED', 'CLOSED', '', 'FINAL', 'PARTIAL PAYMENT', '0', '7400000002', '2024-10-10', '120000000', '110000000', '', '2024-10-25', '24000000', '24000000', '2026-04-30', '2026-04-30', '', '30000000', '2026-04-30', '2026-06-18', '', '18000000', '', 'FULL UPLOAD', '', '36000000', '', '', '', '12000000'],
         ];
 
         $this->output
@@ -487,11 +488,46 @@ class Mainfeeder_MyRep extends CI_Controller
     public function updateTermin($mainfeederId = 0)
     {
         $this->requireLogin();
+        $mainfeederId = (int) $mainfeederId;
         $terminId = (int) $this->input->post('id_po_termin');
+        $termin = $this->MMainfeeder_MyRep->getTerminById($terminId);
+        if (empty($termin) || (int) ($termin['id_mainfeeder'] ?? 0) !== $mainfeederId) {
+            $this->session->set_flashdata('error', 'Termin PO tidak valid.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $statusTermin = strtoupper(trim((string) $this->input->post('status_termin'))) ?: 'NOT READY';
+        if (!in_array($statusTermin, ['NOT READY', 'READY BILLING', 'BILLED', 'PAID'], true)) {
+            $statusTermin = 'NOT READY';
+        }
+        $invoiceDate = $this->normalizeDate($this->input->post('invoice_date'));
+        $terminNo = (int) ($termin['termin_no'] ?? 0);
+        if (in_array($statusTermin, ['BILLED', 'PAID'], true) && $invoiceDate === null) {
+            $this->session->set_flashdata('error', 'Termin belum bisa berstatus ' . $statusTermin . ' karena tanggal invoice wajib diisi.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+        if (
+            $terminNo >= 2
+            && $terminNo <= 5
+            && in_array($statusTermin, ['BILLED', 'PAID'], true)
+            && $this->normalizeCertificateDateValue((string) ($termin['sertifikat_invoice_date'] ?? '')) === ''
+        ) {
+            $this->session->set_flashdata('error', 'Termin ' . $terminNo . ' belum bisa ditagihkan karena sertifikat belum berisi tanggal release yang valid.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+        if ($terminNo === 5 && in_array($statusTermin, ['BILLED', 'PAID'], true) && !$this->isStandaloneFacTerminDue($termin)) {
+            $this->session->set_flashdata('error', 'Termin 5 FAC belum bisa ditagihkan karena belum BJT 90 hari dari tanggal sertifikat RFS.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
         $ok = $this->MMainfeeder_MyRep->updateTermin($terminId, [
-            'status_termin' => strtoupper(trim((string) $this->input->post('status_termin'))) ?: 'NOT READY',
+            'status_termin' => $statusTermin,
             'invoice_number' => $this->input->post('invoice_number'),
-            'invoice_date' => $this->normalizeDate($this->input->post('invoice_date')),
+            'invoice_date' => $invoiceDate,
             'invoice_value' => $this->normalizeNumber($this->input->post('invoice_value')) ?: null,
             'bast_date' => $this->normalizeDate($this->input->post('bast_date')),
             'payment_date' => $this->normalizeDate($this->input->post('payment_date')),
@@ -505,7 +541,29 @@ class Mainfeeder_MyRep extends CI_Controller
     public function saveTerminCertificate($mainfeederId = 0)
     {
         $this->requireLogin();
-        $ok = $this->MMainfeeder_MyRep->updateTerminCertificate((int) $this->input->post('id_po_termin'), trim((string) $this->input->post('sertifikat_invoice')), (int) $this->session->userdata('id_user'));
+        $mainfeederId = (int) $mainfeederId;
+        $terminId = (int) $this->input->post('id_po_termin');
+        $certificateValue = trim((string) $this->input->post('sertifikat_invoice'));
+        $termin = $this->MMainfeeder_MyRep->getTerminById($terminId);
+        if (empty($termin) || (int) ($termin['id_mainfeeder'] ?? 0) !== $mainfeederId) {
+            $this->session->set_flashdata('error', 'Termin sertifikat tidak valid.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $terminNo = (int) ($termin['termin_no'] ?? 0);
+        $certificateDateValue = $this->normalizeCertificateDateValue($certificateValue);
+        if ($certificateDateValue !== '' && $terminNo >= 2 && $terminNo <= 5) {
+            $readiness = $this->getStandaloneCertificateReadiness($mainfeederId, $termin);
+            if (empty($readiness['is_ready'])) {
+                $this->session->set_flashdata('error', $this->buildStandaloneCertificateBlockedMessage($terminNo, $readiness));
+                $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+                return;
+            }
+            $certificateValue = $certificateDateValue;
+        }
+
+        $ok = $this->MMainfeeder_MyRep->updateTerminCertificate($terminId, $certificateValue, (int) $this->session->userdata('id_user'));
         $this->session->set_flashdata($ok ? 'success' : 'error', $ok ? 'Sertifikat termin berhasil disimpan.' : 'Sertifikat termin gagal disimpan.');
         $this->redirectBack('PO_MyRep/mainfeeder/' . (int) $mainfeederId);
     }
@@ -518,9 +576,87 @@ class Mainfeeder_MyRep extends CI_Controller
         $this->redirectBack('Checklist_Dokument_MyRep/detailMainfeeder/' . (int) $mainfeederId);
     }
 
+    private function getStandaloneCertificateReadiness($mainfeederId, array $termin)
+    {
+        $terminNo = (int) ($termin['termin_no'] ?? 0);
+        $term4CertificateValue = '';
+        if ($terminNo === 5) {
+            $term4CertificateValue = $this->getStandaloneTerm4CertificateValue($termin);
+        }
+
+        return $this->MChecklist_Dokument_MyRep->getMainfeederCertificateReadiness(
+            (int) $mainfeederId,
+            $terminNo,
+            $term4CertificateValue
+        );
+    }
+
+    private function buildStandaloneCertificateBlockedMessage($terminNo, array $readiness)
+    {
+        $terminNo = (int) $terminNo;
+        if ($terminNo === 5) {
+            if (empty($readiness['rfs_certificate_date'])) {
+                return 'Claim sertifikat FAC belum bisa disimpan karena sertifikat RFS term 4 belum release.';
+            }
+            return 'Claim sertifikat FAC belum bisa disimpan karena belum BJT 90 hari dari tanggal sertifikat RFS.';
+        }
+
+        $sowType = (string) ($readiness['sow_type'] ?? '');
+        return 'Claim sertifikat termin ' . $terminNo . ' belum bisa disimpan karena dokumen ' . ($sowType !== '' ? $sowType : 'checklist')
+            . ' belum full approved ASTRI (' . (int) ($readiness['approved_docs'] ?? 0) . '/' . (int) ($readiness['required_docs'] ?? 0) . ').';
+    }
+
+    private function isStandaloneFacTerminDue(array $termin)
+    {
+        $term4CertificateValue = $this->getStandaloneTerm4CertificateValue($termin);
+        $rfsCertificateDate = $this->normalizeCertificateDateValue($term4CertificateValue);
+        if ($rfsCertificateDate === '') {
+            return false;
+        }
+
+        return strtotime(date('Y-m-d')) >= strtotime($rfsCertificateDate . ' +90 days');
+    }
+
+    private function getStandaloneTerm4CertificateValue(array $termin)
+    {
+        $headerId = (int) ($termin['id_po_header'] ?? 0);
+        if ($headerId <= 0) {
+            return '';
+        }
+
+        $row = $this->db
+            ->select('sertifikat_invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where('id_po_header', $headerId)
+            ->where('termin_no', 4)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return (string) ($row['sertifikat_invoice_date'] ?? '');
+    }
+
+    private function normalizeCertificateDateValue($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return date('Y-m-d', strtotime($value));
+        }
+        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
+            $timestamp = strtotime($value);
+            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        }
+
+        return '';
+    }
+
     private function collectMainfeederPayload($userId)
     {
         return [
+            'project_type' => $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($this->input->post('project_type') ?: 'MAINFEEDER'),
             'cluster_code' => $this->input->post('cluster_code'),
             'mainfeeder_name' => $this->input->post('mainfeeder_name'),
             'current_status' => $this->input->post('current_status') ?: 'DRM',
@@ -541,6 +677,34 @@ class Mainfeeder_MyRep extends CI_Controller
             'created_by' => (int) $userId,
             'updated_by' => (int) $userId,
         ];
+    }
+
+    private function projectTypeLabel($projectType)
+    {
+        $projectType = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($projectType);
+        return $projectType === 'FWA' ? 'FWA' : 'Mainfeeder';
+    }
+
+    private function detectStandaloneProjectType(array $row)
+    {
+        $rawProjectType = strtoupper(trim((string) ($row['project_type'] ?? '')));
+        if (in_array($rawProjectType, ['MAINFEEDER', 'FWA'], true)) {
+            return $rawProjectType;
+        }
+
+        $signals = strtoupper(implode(' ', [
+            (string) ($row['mainfeeder_name'] ?? ''),
+            (string) ($row['cluster_name'] ?? ''),
+            (string) ($row['project_name'] ?? ''),
+            (string) ($row['po_mainfeeder_number'] ?? ''),
+            (string) ($row['remark_mainfeeder'] ?? ''),
+        ]));
+
+        if (strpos($signals, '[FWA]') !== false || preg_match('/(^|[^A-Z0-9])FWA([^A-Z0-9]|$)/', $signals)) {
+            return 'FWA';
+        }
+
+        return 'MAINFEEDER';
     }
 
     private function importMainfeederRows(array $sheetData, $userId)
@@ -639,6 +803,7 @@ class Mainfeeder_MyRep extends CI_Controller
     private function getMainfeederImportHeaders()
     {
         return [
+            'project_type',
             'status_current',
             'city_name',
             'district_name',
@@ -705,6 +870,7 @@ class Mainfeeder_MyRep extends CI_Controller
             'length_meter' => ['length_meter', 'length', 'panjang_meter', 'panjang', 'homepass_drm'],
             'atp_date' => ['atp_date', 'actual_atp_date'],
             'remark_mainfeeder' => ['remark_mainfeeder', 'remark', 'remarks'],
+            'project_type' => ['project_type', 'tipe_project', 'type_project', 'tipe'],
         ];
 
         foreach ($aliases as $target => $keys) {
@@ -721,6 +887,7 @@ class Mainfeeder_MyRep extends CI_Controller
 
         $row['cluster_code'] = strtoupper(trim((string) ($row['cluster_code'] ?? '')));
         $row['mainfeeder_name'] = trim((string) ($row['mainfeeder_name'] ?? ''));
+        $row['project_type'] = $this->detectStandaloneProjectType($row);
         $row['current_status'] = $this->normalizeImportStatus($row['current_status'] ?? 'DRM');
         $row['_cluster_code_generated'] = false;
         if ($row['cluster_code'] === '') {
@@ -763,6 +930,17 @@ class Mainfeeder_MyRep extends CI_Controller
             $errors[] = 'month_num harus 1-12';
         }
 
+        foreach ($this->getMainfeederChecklistImportColumnMap() as $column => $target) {
+            $rawStatus = trim((string) ($row[$column] ?? ''));
+            $statusChecklist = $this->normalizeChecklistImportStatus($rawStatus);
+            if ($rawStatus !== '' && $statusChecklist === '') {
+                $errors[] = $column . ' harus AREA, HO, EMR, CLOSED, atau NRO khusus mainfeeder_rfs';
+            }
+            if ($statusChecklist === 'NRO' && $column !== 'mainfeeder_rfs') {
+                $errors[] = 'NRO hanya boleh diisi pada mainfeeder_rfs';
+            }
+        }
+
         return $errors;
     }
 
@@ -771,6 +949,7 @@ class Mainfeeder_MyRep extends CI_Controller
         $row = $this->normalizeMainfeederImportRow($row);
         return [
             'cluster_code' => $row['cluster_code'] ?? '',
+            'project_type' => $row['project_type'] ?? 'MAINFEEDER',
             '_cluster_code_generated' => !empty($row['_cluster_code_generated']),
             'mainfeeder_name' => $row['mainfeeder_name'] ?? '',
             'current_status' => $row['current_status'] ?? 'DRM',
@@ -804,6 +983,7 @@ class Mainfeeder_MyRep extends CI_Controller
         }
 
         $this->saveImportDrmMetadata($mainfeederId, $row, $userId);
+        $this->applyImportedMainfeederChecklistStatuses($mainfeederId, $row, $userId);
 
         $poSaved = 0;
         $terminSaved = 0;
@@ -811,6 +991,8 @@ class Mainfeeder_MyRep extends CI_Controller
         if ($poNumber !== '') {
             $poValue = $this->getImportPoValue($row);
             $poId = $this->MMainfeeder_MyRep->upsertPoHeader($mainfeederId, [
+                'project_type' => $row['project_type'] ?? 'MAINFEEDER',
+                'po_type' => $row['project_type'] ?? 'MAINFEEDER',
                 'po_category' => $this->normalizePoCategory($row['po_mainfeeder_category'] ?? 'INITIAL'),
                 'po_number' => $poNumber,
                 'po_date' => $this->normalizeDate($row['po_mainfeeder_date'] ?? ''),
@@ -856,6 +1038,14 @@ class Mainfeeder_MyRep extends CI_Controller
 
     private function saveImportTerminRows($poId, array $row, $userId)
     {
+        $poHeader = $this->db
+            ->select('id_po_header, id_mainfeeder')
+            ->from('tb_myrep_po_header')
+            ->where('id_po_header', (int) $poId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $mainfeederId = (int) ($poHeader['id_mainfeeder'] ?? 0);
         $saved = 0;
         for ($terminNo = 1; $terminNo <= 5; $terminNo++) {
             $prefix = 'po_mainfeeder_termin' . $terminNo . '_';
@@ -869,16 +1059,36 @@ class Mainfeeder_MyRep extends CI_Controller
 
             $invoiceDate = $this->normalizeDate($submitRaw);
             $nilai = $this->normalizeNumber($nilaiRaw);
+            $certificateDate = $this->normalizeCertificateDateValue($sertifikatRaw);
+            $existingCertificateDate = $this->normalizeCertificateDateValue($this->getImportTerminCertificateValue($poId, $terminNo));
+            $certificateAllowed = true;
+            if ($terminNo >= 2 && $terminNo <= 5 && $certificateDate !== '') {
+                $readiness = $this->MChecklist_Dokument_MyRep->getMainfeederCertificateReadiness(
+                    $mainfeederId,
+                    $terminNo,
+                    $terminNo === 5 ? $this->getImportTerm4CertificateValue($poId, $row) : ''
+                );
+                $certificateAllowed = !empty($readiness['is_ready']);
+            }
+            $hasReleasedCertificate = $terminNo < 2 || $terminNo > 5 || ($certificateDate !== '' && $certificateAllowed) || $existingCertificateDate !== '';
+            if ($terminNo === 5 && $hasReleasedCertificate) {
+                $term4CertificateForFac = $this->getImportTerm4CertificateValue($poId, $row);
+                $term4CertificateDate = $this->normalizeCertificateDateValue($term4CertificateForFac);
+                $hasReleasedCertificate = $term4CertificateDate !== '' && strtotime(date('Y-m-d')) >= strtotime($term4CertificateDate . ' +90 days');
+            }
+            $canBill = $terminNo === 1 || $hasReleasedCertificate;
             $payload = [
-                'status_termin' => $invoiceDate || $nilai > 0 ? 'BILLED' : 'READY BILLING',
+                'status_termin' => ($canBill && ($invoiceDate || $nilai > 0)) ? 'BILLED' : 'READY BILLING',
                 'updated_by' => (int) $userId,
             ];
-            if ($invoiceDate) {
+            if ($invoiceDate && $canBill) {
                 $payload['invoice_date'] = $invoiceDate;
             }
             if ($nilai > 0) {
                 $payload['termin_value'] = $nilai;
-                $payload['invoice_value'] = $nilai;
+                if ($canBill) {
+                    $payload['invoice_value'] = $nilai;
+                }
             }
             $remarks = [];
             if ($planRaw !== '') {
@@ -886,7 +1096,14 @@ class Mainfeeder_MyRep extends CI_Controller
             }
             if ($sertifikatRaw !== '') {
                 $remarks[] = 'Sertifikat: ' . $sertifikatRaw;
-                $payload['sertifikat_invoice_date'] = $sertifikatRaw;
+                if ($terminNo < 2 || $terminNo > 5 || $certificateDate === '' || $certificateAllowed) {
+                    $payload['sertifikat_invoice_date'] = $certificateDate !== '' ? $certificateDate : $sertifikatRaw;
+                } else {
+                    $remarks[] = 'Sertifikat belum disimpan: syarat ASTRI/FAC belum terpenuhi';
+                }
+            }
+            if (($invoiceDate || $nilai > 0) && !$canBill) {
+                $remarks[] = 'Invoice belum disimpan: sertifikat belum release atau belum eligible';
             }
             if (!empty($remarks)) {
                 $payload['remark_termin'] = implode(' | ', $remarks);
@@ -899,9 +1116,43 @@ class Mainfeeder_MyRep extends CI_Controller
         return $saved;
     }
 
+    private function getImportTerminCertificateValue($poId, $terminNo)
+    {
+        $term = $this->db
+            ->select('sertifikat_invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where('id_po_header', (int) $poId)
+            ->where('termin_no', (int) $terminNo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return (string) ($term['sertifikat_invoice_date'] ?? '');
+    }
+
+    private function getImportTerm4CertificateValue($poId, array $row)
+    {
+        $raw = trim((string) ($row['po_mainfeeder_termin4_sertifikat_invoice'] ?? ''));
+        if ($this->normalizeCertificateDateValue($raw) !== '') {
+            return $raw;
+        }
+
+        $term4 = $this->db
+            ->select('sertifikat_invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where('id_po_header', (int) $poId)
+            ->where('termin_no', 4)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return (string) ($term4['sertifikat_invoice_date'] ?? '');
+    }
+
     private function buildMainfeederSnapshotLine(array $row, array $headers)
     {
         $lineMap = array_fill_keys($headers, '');
+        $lineMap['project_type'] = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($row['project_type'] ?? 'MAINFEEDER');
         $lineMap['status_current'] = $this->exportMainfeederStatus($row['current_status'] ?? '');
         $lineMap['city_name'] = $row['city_name'] ?? '';
         $lineMap['mainfeeder_name'] = $row['mainfeeder_name'] ?? '';
@@ -911,6 +1162,7 @@ class Mainfeeder_MyRep extends CI_Controller
         $lineMap['email_atp_date'] = $row['email_atp_date'] ?? '';
         $lineMap['actual_atp_date'] = $row['atp_date'] ?? '';
         $lineMap['status_atp'] = $row['status_atp'] ?? '';
+        $lineMap = array_merge($lineMap, $this->getCurrentMainfeederChecklistImportStatuses((int) ($row['id_mainfeeder'] ?? 0)));
 
         $poHeaders = !empty($row['id_mainfeeder']) ? $this->MMainfeeder_MyRep->getPoHeaders((int) $row['id_mainfeeder']) : [];
         $po = !empty($poHeaders[0]) ? $poHeaders[0] : [];
@@ -958,6 +1210,494 @@ class Mainfeeder_MyRep extends CI_Controller
         return '';
     }
 
+    private function getMainfeederChecklistImportColumnMap()
+    {
+        return [
+            'mainfeeder_cwatp' => ['sow_type' => 'CW ATP'],
+            'mainfeeder_fullopm' => ['sow_type' => 'FULL OPM'],
+            'mainfeeder_rfs' => ['sow_type' => 'RFS'],
+        ];
+    }
+
+    private function normalizeChecklistImportStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        return in_array($status, ['AREA', 'HO', 'EMR', 'CLOSED', 'NRO'], true) ? $status : '';
+    }
+
+    private function hasMainfeederChecklistImportPayload(array $row)
+    {
+        foreach (array_keys($this->getMainfeederChecklistImportColumnMap()) as $column) {
+            if (trim((string) ($row[$column] ?? '')) !== '') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function applyImportedMainfeederChecklistStatuses($mainfeederId, array $row, $userId)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0 || !$this->hasMainfeederChecklistImportPayload($row)) {
+            return;
+        }
+        if (
+            !$this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_package')
+            || !$this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file')
+            || !$this->db->table_exists('md_rfs_myrep_mainfeeder_doc_group')
+            || !$this->db->table_exists('md_rfs_myrep_mainfeeder_doc_item')
+        ) {
+            return;
+        }
+
+        $atpDate = $this->normalizeDate($row['atp_date'] ?? ($row['actual_atp_date'] ?? ''));
+        $this->MChecklist_Dokument_MyRep->ensureMainfeederPackages($mainfeederId, $atpDate);
+
+        $packageRows = $this->db
+            ->select('p.id_doc_package_mainfeeder, p.id_doc_group_mainfeeder, g.sow_type')
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('md_rfs_myrep_mainfeeder_doc_group g', 'g.id_doc_group_mainfeeder = p.id_doc_group_mainfeeder', 'inner')
+            ->where('p.id_mainfeeder', $mainfeederId)
+            ->where('g.is_active', 1)
+            ->get()
+            ->result_array();
+        if (empty($packageRows)) {
+            return;
+        }
+
+        $packagesBySow = [];
+        $groupIds = [];
+        foreach ($packageRows as $package) {
+            $packagesBySow[strtoupper(trim((string) ($package['sow_type'] ?? '')))] = $package;
+            $groupIds[] = (int) ($package['id_doc_group_mainfeeder'] ?? 0);
+        }
+        $groupIds = array_values(array_unique(array_filter($groupIds)));
+        if (empty($groupIds)) {
+            return;
+        }
+
+        $itemRows = $this->db
+            ->select('id_doc_item_mainfeeder, id_doc_group_mainfeeder, doc_name')
+            ->from('md_rfs_myrep_mainfeeder_doc_item')
+            ->where_in('id_doc_group_mainfeeder', $groupIds)
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->order_by('sort_no', 'ASC')
+            ->order_by('id_doc_item_mainfeeder', 'ASC')
+            ->get()
+            ->result_array();
+
+        $itemsByGroup = [];
+        foreach ($itemRows as $item) {
+            $itemsByGroup[(int) ($item['id_doc_group_mainfeeder'] ?? 0)][] = $item;
+        }
+
+        foreach ($this->getMainfeederChecklistImportColumnMap() as $column => $target) {
+            $status = $this->normalizeChecklistImportStatus($row[$column] ?? '');
+            if ($status === '') {
+                continue;
+            }
+
+            $sowType = strtoupper(trim((string) ($target['sow_type'] ?? '')));
+            if (empty($packagesBySow[$sowType])) {
+                continue;
+            }
+
+            $package = $packagesBySow[$sowType];
+            $packageId = (int) ($package['id_doc_package_mainfeeder'] ?? 0);
+            $groupId = (int) ($package['id_doc_group_mainfeeder'] ?? 0);
+            if ($packageId <= 0 || $groupId <= 0) {
+                continue;
+            }
+
+            if ($status === 'AREA') {
+                $this->clearImportedMainfeederChecklistPackage($packageId);
+            } else {
+                foreach ($itemsByGroup[$groupId] ?? [] as $item) {
+                    $this->upsertImportedMainfeederChecklistFile(
+                        $packageId,
+                        (int) ($item['id_doc_item_mainfeeder'] ?? 0),
+                        $status,
+                        $userId,
+                        (string) ($item['doc_name'] ?? ''),
+                        $row['mainfeeder_rfs_nro_flow'] ?? ''
+                    );
+                }
+            }
+
+            $this->refreshImportedMainfeederChecklistPackageStatus($packageId, $userId);
+        }
+    }
+
+    private function upsertImportedMainfeederChecklistFile($packageId, $itemId, $cutoffStatus, $userId, $docName = '', $nroFlowStatus = '')
+    {
+        $packageId = (int) $packageId;
+        $itemId = (int) $itemId;
+        $userId = (int) $userId;
+        $cutoffStatus = $this->normalizeChecklistImportStatus($cutoffStatus);
+        if ($packageId <= 0 || $itemId <= 0 || $cutoffStatus === '' || $cutoffStatus === 'AREA') {
+            return;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        $isHoDone = in_array($cutoffStatus, ['EMR', 'CLOSED', 'NRO'], true);
+        $isNroProjectOpname = $cutoffStatus === 'NRO'
+            && strtoupper(trim((string) $docName)) === 'PROJECT OPNAME';
+
+        $statusFile = $isHoDone ? 'APPROVED' : 'UPLOADED';
+        $astriStatus = 'NY';
+        $astriSubmittedDate = null;
+        $astriUpdatedAt = null;
+        $astriRemark = null;
+        if ($cutoffStatus === 'CLOSED') {
+            $astriStatus = 'APPROVED';
+            $astriSubmittedDate = $today;
+            $astriUpdatedAt = $now;
+            $astriRemark = 'Imported cutoff ASTRI closed.';
+        } elseif ($isNroProjectOpname) {
+            $astriStatus = $this->normalizeProjectOpnameFlowImportStatus($nroFlowStatus);
+            if ($astriStatus === '') {
+                $astriStatus = 'WAITING WASPANG';
+            }
+            $astriSubmittedDate = $today;
+            $astriUpdatedAt = $now;
+            $astriRemark = 'Imported cutoff NRO - Project Opname.';
+        } elseif ($cutoffStatus === 'EMR') {
+            $astriStatus = 'ON REVIEW';
+            $astriSubmittedDate = $today;
+            $astriUpdatedAt = $now;
+            $astriRemark = 'Imported cutoff ASTRI on review.';
+        }
+
+        $remark = 'Imported cutoff checklist mainfeeder status: ' . $cutoffStatus . '. File fisik tidak tersedia pada data cutoff.';
+        $payload = [
+            'id_doc_package_mainfeeder' => $packageId,
+            'id_doc_item_mainfeeder' => $itemId,
+            'file_name' => null,
+            'file_path' => null,
+            'is_document_not_required' => 1,
+            'status_file' => $statusFile,
+            'remark' => $remark,
+            'uploaded_by' => $userId,
+            'uploaded_at' => $now,
+            'approved_by' => $isHoDone ? $userId : null,
+            'reviewed_at' => $isHoDone ? $now : null,
+            'approved_at' => $isHoDone ? $now : null,
+            'astri_submitted_date' => $astriSubmittedDate,
+            'astri_status' => $astriStatus,
+            'astri_status_updated_at' => $astriUpdatedAt,
+            'astri_remark' => $astriRemark,
+        ];
+        if ($this->db->field_exists('submitted_at', 'tb_rfs_myrep_mainfeeder_doc_file')) {
+            $payload['submitted_at'] = $now;
+        }
+
+        $existing = $this->db
+            ->from('tb_rfs_myrep_mainfeeder_doc_file')
+            ->where('id_doc_package_mainfeeder', $packageId)
+            ->where('id_doc_item_mainfeeder', $itemId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (!empty($existing['id_doc_file_mainfeeder'])) {
+            $this->db
+                ->where('id_doc_file_mainfeeder', (int) $existing['id_doc_file_mainfeeder'])
+                ->update('tb_rfs_myrep_mainfeeder_doc_file', $payload);
+            $fileId = (int) $existing['id_doc_file_mainfeeder'];
+            $actionType = $statusFile === 'APPROVED' ? 'APPROVED' : 'REUPLOADED';
+        } else {
+            $this->db->insert('tb_rfs_myrep_mainfeeder_doc_file', $payload);
+            $fileId = (int) $this->db->insert_id();
+            $actionType = $statusFile === 'APPROVED' ? 'APPROVED' : 'UPLOADED';
+        }
+
+        $this->createImportedMainfeederChecklistFileLog($fileId, $packageId, $itemId, $actionType, $statusFile, $remark, $userId);
+    }
+
+    private function clearImportedMainfeederChecklistPackage($packageId)
+    {
+        $packageId = (int) $packageId;
+        if ($packageId <= 0 || !$this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file')) {
+            return;
+        }
+
+        $this->db
+            ->where('id_doc_package_mainfeeder', $packageId)
+            ->group_start()
+                ->where('file_path IS NULL', null, false)
+                ->or_where('file_path', '')
+            ->group_end()
+            ->like('remark', 'Imported cutoff checklist mainfeeder status:', 'after')
+            ->delete('tb_rfs_myrep_mainfeeder_doc_file');
+    }
+
+    private function createImportedMainfeederChecklistFileLog($fileId, $packageId, $itemId, $actionType, $statusAfter, $remark, $userId)
+    {
+        if ((int) $fileId <= 0 || !$this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file_log')) {
+            return;
+        }
+
+        $payload = [
+            'id_doc_file_mainfeeder' => (int) $fileId,
+            'id_doc_package_mainfeeder' => (int) $packageId,
+            'id_doc_item_mainfeeder' => (int) $itemId,
+            'action_type' => in_array($actionType, ['UPLOADED', 'REUPLOADED', 'REJECTED', 'APPROVED'], true) ? $actionType : 'UPLOADED',
+            'status_after' => (string) $statusAfter,
+            'file_name' => '[Imported Cutoff]',
+            'remark' => (string) $remark,
+            'action_by' => (int) $userId,
+            'action_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $this->db->insert('tb_rfs_myrep_mainfeeder_doc_file_log', $payload);
+    }
+
+    private function refreshImportedMainfeederChecklistPackageStatus($packageId, $userId)
+    {
+        $package = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_package', [
+            'id_doc_package_mainfeeder' => (int) $packageId,
+        ])->row_array();
+        if (!$package) {
+            return;
+        }
+
+        $required = (int) $this->db
+            ->from('md_rfs_myrep_mainfeeder_doc_item')
+            ->where('id_doc_group_mainfeeder', (int) $package['id_doc_group_mainfeeder'])
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->count_all_results();
+
+        $uploadedRow = $this->db->query(
+            "SELECT COUNT(*) AS total, MAX(uploaded_at) AS latest_uploaded
+             FROM tb_rfs_myrep_mainfeeder_doc_file
+             WHERE id_doc_package_mainfeeder = ?
+             AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
+             AND status_file IN ('UPLOADED','APPROVED')",
+            [(int) $packageId]
+        )->row_array();
+
+        $uploaded = (int) ($uploadedRow['total'] ?? 0);
+        $statusPackage = 'NOT STARTED';
+        if ($required > 0 && $uploaded > 0) {
+            $statusPackage = $uploaded >= $required ? 'DONE' : 'ON PROGRESS';
+        }
+
+        $actualSubmit = null;
+        if ($required > 0 && $uploaded >= $required && !empty($uploadedRow['latest_uploaded'])) {
+            $actualSubmit = substr((string) $uploadedRow['latest_uploaded'], 0, 10);
+        }
+
+        $this->db
+            ->where('id_doc_package_mainfeeder', (int) $packageId)
+            ->update('tb_rfs_myrep_mainfeeder_doc_package', [
+                'status_package' => $statusPackage,
+                'actual_submit_doc_date' => $actualSubmit,
+                'updated_by' => (int) $userId,
+            ]);
+    }
+
+    private function getCurrentMainfeederChecklistImportStatuses($mainfeederId)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        $result = array_fill_keys(array_keys($this->getMainfeederChecklistImportColumnMap()), '');
+        $result['mainfeeder_rfs_nro_flow'] = '';
+        if ($mainfeederId <= 0 || !$this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_package')) {
+            return $result;
+        }
+
+        $packageRows = $this->db
+            ->select('p.id_doc_package_mainfeeder, p.id_doc_group_mainfeeder, g.sow_type')
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('md_rfs_myrep_mainfeeder_doc_group g', 'g.id_doc_group_mainfeeder = p.id_doc_group_mainfeeder', 'inner')
+            ->where('p.id_mainfeeder', $mainfeederId)
+            ->where('g.is_active', 1)
+            ->get()
+            ->result_array();
+        if (empty($packageRows)) {
+            return $result;
+        }
+
+        $groupIds = [];
+        $packageIds = [];
+        foreach ($packageRows as $package) {
+            $groupIds[] = (int) ($package['id_doc_group_mainfeeder'] ?? 0);
+            $packageIds[] = (int) ($package['id_doc_package_mainfeeder'] ?? 0);
+        }
+        $groupIds = array_values(array_unique(array_filter($groupIds)));
+        $packageIds = array_values(array_unique(array_filter($packageIds)));
+        if (empty($groupIds) || empty($packageIds)) {
+            return $result;
+        }
+
+        $itemRows = $this->db
+            ->select('id_doc_item_mainfeeder, id_doc_group_mainfeeder, doc_name')
+            ->from('md_rfs_myrep_mainfeeder_doc_item')
+            ->where_in('id_doc_group_mainfeeder', $groupIds)
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->get()
+            ->result_array();
+
+        $itemsByGroup = [];
+        foreach ($itemRows as $item) {
+            $itemsByGroup[(int) ($item['id_doc_group_mainfeeder'] ?? 0)][] = $item;
+        }
+
+        $fileRows = $this->db
+            ->select('id_doc_package_mainfeeder, id_doc_item_mainfeeder, file_path, is_document_not_required, status_file, astri_status')
+            ->from('tb_rfs_myrep_mainfeeder_doc_file')
+            ->where_in('id_doc_package_mainfeeder', $packageIds)
+            ->get()
+            ->result_array();
+
+        $filesByPackageItem = [];
+        foreach ($fileRows as $file) {
+            $filesByPackageItem[(int) ($file['id_doc_package_mainfeeder'] ?? 0)][(int) ($file['id_doc_item_mainfeeder'] ?? 0)] = $file;
+        }
+
+        $columnBySow = [];
+        foreach ($this->getMainfeederChecklistImportColumnMap() as $column => $target) {
+            $columnBySow[strtoupper(trim((string) $target['sow_type']))] = $column;
+        }
+
+        foreach ($packageRows as $package) {
+            $sowType = strtoupper(trim((string) ($package['sow_type'] ?? '')));
+            if (!isset($columnBySow[$sowType])) {
+                continue;
+            }
+
+            $packageId = (int) ($package['id_doc_package_mainfeeder'] ?? 0);
+            $groupId = (int) ($package['id_doc_group_mainfeeder'] ?? 0);
+            $result[$columnBySow[$sowType]] = $this->deriveMainfeederChecklistImportStatus(
+                $itemsByGroup[$groupId] ?? [],
+                $filesByPackageItem[$packageId] ?? []
+            );
+            if ($sowType === 'RFS') {
+                $result['mainfeeder_rfs_nro_flow'] = $this->deriveMainfeederProjectOpnameFlowImportStatus(
+                    $itemsByGroup[$groupId] ?? [],
+                    $filesByPackageItem[$packageId] ?? []
+                );
+            }
+        }
+
+        return $result;
+    }
+
+    private function deriveMainfeederChecklistImportStatus(array $items, array $filesByItem)
+    {
+        $required = count($items);
+        if ($required <= 0) {
+            return '';
+        }
+
+        $uploaded = 0;
+        $approved = 0;
+        $astriApproved = 0;
+        $hasProjectOpnameNroFlow = false;
+        foreach ($items as $item) {
+            $itemId = (int) ($item['id_doc_item_mainfeeder'] ?? 0);
+            $file = $filesByItem[$itemId] ?? [];
+            $statusFile = strtoupper(trim((string) ($file['status_file'] ?? '')));
+            $astriStatus = strtoupper(trim((string) ($file['astri_status'] ?? 'NY')));
+            $hasDocument = !empty($file)
+                && (
+                    trim((string) ($file['file_path'] ?? '')) !== ''
+                    || (int) ($file['is_document_not_required'] ?? 0) === 1
+                );
+
+            if ($hasDocument && in_array($statusFile, ['UPLOADED', 'APPROVED'], true)) {
+                $uploaded++;
+            }
+            if ($statusFile === 'APPROVED') {
+                $approved++;
+            }
+            if ($astriStatus === 'APPROVED') {
+                $astriApproved++;
+            }
+            if (
+                strtoupper(trim((string) ($item['doc_name'] ?? ''))) === 'PROJECT OPNAME'
+                && $this->normalizeProjectOpnameFlowImportStatus($astriStatus) !== ''
+            ) {
+                $hasProjectOpnameNroFlow = true;
+            }
+        }
+
+        if ($uploaded <= 0) {
+            return 'AREA';
+        }
+        if ($uploaded < $required || $approved < $required) {
+            return 'HO';
+        }
+        if ($hasProjectOpnameNroFlow) {
+            return 'NRO';
+        }
+        if ($astriApproved >= $required) {
+            return 'CLOSED';
+        }
+        return 'EMR';
+    }
+
+    private function normalizeProjectOpnameFlowImportStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $status = preg_replace('/\s+/', ' ', str_replace(['_', '-'], ' ', $status));
+        $map = [
+            'WASPANG' => 'WAITING WASPANG',
+            'WASPAN' => 'WAITING WASPANG',
+            'WAITING WASPANG' => 'WAITING WASPANG',
+            'WAITING WASPAN' => 'WAITING WASPANG',
+            'PLANNING' => 'WAITING PLANNING',
+            'WAITING PLANNING' => 'WAITING PLANNING',
+            'TEAMLEADER' => 'WAITING TL',
+            'TEAM LEADER' => 'WAITING TL',
+            'TL' => 'WAITING TL',
+            'WAITING TL' => 'WAITING TL',
+            'LOGISTIK' => 'WAITING LOGISTIK',
+            'LOGISTIC' => 'WAITING LOGISTIK',
+            'WAITING LOGISTIK' => 'WAITING LOGISTIK',
+            'WAITING LOGISTIC' => 'WAITING LOGISTIK',
+        ];
+        return $map[$status] ?? '';
+    }
+
+    private function getProjectOpnameFlowImportLabel($status)
+    {
+        $status = $this->normalizeProjectOpnameFlowImportStatus($status);
+        switch ($status) {
+            case 'WAITING PLANNING':
+                return 'PLANNING';
+            case 'WAITING TL':
+                return 'TEAMLEADER';
+            case 'WAITING LOGISTIK':
+                return 'LOGISTIK';
+            case 'WAITING WASPANG':
+                return 'WASPANG';
+            default:
+                return '';
+        }
+    }
+
+    private function deriveMainfeederProjectOpnameFlowImportStatus(array $items, array $filesByItem)
+    {
+        foreach ($items as $item) {
+            if (strtoupper(trim((string) ($item['doc_name'] ?? ''))) !== 'PROJECT OPNAME') {
+                continue;
+            }
+
+            $itemId = (int) ($item['id_doc_item_mainfeeder'] ?? 0);
+            $file = $filesByItem[$itemId] ?? [];
+            $label = $this->getProjectOpnameFlowImportLabel((string) ($file['astri_status'] ?? ''));
+            if ($label !== '') {
+                return $label;
+            }
+        }
+
+        return '';
+    }
+
     private function normalizeImportStatus($value)
     {
         $status = strtoupper(trim((string) $value));
@@ -994,15 +1734,17 @@ class Mainfeeder_MyRep extends CI_Controller
     private function generateMainfeederImportCode(array $row)
     {
         $poNumber = strtoupper(trim((string) ($row['po_mainfeeder_number'] ?? '')));
+        $projectType = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($row['project_type'] ?? 'MAINFEEDER');
+        $prefix = $projectType === 'FWA' ? 'FWA' : 'MF';
         if ($poNumber !== '') {
             $code = preg_replace('/[^A-Z0-9]+/', '', $poNumber);
-            return 'MFPO' . substr($code, 0, 40);
+            return $prefix . 'PO' . substr($code, 0, 40);
         }
         $city = strtoupper(trim((string) ($row['city_name'] ?? '')));
         $name = strtoupper(trim((string) ($row['mainfeeder_name'] ?? '')));
         $hash = strtoupper(substr(md5($city . '|' . $name), 0, 10));
         $cityCode = preg_replace('/[^A-Z0-9]+/', '', $city);
-        return 'MF' . substr($cityCode, 0, 8) . $hash;
+        return $prefix . substr($cityCode, 0, 8) . $hash;
     }
 
     private function normalizeAtpStatus($value)
@@ -1212,7 +1954,6 @@ class Mainfeeder_MyRep extends CI_Controller
 
     private function readCsvSheetData($filePath)
     {
-        $this->loadPHPExcel();
         $rows = [];
         if (($handle = fopen($filePath, 'r')) === false) {
             return $rows;
@@ -1221,12 +1962,26 @@ class Mainfeeder_MyRep extends CI_Controller
         while (($data = fgetcsv($handle, 0, ',')) !== false) {
             $row = [];
             foreach ($data as $index => $value) {
-                $row[PHPExcel_Cell::stringFromColumnIndex($index)] = $value;
+                $row[$this->excelColumnNameFromIndex($index)] = $value;
             }
             $rows[$rowIndex++] = $row;
         }
         fclose($handle);
         return $rows;
+    }
+
+    private function excelColumnNameFromIndex($index)
+    {
+        $index = (int) $index;
+        $columnName = '';
+
+        do {
+            $remainder = $index % 26;
+            $columnName = chr(65 + $remainder) . $columnName;
+            $index = intdiv($index, 26) - 1;
+        } while ($index >= 0);
+
+        return $columnName;
     }
 
     private function loadPHPExcel()
@@ -1331,8 +2086,12 @@ class Mainfeeder_MyRep extends CI_Controller
     {
         $mainfeederId = (int) ($mainfeeder['id_mainfeeder'] ?? 0);
         $status = strtoupper(trim((string) ($mainfeeder['current_status'] ?? 'DRM')));
-        if ($status === 'IMPLEMENTASI') {
+        $projectType = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($mainfeeder['project_type'] ?? 'MAINFEEDER');
+        if ($status === 'IMPLEMENTASI' && $projectType !== 'FWA') {
             return 'Implementasi_BOQ_MyRep/mainfeeder/' . $mainfeederId;
+        }
+        if ($status === 'IMPLEMENTASI' && $projectType === 'FWA') {
+            return 'ATP_MyRep/mainfeeder/' . $mainfeederId;
         }
         if ($status === 'ATP') {
             return 'ATP_MyRep/mainfeeder/' . $mainfeederId;

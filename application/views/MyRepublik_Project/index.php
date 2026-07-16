@@ -9,7 +9,7 @@ if (!function_exists('myrepDashNumber')) {
 if (!function_exists('myrepClusterDetailUrl')) {
     function myrepClusterDetailUrl($row)
     {
-        if (strtoupper(trim((string) ($row['project_type'] ?? ''))) === 'MAINFEEDER') {
+        if (in_array(strtoupper(trim((string) ($row['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
             $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
             return $mainfeederId > 0 ? base_url('Mainfeeder_MyRep/detail/' . $mainfeederId) : '#';
         }
@@ -160,6 +160,7 @@ $deleteClusterRows = $deleteClusterRows ?? [];
 $renderClusterRows = !empty($renderClusterRows);
 $summaryFooter = null;
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+$canDeleteCluster = !empty($canDeleteCluster) || $isSuperAdmin;
 if (!empty($summaryRows)) {
     $lastSummaryRow = end($summaryRows);
     if (strtoupper((string) ($lastSummaryRow['city_name'] ?? '')) === 'TOTAL') {
@@ -199,6 +200,9 @@ if (!empty($summaryRows)) {
                 if ($selectedStatus !== '') {
                     $baseQuery['status'] = $selectedStatus;
                 }
+                if (($selectedProjectType ?? '') !== '') {
+                    $baseQuery['project_type'] = $selectedProjectType;
+                }
                 ?>
 
                 <div class="myrep-hero">
@@ -219,7 +223,7 @@ if (!empty($summaryRows)) {
                                 Import PO & Certificate CSV
                             </button>
                             <button type="button" class="btn btn-outline-warning btn-sm" data-toggle="modal" data-target="#modalImportMainfeeder">
-                                Import Mainfeeder
+                                Import Mainfeeder/FWA
                             </button>
                         </div>
                     </div>
@@ -259,7 +263,7 @@ if (!empty($summaryRows)) {
                     <div class="card-body">
                         <form method="get" class="row">
                             <input type="hidden" name="metric" value="<?= htmlspecialchars($metricMode) ?>">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Kota</label>
                                     <select name="city" class="form-control">
@@ -270,7 +274,7 @@ if (!empty($summaryRows)) {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Status</label>
                                     <select name="status" class="form-control">
@@ -281,7 +285,18 @@ if (!empty($summaryRows)) {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Tipe Project</label>
+                                    <select name="project_type" class="form-control">
+                                        <option value="">Semua Tipe</option>
+                                        <option value="CLUSTER" <?= ($selectedProjectType ?? '') === 'CLUSTER' ? 'selected' : '' ?>>Cluster</option>
+                                        <option value="MAINFEEDER" <?= ($selectedProjectType ?? '') === 'MAINFEEDER' ? 'selected' : '' ?>>Mainfeeder</option>
+                                        <option value="FWA" <?= ($selectedProjectType ?? '') === 'FWA' ? 'selected' : '' ?>>FWA</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
                                 <div class="form-group mb-0">
                                     <button type="submit" class="btn btn-primary">Terapkan Filter</button>
                                     <a href="<?= base_url('MyRepublik_Project?metric=' . urlencode($metricMode)) ?>" class="btn btn-outline-secondary">Reset</a>
@@ -377,7 +392,7 @@ if (!empty($summaryRows)) {
                         <h3 class="card-title mb-0">Daftar Project</h3>
                         <div class="d-flex align-items-center">
                             <div class="myrep-table-note mr-2">Angka utama saat ini: <?= $metricMode === 'PO' ? 'PO Value' : 'Homepass' ?></div>
-                            <?php if ($isSuperAdmin): ?>
+                            <?php if ($canDeleteCluster): ?>
                                 <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#modal-delete-myrep-clusters">Hapus All</button>
                             <?php endif; ?>
                         </div>
@@ -416,14 +431,15 @@ if (!empty($summaryRows)) {
                                                     <?php endif; ?>
                                                 </strong>
                                                  <div class="small text-muted">
-                                                    <span class="badge <?= strtoupper((string) ($row['project_type'] ?? 'CLUSTER')) === 'MAINFEEDER' ? 'badge-warning' : 'badge-dark' ?>"><?= htmlspecialchars((string) ($row['project_type'] ?? 'CLUSTER')) ?></span>
+                                                    <?php $rowProjectType = strtoupper((string) ($row['project_type'] ?? 'CLUSTER')); ?>
+                                                    <span class="badge <?= in_array($rowProjectType, ['MAINFEEDER', 'FWA'], true) ? 'badge-warning' : 'badge-dark' ?>"><?= htmlspecialchars((string) ($row['project_type'] ?? 'CLUSTER')) ?></span>
                                                     <?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?>
                                                  </div>
                                             </td>
                                             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
                                             <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current_display'] ?? $row['status_current'] ?? '-')) ?></span></td>
-                                            <td><?= $metricMode === 'PO' ? myrepDashNumber((float) ($row['metric_value'] ?? 0)) : myrepDashNumber((float) ($row['metric_value'] ?? 0)) . (strtoupper((string) ($row['project_type'] ?? 'CLUSTER')) === 'MAINFEEDER' ? ' M' : ' HP') ?></td>
+                                            <td><?= $metricMode === 'PO' ? myrepDashNumber((float) ($row['metric_value'] ?? 0)) : myrepDashNumber((float) ($row['metric_value'] ?? 0)) . (in_array(strtoupper((string) ($row['project_type'] ?? 'CLUSTER')), ['MAINFEEDER', 'FWA'], true) ? ' M' : ' HP') ?></td>
                                             <td><?= (int) ($row['po_count'] ?? 0) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['rpm'] ?? '-')) ?> / <?= htmlspecialchars((string) ($row['spv'] ?? '-')) ?></td>
                                             <td><?= !empty($row['drm_date']) ? htmlspecialchars((string) $row['drm_date']) : '-' ?></td>
@@ -435,10 +451,15 @@ if (!empty($summaryRows)) {
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
-                                                <?php if ($isSuperAdmin && (int) ($row['id_myrep_cluster'] ?? 0) > 0): ?>
+                                                <?php if ($canDeleteCluster && (int) ($row['id_myrep_cluster'] ?? 0) > 0): ?>
                                                     <form method="post" action="<?= base_url('MyRepublik_Project/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini? Seluruh flow MyRep dari BAK sampai Checklist Dokument akan ikut terhapus.');">
                                                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
                                                         <button type="submit" class="btn btn-sm btn-danger">Hapus Cluster</button>
+                                                    </form>
+                                                <?php elseif ($canDeleteCluster && in_array(strtoupper((string) ($row['project_type'] ?? '')), ['MAINFEEDER', 'FWA'], true) && (int) ($row['id_mainfeeder'] ?? 0) > 0): ?>
+                                                    <form method="post" action="<?= base_url('MyRepublik_Project/deleteMainfeeder') ?>" class="d-inline" onsubmit="return confirm('Hapus project ini? Seluruh flow, PO, dokumen, dan progress terkait akan ikut terhapus.');">
+                                                        <input type="hidden" name="mainfeeder_id" value="<?= (int) $row['id_mainfeeder'] ?>">
+                                                        <button type="submit" class="btn btn-sm btn-danger">Hapus Project</button>
                                                     </form>
                                                 <?php endif; ?>
                                             </td>
@@ -464,14 +485,14 @@ if (!empty($summaryRows)) {
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Import Mainfeeder</h5>
+                <h5 class="modal-title">Import Mainfeeder/FWA</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="upload-dropzone" id="myrep-mainfeeder-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
                     <input type="file" id="myrep-mainfeeder-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
-                    <div><strong>Drag & drop file CSV/XLSX mainfeeder di sini</strong></div>
-                    <div class="text-muted small">Minimal header: mainfeeder_name dan city_name. cluster_code boleh kosong; PO dan termin akan diproses jika kolomnya tersedia.</div>
+                    <div><strong>Drag & drop file CSV/XLSX mainfeeder/FWA di sini</strong></div>
+                    <div class="text-muted small">Minimal header: mainfeeder_name dan city_name. Isi project_type MAINFEEDER atau FWA; PO dan termin akan diproses jika kolomnya tersedia.</div>
                     <div id="myrep-mainfeeder-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
                 </div>
                 <div class="mt-3">
@@ -495,7 +516,7 @@ if (!empty($summaryRows)) {
     </div>
 </div>
 
-<?php if ($isSuperAdmin): ?>
+<?php if ($canDeleteCluster): ?>
 <div class="modal fade" id="modal-delete-myrep-clusters" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -642,6 +663,7 @@ if (!empty($summaryRows)) {
         var myrepMetricMode = <?= json_encode($metricMode) ?>;
         var myrepSelectedCity = <?= json_encode($selectedCity) ?>;
         var myrepSelectedStatus = <?= json_encode($selectedStatus) ?>;
+        var myrepSelectedProjectType = <?= json_encode($selectedProjectType ?? '') ?>;
 
         function escapeHtml(value) {
             return String(value == null ? '' : value)
@@ -756,6 +778,7 @@ if (!empty($summaryRows)) {
                 data: {
                     city: myrepSelectedCity,
                     status: myrepSelectedStatus,
+                    project_type: myrepSelectedProjectType,
                     metric: myrepMetricMode
                 }
             }).done(function (response) {
@@ -912,6 +935,7 @@ if (!empty($summaryRows)) {
                         data: function (payload) {
                             payload.city = myrepSelectedCity;
                             payload.status = myrepSelectedStatus;
+                            payload.project_type = myrepSelectedProjectType;
                             payload.metric = myrepMetricMode;
                         }
                     },

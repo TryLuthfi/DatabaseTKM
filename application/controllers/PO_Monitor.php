@@ -13,6 +13,8 @@ class PO_Monitor extends CI_Controller
 
     public function index()
     {
+        $this->MPO_Monitor->rebuildMyRepSyncClaimsSince('2026-07-01', (int) $this->session->userdata('id_user'));
+
         $selectedBowheer = $this->input->get('bowheer');
         $selectedSla = $this->input->get('sla');
         $fromMonth = $this->input->get('from_month') ?: date('Y-m');
@@ -294,42 +296,6 @@ class PO_Monitor extends CI_Controller
         $result = $this->MPO_Monitor->purgeStandaloneData();
         $this->session->set_flashdata('status', !empty($result['status']));
         $this->session->set_flashdata('error_log', $result['message']);
-        redirect('PO_Monitor');
-    }
-
-    public function sync_myrep_claims()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        if (!$this->canManagePoImport()) {
-            show_error('Fitur sync MyRep hanya tersedia untuk user khusus.', 403);
-            return;
-        }
-
-        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
-            show_404();
-            return;
-        }
-
-        $cutoffDate = $this->input->post('cutoff_date') ?: '2026-07-01';
-        $result = $this->MPO_Monitor->rebuildMyRepSyncClaimsSince($cutoffDate, (int) $this->session->userdata('id_user'));
-        if (!empty($result['status'])) {
-            $message = 'Sync MyRep selesai. '
-                . 'Inserted: ' . (int) ($result['inserted'] ?? 0)
-                . ', Updated: ' . (int) ($result['updated'] ?? 0)
-                . ', Deleted old sync: ' . (int) ($result['deleted'] ?? 0)
-                . ', Skipped: ' . (int) ($result['skipped'] ?? 0)
-                . ', Unmatched: ' . count($result['unmatched'] ?? []);
-            $this->session->set_flashdata('status', true);
-            $this->session->set_flashdata('error_log', $message);
-        } else {
-            $this->session->set_flashdata('status', false);
-            $this->session->set_flashdata('error_log', $result['message'] ?? 'Sync MyRep gagal.');
-        }
-
         redirect('PO_Monitor');
     }
 
@@ -677,17 +643,22 @@ class PO_Monitor extends CI_Controller
             $html .= $this->renderRegionalSectionHeader($regional, count($regionalRows), $regionalTotal);
             $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
             $html .= '<thead><tr>';
-            $html .= '<th>No</th><th>Type Project</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Target Period') . '</th><th class="text-right">Amount</th>';
+            $html .= '<th>No</th><th>Type Project</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Period / Claim Date') . '</th><th class="text-right">Amount</th>';
             $html .= '</tr></thead><tbody>';
 
             foreach ($regionalRows as $index => $row) {
                 $amount = (float) ($row['amount'] ?? 0);
-                $period = $type === 'achieved'
-                    ? $this->formatIndonesianDate($row['invoice_date'] ?? '')
-                    : $this->formatIndonesianDate($row['target_week_start'] ?? '') . ' s/d ' . $this->formatIndonesianDate($row['target_week_end'] ?? '');
                 $termIndex = (int) ($row['term_index'] ?? 0);
+                $isInvoicedTarget = $type === 'target' && (float) ($row['invoiced_amount'] ?? 0) > 0;
+                if ($type === 'achieved') {
+                    $period = $this->formatIndonesianDate($row['invoice_date'] ?? '');
+                } elseif ($isInvoicedTarget && !empty($row['claim_invoice_date'])) {
+                    $period = $this->formatIndonesianDate($row['claim_invoice_date']);
+                } else {
+                    $period = $this->formatIndonesianDate($row['target_week_start'] ?? '') . ' s/d ' . $this->formatIndonesianDate($row['target_week_end'] ?? '');
+                }
 
-                $html .= '<tr data-term-index="' . $termIndex . '" data-filter-amount="' . htmlspecialchars((string) $amount) . '">';
+                $html .= '<tr class="' . ($isInvoicedTarget ? 'po-monitor-detail-row-invoiced' : '') . '" data-term-index="' . $termIndex . '" data-filter-amount="' . htmlspecialchars((string) $amount) . '" data-invoiced="' . ($isInvoicedTarget ? '1' : '0') . '">';
                 $html .= '<td>' . ($index + 1) . '</td>';
                 $html .= '<td>' . htmlspecialchars($row['type_project'] ?: '-') . '</td>';
                 $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';

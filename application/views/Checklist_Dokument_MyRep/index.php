@@ -166,6 +166,7 @@ if (!function_exists('checklist_doc_status_label')) {
 $summary = isset($dashboardSummary) && is_array($dashboardSummary) ? $dashboardSummary : [];
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS') : true;
 $isClusterTableFocus = !empty($isClusterTableFocus);
+$selectedProjectType = strtoupper(trim((string) ($selectedProjectType ?? '')));
 $totalCluster = (int) ($summary['totalCluster'] ?? count($clusterList));
 $clusterDoneRfsBelumAtp = (int) ($summary['clusterDoneRfsBelumAtp'] ?? 0);
 $clusterDoneAtpBelumDokument = (int) ($summary['clusterDoneAtpBelumDokument'] ?? 0);
@@ -812,9 +813,8 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
         <div class="container-fluid checklist-board">
             <div class="mb-3">
                 <div class="btn-group">
-                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn <?= $isClusterTableFocus ? 'btn-dark' : 'btn-outline-dark' ?>">Monitoring Cluster</a>
+                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn <?= $isClusterTableFocus ? 'btn-dark' : 'btn-outline-dark' ?>">Monitoring Project</a>
                     <a href="<?= base_url('Checklist_Dokument_MyRep/old') ?>" class="btn <?= $isClusterTableFocus ? 'btn-outline-dark' : 'btn-dark' ?>">Tampilan Lama</a>
-                    <a href="<?= base_url('Checklist_Dokument_MyRep/mainfeeder') ?>" class="btn btn-outline-dark">Monitoring Mainfeeder</a>
                 </div>
             </div>
             <?php if (empty($atpSchemaReady)): ?>
@@ -962,7 +962,7 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
 
             <div class="card table-card" id="cluster-monitor-card">
                 <div class="card-header">
-                    <h3 class="card-title">List Cluster ATP DONE</h3>
+                    <h3 class="card-title">List Project ATP DONE</h3>
                     <div class="card-tools">
                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
                             <i class="fas fa-minus"></i>
@@ -972,6 +972,17 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
                 <div class="card-body">
                     <form method="get" action="<?= base_url($isClusterTableFocus ? 'Checklist_Dokument_MyRep' : 'Checklist_Dokument_MyRep/old') ?>" id="cluster-filter-form">
                         <div class="cluster-filter-bar">
+                            <?php if ($isClusterTableFocus): ?>
+                                <div class="cluster-filter-group">
+                                    <label>Tipe Project</label>
+                                    <select name="project_type" id="cluster-filter-project-type" class="form-control form-control-sm">
+                                        <option value="">Semua Tipe</option>
+                                        <option value="CLUSTER" <?= $selectedProjectType === 'CLUSTER' ? 'selected' : '' ?>>Cluster</option>
+                                        <option value="MAINFEEDER" <?= $selectedProjectType === 'MAINFEEDER' ? 'selected' : '' ?>>Mainfeeder</option>
+                                        <option value="FWA" <?= $selectedProjectType === 'FWA' ? 'selected' : '' ?>>FWA</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
                             <div class="cluster-filter-group">
                                 <label>Regional</label>
                                 <select name="regional" id="cluster-filter-regional" class="form-control form-control-sm">
@@ -1054,7 +1065,7 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
                             <thead>
                                 <tr>
                                     <th class="focus-no">No</th>
-                                    <th>Cluster</th>
+                                    <th>Project</th>
                                     <th>Timeline ATP</th>
                                     <th>CW ATP</th>
                                     <th>Full OPM</th>
@@ -1068,7 +1079,13 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
                                 <?php if (!empty($clusterList)): ?>
                                     <?php foreach ($clusterList as $index => $cluster): ?>
                                         <?php
+                                        $projectType = strtoupper(trim((string) ($cluster['project_type'] ?? 'CLUSTER')));
+                                        $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
                                         $clusterId = (int) ($cluster['id_cluster'] ?? 0);
+                                        $mainfeederId = (int) ($cluster['id_mainfeeder'] ?? 0);
+                                        $detailUrl = $isMainfeeder
+                                            ? base_url('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId)
+                                            : base_url('Checklist_Dokument_MyRep/detail/' . $clusterId);
                                         $homepass = number_format((float) ($cluster['homepass'] ?? 0), 0, ',', '.');
                                         ?>
                                         <tr
@@ -1080,12 +1097,15 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
                                             data-astri-rfs-progress="<?= checklist_doc_progress_bucket($cluster['astri_doc_rfs_submitted'] ?? 0, $cluster['doc_rfs_required'] ?? 0) ?>">
                                             <td class="focus-no"><?= $index + 1 ?></td>
                                             <td class="focus-cluster-cell">
-                                                <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . $clusterId) ?>" class="cluster-name-link">
+                                                <a href="<?= $detailUrl ?>" class="cluster-name-link">
                                                     <?= html_escape($cluster['cluster_name'] ?? '-') ?>
                                                 </a>
+                                                <?php if ($isMainfeeder): ?>
+                                                    <div><span class="badge badge-warning"><?= html_escape($projectType) ?></span></div>
+                                                <?php endif; ?>
                                                 <div class="focus-cluster-meta">
-                                                    <?= html_escape($cluster['city_name'] ?? '-') ?> - HP <?= html_escape($homepass) ?><br>
-                                                    RFS <?= html_escape(checklist_doc_format_date($cluster['tanggal_rfs'] ?? null)) ?>
+                                                    <?= html_escape($cluster['city_name'] ?? '-') ?> - <?= $isMainfeeder ? 'Meter' : 'HP' ?> <?= html_escape($homepass) ?><br>
+                                                    <?= $isMainfeeder ? 'ATP' : 'RFS' ?> <?= html_escape(checklist_doc_format_date($isMainfeeder ? ($cluster['actual_atp_date'] ?? null) : ($cluster['tanggal_rfs'] ?? null))) ?>
                                                 </div>
                                             </td>
                                             <td class="focus-timeline-cell">
@@ -1605,12 +1625,14 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
         var checklistStatePrefix = 'checklist-dokument-myrep-state:v1:';
         var checklistStateScope = {
             regional: <?= json_encode((string) $selectedRegional, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
-            city: <?= json_encode((string) $selectedCity, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>
+            city: <?= json_encode((string) $selectedCity, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
+            projectType: <?= json_encode((string) $selectedProjectType, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>
         };
         var checklistStateKey = checklistStatePrefix
             + window.location.pathname
             + '|regional=' + checklistStateScope.regional
-            + '|city=' + checklistStateScope.city;
+            + '|city=' + checklistStateScope.city
+            + '|project_type=' + checklistStateScope.projectType;
         var checklistState = readChecklistState();
         var clusterTable = null;
         var itemTable = null;
@@ -1932,7 +1954,8 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
                 dataType: "json",
                 data: {
                     selected_city: "<?= htmlspecialchars($selectedCity, ENT_QUOTES) ?>",
-                    selected_regional: "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>"
+                    selected_regional: "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>",
+                    selected_project_type: "<?= htmlspecialchars($selectedProjectType, ENT_QUOTES) ?>"
                 }
             }).done(function(response) {
                 if (!response || response.status === false) {
@@ -1975,7 +1998,7 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
             setCardCollapsed('#item-monitor-card', !!checklistState.cards.itemCollapsed);
         }
 
-        $('#cluster-filter-regional, #cluster-filter-city').on('change', function() {
+        $('#cluster-filter-project-type, #cluster-filter-regional, #cluster-filter-city').on('change', function() {
             $('#cluster-filter-form').trigger('submit');
         });
 

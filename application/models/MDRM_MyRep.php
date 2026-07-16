@@ -29,6 +29,13 @@ class MDRM_MyRep extends CI_Model
         return true;
     }
 
+    public function mainfeederDrmTablesReady()
+    {
+        return $this->db->table_exists('tb_rfs_myrep_mainfeeder')
+            && $this->db->table_exists('tb_myrep_mainfeeder_drm')
+            && $this->db->table_exists('tb_myrep_mainfeeder_drm_boq');
+    }
+
     public function drmBoqTablesReady()
     {
         $requiredTables = [
@@ -105,6 +112,12 @@ class MDRM_MyRep extends CI_Model
             }
         }
 
+        foreach ($this->getMainfeederCityOptions() as $cityName) {
+            $cities[] = $cityName;
+        }
+
+        $cities = array_values(array_unique($cities));
+        sort($cities);
         return $cities;
     }
 
@@ -133,10 +146,19 @@ class MDRM_MyRep extends CI_Model
         return $query->get()->result_array();
     }
 
-    public function getDrmRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $drmDateStart = '', $drmDateEnd = '')
+    public function getDrmRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $drmDateStart = '', $drmDateEnd = '', $projectType = '')
     {
         if (!$this->drmTablesReady()) {
             return [];
+        }
+
+        $projectType = strtoupper(trim((string) $projectType));
+        if (!in_array($projectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $projectType = '';
+        }
+
+        if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            return $this->getMainfeederDrmRows($city, $status, $regional, $cityList, $regionalList, $drmDateStart, $drmDateEnd, $projectType);
         }
 
         $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
@@ -214,6 +236,7 @@ class MDRM_MyRep extends CI_Model
         $boqStatusMap = $this->getDrmBoqStatusMap(array_column($rows, 'id_myrep_cluster'));
         $scopeRequirementStatusMap = $this->getScopeRequirementStatusMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
+            $row['project_type'] = 'CLUSTER';
             $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $summary = $docSummaryMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0, 'rejected' => 0];
             $row['doc_total'] = $summary['total'];
@@ -235,7 +258,190 @@ class MDRM_MyRep extends CI_Model
             }));
         }
 
+        if ($projectType === '') {
+            $rows = array_merge($rows, $this->getMainfeederDrmRows($city, $status, $regional, $cityList, $regionalList, $drmDateStart, $drmDateEnd));
+        }
+
         return $rows;
+    }
+
+    private function getMainfeederDrmRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $drmDateStart = '', $drmDateEnd = '', $projectType = '')
+    {
+        if (!$this->mainfeederDrmTablesReady()) {
+            return [];
+        }
+
+        $projectType = strtoupper(trim((string) $projectType));
+        if (!in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            $projectType = '';
+        }
+        $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
+            ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
+            : "'MAINFEEDER'";
+
+        $this->db
+            ->select("
+                mf.id_mainfeeder,
+                0 AS id_myrep_cluster,
+                {$projectTypeSql} AS project_type,
+                mf.mainfeeder_name AS cluster_name,
+                mf.cluster_code,
+                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                COALESCE(mf.city_name, mt.city_name) AS city_name,
+                mf.current_status AS status_current,
+                mf.current_status AS stage_atp_status,
+                mf.length_meter AS hp_donasi,
+                NULL AS released_at,
+                drm.id_mainfeeder_drm AS id_drm,
+                drm.id_mainfeeder_drm,
+                drm.drm_date,
+                mf.length_meter AS homepass_drm,
+                drm.nama_olt,
+                drm.status_drm,
+                NULL AS screenshot_astri_path,
+                NULL AS screenshot_astri_name,
+                drm.remark_drm,
+                mf.year_num,
+                mf.month_num,
+                boq.review_status AS drm_cluster_status
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->join('tb_myrep_mainfeeder_drm drm', 'drm.id_mainfeeder = mf.id_mainfeeder', 'left')
+            ->join('tb_myrep_mainfeeder_drm_boq boq', 'boq.id_mainfeeder = mf.id_mainfeeder', 'left');
+
+        if ($projectType !== '') {
+            if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
+                $this->db->where($projectTypeSql . ' = ' . $this->db->escape($projectType), null, false);
+            } elseif ($projectType === 'FWA') {
+                return [];
+            }
+        }
+
+        if (!$this->applyAllowedCityRestriction('COALESCE(mf.city_name, mt.city_name)')) {
+            return [];
+        }
+        if ($city !== '') {
+            $this->db->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
+        }
+        if ($regional !== '') {
+            $this->db->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+        }
+        if (!empty($cityList)) {
+            $normalizedCities = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $cityList))));
+            if (!empty($normalizedCities)) {
+                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
+                $this->db->where('UPPER(COALESCE(mf.city_name, mt.city_name)) IN (' . implode(',', $escapedCities) . ')', null, false);
+            }
+        }
+        if (!empty($regionalList)) {
+            $normalizedRegionals = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $regionalList))));
+            if (!empty($normalizedRegionals)) {
+                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
+                $this->db->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+            }
+        }
+        if ($drmDateStart !== '') {
+            $this->db->where('drm.drm_date >=', $drmDateStart);
+        }
+        if ($drmDateEnd !== '') {
+            $this->db->where('drm.drm_date <=', $drmDateEnd);
+        }
+
+        $filterByDisplayStatus = false;
+        if ($status !== '') {
+            if (in_array($status, ['DRM', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'], true)) {
+                $this->db->where('UPPER(mf.current_status)', $status);
+            } else {
+                $filterByDisplayStatus = true;
+            }
+        }
+
+        $rows = $this->db
+            ->order_by('mf.updated_at', 'DESC')
+            ->order_by('mf.mainfeeder_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $docSummaryMap = $this->getMainfeederDocumentSummaryMap(array_column($rows, 'id_mainfeeder'));
+        foreach ($rows as &$row) {
+            $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
+            $summary = $docSummaryMap[$mainfeederId] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0, 'rejected' => 0];
+            $row['project_type'] = strtoupper(trim((string) ($row['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
+            $row['doc_total'] = $summary['total'];
+            $row['doc_uploaded'] = $summary['uploaded'];
+            $row['doc_approved'] = $summary['approved'];
+            $row['doc_rejected'] = $summary['rejected'];
+            $row['drm_cluster_status'] = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
+            $row['drm_subfeeder_status'] = '';
+            $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
+        }
+        unset($row);
+
+        if ($filterByDisplayStatus) {
+            $rows = array_values(array_filter($rows, function ($row) use ($status) {
+                return strtoupper(trim((string) ($row['display_status_drm'] ?? ''))) === strtoupper($status);
+            }));
+        }
+
+        return $rows;
+    }
+
+    private function getMainfeederCityOptions()
+    {
+        $rows = $this->getMainfeederRegionalCityRows();
+        $cities = [];
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $cities[] = $cityName;
+            }
+        }
+
+        return array_values(array_unique($cities));
+    }
+
+    private function getMainfeederRegionalOptions()
+    {
+        $rows = $this->getMainfeederRegionalCityRows();
+        $regionals = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regionalName !== '') {
+                $regionals[] = $regionalName;
+            }
+        }
+
+        return array_values(array_unique($regionals));
+    }
+
+    private function getMainfeederRegionalCityRows()
+    {
+        if (!$this->mainfeederDrmTablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->distinct()
+            ->select('COALESCE(mf.regional_name, mt.regional_name) AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('COALESCE(mf.city_name, mt.city_name) IS NOT NULL', null, false)
+            ->where('CHAR_LENGTH(TRIM(COALESCE(mf.city_name, mt.city_name))) > 0', null, false);
+
+        if (!$this->applyAllowedCityRestriction('COALESCE(mf.city_name, mt.city_name)')) {
+            return [];
+        }
+
+        return $this->db
+            ->order_by('regional_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->get()
+            ->result_array();
     }
 
     public function getRegionalOptions()
@@ -268,6 +474,10 @@ class MDRM_MyRep extends CI_Model
                 $regionals[] = $regionalName;
             }
         }
+        foreach ($this->getMainfeederRegionalOptions() as $regionalName) {
+            $regionals[] = $regionalName;
+        }
+        sort($regionals);
         return array_values(array_unique($regionals));
     }
 
@@ -299,6 +509,13 @@ class MDRM_MyRep extends CI_Model
 
         $map = [];
         foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($regionalName === '' || $cityName === '') continue;
+            if (!isset($map[$regionalName])) $map[$regionalName] = [];
+            $map[$regionalName][] = $cityName;
+        }
+        foreach ($this->getMainfeederRegionalCityRows() as $row) {
             $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($regionalName === '' || $cityName === '') continue;
@@ -1610,6 +1827,44 @@ class MDRM_MyRep extends CI_Model
         $map = [];
         foreach ($rows as $row) {
             $map[(int) $row['id_myrep_cluster']] = [
+                'total' => (int) $row['total_doc'],
+                'uploaded' => (int) $row['uploaded_doc'],
+                'approved' => (int) $row['approved_doc'],
+                'rejected' => (int) $row['rejected_doc'],
+            ];
+        }
+
+        return $map;
+    }
+
+    private function getMainfeederDocumentSummaryMap($mainfeederIds)
+    {
+        $mainfeederIds = array_values(array_filter(array_map('intval', (array) $mainfeederIds)));
+        if (
+            empty($mainfeederIds)
+            || !$this->db->table_exists('md_myrep_flow_doc_group')
+            || !$this->db->table_exists('md_myrep_flow_doc_item')
+            || !$this->db->table_exists('tb_myrep_mainfeeder_doc_package')
+            || !$this->db->table_exists('tb_myrep_mainfeeder_doc_file')
+        ) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select("p.id_mainfeeder, COUNT(i.id_doc_item) AS total_doc, SUM(CASE WHEN f.id_doc_file_mainfeeder_flow IS NOT NULL THEN 1 ELSE 0 END) AS uploaded_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'APPROVED' THEN 1 ELSE 0 END) AS approved_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_doc", false)
+            ->from('md_myrep_flow_doc_group g')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->join('tb_myrep_mainfeeder_doc_package p', "p.flow_type = 'DRM' AND p.id_doc_group = g.id_doc_group", 'left', false)
+            ->join('tb_myrep_mainfeeder_doc_file f', 'f.id_doc_package_mainfeeder_flow = p.id_doc_package_mainfeeder_flow AND f.id_doc_item = i.id_doc_item', 'left')
+            ->where('g.flow_type', 'DRM')
+            ->where_in('p.id_mainfeeder', $mainfeederIds)
+            ->group_by('p.id_mainfeeder')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['id_mainfeeder']] = [
                 'total' => (int) $row['total_doc'],
                 'uploaded' => (int) $row['uploaded_doc'],
                 'approved' => (int) $row['approved_doc'],

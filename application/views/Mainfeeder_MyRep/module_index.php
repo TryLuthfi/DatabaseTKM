@@ -250,7 +250,8 @@ $summaryCards = [
                                 <?php else: $no = 1; foreach ($rows as $row): ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
-                                        <td><span class="badge badge-dark">MAINFEEDER</span></td>
+                                        <?php $rowProjectType = strtoupper(trim((string) ($row['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER'; ?>
+                                        <td><span class="badge badge-dark"><?= mfModuleHtml($rowProjectType) ?></span></td>
                                         <td><?= mfModuleHtml($row['cluster_code'] ?? '-') ?></td>
                                         <td><strong><?= mfModuleHtml($row['mainfeeder_name'] ?? '-') ?></strong></td>
                                         <td><?= mfModuleHtml($row['city_name'] ?? '-') ?></td>

@@ -32,10 +32,15 @@ class DRM_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->get('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
 
         $data['title'] = 'DRM MyRep';
         $data['selectedCity'] = $selectedCity;
         $data['selectedStatus'] = $selectedStatus;
+        $data['selectedProjectType'] = $selectedProjectType;
         $data['isReady'] = $this->MDRM_MyRep->drmTablesReady();
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
         $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
@@ -45,7 +50,7 @@ class DRM_MyRep extends CI_Controller
         $data['regionalOptionsByCity'] = $this->MDRM_MyRep->getRegionalOptionsByCity();
         $data['eligibleClusterOptions'] = $this->MDRM_MyRep->getEligibleClusterOptions();
         $data['clusterRows'] = $data['isReady']
-            ? $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus)
+            ? $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus, '', [], [], '', '', $selectedProjectType)
             : [];
 
         $this->load->view('Templates/01_Header', $data);
@@ -76,8 +81,12 @@ class DRM_MyRep extends CI_Controller
         $cityList = $this->normalizeUpperList($this->input->get('city'));
         $drmDateStart = $this->normalizeDate($this->input->get('drm_date_start')) ?: '';
         $drmDateEnd = $this->normalizeDate($this->input->get('drm_date_end')) ?: '';
+        $selectedProjectType = strtoupper(trim((string) $this->input->get('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
 
-        $rows = $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus, $selectedRegional, $cityList, $regionalList, $drmDateStart, $drmDateEnd);
+        $rows = $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus, $selectedRegional, $cityList, $regionalList, $drmDateStart, $drmDateEnd, $selectedProjectType);
 
         $filename = 'report_drm_myrep_' . date('Ymd_His') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
@@ -820,30 +829,14 @@ class DRM_MyRep extends CI_Controller
 
         $mainfeederId = (int) $mainfeederId;
         if ($mainfeederId <= 0) {
-            $selectedCity = strtoupper(trim((string) $this->input->get('city')));
-            $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
-            $data['title'] = 'DRM Mainfeeder';
-            $data['section'] = 'drm';
-            $data['moduleTitle'] = 'DRM Mainfeeder';
-            $data['detailBase'] = 'DRM_MyRep/mainfeeder';
-            $data['isReady'] = $this->MMainfeeder_MyRep->tablesReady();
-            $data['selectedCity'] = $selectedCity;
-            $data['selectedStatus'] = $selectedStatus;
-            $data['cityOptions'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getCityOptions() : [];
-            $data['statusOptions'] = $this->MMainfeeder_MyRep->getStatusOptions();
-            $data['rows'] = $data['isReady'] ? $this->MMainfeeder_MyRep->getRows($selectedCity, $selectedStatus) : [];
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Mainfeeder_MyRep/module_index', $data);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
+            redirect('DRM_MyRep?project_type=MAINFEEDER');
             return;
         }
 
         $mainfeeder = $this->MMainfeeder_MyRep->getById($mainfeederId);
         if (empty($mainfeeder)) {
             $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
-            redirect('DRM_MyRep/mainfeeder');
+            redirect('DRM_MyRep?project_type=MAINFEEDER');
             return;
         }
 

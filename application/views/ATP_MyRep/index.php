@@ -2,6 +2,7 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('ATP_MyRep', 'EDIT') : true;
+$selectedProjectType = strtoupper(trim((string) ($selectedProjectType ?? '')));
 $summaryTotal = count($clusterList);
 $summaryTotalHp = 0;
 $stageSummary = [];
@@ -67,7 +68,7 @@ if (!function_exists('atpMyrepBadgeClass')) {
 
 $summaryCards = [
     [
-        'label' => 'Total Cluster ATP',
+        'label' => 'Total Project ATP',
         'count' => $summaryTotal,
         'hp' => $summaryTotalHp,
         'box' => 'bg-info',
@@ -181,9 +182,6 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                 <div class="col-sm-6">
                     <h1 class="m-0 text-dark">ATP MyRep</h1>
                 </div>
-                <div class="col-sm-6 text-right">
-                    <a href="<?= base_url('ATP_MyRep/mainfeeder') ?>" class="btn btn-dark">ATP Mainfeeder</a>
-                </div>
             </div>
         </div>
     </section>
@@ -225,7 +223,18 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                         <div class="card-body">
                             <form method="get" action="<?= base_url('ATP_MyRep') ?>">
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label class="atp-field-label">Tipe Project</label>
+                                            <select name="project_type" class="form-control atp-input">
+                                                <option value="">Semua Tipe</option>
+                                                <option value="CLUSTER" <?= $selectedProjectType === 'CLUSTER' ? 'selected' : '' ?>>Cluster</option>
+                                                <option value="MAINFEEDER" <?= $selectedProjectType === 'MAINFEEDER' ? 'selected' : '' ?>>Mainfeeder</option>
+                                                <option value="FWA" <?= $selectedProjectType === 'FWA' ? 'selected' : '' ?>>FWA</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label class="atp-field-label">Regional</label>
                                             <select name="regional" class="form-control atp-input">
@@ -238,7 +247,7 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label class="atp-field-label">Kota</label>
                                             <select name="city" class="form-control atp-input">
@@ -251,7 +260,7 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <div class="form-group">
                                             <label class="atp-field-label">Stage ATP</label>
                                             <select name="stage" class="form-control atp-input">
@@ -294,15 +303,15 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
 
             <div class="atp-toolbar">
                 <div class="atp-toolbar__title">
-                    <h3 class="mb-1">Monitoring ATP Cluster</h3>
-                    <p class="mb-0 text-muted">Pantau timeline ATP, evidence punclist, dan kesiapan cluster menuju checklist dokument.</p>
+                    <h3 class="mb-1">Monitoring ATP Project</h3>
+                    <p class="mb-0 text-muted">Pantau timeline ATP, evidence punclist, dan kesiapan project menuju checklist dokument.</p>
                 </div>
             </div>
 
             <div class="card card-outline card-primary shadow-sm atp-table-card">
                 <div class="card-header atp-section-header">
                     <div>
-                        <h3 class="card-title mb-1">List Cluster ATP</h3>
+                        <h3 class="card-title mb-1">List Project ATP</h3>
                     </div>
                 </div>
                 <div class="card-body">
@@ -350,10 +359,10 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Cluster</th>
+                                    <th>Project</th>
                                     <th>Regional</th>
                                     <th>Kota</th>
-                                    <th>HP RFS</th>
+                                    <th>HP/Meter</th>
                                     <th>Tanggal RFS</th>
                                     <th>Email ATP</th>
                                     <th>Tanggal ATP</th>
@@ -365,9 +374,29 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                             </thead>
                             <tbody>
                                 <?php foreach ($clusterList as $index => $cluster): ?>
+                                    <?php
+                                    $projectType = strtoupper(trim((string) ($cluster['project_type'] ?? 'CLUSTER')));
+                                    $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
+                                    $detailUrl = $isMainfeeder
+                                        ? base_url('ATP_MyRep/mainfeeder/' . (int) ($cluster['id_mainfeeder'] ?? 0))
+                                        : '';
+                                    $punclistPreviewUrl = $isMainfeeder
+                                        ? base_url('ATP_MyRep/previewMainfeederFile/' . (int) ($cluster['record_punclist_file_id'] ?? 0))
+                                        : base_url('ATP_MyRep/previewFile/' . (int) ($cluster['record_punclist_file_id'] ?? 0));
+                                    $rectificationPreviewUrl = $isMainfeeder
+                                        ? base_url('ATP_MyRep/previewMainfeederFile/' . (int) ($cluster['ba_rectification_file_id'] ?? 0))
+                                        : base_url('ATP_MyRep/previewFile/' . (int) ($cluster['ba_rectification_file_id'] ?? 0));
+                                    ?>
                                     <tr>
                                         <td><?= $index + 1 ?></td>
-                                        <td><strong><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></strong></td>
+                                        <td>
+                                            <?php if ($isMainfeeder): ?>
+                                                <a href="<?= $detailUrl ?>" class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></a>
+                                                <div><span class="badge badge-warning"><?= htmlspecialchars($projectType, ENT_QUOTES, 'UTF-8') ?></span></div>
+                                            <?php else: ?>
+                                                <strong><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></strong>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></td>
                                         <td><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></td>
                                         <td class="text-right"><?= number_format((float) ($cluster['homepass'] ?? 0), 0, ',', '.') ?></td>
@@ -389,7 +418,7 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                                                 <div class="small font-weight-bold text-dark">Record Punclist</div>
                                                 <?php if (!empty($cluster['record_punclist_file_name'])): ?>
                                                     <div class="small text-muted"><?= htmlspecialchars((string) $cluster['record_punclist_file_name']) ?></div>
-                                                    <a href="<?= base_url('ATP_MyRep/previewFile/' . (int) $cluster['record_punclist_file_id']) ?>" class="btn btn-xs btn-outline-dark mt-1" target="_blank">Preview</a>
+                                                    <a href="<?= $punclistPreviewUrl ?>" class="btn btn-xs btn-outline-dark mt-1" target="_blank">Preview</a>
                                                 <?php else: ?>
                                                     <span class="badge badge-secondary">BELUM UPLOAD</span>
                                                 <?php endif; ?>
@@ -398,14 +427,16 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                                                 <div class="small font-weight-bold text-dark">BA Rectification</div>
                                                 <?php if (!empty($cluster['ba_rectification_file_name'])): ?>
                                                     <div class="small text-muted"><?= htmlspecialchars((string) $cluster['ba_rectification_file_name']) ?></div>
-                                                    <a href="<?= base_url('ATP_MyRep/previewFile/' . (int) $cluster['ba_rectification_file_id']) ?>" class="btn btn-xs btn-outline-dark mt-1" target="_blank">Preview</a>
+                                                    <a href="<?= $rectificationPreviewUrl ?>" class="btn btn-xs btn-outline-dark mt-1" target="_blank">Preview</a>
                                                 <?php else: ?>
                                                     <span class="badge badge-secondary">BELUM UPLOAD</span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
                                         <td>
-                                            <?php if ($canEdit): ?>
+                                            <?php if ($isMainfeeder): ?>
+                                                <a href="<?= $detailUrl ?>" class="btn btn-sm btn-outline-primary">Detail</a>
+                                            <?php elseif ($canEdit): ?>
                                                 <button
                                                     type="button"
                                                     class="btn btn-sm btn-outline-primary js-edit-atp"
@@ -421,7 +452,7 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                                                     Update
                                                 </button>
                                             <?php endif; ?>
-                                            <?php if (($cluster['stage_atp'] ?? '') === 'ATP DONE'): ?>
+                                            <?php if (!$isMainfeeder && ($cluster['stage_atp'] ?? '') === 'ATP DONE'): ?>
                                                 <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $cluster['id_cluster']) ?>" class="btn btn-sm btn-outline-success mt-1">
                                                     Checklist
                                                 </a>
@@ -432,7 +463,7 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="4" class="text-right">TOTAL HP RFS</th>
+                                    <th colspan="4" class="text-right">TOTAL HP/METER</th>
                                     <th class="text-right" id="atp-total-hp-rfs">0</th>
                                     <th colspan="7"></th>
                                 </tr>
@@ -464,6 +495,7 @@ $atpOnProsesCount = (int) ($atpActiveStatusSummary['onProsesCount'] ?? 0);
                     <input type="hidden" name="cluster_id" id="atp-cluster-id">
                     <input type="hidden" name="filter_city" value="<?= $selectedCity ?>">
                     <input type="hidden" name="filter_regional" value="<?= $selectedRegional ?>">
+                    <input type="hidden" name="filter_project_type" value="<?= $selectedProjectType ?>">
                     <input type="hidden" name="filter_stage" value="<?= $selectedStage ?>">
 
                     <div class="budget-form-section">
