@@ -145,8 +145,11 @@ class MPO_Monitor extends CI_Model
         $this->addColumnIfMissing('tb_po', 'dashboard_outs_2026', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_outs_2026` decimal(18,2) DEFAULT 0.00");
         $this->addColumnIfMissing('tb_po', 'dashboard_co_2027', "ALTER TABLE `tb_po` ADD COLUMN `dashboard_co_2027` decimal(18,2) DEFAULT 0.00");
         $this->addColumnIfMissing('tb_po_term_claim', 'id_allocation', "ALTER TABLE `tb_po_term_claim` ADD COLUMN `id_allocation` int(11) DEFAULT NULL AFTER `id_term`");
+        $this->addColumnIfMissing('tb_po_term_claim', 'claim_source', "ALTER TABLE `tb_po_term_claim` ADD COLUMN `claim_source` varchar(30) DEFAULT 'MANUAL'");
         $this->addColumnIfMissing('tb_po_term_allocation', 'regional', "ALTER TABLE `tb_po_term_allocation` ADD COLUMN `regional` varchar(150) DEFAULT NULL AFTER `no_po_sub`");
         $this->addColumnIfMissing('tb_po_term_allocation', 'remarks', "ALTER TABLE `tb_po_term_allocation` ADD COLUMN `remarks` text NULL AFTER `detail_po`");
+        $this->addColumnIfMissing('tb_po_term_claim', 'source_raw', "ALTER TABLE `tb_po_term_claim` ADD COLUMN `source_raw` varchar(100) DEFAULT NULL");
+        $this->addColumnIfMissing('tb_po_term_claim', 'created_by', "ALTER TABLE `tb_po_term_claim` ADD COLUMN `created_by` int(11) DEFAULT NULL");
         $this->addColumnIfMissing('tb_po_target_pipeline', 'regional', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `regional` varchar(150) DEFAULT NULL AFTER `status_po`");
         $this->addColumnIfMissing('tb_po_target_pipeline', 'remarks', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `remarks` text NULL AFTER `detail_po`");
         $this->addColumnIfMissing('tb_po_target_pipeline', 'type_project', "ALTER TABLE `tb_po_target_pipeline` ADD COLUMN `type_project` varchar(150) DEFAULT NULL AFTER `remarks`");
@@ -167,6 +170,7 @@ class MPO_Monitor extends CI_Model
         $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_target_week', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_target_week` (`target_year`, `target_week`)");
         $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_status', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_status` (`target_status`)");
         $this->addIndexIfMissing('tb_po_term_claim', 'idx_tb_po_term_claim_allocation', "ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_allocation` (`id_allocation`)");
+        $this->addIndexIfMissing('tb_po_term_claim', 'idx_tb_po_term_claim_source', "ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_source` (`claim_source`, `source_raw`)");
         $this->seedBowheerPo();
     }
 
@@ -1738,6 +1742,406 @@ class MPO_Monitor extends CI_Model
 
         $this->db->trans_commit();
         return ['status' => true, 'message' => 'Term claimed'];
+    }
+
+    public function syncMyRepTerminClaim($myrepTerminId, $userId = 0, $cutoffDate = '2026-07-01')
+    {
+        $this->ensureStandaloneSchema();
+        $myrepTerminId = (int) $myrepTerminId;
+        if ($myrepTerminId <= 0) {
+            return ['status' => false, 'action' => 'skipped', 'message' => 'Invalid MyRep termin id'];
+        }
+
+        $myrep = $this->getMyRepTerminForMonitorSync($myrepTerminId);
+        if (empty($myrep)) {
+            return ['status' => false, 'action' => 'skipped', 'message' => 'MyRep termin not found'];
+        }
+
+        return $this->syncMyRepTerminRowToMonitor($myrep, $userId, $cutoffDate);
+    }
+
+    public function syncMyRepClaimsSince($cutoffDate = '2026-07-01', $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $cutoffDate = $this->normalizeSyncDate($cutoffDate) ?: '2026-07-01';
+        if (!$this->db->table_exists('tb_myrep_po_termin') || !$this->db->table_exists('tb_myrep_po_header')) {
+            return [
+                'status' => false,
+                'message' => 'Tabel PO MyRep belum tersedia.',
+                'matched' => 0,
+                'inserted' => 0,
+                'updated' => 0,
+                'deleted' => 0,
+                'skipped' => 0,
+                'unmatched' => []
+            ];
+        }
+
+        $invoiceValueSql = $this->db->field_exists('invoice_value', 'tb_myrep_po_termin')
+            ? 'COALESCE(t.invoice_value, t.termin_value, 0)'
+            : 'COALESCE(t.termin_value, 0)';
+
+        $rows = $this->db->query("SELECT
+                t.id_po_termin,
+                t.id_po_header,
+                t.termin_no,
+                t.termin_value,
+                {$invoiceValueSql} AS invoice_amount,
+                t.status_termin,
+                t.invoice_date,
+                t.invoice_number,
+                p.po_number,
+                p.po_type,
+                p.po_category
+            FROM tb_myrep_po_termin t
+            JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
+            WHERE t.invoice_date IS NOT NULL
+                AND DATE(t.invoice_date) >= ?
+                AND UPPER(TRIM(COALESCE(t.status_termin, ''))) IN ('BILLED', 'PAID')
+            ORDER BY t.invoice_date ASC, p.po_number ASC, t.termin_no ASC", [$cutoffDate])->result_array();
+
+        $summary = [
+            'status' => true,
+            'message' => 'Sync selesai.',
+            'matched' => 0,
+            'inserted' => 0,
+            'updated' => 0,
+            'deleted' => 0,
+            'skipped' => 0,
+            'unmatched' => []
+        ];
+
+        foreach ($rows as $row) {
+            $result = $this->syncMyRepTerminRowToMonitor($row, $userId, $cutoffDate, false);
+            $action = (string) ($result['action'] ?? 'skipped');
+            if (!empty($result['status'])) {
+                $summary['matched']++;
+            }
+            if (isset($summary[$action])) {
+                $summary[$action]++;
+            } else {
+                $summary['skipped']++;
+            }
+            if (empty($result['status']) && !empty($result['po_number'])) {
+                $summary['unmatched'][] = [
+                    'po_number' => $result['po_number'],
+                    'term' => $result['term'] ?? null,
+                    'message' => $result['message'] ?? 'Unmatched'
+                ];
+            }
+        }
+
+        $this->rebuildDashboardCache(null);
+        return $summary;
+    }
+
+    public function rebuildMyRepSyncClaimsSince($cutoffDate = '2026-07-01', $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $cutoffDate = $this->normalizeSyncDate($cutoffDate) ?: '2026-07-01';
+
+        $existingClaims = $this->db
+            ->select('id_claim, id_term, invoice_date, invoice_amount')
+            ->from('tb_po_term_claim')
+            ->where('claim_source', 'MYREP_SYNC')
+            ->where('invoice_date >=', $cutoffDate)
+            ->get()
+            ->result_array();
+
+        $affectedTermIds = [];
+        $this->db->trans_begin();
+        foreach ($existingClaims as $claim) {
+            $idTerm = (int) ($claim['id_term'] ?? 0);
+            $affectedTermIds[] = $idTerm;
+            $this->applyPoMonitorClaimDelta($idTerm, $claim['invoice_date'], -1 * (float) $claim['invoice_amount']);
+        }
+
+        $this->db
+            ->where('claim_source', 'MYREP_SYNC')
+            ->where('invoice_date >=', $cutoffDate)
+            ->delete('tb_po_term_claim');
+
+        foreach (array_unique(array_filter($affectedTermIds)) as $idTerm) {
+            $this->refreshPoMonitorTermInvoiceDate((int) $idTerm);
+        }
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return [
+                'status' => false,
+                'message' => 'Gagal clear claim sync lama.',
+                'matched' => 0,
+                'inserted' => 0,
+                'updated' => 0,
+                'deleted' => 0,
+                'skipped' => 0,
+                'unmatched' => []
+            ];
+        }
+
+        $this->db->trans_commit();
+        $summary = $this->syncMyRepClaimsSince($cutoffDate, $userId);
+        $summary['deleted'] = count($existingClaims);
+        return $summary;
+    }
+
+    private function syncMyRepTerminRowToMonitor(array $myrep, $userId = 0, $cutoffDate = '2026-07-01', $rebuildCache = true)
+    {
+        $sourceRaw = 'MYREP_TERMIN:' . (int) ($myrep['id_po_termin'] ?? 0);
+        $existingClaim = $this->db
+            ->get_where('tb_po_term_claim', [
+                'claim_source' => 'MYREP_SYNC',
+                'source_raw' => $sourceRaw
+            ])
+            ->row_array();
+
+        $invoiceDate = $this->normalizeSyncDate($myrep['invoice_date'] ?? null);
+        $amount = (float) ($myrep['invoice_amount'] ?? 0);
+        if ($amount <= 0 && isset($myrep['termin_value'])) {
+            $amount = (float) $myrep['termin_value'];
+        }
+
+        $statusTermin = strtoupper(trim((string) ($myrep['status_termin'] ?? '')));
+        $termNo = (int) ($myrep['termin_no'] ?? 0);
+        $poNumber = (string) ($myrep['po_number'] ?? '');
+        $isSyncable = $invoiceDate !== null
+            && strtotime($invoiceDate) >= strtotime($cutoffDate)
+            && $amount > 0
+            && in_array($statusTermin, ['BILLED', 'PAID'], true);
+
+        if (!$isSyncable) {
+            if (!empty($existingClaim)) {
+                $this->db->trans_begin();
+                $this->applyPoMonitorClaimDelta((int) $existingClaim['id_term'], $existingClaim['invoice_date'], -1 * (float) $existingClaim['invoice_amount']);
+                $this->db->where('id_claim', (int) $existingClaim['id_claim'])->delete('tb_po_term_claim');
+                $this->refreshPoMonitorTermInvoiceDate((int) $existingClaim['id_term']);
+                if ($rebuildCache) {
+                    $this->rebuildDashboardCache(null);
+                }
+                if ($this->db->trans_status() === false) {
+                    $this->db->trans_rollback();
+                    return ['status' => false, 'action' => 'skipped', 'message' => 'Failed to remove old sync claim'];
+                }
+                $this->db->trans_commit();
+                return ['status' => true, 'action' => 'deleted', 'message' => 'Sync claim removed'];
+            }
+
+            return [
+                'status' => false,
+                'action' => 'skipped',
+                'po_number' => $poNumber,
+                'term' => $termNo,
+                'message' => 'Termin belum eligible sync'
+            ];
+        }
+
+        $term = $this->findPoMonitorTermForMyRep($poNumber, $termNo);
+        if (empty($term)) {
+            return [
+                'status' => false,
+                'action' => 'skipped',
+                'po_number' => $poNumber,
+                'term' => $termNo,
+                'message' => 'PO/term tidak ditemukan di PO Monitor'
+            ];
+        }
+
+        $this->db->trans_begin();
+        if (!empty($existingClaim)) {
+            $changed = (int) $existingClaim['id_term'] !== (int) $term['id_term']
+                || (string) $existingClaim['invoice_date'] !== (string) $invoiceDate
+                || abs((float) $existingClaim['invoice_amount'] - $amount) >= 0.01;
+
+            if ($changed) {
+                $this->applyPoMonitorClaimDelta((int) $existingClaim['id_term'], $existingClaim['invoice_date'], -1 * (float) $existingClaim['invoice_amount']);
+                $this->db
+                    ->where('id_claim', (int) $existingClaim['id_claim'])
+                    ->update('tb_po_term_claim', [
+                        'id_term' => (int) $term['id_term'],
+                        'id_allocation' => null,
+                        'invoice_date' => $invoiceDate,
+                        'invoice_amount' => $amount,
+                        'created_by' => $userId ?: null
+                    ]);
+                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
+                $this->refreshPoMonitorTermInvoiceDate((int) $existingClaim['id_term']);
+                $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                $action = 'updated';
+            } else {
+                $action = 'unchanged';
+            }
+        } else {
+            $adoptedClaim = $this->db
+                ->from('tb_po_term_claim')
+                ->where('id_term', (int) $term['id_term'])
+                ->where('invoice_date', $invoiceDate)
+                ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 0.01, false)
+                ->group_start()
+                    ->where('claim_source !=', 'MYREP_SYNC')
+                    ->or_where('claim_source IS NULL', null, false)
+                ->group_end()
+                ->order_by('id_claim', 'ASC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+
+            if (!empty($adoptedClaim)) {
+                $this->db
+                    ->where('id_claim', (int) $adoptedClaim['id_claim'])
+                    ->update('tb_po_term_claim', [
+                        'claim_source' => 'MYREP_SYNC',
+                        'source_raw' => $sourceRaw,
+                        'created_by' => $userId ?: null
+                    ]);
+                $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                $action = 'updated';
+            } else {
+                $this->db->insert('tb_po_term_claim', [
+                    'id_term' => (int) $term['id_term'],
+                    'id_allocation' => null,
+                    'invoice_date' => $invoiceDate,
+                    'invoice_amount' => $amount,
+                    'claim_source' => 'MYREP_SYNC',
+                    'source_raw' => $sourceRaw,
+                    'created_by' => $userId ?: null
+                ]);
+                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
+                $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                $action = 'inserted';
+            }
+        }
+
+        if ($rebuildCache) {
+            $this->rebuildDashboardCache(null);
+        }
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return [
+                'status' => false,
+                'action' => 'skipped',
+                'po_number' => $poNumber,
+                'term' => $termNo,
+                'message' => 'Gagal sync ke PO Monitor'
+            ];
+        }
+
+        $this->db->trans_commit();
+        return [
+            'status' => true,
+            'action' => $action,
+            'po_number' => $poNumber,
+            'term' => $termNo,
+            'message' => 'Synced'
+        ];
+    }
+
+    private function getMyRepTerminForMonitorSync($myrepTerminId)
+    {
+        if (!$this->db->table_exists('tb_myrep_po_termin') || !$this->db->table_exists('tb_myrep_po_header')) {
+            return [];
+        }
+
+        $invoiceValueSql = $this->db->field_exists('invoice_value', 'tb_myrep_po_termin')
+            ? 'COALESCE(t.invoice_value, t.termin_value, 0)'
+            : 'COALESCE(t.termin_value, 0)';
+
+        return $this->db->query("SELECT
+                t.id_po_termin,
+                t.id_po_header,
+                t.termin_no,
+                t.termin_value,
+                {$invoiceValueSql} AS invoice_amount,
+                t.status_termin,
+                t.invoice_date,
+                t.invoice_number,
+                p.po_number,
+                p.po_type,
+                p.po_category
+            FROM tb_myrep_po_termin t
+            JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
+            WHERE t.id_po_termin = ?
+            LIMIT 1", [(int) $myrepTerminId])->row_array();
+    }
+
+    private function findPoMonitorTermForMyRep($poNumber, $termNo)
+    {
+        $termNo = (int) $termNo;
+        $normalizedPo = $this->normalizePoMonitorSyncPoNumber($poNumber);
+        if ($normalizedPo === '' || $termNo < 1 || $termNo > 5) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('t.id_term, t.id_po, t.term_index, t.target_status, p.po_number')
+            ->from('tb_po_term t')
+            ->join('tb_po p', 'p.id_po = t.id_po', 'inner')
+            ->where('t.term_index', $termNo)
+            ->get()
+            ->result_array();
+
+        foreach ($rows as $row) {
+            if ($this->normalizePoMonitorSyncPoNumber((string) ($row['po_number'] ?? '')) === $normalizedPo) {
+                return $row;
+            }
+        }
+
+        return [];
+    }
+
+    private function applyPoMonitorClaimDelta($idTerm, $invoiceDate, $amountDelta)
+    {
+        $term = $this->db->get_where('tb_po_term', ['id_term' => (int) $idTerm])->row_array();
+        if (!$term || empty($invoiceDate) || abs((float) $amountDelta) < 0.01) {
+            return;
+        }
+
+        $amountDelta = (float) $amountDelta;
+        $this->db->set('dashboard_all_invoice', 'GREATEST(COALESCE(dashboard_all_invoice, 0) + ' . $this->db->escape($amountDelta) . ', 0)', false);
+        if ((int) date('Y', strtotime($invoiceDate)) === 2026) {
+            $this->db->set('dashboard_invoice_2026', 'GREATEST(COALESCE(dashboard_invoice_2026, 0) + ' . $this->db->escape($amountDelta) . ', 0)', false);
+            if (($term['target_status'] ?? '') === 'TARGET_WEEK') {
+                $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) - ' . $this->db->escape($amountDelta) . ', 0)', false);
+            }
+        }
+        $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+    }
+
+    private function refreshPoMonitorTermInvoiceDate($idTerm)
+    {
+        $latest = $this->db
+            ->select('MAX(invoice_date) AS invoice_date')
+            ->from('tb_po_term_claim')
+            ->where('id_term', (int) $idTerm)
+            ->get()
+            ->row_array();
+        $invoiceDate = !empty($latest['invoice_date']) ? $latest['invoice_date'] : null;
+
+        $this->db->where('id_term', (int) $idTerm)->update('tb_po_term', [
+            'invoice_date' => $invoiceDate,
+            'submit_raw' => $invoiceDate
+        ]);
+    }
+
+    private function normalizePoMonitorSyncPoNumber($value)
+    {
+        $value = strtoupper(trim((string) $value));
+        $value = preg_replace('/^PO[\s\.\-:]*/', '', $value);
+        return preg_replace('/[^A-Z0-9]/', '', $value);
+    }
+
+    private function normalizeSyncDate($date)
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp) {
+            return null;
+        }
+
+        return date('Y-m-d', $timestamp);
     }
 
     public function createBatchPo(array $rows, $userId)

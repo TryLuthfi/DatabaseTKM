@@ -7,6 +7,7 @@ class PO_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MPO_MyRep');
+        $this->load->model('MPO_Monitor');
         $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->model('MMainfeeder_MyRep');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
@@ -525,6 +526,10 @@ class PO_MyRep extends CI_Controller
             'updated_by' => (int) $this->session->userdata('id_user'),
         ]);
 
+        if ($result) {
+            $this->MPO_Monitor->syncMyRepTerminClaim($terminId, (int) $this->session->userdata('id_user'), '2026-07-01');
+        }
+
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Termin berhasil diupdate.' : 'Termin gagal diupdate.');
         redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
     }
@@ -620,6 +625,7 @@ class PO_MyRep extends CI_Controller
             ]);
 
             if ($updated) {
+                $this->MPO_Monitor->syncMyRepTerminClaim((int) ($termin['id_po_termin'] ?? 0), (int) $this->session->userdata('id_user'), '2026-07-01');
                 $updatedCount++;
             } else {
                 $skippedMessages[] = $rowLabel . ': gagal disimpan.';

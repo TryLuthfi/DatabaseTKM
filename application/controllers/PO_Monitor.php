@@ -297,6 +297,42 @@ class PO_Monitor extends CI_Controller
         redirect('PO_Monitor');
     }
 
+    public function sync_myrep_claims()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->canManagePoImport()) {
+            show_error('Fitur sync MyRep hanya tersedia untuk user khusus.', 403);
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            show_404();
+            return;
+        }
+
+        $cutoffDate = $this->input->post('cutoff_date') ?: '2026-07-01';
+        $result = $this->MPO_Monitor->rebuildMyRepSyncClaimsSince($cutoffDate, (int) $this->session->userdata('id_user'));
+        if (!empty($result['status'])) {
+            $message = 'Sync MyRep selesai. '
+                . 'Inserted: ' . (int) ($result['inserted'] ?? 0)
+                . ', Updated: ' . (int) ($result['updated'] ?? 0)
+                . ', Deleted old sync: ' . (int) ($result['deleted'] ?? 0)
+                . ', Skipped: ' . (int) ($result['skipped'] ?? 0)
+                . ', Unmatched: ' . count($result['unmatched'] ?? []);
+            $this->session->set_flashdata('status', true);
+            $this->session->set_flashdata('error_log', $message);
+        } else {
+            $this->session->set_flashdata('status', false);
+            $this->session->set_flashdata('error_log', $result['message'] ?? 'Sync MyRep gagal.');
+        }
+
+        redirect('PO_Monitor');
+    }
+
     private function isLocalAccess()
     {
         $remoteAddr = (string) $this->input->server('REMOTE_ADDR');

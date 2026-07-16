@@ -101,6 +101,48 @@ class MATP_MyRep extends CI_Model
             ]);
     }
 
+    public function syncMyrepCurrentStatusFromAtp($rfsClusterId, $statusAtp, $actualAtpDate = null)
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster')) {
+            return false;
+        }
+
+        $rfsClusterId = (int) $rfsClusterId;
+        if ($rfsClusterId <= 0) {
+            return false;
+        }
+
+        $statusAtp = strtoupper(trim((string) $statusAtp));
+        $hasActualAtp = $this->normalizeDate($actualAtpDate) !== null;
+        $nextStatus = '';
+        if ($statusAtp === 'DONE' && $hasActualAtp) {
+            $nextStatus = 'CHECKLIST DOKUMENT';
+        } elseif ($statusAtp === 'PUNCLIST' || $hasActualAtp) {
+            $nextStatus = 'ATP';
+        }
+
+        if ($nextStatus === '') {
+            return false;
+        }
+
+        $protectedStatuses = $nextStatus === 'ATP'
+            ? ['ATP', 'CHECKLIST', 'CHECKLIST DOKUMENT', 'DONE']
+            : ['CHECKLIST', 'CHECKLIST DOKUMENT', 'DONE'];
+
+        $this->db
+            ->where('rfs_cluster_id', $rfsClusterId)
+            ->group_start()
+                ->where('status_current IS NULL', null, false)
+                ->or_where_not_in('status_current', $protectedStatuses)
+            ->group_end()
+            ->update('tb_myrep_cluster', [
+                'status_current' => $nextStatus,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+        return $this->db->affected_rows() > 0;
+    }
+
     public function getAtpFileById($fileId)
     {
         if (!$this->supportsAtpFileTable()) {

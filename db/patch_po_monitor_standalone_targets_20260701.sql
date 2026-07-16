@@ -283,6 +283,7 @@ ALTER TABLE `tb_po_term`
 
 ALTER TABLE `tb_po_term_claim`
   ADD COLUMN IF NOT EXISTS `id_allocation` int(11) DEFAULT NULL AFTER `id_term`,
+  ADD COLUMN IF NOT EXISTS `claim_source` varchar(30) DEFAULT 'MANUAL',
   ADD COLUMN IF NOT EXISTS `source_raw` varchar(100) DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `created_by` int(11) DEFAULT NULL;
 
@@ -319,6 +320,7 @@ ALTER TABLE `tb_po` ADD KEY `idx_tb_po_dashboard_bowheer` (`dashboard_bowheer`);
 ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_target_week` (`target_year`, `target_week`);
 ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_status` (`target_status`);
 ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_allocation` (`id_allocation`);
+ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_source` (`claim_source`, `source_raw`);
 
 -- =========================================================
 -- 6. OPTIONAL: EMPTY PO MONITOR STANDALONE DATA

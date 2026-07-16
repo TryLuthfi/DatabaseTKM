@@ -200,6 +200,7 @@ class ATP_MyRep extends CI_Controller
         }
 
         $this->MATP_MyRep->updateClusterAtpMetadata($clusterId, $emailAtpDate, $statusAtp);
+        $this->MATP_MyRep->syncMyrepCurrentStatusFromAtp($clusterId, $statusAtp, $actualAtpDate);
 
         $this->session->set_flashdata('success', 'Data ATP cluster berhasil diperbarui.');
         redirect($this->buildRedirectUrl($selectedCity, $selectedRegional, $selectedStage));

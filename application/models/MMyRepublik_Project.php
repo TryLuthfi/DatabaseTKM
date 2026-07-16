@@ -109,6 +109,7 @@ class MMyRepublik_Project extends CI_Model
         $poMap = $this->getPoMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
             $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $row['status_current'] = $this->resolveEffectiveStatus($row);
             $row['po_total_value'] = (float) ($poMap[$clusterId]['po_total_value'] ?? 0);
             $row['po_count'] = (int) ($poMap[$clusterId]['po_count'] ?? 0);
             $row['metric_value'] = $this->resolveMetricValue($row, $metricMode);
@@ -476,8 +477,10 @@ class MMyRepublik_Project extends CI_Model
         $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
         $poMeta = $this->getPoMap([$clusterId])[$clusterId] ?? ['po_count' => 0, 'po_total_value' => 0];
         $rfsMeta = $this->getLegacyBridgeSummaryMap([(int) ($row['rfs_cluster_id'] ?? 0)])[(int) ($row['rfs_cluster_id'] ?? 0)] ?? [];
+        $row = array_merge($row, $poMeta, $rfsMeta);
+        $row['status_current'] = $this->resolveEffectiveStatus($row);
 
-        return array_merge($row, $poMeta, $rfsMeta);
+        return $row;
     }
 
     public function getLegacyClusterDetail($rfsClusterId)
@@ -913,8 +916,14 @@ class MMyRepublik_Project extends CI_Model
             return [];
         }
 
+        $actualAtpSelect = 'NULL AS actual_atp_date';
+        $hasDocPackageTable = $this->db->table_exists('tb_rfs_myrep_doc_package');
+        if ($hasDocPackageTable) {
+            $actualAtpSelect = 'atp_summary.actual_atp_date';
+        }
+
         $this->db
-            ->select('
+            ->select("
                 c.id_myrep_cluster,
                 c.rfs_cluster_id,
                 c.cluster_name,
@@ -935,8 +944,13 @@ class MMyRepublik_Project extends CI_Model
                 ba.staging_status,
                 d.homepass_drm,
                 d.drm_date,
-                r.homepass AS homepass_rfs
-            ')
+                d.status_drm,
+                r.homepass AS homepass_rfs,
+                r.status_rfs,
+                r.status_atp,
+                r.email_atp_date,
+                {$actualAtpSelect}
+            ", false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
@@ -944,25 +958,36 @@ class MMyRepublik_Project extends CI_Model
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_cluster r', 'r.id_cluster = c.rfs_cluster_id', 'left');
 
+        if ($hasDocPackageTable) {
+            $this->db->join('(
+                SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                FROM tb_rfs_myrep_doc_package
+                GROUP BY cluster_id
+            ) atp_summary', 'atp_summary.cluster_id = c.rfs_cluster_id', 'left');
+        }
+
         if ($selectedCity !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($selectedCity));
         }
 
-        if ($selectedStatus !== '') {
-            $normalizedStatus = strtoupper($selectedStatus);
-            if ($normalizedStatus === 'IMPLEMENTASI') {
-                $this->db->where('UPPER(c.status_current)', 'DONE');
-                $this->db->like('UPPER(COALESCE(d.status_drm, ""))', 'IMPLEMENTASI');
-            } else {
-                $this->db->where('UPPER(c.status_current)', $normalizedStatus);
-            }
-        }
-
-        return $this->db
+        $rows = $this->db
             ->order_by('c.created_at', 'DESC')
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+
+        foreach ($rows as &$row) {
+            $row['status_current'] = $this->resolveEffectiveStatus($row);
+        }
+        unset($row);
+
+        if ($selectedStatus !== '') {
+            $rows = array_values(array_filter($rows, function ($row) use ($selectedStatus) {
+                return strtoupper($this->resolveDisplayStatus($row)) === strtoupper($selectedStatus);
+            }));
+        }
+
+        return $rows;
     }
 
     private function getLegacyRfsRows($selectedCity = '', $selectedStatus = '')
@@ -1039,6 +1064,57 @@ class MMyRepublik_Project extends CI_Model
         }
 
         return $rows;
+    }
+
+    private function resolveEffectiveStatus($row)
+    {
+        $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $status = $status !== '' ? $status : 'DRAFT';
+        if ($status === 'CHECKLIST') {
+            $status = 'CHECKLIST DOKUMENT';
+        }
+
+        if ($status === 'DONE') {
+            return 'DONE';
+        }
+
+        $derived = $status;
+        $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+        $statusRfs = strtoupper(trim((string) ($row['status_rfs'] ?? '')));
+        $actualAtpDate = $this->normalizeEffectiveDate($row['actual_atp_date'] ?? null);
+        $tanggalRfs = $this->normalizeEffectiveDate($row['tanggal_rfs'] ?? $row['latest_claim_date'] ?? null);
+
+        if ($statusAtp === 'DONE' && $actualAtpDate !== null) {
+            $derived = 'CHECKLIST DOKUMENT';
+        } elseif ($statusAtp === 'PUNCLIST' || $actualAtpDate !== null) {
+            $derived = 'ATP';
+        } elseif (in_array($statusRfs, ['PARTIAL', 'PARTIAL RFS', 'FULL RFS'], true) || $tanggalRfs !== null) {
+            $derived = 'RFS';
+        }
+
+        return $this->statusRank($derived) > $this->statusRank($status) ? $derived : $status;
+    }
+
+    private function statusRank($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        if ($status === 'CHECKLIST') {
+            $status = 'CHECKLIST DOKUMENT';
+        }
+
+        $index = array_search($status, $this->statusOrder, true);
+        return $index === false ? -1 : (int) $index;
+    }
+
+    private function normalizeEffectiveDate($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d', $timestamp) : null;
     }
 
     private function buildClusterKey($cityName, $clusterName)

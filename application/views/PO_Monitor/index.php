@@ -1393,6 +1393,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $dashboardOutsOnTarget = (float) ($dashboardTotals['outs_2026_on_target'] ?? 0);
                 $dashboardNyPoTarget = (float) ($dashboardTotals['ny_po_on_target_2026'] ?? 0);
                 $dashboardInitialCombinedTargetInvoice = (float) ($dashboardInitialTotals['done_outs_ny_2026'] ?? ($dashboardDoneInvoice + $dashboardOutsOnTarget + $dashboardNyPoTarget));
+                $dashboardAccelerationTarget = $dashboardInitialCombinedTargetInvoice + $dashboardDoneInvoice;
 
                 $summaryTotals = [
                     'total_po_count' => 0,
@@ -1468,9 +1469,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         </div>
                         <div class="po-monitor-hero__stats">
                             <div class="po-monitor-hero-stat">
-                                <span class="po-monitor-hero-stat__label">Target Invoice 2026</span>
-                                <span class="po-monitor-hero-stat__value"><?= number_format($dashboardInitialCombinedTargetInvoice, 0, ',', '.') ?></span>
-                                <span class="po-monitor-hero-stat__hint">Data awal target invoice</span>
+                                <span class="po-monitor-hero-stat__label">Target Akselerasi 2026</span>
+                                <span class="po-monitor-hero-stat__value"><?= number_format($dashboardAccelerationTarget, 0, ',', '.') ?></span>
+                                <span class="po-monitor-hero-stat__hint">Target awal + done invoice 2026</span>
                             </div>
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Done Invoice</span>
@@ -1573,6 +1574,17 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     </button>
                                 </form>
                             </div>
+                            <div class="border-top mt-3 pt-3 d-flex flex-wrap align-items-center justify-content-between">
+                                <div class="text-muted small mb-2 mb-md-0">
+                                    Rebuild claim PO Monitor dari PO_MyRep mulai 1 Juli 2026. Target PO Monitor tidak ikut berubah.
+                                </div>
+                                <form method="post" action="<?= site_url('PO_Monitor/sync_myrep_claims') ?>" class="mb-0 js-po-myrep-sync-form d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                    <input type="date" name="cutoff_date" class="form-control form-control-sm" value="2026-07-01" style="width: 150px;">
+                                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold">
+                                        <i class="fas fa-sync-alt mr-1"></i> Sync MyRep Claim
+                                    </button>
+                                </form>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1584,8 +1596,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <i class="fas fa-layer-group"></i>
                         </div>
                         <div>
-                            <span class="po-monitor-kpi-card__label">Target Invoice 2026</span>
-                            <span class="po-monitor-kpi-card__value" id="summary_total_po"><?= number_format($dashboardInitialCombinedTargetInvoice, 0, ',', '.') ?></span>
+                            <span class="po-monitor-kpi-card__label">Target Akselerasi 2026</span>
+                            <span class="po-monitor-kpi-card__value" id="summary_total_po"><?= number_format($dashboardAccelerationTarget, 0, ',', '.') ?></span>
                         </div>
                     </div>
                     <div class="po-monitor-kpi-card po-monitor-kpi-card--green">
@@ -2617,6 +2629,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     return false;
                 }
                 $(this).find('input[name="confirm_delete"]').val(confirmText);
+                return true;
+            });
+
+            $('.js-po-myrep-sync-form').off('submit.poMyrepSync').on('submit.poMyrepSync', function(e) {
+                if (!window.confirm('Rebuild claim PO Monitor dari PO_MyRep mulai tanggal cutoff? Claim MYREP_SYNC lama setelah cutoff akan dibuat ulang.')) {
+                    e.preventDefault();
+                    return false;
+                }
                 return true;
             });
 

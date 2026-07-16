@@ -2409,6 +2409,7 @@ class MyRepublik_Project extends CI_Controller
                         ->where('id_claim', (int) $existingClaim['id_claim'])
                         ->update('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
                 } else {
+                    $payload['photo_path'] = '';
                     if ($claimHasCreatedBy) {
                         $payload['created_by'] = $userId;
                     }
@@ -4489,6 +4490,7 @@ class MyRepublik_Project extends CI_Controller
                     ->update('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
             } else {
                 $payload['cluster_id'] = (int) $rfsClusterId;
+                $payload['photo_path'] = '';
                 $payload['created_by'] = (int) $userId;
                 $this->db->insert('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
             }
