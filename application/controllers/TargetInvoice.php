@@ -53,6 +53,7 @@ class TargetInvoice extends CI_Controller
             $data['periodRows'] = $this->MTargetInvoice->getRevampPeriodSummary();
             $data['filterOptions'] = $this->MTargetInvoice->getRevampFilterOptions();
             $data['invoiceRows'] = $this->MTargetInvoice->getRevampInvoiceRows();
+            $data['isTargetInvoiceRevampFrozen'] = true;
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

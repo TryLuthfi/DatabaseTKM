@@ -6,6 +6,7 @@ $regionalRows = $regionalRows ?? [];
 $cityRows = $cityRows ?? [];
 $periodRows = $periodRows ?? [];
 $filterOptions = $filterOptions ?? [];
+$isTargetInvoiceRevampFrozen = !empty($isTargetInvoiceRevampFrozen);
 
 if (!function_exists('target_invoice_money')) {
     function target_invoice_money($value)
@@ -940,8 +941,8 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
                             diprioritaskan.
                         </p>
                         <div class="invoice-hero__actions">
-                            <button type="button" class="invoice-btn invoice-btn--primary" data-toggle="modal" data-target="#modalTargetTambahInvoice">
-                                <i class="fas fa-plus-circle"></i>
+                            <button type="button" class="invoice-btn invoice-btn--primary" <?= $isTargetInvoiceRevampFrozen ? 'disabled aria-disabled="true" title="Input invoice sedang freeze"' : 'data-toggle="modal" data-target="#modalTargetTambahInvoice"' ?>>
+                                <i class="fas <?= $isTargetInvoiceRevampFrozen ? 'fa-lock' : 'fa-plus-circle' ?>"></i>
                                 Tambah Invoice
                             </button>
                             <a href="<?= base_url('TargetInvoice') ?>" class="invoice-btn invoice-btn--light">
@@ -1576,6 +1577,7 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
             return;
         }
 
+        const isTargetInvoiceRevampFrozen = <?= $isTargetInvoiceRevampFrozen ? 'true' : 'false' ?>;
         const invoiceRows = <?php echo json_encode($invoiceRows ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>.map(function (row) {
             return {
                 id: String(row.id_target_invoice || ''),
@@ -2316,6 +2318,12 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
             const hasWeek = hasMonth && Boolean($('#target_add_week').val());
             const isNewAreaMode = !$('.target-new-area-field').first().hasClass('invoice-hidden');
 
+            if (isTargetInvoiceRevampFrozen) {
+                $('#formTargetTambahInvoice :input').not('[data-dismiss="modal"], .close').prop('disabled', true);
+                $('#formTargetTambahInvoice button[type="submit"]').prop('disabled', true);
+                return;
+            }
+
             $('#target_add_area').prop('disabled', !hasProject || isNewAreaMode);
             $('#target_add_show_new_area').prop('disabled', !hasProject);
             $('#target_add_new_area, #target_add_regional, #target_add_pic_area').prop('disabled', !hasProject || !isNewAreaMode);
@@ -2426,6 +2434,10 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
         });
 
         $('#modalTargetTambahInvoice').on('show.bs.modal', function () {
+            if (isTargetInvoiceRevampFrozen) {
+                return false;
+            }
+
             $('#formTargetTambahInvoice')[0].reset();
             $('#target_add_project, #target_add_area, #target_add_month, #target_add_week').val('').trigger('change.select2');
             $('#formTargetTambahInvoice [name="target_invoice"], #formTargetTambahInvoice [name="achiev_invoice"], #formTargetTambahInvoice [name="tambahan_invoice"], #formTargetTambahInvoice [name="total_invoice"]').val('0');
@@ -2438,6 +2450,12 @@ $topAchievementRows = array_slice($topAchievementRows, 0, 5);
 
         $('#formTargetTambahInvoice').on('submit', function (event) {
             event.preventDefault();
+
+            if (isTargetInvoiceRevampFrozen) {
+                Swal.fire('Freeze', 'Tambah invoice di dashboard target invoice revamp sedang dinonaktifkan.', 'info');
+                return;
+            }
+
             const area = $('#target_add_new_area').val().trim() || $('#target_add_area').val();
             $('#target_add_area_value').val(area);
 
