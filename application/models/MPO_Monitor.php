@@ -941,9 +941,10 @@ class MPO_Monitor extends CI_Model
         $mode = strtolower((string) ($post['dashboard_mode'] ?? 'current')) === 'initial' ? 'initial' : 'current';
         $search = trim((string) ($post['search']['value'] ?? ''));
         $start = max(0, (int) ($post['start'] ?? 0));
-        $length = (int) ($post['length'] ?? 25);
-        if ($length <= 0 || $length > 100) {
-            $length = 25;
+        $length = (int) ($post['length'] ?? -1);
+        $showAllRows = $length < 0;
+        if (!$showAllRows && $length <= 0) {
+            $length = 10;
         }
 
         $recordsTotal = (int) $this->db->count_all('tb_po_dashboard_cache');
@@ -1020,7 +1021,7 @@ class MPO_Monitor extends CI_Model
             return $orderDir === 'DESC' ? -$result : $result;
         });
 
-        $pageRows = array_slice($rows, $start, $length);
+        $pageRows = $showAllRows ? array_slice($rows, $start) : array_slice($rows, $start, $length);
 
         return [
             'draw' => (int) ($post['draw'] ?? 0),
@@ -1413,6 +1414,191 @@ class MPO_Monitor extends CI_Model
             'rows' => $rows,
             'totals' => $totals
         ];
+    }
+
+    public function getBreakdownTargetInvoiceRows($fromMonth = null, $toMonth = null)
+    {
+        $bounds = $this->resolveComparisonBounds($fromMonth, $toMonth);
+        $startDate = $bounds['from'] . '-01';
+        $endDate = date('Y-m-t', strtotime($bounds['to'] . '-01'));
+
+        $targetRows = $this->db->query("SELECT *
+            FROM (
+                SELECT
+                    p.id_bowheer,
+                    COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
+                    COALESCE(bp.pic, '') AS pic,
+                    'TARGET' AS row_type,
+                    p.po_number AS po_number,
+                    COALESCE(NULLIF(a.no_po_sub, ''), '-') AS sub_po,
+                    COALESCE(NULLIF(a.detail_po, ''), '-') AS detail_po,
+                    COALESCE(NULLIF(a.remarks, ''), '-') AS remarks,
+                    COALESCE(NULLIF(a.regional, ''), '-') AS regional,
+                    COALESCE(NULLIF(a.kota_po, ''), '-') AS area,
+                    a.target_week_start AS period_start,
+                    a.target_week_end AS period_end,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS target_amount,
+                    0 AS achieved_amount
+                FROM tb_po_term_allocation a
+                JOIN tb_po_term t ON t.id_term = a.id_term
+                JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                WHERE a.target_status = 'TARGET_WEEK'
+                    AND a.target_week_start IS NOT NULL
+                    AND a.target_week_end IS NOT NULL
+                UNION ALL
+                SELECT
+                    p.id_bowheer,
+                    COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
+                    COALESCE(bp.pic, '') AS pic,
+                    'TARGET' AS row_type,
+                    p.po_number AS po_number,
+                    '-' AS sub_po,
+                    '-' AS detail_po,
+                    '-' AS remarks,
+                    '-' AS regional,
+                    '-' AS area,
+                    t.target_week_start AS period_start,
+                    t.target_week_end AS period_end,
+                    COALESCE(NULLIF(t.plan_amount, 0), t.value) AS target_amount,
+                    0 AS achieved_amount
+                FROM tb_po_term t
+                JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+                WHERE t.target_status = 'TARGET_WEEK'
+                    AND t.target_week_start IS NOT NULL
+                    AND t.target_week_end IS NOT NULL
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+                UNION ALL
+                SELECT
+                    pl.id_bowheer,
+                    COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
+                    COALESCE(bp.pic, '') AS pic,
+                    'TARGET' AS row_type,
+                    '-' AS po_number,
+                    '-' AS sub_po,
+                    COALESCE(NULLIF(pl.detail_po, ''), '-') AS detail_po,
+                    COALESCE(NULLIF(pl.remarks, ''), '-') AS remarks,
+                    COALESCE(NULLIF(pl.regional, ''), '-') AS regional,
+                    COALESCE(NULLIF(pl.kota_po, ''), '-') AS area,
+                    pl.target_week_start AS period_start,
+                    pl.target_week_end AS period_end,
+                    COALESCE(pl.ny_po_2026_amount, pl.plan_amount, 0) AS target_amount,
+                    0 AS achieved_amount
+                FROM tb_po_target_pipeline pl
+                LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = pl.id_bowheer
+                WHERE pl.target_status = 'TARGET_WEEK'
+                    AND pl.target_week_start IS NOT NULL
+                    AND pl.target_week_end IS NOT NULL
+            ) x
+            WHERE DATE(period_start) <= ?
+                AND DATE(period_end) >= ?", [$endDate, $startDate])->result_array();
+
+        $claimRows = $this->db->query("SELECT
+                p.id_bowheer,
+                COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
+                COALESCE(bp.pic, '') AS pic,
+                'ACHIEVED' AS row_type,
+                p.po_number AS po_number,
+                COALESCE(NULLIF(a.no_po_sub, ''), '-') AS sub_po,
+                COALESCE(NULLIF(a.detail_po, ''), '-') AS detail_po,
+                COALESCE(NULLIF(a.remarks, ''), '-') AS remarks,
+                COALESCE(NULLIF(a.regional, ''), NULLIF(aa.regional, ''), '-') AS regional,
+                COALESCE(NULLIF(a.kota_po, ''), NULLIF(aa.kota_po, ''), '-') AS area,
+                tc.invoice_date AS period_start,
+                tc.invoice_date AS period_end,
+                0 AS target_amount,
+                tc.invoice_amount AS achieved_amount
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+            LEFT JOIN tb_po_term_allocation a ON a.id_allocation = tc.id_allocation
+            LEFT JOIN (
+                SELECT
+                    id_term,
+                    GROUP_CONCAT(DISTINCT NULLIF(regional, '') ORDER BY source_row_no SEPARATOR ', ') AS regional,
+                    GROUP_CONCAT(DISTINCT NULLIF(kota_po, '') ORDER BY source_row_no SEPARATOR ', ') AS kota_po
+                FROM tb_po_term_allocation
+                GROUP BY id_term
+            ) aa ON aa.id_term = t.id_term
+            WHERE tc.invoice_date IS NOT NULL
+                AND DATE(tc.invoice_date) BETWEEN ? AND ?", [$startDate, $endDate])->result_array();
+
+        $rows = array_merge($targetRows, $claimRows);
+        foreach ($rows as &$row) {
+            $start = $row['period_start'] ?: $row['period_end'];
+            $end = $row['period_end'] ?: $row['period_start'];
+            $monthKey = $start ? $this->majorityMonthKey($start, $end) : '';
+            $weekKey = $start ? $this->weekKey((int) date('Y', strtotime($start)), (int) $this->weekNumberFromPeriod($start, $end)) : '';
+
+            $row['id_bowheer'] = (int) ($row['id_bowheer'] ?? 0);
+            $row['project'] = trim((string) ($row['project'] ?? 'Tanpa Bowheer'));
+            $row['pic'] = trim((string) ($row['pic'] ?? '')) ?: $this->dashboardPic($row['project']);
+            $row['row_type'] = trim((string) ($row['row_type'] ?? '-')) ?: '-';
+            $row['po_number'] = trim((string) ($row['po_number'] ?? '-')) ?: '-';
+            $row['sub_po'] = trim((string) ($row['sub_po'] ?? '-')) ?: '-';
+            $row['detail_po'] = trim((string) ($row['detail_po'] ?? '-')) ?: '-';
+            $row['remarks'] = trim((string) ($row['remarks'] ?? '-')) ?: '-';
+            $row['regional'] = trim((string) ($row['regional'] ?? '-')) ?: '-';
+            $row['area'] = trim((string) ($row['area'] ?? '-')) ?: '-';
+            $row['month'] = strtoupper($monthKey);
+            $row['month_label'] = $monthKey ? strtoupper(date('F', strtotime($monthKey . '-01'))) : '-';
+            $row['week'] = strtoupper($weekKey);
+            $row['date'] = $start ?: '';
+            $row['date_label'] = $start && $end && $start !== $end
+                ? $this->indonesianDate($start) . ' s/d ' . $this->indonesianDate($end)
+                : ($start ? $this->indonesianDate($start) : '-');
+            $row['target'] = (float) ($row['target_amount'] ?? 0);
+            $row['achieved'] = (float) ($row['achieved_amount'] ?? 0);
+            unset($row['target_amount'], $row['achieved_amount']);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function getBreakdownTargetInvoiceFilterOptions(array $rows)
+    {
+        $options = [
+            'projects' => [],
+            'pics' => [],
+            'regionals' => [],
+            'areas' => [],
+            'months' => [],
+            'weeks' => []
+        ];
+
+        foreach ($rows as $row) {
+            $this->appendBreakdownOption($options['projects'], (string) ($row['project'] ?? ''), (string) ($row['project'] ?? ''));
+            $this->appendBreakdownOption($options['pics'], (string) ($row['pic'] ?? ''), (string) ($row['pic'] ?? ''));
+            $this->appendBreakdownOption($options['regionals'], (string) ($row['regional'] ?? ''), (string) ($row['regional'] ?? ''));
+            $this->appendBreakdownOption($options['areas'], (string) ($row['area'] ?? ''), (string) ($row['area'] ?? ''));
+            $this->appendBreakdownOption($options['months'], (string) ($row['month'] ?? ''), (string) ($row['month_label'] ?? $row['month'] ?? ''));
+            $this->appendBreakdownOption($options['weeks'], (string) ($row['week'] ?? ''), (string) ($row['week'] ?? ''));
+        }
+
+        foreach ($options as &$items) {
+            uasort($items, function ($a, $b) {
+                return strcmp($a['label'], $b['label']);
+            });
+            $items = array_values($items);
+        }
+        unset($items);
+
+        return $options;
+    }
+
+    private function appendBreakdownOption(array &$options, $value, $label)
+    {
+        $value = trim((string) $value);
+        $label = trim((string) $label);
+        if ($value === '' || $value === '-') {
+            return;
+        }
+        $options[$value] = ['value' => $value, 'label' => $label ?: $value];
     }
 
     public function getComparisonDetail($idBowheer, $periodKey, $groupBy, $type)

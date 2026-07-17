@@ -4,6 +4,15 @@ $error_log = $this->session->flashdata('error_log');
 $isLocalAccess = $isLocalAccess ?? false;
 $canManagePoImport = !empty($canManagePoImport);
 $batchInvoiceRows = is_array($batchInvoiceRows ?? null) ? $batchInvoiceRows : [];
+$breakdownRows = is_array($breakdownRows ?? null) ? $breakdownRows : [];
+$breakdownFilterOptions = is_array($breakdownFilterOptions ?? null) ? $breakdownFilterOptions : [
+    'projects' => [],
+    'pics' => [],
+    'regionals' => [],
+    'areas' => [],
+    'months' => [],
+    'weeks' => []
+];
 $comparisonMatrix = $comparisonMatrix ?? [
     'from' => date('Y-m'),
     'to' => date('Y-m'),
@@ -516,9 +525,20 @@ if (!function_exists('po_monitor_term_amount_link')) {
         margin-top: 1rem;
     }
 
+    #po_breakdown_detail_modal .modal-dialog {
+        max-width: min(1180px, calc(100vw - 1.5rem));
+        margin-top: 1rem;
+    }
+
     #po_compare_detail_modal .modal-body {
         max-height: 76vh;
         overflow: auto;
+    }
+
+    #po_breakdown_detail_modal .modal-body {
+        max-height: 76vh;
+        overflow: auto;
+        background: #f8fafc;
     }
 
     #po_compare_detail_modal .modal-footer {
@@ -544,7 +564,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
         min-width: 220px;
     }
 
+    .po-monitor-modal-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
     #po_compare_detail_modal .modal-content,
+    #po_breakdown_detail_modal .modal-content,
     #po_monitor_batch_invoice_modal .modal-content {
         border: 0;
         border-radius: 14px;
@@ -553,6 +580,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
     }
 
     #po_compare_detail_modal .modal-header,
+    #po_breakdown_detail_modal .modal-header,
     #po_monitor_batch_invoice_modal .modal-header {
         align-items: flex-start;
         border: 0;
@@ -564,6 +592,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
     }
 
     #po_compare_detail_modal .modal-title,
+    #po_breakdown_detail_modal .modal-title,
     #po_monitor_batch_invoice_modal .modal-title {
         color: #fff;
         font-size: 1rem;
@@ -572,6 +601,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
     }
 
     #po_compare_detail_modal .close,
+    #po_breakdown_detail_modal .close,
     #po_monitor_batch_invoice_modal .close {
         color: #fff;
         opacity: 0.92;
@@ -1345,6 +1375,454 @@ if (!function_exists('po_monitor_term_amount_link')) {
         gap: 0.55rem;
     }
 
+    .po-monitor-list-panel {
+        border-color: rgba(203, 213, 225, 0.8);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.09);
+    }
+
+    .po-monitor-list-panel .po-monitor-panel__head {
+        align-items: flex-start;
+        border-bottom: 0;
+        padding-bottom: 0.75rem;
+    }
+
+    .po-monitor-list-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+        padding: 0.32rem 0.58rem;
+        border-radius: 999px;
+        background: #eaf0ff;
+        color: #1d4ed8;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .po-monitor-list-panel .dataTables_wrapper .row:first-child {
+        align-items: center;
+        margin-bottom: 0.7rem;
+    }
+
+    .po-monitor-list-panel .dataTables_filter,
+    .po-monitor-list-panel .dataTables_length {
+        width: 100%;
+    }
+
+    .po-monitor-list-panel .dataTables_filter label,
+    .po-monitor-list-panel .dataTables_length label {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        width: 100%;
+        margin-bottom: 0;
+        color: transparent;
+        font-size: 0;
+    }
+
+    .po-monitor-list-panel .dataTables_filter label::before,
+    .po-monitor-list-panel .dataTables_length label::before {
+        color: #64748b;
+        font-family: "Font Awesome 5 Free";
+        font-size: 0.84rem;
+        font-weight: 900;
+    }
+
+    .po-monitor-list-panel .dataTables_filter label::before {
+        content: "\f002";
+        margin-right: -2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .po-monitor-list-panel .dataTables_length label::before {
+        content: "\f03a";
+        margin-right: -2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .po-monitor-list-panel .dataTables_filter input,
+    .po-monitor-list-panel .dataTables_length select {
+        height: 38px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background-color: #fff;
+        color: #0f172a;
+        font-size: 0.82rem;
+        box-shadow: none;
+    }
+
+    .po-monitor-list-panel .dataTables_filter input {
+        width: 100% !important;
+        margin-left: 0;
+        padding-left: 2.25rem;
+    }
+
+    .po-monitor-list-panel .dataTables_length select {
+        width: 128px;
+        padding-left: 2.15rem;
+    }
+
+    .po-monitor-list-table {
+        border: 0 !important;
+        color: #020617;
+    }
+
+    .po-monitor-list-table thead th {
+        border: 0 !important;
+        border-bottom: 1px solid #bfdbfe !important;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .po-monitor-list-table tbody td {
+        border-top: 0 !important;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0.72rem 0.6rem;
+        font-size: 0.8rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .po-monitor-list-table tfoot th {
+        border: 0 !important;
+        background: #f8fafc;
+        color: #020617;
+        font-size: 0.82rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .po-monitor-list-table .po-monitor-money {
+        font-weight: 800;
+    }
+
+    .po-monitor-sla-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 72px;
+        padding: 0.28rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 900;
+    }
+
+    .po-monitor-sla-pill--aman {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .po-monitor-sla-pill--warning {
+        background: #ffedd5;
+        color: #c2410c;
+    }
+
+    .po-monitor-sla-pill--overdue {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .po-monitor-list-detail-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #dbeafe;
+        color: #1d4ed8;
+        text-decoration: none;
+    }
+
+    .po-monitor-list-detail-btn:hover {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .po-monitor-list-panel .dataTables_info {
+        padding-top: 1rem;
+        color: #64748b;
+        font-size: 0.78rem;
+    }
+
+    .po-monitor-list-panel .pagination {
+        margin-top: 0.8rem;
+    }
+
+    .po-monitor-list-panel .page-link {
+        border-color: #dbe3ef;
+        color: #2563eb;
+        font-size: 0.82rem;
+    }
+
+    .po-monitor-list-panel .page-item.active .page-link {
+        border-color: #2563eb;
+        background: #2563eb;
+    }
+
+    .po-breakdown-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .po-breakdown-filter-grid .po-monitor-field label {
+        font-size: 0.68rem;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .po-breakdown-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin: 0.7rem 0 1rem;
+    }
+
+    .po-breakdown-toolbar .po-monitor-list-panel .dataTables_filter {
+        flex: 1;
+    }
+
+    .po-breakdown-tabs {
+        gap: 0.3rem;
+        margin-bottom: 1rem;
+        padding: 0.35rem;
+        border-radius: 8px;
+        background: #eef2f7;
+    }
+
+    .po-breakdown-tabs .nav-link {
+        border-radius: 7px;
+        color: #334155;
+        font-size: 0.82rem;
+        font-weight: 900;
+    }
+
+    .po-breakdown-tabs .nav-link.active {
+        background: #1d4ed8;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    .po-breakdown-progress {
+        min-width: 150px;
+    }
+
+    .po-breakdown-progress__track {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e2e8f0;
+    }
+
+    .po-breakdown-progress__bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #2563eb, #22c55e);
+    }
+
+    .po-breakdown-progress__text {
+        display: block;
+        margin-top: 0.25rem;
+        color: #0f172a;
+        font-size: 0.72rem;
+        font-weight: 900;
+    }
+
+    .po-breakdown-empty {
+        padding: 1rem;
+        color: #64748b;
+        text-align: center;
+    }
+
+    #po_breakdown_filter_modal .modal-dialog {
+        max-width: min(1120px, calc(100vw - 1.5rem));
+        margin-top: 1.1rem;
+    }
+
+    #po_breakdown_filter_modal .modal-content {
+        overflow: hidden;
+        border: 0;
+        border-radius: 12px;
+        background: #f8fafc;
+        box-shadow: 0 30px 70px rgba(15, 23, 42, 0.26);
+    }
+
+    #po_breakdown_filter_modal .modal-header {
+        align-items: flex-start;
+        border-bottom: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 1.15rem 1.35rem 0.95rem;
+    }
+
+    #po_breakdown_filter_modal .modal-title {
+        color: #0f172a;
+        font-size: 1.14rem;
+        font-weight: 900;
+        line-height: 1.25;
+    }
+
+    #po_breakdown_filter_modal .close {
+        width: 34px;
+        height: 34px;
+        margin: -0.15rem -0.25rem 0 0;
+        border-radius: 999px;
+        color: #64748b;
+        opacity: 1;
+    }
+
+    #po_breakdown_filter_modal .close:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .po-breakdown-filter-subtitle {
+        margin: 0.25rem 0 0;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+
+    #po_breakdown_filter_modal .modal-body {
+        padding: 1.25rem 1.35rem 1.4rem;
+    }
+
+    #po_breakdown_filter_modal .modal-footer {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: flex-end;
+        border-top: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 0.9rem 1.35rem;
+    }
+
+    #po_breakdown_filter_modal .modal-footer .btn {
+        min-width: 116px;
+        border-radius: 8px;
+        font-weight: 900;
+    }
+
+    #po_breakdown_filter_modal .modal-footer .btn-light {
+        border: 1px solid #dbe3ef;
+        background: #f8fafc;
+        color: #334155;
+    }
+
+    #po_breakdown_filter_modal .po-monitor-field {
+        min-width: 0;
+        padding: 0.85rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    #po_breakdown_filter_modal .po-monitor-field label {
+        display: block;
+        margin-bottom: 0.45rem;
+        color: #1e3a8a;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    #po_breakdown_filter_modal .select2-container {
+        width: 100% !important;
+    }
+
+    #po_breakdown_filter_modal .select2-container--bootstrap4 .select2-selection {
+        min-height: 42px;
+        border: 1px solid #d7e0ec;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: none;
+    }
+
+    #po_breakdown_filter_modal .select2-container--bootstrap4.select2-container--focus .select2-selection,
+    #po_breakdown_filter_modal .select2-container--bootstrap4.select2-container--open .select2-selection {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    #po_breakdown_filter_modal .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+        border: 0;
+        border-radius: 999px;
+        background: #e0ebff;
+        color: #1d4ed8;
+        font-size: 0.76rem;
+        font-weight: 800;
+        padding: 0.2rem 0.45rem;
+    }
+
+    #po_breakdown_filter_modal .select2-container--bootstrap4 .select2-selection--multiple .select2-search__field {
+        min-width: 8rem;
+        margin-top: 0.45rem;
+        color: #0f172a;
+    }
+
+    .select2-dropdown.po-breakdown-select2-dropdown {
+        overflow: hidden;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+    }
+
+    .select2-dropdown.po-breakdown-select2-dropdown .select2-search {
+        padding: 0.55rem;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .select2-dropdown.po-breakdown-select2-dropdown .select2-search__field {
+        height: 34px;
+        border: 1px solid #d7e0ec !important;
+        border-radius: 8px;
+        padding: 0.35rem 0.55rem;
+        color: #0f172a;
+        font-size: 0.82rem;
+        outline: 0;
+    }
+
+    .select2-dropdown.po-breakdown-select2-dropdown .select2-results__options {
+        max-height: 250px;
+        padding: 0.25rem;
+    }
+
+    .po-breakdown-select2-dropdown .select2-results__option {
+        border-radius: 7px;
+        padding: 0.48rem 0.7rem;
+        color: #0f172a;
+        font-size: 0.82rem;
+    }
+
+    .po-breakdown-select2-dropdown .select2-results__option--highlighted {
+        background: #2563eb !important;
+        color: #fff !important;
+    }
+
+    .po-breakdown-select2-dropdown .select2-results__option[aria-selected=true] {
+        background: #e0ebff;
+        color: #1d4ed8;
+        font-weight: 900;
+    }
+
+    @media (max-width: 1199.98px) {
+        .po-breakdown-filter-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media (max-width: 1199.98px) {
         .po-monitor-kpi-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1355,6 +1833,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
         .po-monitor-hero__grid,
         .po-monitor-filter-grid,
         .po-monitor-import-grid,
+        .po-breakdown-filter-grid,
         .po-monitor-batch-toolbar {
             grid-template-columns: 1fr;
         }
@@ -1521,43 +2000,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 <div class="po-monitor-panel">
                     <div class="po-monitor-panel__head">
                         <div>
-                            <h3 class="po-monitor-panel__title">Filter Data</h3>
-                            <p class="po-monitor-panel__subtitle">Saring data PO Monitor berdasarkan project dan status SLA.</p>
-                        </div>
-                    </div>
-                    <div class="po-monitor-panel__body">
-                        <form method="get" action="<?= site_url('PO_Monitor') ?>">
-                            <div class="po-monitor-filter-grid">
-                                <div class="po-monitor-field">
-                                    <label>Project / Bowheer</label>
-                                    <select id="filter_bowheer_up" name="bowheer[]" class="select2" multiple="multiple" data-placeholder="Pilih bowheer" style="width: 100%;">
-                                        <?php foreach ($uniqueBowheer as $bowheerName): ?>
-                                            <option value="<?= htmlspecialchars($bowheerName) ?>" <?= in_array($bowheerName, $selectedBowheer ?? [], true) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($bowheerName) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="po-monitor-field">
-                                    <label>SLA Status</label>
-                                    <select id="filter_sla_up" name="sla[]" class="select2" multiple="multiple" data-placeholder="Pilih SLA status" style="width: 100%;">
-                                        <option value="AMAN" <?= in_array('AMAN', $selectedSla ?? [], true) ? 'selected' : '' ?>>AMAN</option>
-                                        <option value="WARNING" <?= in_array('WARNING', $selectedSla ?? [], true) ? 'selected' : '' ?>>WARNING</option>
-                                        <option value="OVERDUE" <?= in_array('OVERDUE', $selectedSla ?? [], true) ? 'selected' : '' ?>>OVERDUE</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="po-monitor-actions">
-                                <a href="<?= site_url('PO_Monitor') ?>" id="reset_filter_po_monitor" class="btn btn-danger">Delete</a>
-                                <button type="submit" id="btnFilterPOMonitor" class="btn btn-primary">Search</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="po-monitor-panel">
-                    <div class="po-monitor-panel__head">
-                        <div>
                             <h3 class="po-monitor-panel__title">Import Database PO CSV</h3>
                             <p class="po-monitor-panel__subtitle">Import ulang data master PO Monitor standalone dari CSV.</p>
                         </div>
@@ -1641,6 +2083,185 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     </div>
                 </div>
 
+                <div class="po-monitor-panel" id="po_compare_panel" style="display: none;">
+                    <div class="po-monitor-panel__head">
+                        <div>
+                            <h3 class="po-monitor-panel__title">Perbandingan Target dan Invoice</h3>
+                            <p class="po-monitor-panel__subtitle">Bandingkan target paten dan realisasi invoice per bulan atau per week.</p>
+                        </div>
+                    </div>
+                    <div class="po-monitor-panel__body po-monitor-compare-body" id="po-monitor-compare-body">
+                        <form method="get" action="<?= site_url('PO_Monitor') ?>" class="mb-3">
+                            <div class="po-monitor-import-grid">
+                                <div class="po-monitor-field">
+                                    <label>From Month</label>
+                                    <input type="month" name="from_month" class="form-control" value="<?= htmlspecialchars($comparisonMatrix['from']) ?>">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>To Month</label>
+                                    <input type="month" name="to_month" class="form-control" value="<?= htmlspecialchars($comparisonMatrix['to']) ?>">
+                                </div>
+                                <div class="po-monitor-field">
+                                    <label>Options</label>
+                                    <div class="po-monitor-switch-row">
+                                        <label class="po-monitor-switch mb-0">
+                                            <input type="checkbox" id="po_compare_data_only" value="1">
+                                            <span class="po-monitor-switch-slider"></span>
+                                            <span>Target / Invoice only</span>
+                                        </label>
+                                        <label class="po-monitor-switch mb-0">
+                                            <input type="checkbox" id="po_compare_week_mode" value="1">
+                                            <span class="po-monitor-switch-slider"></span>
+                                            <span>Weeks column</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="po-monitor-actions">
+                                <button type="submit" class="btn btn-primary">Search</button>
+                                <a href="<?= site_url('PO_Monitor') ?>" class="btn btn-secondary">Reset</a>
+                            </div>
+                        </form>
+
+                        <div id="po_compare_month_panel" class="table-responsive">
+                            <table id="table_po_target_invoice_compare_month" class="table table-bordered table-striped po-compare-table">
+                                <thead>
+                                    <tr class="po-compare-month">
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-left">No</th>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-left">PIC</th>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
+                                        <?php foreach ($comparisonMatrix['months'] as $month): ?>
+                                            <th colspan="3" class="po-compare-month-cell">
+                                                <?= htmlspecialchars($month['label']) ?><br>
+                                                <small><?= htmlspecialchars($month['year']) ?></small>
+                                            </th>
+                                        <?php endforeach; ?>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
+                                        <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
+                                    </tr>
+                                    <tr>
+                                        <?php foreach ($comparisonMatrix['months'] as $month): ?>
+                                            <th class="po-compare-target">Target</th>
+                                            <th class="po-compare-achieved">Achieved</th>
+                                            <th class="po-compare-percent">%</th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php $compareNo = 1; foreach ($comparisonMatrix['rows'] as $row): ?>
+                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $row['total_target'] ?>">
+                                            <td><?= $compareNo++ ?></td>
+                                            <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars($row['project']) ?></td>
+                                            <td><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
+                                            <?php foreach ($comparisonMatrix['months'] as $month): ?>
+                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
+                                                <td><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
+                                                <td><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
+                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
+                                            <?php endforeach; ?>
+                                            <td><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
+                                            <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
+                                            <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3">Total</th>
+                                        <th><?= number_format((float) $comparisonMatrix['totals']['total_target'], 0, ',', '.') ?></th>
+                                        <?php foreach ($comparisonMatrix['months'] as $month): ?>
+                                            <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
+                                            <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
+                                            <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
+                                            <th><?= po_monitor_percent($monthTotal['percent']) ?></th>
+                                        <?php endforeach; ?>
+                                        <th><?= number_format((float) $comparisonMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
+                                        <th><?= number_format((float) $comparisonMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
+                                        <th><?= po_monitor_percent($comparisonMatrix['totals']['achieved_percent']) ?></th>
+                                        <th><?= po_monitor_percent($comparisonMatrix['totals']['deviasi_percent']) ?></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div id="po_compare_week_panel" class="table-responsive po-compare-panel-hidden">
+                            <table id="table_po_target_invoice_compare_week" class="table table-bordered table-striped po-compare-table">
+                                <thead>
+                                    <tr class="po-compare-month">
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">No</th>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">PIC</th>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
+                                        <?php foreach ($comparisonWeekMonthGroups as $group): ?>
+                                            <th colspan="<?= (int) $group['count'] * 3 ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label']) ?></th>
+                                        <?php endforeach; ?>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
+                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
+                                    </tr>
+                                    <tr>
+                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
+                                            <th colspan="3" class="po-compare-week-cell">
+                                                <?= htmlspecialchars($month['label']) ?><br>
+                                                <small><?= htmlspecialchars($month['period'] ?? '') ?></small>
+                                            </th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                    <tr>
+                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
+                                            <th class="po-compare-target">Target</th>
+                                            <th class="po-compare-achieved">Achieved</th>
+                                            <th class="po-compare-percent">%</th>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php $compareWeekNo = 1; foreach ($comparisonWeekMatrix['rows'] as $row): ?>
+                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $row['total_target'] ?>">
+                                            <td><?= $compareWeekNo++ ?></td>
+                                            <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                            <td><?= htmlspecialchars($row['project']) ?></td>
+                                            <td><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
+                                            <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
+                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
+                                                <td><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'week', 'target') ?></td>
+                                                <td><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'week', 'achieved') ?></td>
+                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
+                                            <?php endforeach; ?>
+                                            <td><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
+                                            <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
+                                            <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3">Total</th>
+                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_target'], 0, ',', '.') ?></th>
+                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
+                                            <?php $monthTotal = $comparisonWeekMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
+                                            <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
+                                            <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
+                                            <th><?= po_monitor_percent($monthTotal['percent']) ?></th>
+                                        <?php endforeach; ?>
+                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
+                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
+                                        <th><?= po_monitor_percent($comparisonWeekMatrix['totals']['achieved_percent']) ?></th>
+                                        <th><?= po_monitor_percent($comparisonWeekMatrix['totals']['deviasi_percent']) ?></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="po-monitor-panel">
                     <div class="po-monitor-panel__head">
                         <div>
@@ -1697,384 +2318,158 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     </div>
                 </div>
 
-                <div class="po-monitor-panel">
-                    <div class="po-monitor-panel__head">
-                        <div>
-                            <h3 class="po-monitor-panel__title">Perbandingan Target dan Invoice</h3>
-                            <p class="po-monitor-panel__subtitle">Bandingkan target paten dan realisasi invoice per bulan atau per week.</p>
-                        </div>
-                    </div>
-                    <div class="po-monitor-panel__body po-monitor-compare-body" id="po-monitor-compare-body">
-                        <form method="get" action="<?= site_url('PO_Monitor') ?>" class="mb-3">
-                            <div class="po-monitor-import-grid">
-                                <div class="po-monitor-field">
-                                    <label>From Month</label>
-                                    <input type="month" name="from_month" class="form-control" value="<?= htmlspecialchars($comparisonMatrix['from']) ?>">
+                <div class="modal fade" id="po_breakdown_filter_modal" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-xl" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h5 class="modal-title"><span class="po-monitor-modal-eyebrow">Kontrol Data</span>Filter Data</h5>
+                                    <p class="po-breakdown-filter-subtitle">Pilih satu atau beberapa opsi. Daftar pilihan akan menyesuaikan filter lain.</p>
                                 </div>
-                                <div class="po-monitor-field">
-                                    <label>To Month</label>
-                                    <input type="month" name="to_month" class="form-control" value="<?= htmlspecialchars($comparisonMatrix['to']) ?>">
-                                </div>
-                                <div class="po-monitor-field">
-                                    <label>Options</label>
-                                    <div class="po-monitor-switch-row">
-                                        <label class="po-monitor-switch mb-0">
-                                            <input type="checkbox" id="po_compare_data_only" value="1">
-                                            <span class="po-monitor-switch-slider"></span>
-                                            <span>Target / Invoice only</span>
-                                        </label>
-                                        <label class="po-monitor-switch mb-0">
-                                            <input type="checkbox" id="po_compare_week_mode" value="1">
-                                            <span class="po-monitor-switch-slider"></span>
-                                            <span>Weeks column</span>
-                                        </label>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="po-breakdown-filter-grid">
+                                    <div class="po-monitor-field">
+                                        <label>Project</label>
+                                        <select id="po_breakdown_filter_project" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua project">
+                                            <?php foreach (($breakdownFilterOptions['projects'] ?? []) as $option): ?>
+                                                <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="po-monitor-field">
+                                        <label>PIC</label>
+                                        <select id="po_breakdown_filter_pic" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua PIC">
+                                            <?php foreach (($breakdownFilterOptions['pics'] ?? []) as $option): ?>
+                                                <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="po-monitor-field">
+                                        <label>Regional</label>
+                                        <select id="po_breakdown_filter_regional" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua regional">
+                                            <?php foreach (($breakdownFilterOptions['regionals'] ?? []) as $option): ?>
+                                                <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="po-monitor-field">
+                                        <label>Area</label>
+                                        <select id="po_breakdown_filter_area" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua area">
+                                            <?php foreach (($breakdownFilterOptions['areas'] ?? []) as $option): ?>
+                                                <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="po-monitor-field">
+                                        <label>Bulan</label>
+                                        <select id="po_breakdown_filter_month" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua bulan">
+                                            <?php foreach (($breakdownFilterOptions['months'] ?? []) as $option): ?>
+                                                <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="po-monitor-field">
+                                        <label>Week</label>
+                                        <select id="po_breakdown_filter_week" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua week">
+                                            <?php foreach (($breakdownFilterOptions['weeks'] ?? []) as $option): ?>
+                                                <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            <div class="po-monitor-actions">
-                                <button type="submit" class="btn btn-primary">Search</button>
-                                <a href="<?= site_url('PO_Monitor') ?>" class="btn btn-secondary">Reset</a>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" id="po_breakdown_reset">
+                                    <i class="fas fa-undo-alt mr-1"></i> Reset
+                                </button>
+                                <button type="button" class="btn btn-primary" id="po_breakdown_apply">
+                                    <i class="fas fa-search mr-1"></i> Terapkan
+                                </button>
                             </div>
-                        </form>
-
-                        <div id="po_compare_month_panel" class="table-responsive">
-                            <table id="table_po_target_invoice_compare_month" class="table table-bordered table-striped po-compare-table">
-                                <thead>
-                                    <?php if ($comparisonIsWeek): ?>
-                                        <tr class="po-compare-month">
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">No</th>
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
-                                            <?php foreach ($comparisonWeekMonthGroups as $group): ?>
-                                                <th colspan="<?= (int) $group['count'] * 3 ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label']) ?></th>
-                                            <?php endforeach; ?>
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
-                                            <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
-                                        </tr>
-                                        <tr>
-                                            <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                                <th colspan="3" class="po-compare-week-cell">
-                                                    <?= htmlspecialchars($month['label']) ?><br>
-                                                    <small><?= htmlspecialchars($month['period']) ?></small>
-                                                </th>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                        <tr>
-                                            <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                                <th class="po-compare-target">Target</th>
-                                                <th class="po-compare-achieved">Achieved</th>
-                                                <th class="po-compare-percent">%</th>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                    <?php else: ?>
-                                        <tr class="po-compare-month">
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-left">No</th>
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
-                                            <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                                <th colspan="3" class="po-compare-month-cell">
-                                                    <?= htmlspecialchars($month['label']) ?><br>
-                                                    <small><?= htmlspecialchars($month['year']) ?></small>
-                                                </th>
-                                            <?php endforeach; ?>
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
-                                            <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
-                                        </tr>
-                                        <tr>
-                                            <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                                <th class="po-compare-target">Target</th>
-                                                <th class="po-compare-achieved">Achieved</th>
-                                                <th class="po-compare-percent">%</th>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                    <?php endif; ?>
-                                </thead>
-                                <tbody>
-                                    <?php $compareNo = 1; foreach ($comparisonMatrix['rows'] as $row): ?>
-                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $row['total_target'] ?>">
-                                            <td><?= $compareNo++ ?></td>
-                                            <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
-                                            <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                                <td><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
-                                                <td><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
-                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
-                                            <?php endforeach; ?>
-                                            <td><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
-                                            <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
-                                            <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="2">Total</th>
-                                        <th><?= number_format((float) $comparisonMatrix['totals']['total_target'], 0, ',', '.') ?></th>
-                                        <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                            <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                            <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
-                                            <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
-                                            <th><?= po_monitor_percent($monthTotal['percent']) ?></th>
-                                        <?php endforeach; ?>
-                                        <th><?= number_format((float) $comparisonMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
-                                        <th><?= number_format((float) $comparisonMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
-                                        <th><?= po_monitor_percent($comparisonMatrix['totals']['achieved_percent']) ?></th>
-                                        <th><?= po_monitor_percent($comparisonMatrix['totals']['deviasi_percent']) ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <div id="po_compare_week_panel" class="table-responsive po-compare-panel-hidden">
-                            <table id="table_po_target_invoice_compare_week" class="table table-bordered table-striped po-compare-table">
-                                <thead>
-                                    <tr class="po-compare-month">
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">No</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
-                                        <?php foreach ($comparisonWeekMonthGroups as $group): ?>
-                                            <th colspan="<?= (int) $group['count'] * 3 ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label']) ?></th>
-                                        <?php endforeach; ?>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
-                                    </tr>
-                                    <tr>
-                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                            <th colspan="3" class="po-compare-week-cell">
-                                                <?= htmlspecialchars($month['label']) ?><br>
-                                                <small><?= htmlspecialchars($month['period'] ?? '') ?></small>
-                                            </th>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                    <tr>
-                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                            <th class="po-compare-target">Target</th>
-                                            <th class="po-compare-achieved">Achieved</th>
-                                            <th class="po-compare-percent">%</th>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $compareWeekNo = 1; foreach ($comparisonWeekMatrix['rows'] as $row): ?>
-                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $row['total_target'] ?>">
-                                            <td><?= $compareWeekNo++ ?></td>
-                                            <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
-                                            <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                                <td><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'week', 'target') ?></td>
-                                                <td><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'week', 'achieved') ?></td>
-                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
-                                            <?php endforeach; ?>
-                                            <td><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
-                                            <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
-                                            <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="2">Total</th>
-                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_target'], 0, ',', '.') ?></th>
-                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                            <?php $monthTotal = $comparisonWeekMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                            <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
-                                            <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
-                                            <th><?= po_monitor_percent($monthTotal['percent']) ?></th>
-                                        <?php endforeach; ?>
-                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
-                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
-                                        <th><?= po_monitor_percent($comparisonWeekMatrix['totals']['achieved_percent']) ?></th>
-                                        <th><?= po_monitor_percent($comparisonWeekMatrix['totals']['deviasi_percent']) ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
                         </div>
                     </div>
                 </div>
 
-                <div class="po-monitor-panel">
+                <div class="po-monitor-panel po-monitor-list-panel">
                     <div class="po-monitor-panel__head">
                         <div>
-                            <h3 class="po-monitor-panel__title">List Bowheer dan Tagihan Term</h3>
-                            <p class="po-monitor-panel__subtitle">Breakdown outstanding term per bowheer.</p>
+                            <span class="po-monitor-list-eyebrow"><i class="fas fa-layer-group"></i> Report Detail</span>
+                            <h3 class="po-monitor-panel__title">Breakdown Target Invoice</h3>
+                            <p class="po-monitor-panel__subtitle">Gunakan tab untuk melihat sudut pandang report yang berbeda.</p>
+                        </div>
+                        <div class="po-monitor-table-actions">
+                            <button type="button" class="btn btn-light btn-sm font-weight-bold" data-toggle="modal" data-target="#po_breakdown_filter_modal">
+                                <i class="fas fa-sliders-h mr-1"></i> Filter Data
+                            </button>
+                            <label class="po-monitor-switch mb-0">
+                                <input type="checkbox" id="po_breakdown_invoiced_only">
+                                <span class="po-monitor-switch-slider"></span>
+                                <span>Invoiced Only</span>
+                            </label>
                         </div>
                     </div>
-                    <div class="po-monitor-panel__body table-responsive">
-                        <table id="table_po_bowheer_matrix" class="table table-bordered table-striped mb-4">
-                            <thead>
-                                <tr>
-                                    <th rowspan="2" style="vertical-align: middle; width: 35px;">No</th>
-                                    <th rowspan="2" style="vertical-align: middle;">Bowheer</th>
-                                    <th rowspan="2" style="vertical-align: middle;">TOTAL PO</th>
-                                    <th rowspan="2" style="vertical-align: middle;">TERM DONE</th>
-                                    <th colspan="5" class="text-center">TERMINT</th>
-                                    <th rowspan="2" style="vertical-align: middle;">OUSTANDING TERM</th>
-                                </tr>
-                                <tr>
-                                    <th class="text-center">1</th>
-                                    <th class="text-center">2</th>
-                                    <th class="text-center">3</th>
-                                    <th class="text-center">4</th>
-                                    <th class="text-center">5</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (!empty($bowheerTermBreakdown)): ?>
-                                    <?php $noMatrix = 1; foreach ($bowheerTermBreakdown as $bowheer): ?>
-                                        <?php
-                                        $summary = isset($bowheerSummaryMap[(string) $bowheer['id_bowheer']]) ? $bowheerSummaryMap[(string) $bowheer['id_bowheer']] : null;
-                                        $termRemainingMap = [];
+                    <div class="po-monitor-panel__body">
+                        <div class="po-breakdown-toolbar">
+                            <div class="po-monitor-list-panel flex-fill">
+                                <div class="dataTables_filter">
+                                    <label>
+                                        <input type="search" id="po_breakdown_search" class="form-control" placeholder="Cari breakdown invoice">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="po-monitor-list-panel">
+                                <div class="dataTables_length">
+                                    <label>
+                                        <select id="po_breakdown_limit" class="form-control">
+                                            <option value="10">10 row</option>
+                                            <option value="25">25 row</option>
+                                            <option value="50">50 row</option>
+                                            <option value="-1">Semua row</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
 
-                                        foreach ($bowheer['terms'] as $term) {
-                                            $termRemainingMap[(int) $term['term_index']] = (float) $term['remaining'];
-                                        }
+                        <ul class="nav po-breakdown-tabs" role="tablist">
+                            <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#po_breakdown_tab_project" role="tab" data-breakdown-mode="project">Project</a></li>
+                            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#po_breakdown_tab_pic" role="tab" data-breakdown-mode="pic">PIC</a></li>
+                            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#po_breakdown_tab_regional" role="tab" data-breakdown-mode="regional">Regional</a></li>
+                            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#po_breakdown_tab_area" role="tab" data-breakdown-mode="area">Kota / Area</a></li>
+                            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#po_breakdown_tab_period" role="tab" data-breakdown-mode="period">Periode</a></li>
+                            <li class="nav-item"><a class="nav-link" data-toggle="pill" href="#po_breakdown_tab_date" role="tab" data-breakdown-mode="date">Tanggal</a></li>
+                        </ul>
 
-                                        $totalPo = $summary ? (float) $summary['current_release_value'] : 0;
-                                        $termDone = $summary ? (float) $summary['total_invoiced'] : 0;
-                                        $outstandingTerm = $summary ? (float) $summary['remaining'] : 0;
-
-                                        $matrixTotals['total_po'] += $totalPo;
-                                        $matrixTotals['term_done'] += $termDone;
-                                        $matrixTotals['outstanding_term'] += $outstandingTerm;
-
-                                        for ($termIndex = 1; $termIndex <= 5; $termIndex++) {
-                                            $matrixTotals['termint'][$termIndex] += isset($termRemainingMap[$termIndex]) ? $termRemainingMap[$termIndex] : 0;
-                                        }
-                                        ?>
-                                        <tr data-bowheer="<?= htmlspecialchars($bowheer['nama_bowheer']) ?>">
-                                            <td><?= $noMatrix++ ?></td>
-                                            <td><?= htmlspecialchars($bowheer['nama_bowheer']) ?></td>
-                                            <td><?= po_monitor_term_amount_link($totalPo, $bowheer['id_bowheer'], 'total_po') ?></td>
-                                            <td><?= po_monitor_term_amount_link($termDone, $bowheer['id_bowheer'], 'term_done') ?></td>
-                                            <?php for ($termIndex = 1; $termIndex <= 5; $termIndex++): ?>
-                                                <?php $termValue = isset($termRemainingMap[$termIndex]) ? $termRemainingMap[$termIndex] : 0; ?>
-                                                <td class="text-center">
-                                                    <?= po_monitor_term_amount_link($termValue, $bowheer['id_bowheer'], 'term_remaining', $termIndex) ?>
-                                                </td>
-                                            <?php endfor; ?>
-                                            <td><?= po_monitor_term_amount_link($outstandingTerm, $bowheer['id_bowheer'], 'outstanding_term') ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="10" class="text-center">Belum ada data bowheer dan term.</td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="2" class="text-center">TOTAL</th>
-                                    <th><?= number_format($matrixTotals['total_po'], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['term_done'], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['termint'][1], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['termint'][2], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['termint'][3], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['termint'][4], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['termint'][5], 0, ',', '.') ?></th>
-                                    <th><?= number_format($matrixTotals['outstanding_term'], 0, ',', '.') ?></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-
-                        <table id="table_po_bowheer_term_detail" class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th style="width: 35px;">No</th>
-                                    <th style="min-width: 240px;">Bowheer</th>
-                                    <th>Tagihan Term</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (!empty($bowheerTermBreakdown)): ?>
-                                    <?php $noBreakdown = 1; foreach ($bowheerTermBreakdown as $bowheer): ?>
-                                        <tr data-bowheer="<?= htmlspecialchars($bowheer['nama_bowheer']) ?>">
-                                            <td><?= $noBreakdown++ ?></td>
-                                            <td>
-                                                <strong><?= htmlspecialchars($bowheer['nama_bowheer']) ?></strong>
-                                                <br>
-                                                <small>Total PO: <?= number_format((float) $bowheer['total_po'], 0, ',', '.') ?></small>
-                                            </td>
-                                            <td>
-                                                <?php if (!empty($bowheer['terms'])): ?>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-bordered mb-0">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Term</th>
-                                                                    <th>Nilai Term</th>
-                                                                    <th>Sudah Ditagihkan</th>
-                                                                    <th>Sisa</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <?php foreach ($bowheer['terms'] as $term): ?>
-                                                                    <?php
-                                                                    $detailTermTotals['term_value'] += (float) $term['term_value'];
-                                                                    $detailTermTotals['invoiced_amount'] += (float) $term['invoiced_amount'];
-                                                                    $detailTermTotals['remaining'] += (float) $term['remaining'];
-                                                                    ?>
-                                                                    <tr>
-                                                                        <td>Term <?= (int) $term['term_index'] ?></td>
-                                                                        <td><?= po_monitor_term_amount_link($term['term_value'], $bowheer['id_bowheer'], 'term_value', $term['term_index']) ?></td>
-                                                                        <td><?= po_monitor_term_amount_link($term['invoiced_amount'], $bowheer['id_bowheer'], 'term_done', $term['term_index']) ?></td>
-                                                                        <td><?= po_monitor_term_amount_link($term['remaining'], $bowheer['id_bowheer'], 'term_remaining', $term['term_index']) ?></td>
-                                                                    </tr>
-                                                                <?php endforeach; ?>
-                                                            </tbody>
-                                                            <tfoot>
-                                                                <tr>
-                                                                    <th>TOTAL</th>
-                                                                    <th><?= number_format(array_sum(array_column($bowheer['terms'], 'term_value')), 0, ',', '.') ?></th>
-                                                                    <th><?= number_format(array_sum(array_column($bowheer['terms'], 'invoiced_amount')), 0, ',', '.') ?></th>
-                                                                    <th><?= number_format(array_sum(array_column($bowheer['terms'], 'remaining')), 0, ',', '.') ?></th>
-                                                                </tr>
-                                                            </tfoot>
-                                                        </table>
-                                                    </div>
-                                                <?php else: ?>
-                                                    <span class="text-muted">Belum ada tagihan term.</span>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="3" class="text-center">Belum ada data bowheer dan term.</td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="2" class="text-center">TOTAL</th>
-                                    <th>
-                                        Nilai Term: <?= number_format($detailTermTotals['term_value'], 0, ',', '.') ?> |
-                                        Sudah Ditagihkan: <?= number_format($detailTermTotals['invoiced_amount'], 0, ',', '.') ?> |
-                                        Sisa: <?= number_format($detailTermTotals['remaining'], 0, ',', '.') ?>
-                                    </th>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <div class="tab-content">
+                            <?php foreach (['project', 'pic', 'regional', 'area', 'period', 'date'] as $mode): ?>
+                                <div class="tab-pane fade <?= $mode === 'project' ? 'show active' : '' ?>" id="po_breakdown_tab_<?= $mode ?>" role="tabpanel">
+                                    <div class="table-responsive">
+                                        <table class="table po-monitor-list-table po-breakdown-table" data-breakdown-table="<?= $mode ?>">
+                                            <thead></thead>
+                                            <tbody></tbody>
+                                            <tfoot></tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
 
-                <div class="po-monitor-panel">
+                <div class="po-monitor-panel po-monitor-list-panel">
                     <div class="po-monitor-panel__head">
                         <div>
+                            <span class="po-monitor-list-eyebrow"><i class="fas fa-database"></i> Report Detail</span>
                             <h3 class="po-monitor-panel__title">List PO Monitor</h3>
                             <p class="po-monitor-panel__subtitle">Daftar PO standalone yang digunakan halaman PO Monitor.</p>
                         </div>
                     </div>
                     <div class="po-monitor-panel__body table-responsive">
-                        <table id="table_po_monitor_list" class="table table-bordered table-striped">
+                        <table id="table_po_monitor_list" class="table po-monitor-list-table">
                             <thead>
                                 <tr>
                                     <th>No</th>
@@ -2102,6 +2497,25 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 </div>
             </div>
         </section>
+    </div>
+</div>
+
+<div class="modal fade" id="po_breakdown_detail_modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><span class="po-monitor-modal-eyebrow">Breakdown Detail</span>Detail Target Invoice</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-muted">Loading...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2709,6 +3123,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 });
             }
 
+            if (selector === '#table_po_monitor_list') {
+                columnDefs.push(
+                    { targets: [0, 6, 7], className: 'text-center' },
+                    { targets: [3, 4, 5], className: 'text-right' },
+                    { targets: [7], orderable: false, searchable: false }
+                );
+            }
+
             var latestJson = null;
             var tableOptions = {
                 processing: true,
@@ -2719,6 +3141,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     data: function(d) {
                         if (selector === '#table_po_dashboard_excel') {
                             d.dashboard_mode = $('#dashboard_initial_toggle').is(':checked') ? 'initial' : 'current';
+                            d.start = 0;
+                            d.length = -1;
                         }
                     },
                     dataSrc: function(json) {
@@ -2746,6 +3170,30 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 tableOptions.drawCallback = function() {
                     updateDashboardFooter(latestJson);
                 };
+                tableOptions.paging = false;
+                tableOptions.info = false;
+                tableOptions.lengthChange = false;
+            }
+
+            if (selector === '#table_po_monitor_list') {
+                tableOptions.pageLength = 10;
+                tableOptions.lengthMenu = [[10], ['10 row']];
+                tableOptions.language = {
+                    search: '',
+                    searchPlaceholder: 'Cari PO monitor',
+                    lengthMenu: '_MENU_',
+                    info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                    paginate: {
+                        previous: 'Previous',
+                        next: 'Next'
+                    },
+                    processing: 'Loading...'
+                };
+                tableOptions.initComplete = function() {
+                    var $wrapper = $(selector).closest('.dataTables_wrapper');
+                    $wrapper.find('.dataTables_filter input').attr('placeholder', 'Cari PO monitor');
+                    $wrapper.find('.dataTables_length select').attr('aria-label', 'Jumlah row');
+                };
             }
 
             $(selector).DataTable(tableOptions);
@@ -2758,12 +3206,427 @@ if (!function_exists('po_monitor_term_amount_link')) {
             }
 
             var $ = window.jQuery;
+            $('#po_compare_panel')
+                .insertAfter($('#table_po_dashboard_excel').closest('.po-monitor-panel'))
+                .show();
 
-            $('#filter_bowheer_up, #filter_sla_up').select2({
+            var poBreakdownRows = <?php echo json_encode($breakdownRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+            var poBreakdownState = {
+                mode: 'project',
+                rows: {
+                    project: [],
+                    pic: [],
+                    regional: [],
+                    area: [],
+                    period: [],
+                    date: []
+                }
+            };
+            var poBreakdownFilterConfig = [
+                { id: 'project', selector: '#po_breakdown_filter_project', field: 'project' },
+                { id: 'pic', selector: '#po_breakdown_filter_pic', field: 'pic' },
+                { id: 'regional', selector: '#po_breakdown_filter_regional', field: 'regional' },
+                { id: 'area', selector: '#po_breakdown_filter_area', field: 'area' },
+                { id: 'month', selector: '#po_breakdown_filter_month', field: 'month', labelField: 'month_label' },
+                { id: 'week', selector: '#po_breakdown_filter_week', field: 'week' }
+            ];
+
+            function poBreakdownSelectValues(selector) {
+                var value = $(selector).val() || [];
+                return Array.isArray(value) ? value : (value ? [value] : []);
+            }
+
+            function poBreakdownFilters() {
+                return {
+                    project: poBreakdownSelectValues('#po_breakdown_filter_project'),
+                    pic: poBreakdownSelectValues('#po_breakdown_filter_pic'),
+                    regional: poBreakdownSelectValues('#po_breakdown_filter_regional'),
+                    area: poBreakdownSelectValues('#po_breakdown_filter_area'),
+                    month: poBreakdownSelectValues('#po_breakdown_filter_month'),
+                    week: poBreakdownSelectValues('#po_breakdown_filter_week'),
+                    search: String($('#po_breakdown_search').val() || '').toLowerCase(),
+                    limit: parseInt($('#po_breakdown_limit').val() || '10', 10),
+                    invoicedOnly: $('#po_breakdown_invoiced_only').is(':checked')
+                };
+            }
+
+            function poBreakdownStatus(percent) {
+                percent = Number(percent || 0);
+                if (percent >= 100) {
+                    return { label: 'Tercapai', className: 'po-monitor-sla-pill--aman' };
+                }
+                if (percent >= 80) {
+                    return { label: 'On Track', className: 'po-monitor-sla-pill--aman' };
+                }
+                if (percent >= 50) {
+                    return { label: 'Perlu Dorong', className: 'po-monitor-sla-pill--warning' };
+                }
+                return { label: 'Prioritas', className: 'po-monitor-sla-pill--overdue' };
+            }
+
+            function poBreakdownPercent(target, achieved) {
+                target = Number(target || 0);
+                achieved = Number(achieved || 0);
+                if (target <= 0) {
+                    return achieved > 0 ? 100 : 0;
+                }
+                return (achieved / target) * 100;
+            }
+
+            function poBreakdownMoney(value) {
+                return 'RP. ' + formatLocaleNumber(value);
+            }
+
+            function poBreakdownMatches(row, filters) {
+                if (filters.project.length && filters.project.indexOf(row.project) === -1) return false;
+                if (filters.pic.length && filters.pic.indexOf(row.pic) === -1) return false;
+                if (filters.regional.length && filters.regional.indexOf(row.regional) === -1) return false;
+                if (filters.area.length && filters.area.indexOf(row.area) === -1) return false;
+                if (filters.month.length && filters.month.indexOf(row.month) === -1) return false;
+                if (filters.week.length && filters.week.indexOf(row.week) === -1) return false;
+                if (filters.invoicedOnly && Number(row.achieved || 0) <= 0) return false;
+                return true;
+            }
+
+            function poBreakdownMatchesExcept(row, filters, exceptKey) {
+                var relaxed = $.extend({}, filters);
+                relaxed[exceptKey] = [];
+                return poBreakdownMatches(row, relaxed);
+            }
+
+            function poBreakdownUpdateCascade(event) {
+                var filters = poBreakdownFilters();
+                var activeSelector = event && event.currentTarget ? '#' + event.currentTarget.id : '';
+                poBreakdownFilterConfig.forEach(function(config) {
+                    if (activeSelector && activeSelector === config.selector) {
+                        return;
+                    }
+
+                    var selected = poBreakdownSelectValues(config.selector);
+                    var optionMap = {};
+
+                    poBreakdownRows.forEach(function(row) {
+                        if (!poBreakdownMatchesExcept(row, filters, config.id)) {
+                            return;
+                        }
+
+                        var value = String(row[config.field] || '');
+                        if (!value || value === '-') {
+                            return;
+                        }
+                        optionMap[value] = String(row[config.labelField || config.field] || value);
+                    });
+
+                    var sorted = Object.keys(optionMap).sort(function(a, b) {
+                        return optionMap[a].localeCompare(optionMap[b]);
+                    });
+                    var validSelected = selected.filter(function(value) {
+                        return Object.prototype.hasOwnProperty.call(optionMap, value);
+                    });
+                    var html = sorted.map(function(value) {
+                        return '<option value="' + escapeHtml(value) + '">' + escapeHtml(optionMap[value]) + '</option>';
+                    }).join('');
+
+                    var $select = $(config.selector);
+                    $select.html(html).val(validSelected);
+                    if ($select.data('select2')) {
+                        $select.trigger('change.select2');
+                    }
+                });
+            }
+
+            function poBreakdownGroup(rows, mode) {
+                var groups = {};
+                rows.forEach(function(row) {
+                    var key = '';
+                    var label = '';
+                    var meta = {};
+                    if (mode === 'project') {
+                        key = row.project || '-';
+                        label = key;
+                        meta.pic = row.pic || '-';
+                        meta.idBowheer = row.id_bowheer || 0;
+                    } else if (mode === 'pic') {
+                        key = row.pic || '-';
+                        label = key;
+                    } else if (mode === 'regional') {
+                        key = row.regional || '-';
+                        label = key;
+                    } else if (mode === 'area') {
+                        key = row.area || '-';
+                        label = key;
+                        meta.regional = row.regional || '-';
+                    } else if (mode === 'date') {
+                        key = row.date || row.period_start || '-';
+                        label = row.date_label || row.date || '-';
+                        meta.week = row.week || '-';
+                        meta.month = row.month_label || row.month || '-';
+                        meta.periodStart = row.period_start || '';
+                        meta.periodEnd = row.period_end || '';
+                    } else {
+                        key = (row.month || '-') + '|' + (row.week || '-');
+                        label = row.month_label || row.month || '-';
+                        meta.week = row.week || '-';
+                    }
+
+                    if (!groups[key]) {
+                        groups[key] = {
+                            key: key,
+                            label: label,
+                            target: 0,
+                            achieved: 0,
+                            meta: meta,
+                            projectCount: {},
+                            areaCount: {}
+                        };
+                    }
+                    groups[key].target += Number(row.target || 0);
+                    groups[key].achieved += Number(row.achieved || 0);
+                    if (row.project) groups[key].projectCount[row.project] = true;
+                    if (row.area && row.area !== '-') groups[key].areaCount[row.area] = true;
+                });
+
+                return Object.keys(groups).map(function(key) {
+                    var item = groups[key];
+                    item.outstanding = Math.max(item.target - item.achieved, 0);
+                    item.percent = poBreakdownPercent(item.target, item.achieved);
+                    item.totalProject = Object.keys(item.projectCount).length;
+                    item.totalArea = Object.keys(item.areaCount).length;
+                    return item;
+                }).sort(function(a, b) {
+                    if (mode === 'date') {
+                        return String(a.key).localeCompare(String(b.key));
+                    }
+                    return b.target - a.target || String(a.label).localeCompare(String(b.label));
+                });
+            }
+
+            function poBreakdownRowMatchesSearch(row, filters, mode) {
+                if (!filters.search) return true;
+                var haystack = [row.label, row.meta.pic, row.meta.regional, row.meta.month, row.meta.week, row.target, row.achieved, row.outstanding].join(' ').toLowerCase();
+                return haystack.indexOf(filters.search) !== -1;
+            }
+
+            function poBreakdownColumns(mode) {
+                if (mode === 'project') {
+                    return ['No', 'Project', 'PIC', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Status', 'Detail'];
+                }
+                if (mode === 'pic') {
+                    return ['No', 'PIC', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Status', 'Detail'];
+                }
+                if (mode === 'regional') {
+                    return ['No', 'Regional', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Status', 'Detail'];
+                }
+                if (mode === 'area') {
+                    return ['No', 'Regional', 'Kota / Area', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Status', 'Detail'];
+                }
+                if (mode === 'date') {
+                    return ['No', 'Tanggal', 'Bulan', 'Week', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Project', 'Area', 'Status', 'Detail'];
+                }
+                return ['No', 'Bulan', 'Week', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Project', 'Area', 'Status', 'Detail'];
+            }
+
+            function poBreakdownDetailButton(mode, key) {
+                return '<button type="button" class="po-monitor-list-detail-btn js-po-breakdown-detail" title="Detail" data-breakdown-mode="' + escapeHtml(mode) + '" data-breakdown-key="' + escapeHtml(key) + '"><i class="fas fa-eye"></i></button>';
+            }
+
+            function poBreakdownRenderTable(mode, rows, filters) {
+                var $table = $('.po-breakdown-table[data-breakdown-table="' + mode + '"]');
+                if (!$table.length) return;
+
+                var columns = poBreakdownColumns(mode);
+                $table.find('thead').html('<tr>' + columns.map(function(column) {
+                    return '<th>' + escapeHtml(column) + '</th>';
+                }).join('') + '</tr>');
+
+                var visibleRows = rows.filter(function(row) {
+                    return poBreakdownRowMatchesSearch(row, filters, mode);
+                });
+                var totalRows = visibleRows.length;
+                if (filters.limit > 0) {
+                    visibleRows = visibleRows.slice(0, filters.limit);
+                }
+
+                var body = visibleRows.map(function(row, index) {
+                    var status = poBreakdownStatus(row.percent);
+                    var progress = '<div class="po-breakdown-progress"><div class="po-breakdown-progress__track"><div class="po-breakdown-progress__bar" style="width:' + Math.min(row.percent, 100).toFixed(1) + '%"></div></div><span class="po-breakdown-progress__text">' + row.percent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</span></div>';
+                    var statusPill = '<span class="po-monitor-sla-pill ' + status.className + '">' + escapeHtml(status.label) + '</span>';
+                    var detail = poBreakdownDetailButton(mode, row.key);
+
+                    if (mode === 'project') {
+                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.meta.pic || '-') + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
+                    }
+                    if (mode === 'pic' || mode === 'regional') {
+                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
+                    }
+                    if (mode === 'area') {
+                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.meta.regional || '-') + '</td><td>' + escapeHtml(row.label) + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
+                    }
+                    if (mode === 'date') {
+                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.meta.month || '-') + '</td><td>' + escapeHtml(row.meta.week || '-') + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + formatLocaleNumber(row.totalProject) + '</td><td>' + formatLocaleNumber(row.totalArea) + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
+                    }
+                    return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.meta.week || '-') + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + formatLocaleNumber(row.totalProject) + '</td><td>' + formatLocaleNumber(row.totalArea) + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
+                }).join('');
+
+                if (!body) {
+                    body = '<tr><td colspan="' + columns.length + '" class="po-breakdown-empty">Tidak ada data.</td></tr>';
+                }
+                $table.find('tbody').html(body);
+
+                var totalTarget = visibleRows.reduce(function(sum, row) { return sum + Number(row.target || 0); }, 0);
+                var totalAchieved = visibleRows.reduce(function(sum, row) { return sum + Number(row.achieved || 0); }, 0);
+                var totalOutstanding = Math.max(totalTarget - totalAchieved, 0);
+                var totalPercent = poBreakdownPercent(totalTarget, totalAchieved);
+                var info = totalRows > visibleRows.length ? ' <span class="text-muted font-weight-normal">(menampilkan ' + visibleRows.length + ' dari ' + totalRows + ')</span>' : '';
+
+                if (mode === 'project') {
+                    $table.find('tfoot').html('<tr><th colspan="3">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th></tr>');
+                } else if (mode === 'area') {
+                    $table.find('tfoot').html('<tr><th colspan="3">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th></tr>');
+                } else if (mode === 'period') {
+                    $table.find('tfoot').html('<tr><th colspan="3">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th><th></th><th></th></tr>');
+                } else if (mode === 'date') {
+                    $table.find('tfoot').html('<tr><th colspan="4">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th><th></th><th></th></tr>');
+                } else {
+                    $table.find('tfoot').html('<tr><th colspan="2">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th></tr>');
+                }
+            }
+
+            function poBreakdownRender() {
+                poBreakdownUpdateCascade();
+                var filters = poBreakdownFilters();
+                var filtered = poBreakdownRows.filter(function(row) {
+                    return poBreakdownMatches(row, filters);
+                });
+
+                ['project', 'pic', 'regional', 'area', 'period', 'date'].forEach(function(mode) {
+                    poBreakdownState.rows[mode] = poBreakdownGroup(filtered, mode);
+                    poBreakdownRenderTable(mode, poBreakdownState.rows[mode], filters);
+                });
+            }
+
+            function poBreakdownRawRowMatchesGroup(row, mode, key) {
+                key = String(key || '');
+                if (mode === 'project') return String(row.project || '-') === key;
+                if (mode === 'pic') return String(row.pic || '-') === key;
+                if (mode === 'regional') return String(row.regional || '-') === key;
+                if (mode === 'area') return String(row.area || '-') === key;
+                if (mode === 'date') return String(row.date || row.period_start || '-') === key;
+                return String((row.month || '-') + '|' + (row.week || '-')) === key;
+            }
+
+            function poBreakdownModeLabel(mode) {
+                var labels = {
+                    project: 'Project',
+                    pic: 'PIC',
+                    regional: 'Regional',
+                    area: 'Kota / Area',
+                    period: 'Periode',
+                    date: 'Tanggal'
+                };
+                return labels[mode] || 'Breakdown';
+            }
+
+            function poBreakdownGroupLabel(mode, key) {
+                var rows = poBreakdownState.rows[mode] || [];
+                var found = null;
+                rows.some(function(row) {
+                    if (String(row.key) === String(key)) {
+                        found = row;
+                        return true;
+                    }
+                    return false;
+                });
+                return found ? found.label : key;
+            }
+
+            function poBreakdownRenderDetail(mode, key) {
+                var filters = poBreakdownFilters();
+                var rows = poBreakdownRows.filter(function(row) {
+                    return poBreakdownMatches(row, filters) && poBreakdownRawRowMatchesGroup(row, mode, key);
+                });
+                var totalTarget = rows.reduce(function(sum, row) { return sum + Number(row.target || 0); }, 0);
+                var totalAchieved = rows.reduce(function(sum, row) { return sum + Number(row.achieved || 0); }, 0);
+                var totalOutstanding = Math.max(totalTarget - totalAchieved, 0);
+                var title = poBreakdownModeLabel(mode) + ' - ' + poBreakdownGroupLabel(mode, key);
+                var $modal = $('#po_breakdown_detail_modal');
+                var body = '<div class="po-monitor-modal-stat-grid mb-3">'
+                    + '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Target</span><span class="po-monitor-modal-stat__value">' + poBreakdownMoney(totalTarget) + '</span></div>'
+                    + '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Achieved</span><span class="po-monitor-modal-stat__value">' + poBreakdownMoney(totalAchieved) + '</span></div>'
+                    + '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Outstanding</span><span class="po-monitor-modal-stat__value">' + poBreakdownMoney(totalOutstanding) + '</span></div>'
+                    + '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Rows</span><span class="po-monitor-modal-stat__value">' + formatLocaleNumber(rows.length) + '</span></div>'
+                    + '</div>';
+
+                body += '<div class="table-responsive"><table class="table table-sm po-monitor-detail-table mb-0"><thead><tr>'
+                    + '<th>No</th><th>Type</th><th>Project</th><th>PIC</th><th>PO</th><th>Sub PO</th><th>Regional</th><th>Area</th><th>Periode / Tanggal</th><th>Detail</th><th>Remarks</th><th class="text-right">Amount</th>'
+                    + '</tr></thead><tbody>';
+
+                if (!rows.length) {
+                    body += '<tr><td colspan="12" class="text-center text-muted">Tidak ada detail.</td></tr>';
+                } else {
+                    rows.forEach(function(row, index) {
+                        var isAchieved = Number(row.achieved || 0) > 0;
+                        var type = isAchieved ? 'Achieved' : 'Target';
+                        var amount = isAchieved ? Number(row.achieved || 0) : Number(row.target || 0);
+                        var period = row.date_label || row.month_label || row.period_start || '-';
+                        var typeClass = isAchieved ? 'badge-success' : 'badge-primary';
+                        body += '<tr>'
+                            + '<td>' + (index + 1) + '</td>'
+                            + '<td><span class="badge ' + typeClass + '">' + type + '</span></td>'
+                            + '<td>' + escapeHtml(row.project || '-') + '</td>'
+                            + '<td>' + escapeHtml(row.pic || '-') + '</td>'
+                            + '<td>' + escapeHtml(row.po_number || '-') + '</td>'
+                            + '<td>' + escapeHtml(row.sub_po || '-') + '</td>'
+                            + '<td>' + escapeHtml(row.regional || '-') + '</td>'
+                            + '<td>' + escapeHtml(row.area || '-') + '</td>'
+                            + '<td>' + escapeHtml(period) + '</td>'
+                            + '<td>' + escapeHtml(row.detail_po || '-') + '</td>'
+                            + '<td>' + escapeHtml(row.remarks || '-') + '</td>'
+                            + '<td class="text-right">' + poBreakdownMoney(amount) + '</td>'
+                            + '</tr>';
+                    });
+                }
+
+                body += '</tbody><tfoot><tr><th colspan="11">Total</th><th class="text-right">' + poBreakdownMoney(totalTarget + totalAchieved) + '</th></tr></tfoot></table></div>';
+                $modal.find('.modal-title').html('<span class="po-monitor-modal-eyebrow">Breakdown Detail</span>' + escapeHtml(title));
+                $modal.find('.modal-body').html(body);
+                $modal.modal('show');
+            }
+
+            $('.po-breakdown-filter-select').select2({
                 theme: 'bootstrap4',
                 width: '100%',
+                dropdownParent: $('#po_breakdown_filter_modal'),
+                dropdownCssClass: 'po-breakdown-select2-dropdown',
+                allowClear: true,
                 closeOnSelect: false
             });
+
+            $('#po_breakdown_apply').off('click.poBreakdown').on('click.poBreakdown', function() {
+                poBreakdownRender();
+                $('#po_breakdown_filter_modal').modal('hide');
+            });
+            $('#po_breakdown_reset').off('click.poBreakdown').on('click.poBreakdown', function() {
+                $('#po_breakdown_filter_project, #po_breakdown_filter_pic, #po_breakdown_filter_regional, #po_breakdown_filter_area, #po_breakdown_filter_month, #po_breakdown_filter_week')
+                    .val([])
+                    .trigger('change.select2');
+                $('#po_breakdown_search').val('');
+                $('#po_breakdown_invoiced_only').prop('checked', false);
+                $('#po_breakdown_limit').val('10');
+                poBreakdownUpdateCascade();
+                poBreakdownRender();
+            });
+            $('#po_breakdown_filter_project, #po_breakdown_filter_pic, #po_breakdown_filter_regional, #po_breakdown_filter_area, #po_breakdown_filter_month, #po_breakdown_filter_week').off('change.poBreakdown').on('change.poBreakdown', poBreakdownUpdateCascade);
+            $('#po_breakdown_limit, #po_breakdown_invoiced_only').off('change.poBreakdown').on('change.poBreakdown', poBreakdownRender);
+            $('#po_breakdown_search').off('input.poBreakdown').on('input.poBreakdown', poBreakdownRender);
+            $('.po-breakdown-tabs .nav-link').off('shown.bs.tab.poBreakdown').on('shown.bs.tab.poBreakdown', function() {
+                poBreakdownState.mode = $(this).data('breakdown-mode') || 'project';
+                poBreakdownRender();
+            });
+            $(document).off('click.poBreakdownDetail', '.js-po-breakdown-detail').on('click.poBreakdownDetail', '.js-po-breakdown-detail', function() {
+                poBreakdownRenderDetail($(this).data('breakdown-mode'), $(this).data('breakdown-key'));
+            });
+            poBreakdownRender();
 
             $('.js-po-purge-form').off('submit.poPurge').on('submit.poPurge', function(e) {
                 var confirmText = window.prompt('Ketik HAPUS PO untuk menghapus semua data PO Monitor. Data PO_MyRep tidak akan terpengaruh.');
@@ -4019,40 +4882,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 .on('change.poCompareSwitch', syncCompareSwitches);
 
             syncCompareSwitches();
-
-            initAdminLteTable($, '#table_po_bowheer_matrix', [[1, 'asc']], function() {
-                var api = this.api();
-                $(api.column(2).footer()).html(formatLocaleNumber(sumColumn(api, 2)));
-                $(api.column(3).footer()).html(formatLocaleNumber(sumColumn(api, 3)));
-                $(api.column(4).footer()).html(formatLocaleNumber(sumColumn(api, 4)));
-                $(api.column(5).footer()).html(formatLocaleNumber(sumColumn(api, 5)));
-                $(api.column(6).footer()).html(formatLocaleNumber(sumColumn(api, 6)));
-                $(api.column(7).footer()).html(formatLocaleNumber(sumColumn(api, 7)));
-                $(api.column(8).footer()).html(formatLocaleNumber(sumColumn(api, 8)));
-                $(api.column(9).footer()).html(formatLocaleNumber(sumColumn(api, 9)));
-            });
-
-            initAdminLteTable($, '#table_po_bowheer_term_detail', [[1, 'asc']], function() {
-                var api = this.api();
-                var totalTermValue = 0;
-                var totalInvoiced = 0;
-                var totalRemaining = 0;
-
-                api.rows({ search: 'applied' }).nodes().to$().each(function() {
-                    $(this).find('table tbody tr').each(function() {
-                        var $cells = $(this).find('td');
-                        totalTermValue += parseLocaleNumber($cells.eq(1).text());
-                        totalInvoiced += parseLocaleNumber($cells.eq(2).text());
-                        totalRemaining += parseLocaleNumber($cells.eq(3).text());
-                    });
-                });
-
-                $(api.column(2).footer()).html(
-                    'Nilai Term: ' + formatLocaleNumber(totalTermValue) +
-                    ' | Sudah Ditagihkan: ' + formatLocaleNumber(totalInvoiced) +
-                    ' | Sisa: ' + formatLocaleNumber(totalRemaining)
-                );
-            });
 
             initServerSideTable($, '#table_po_monitor_list', '<?= site_url('PO_Monitor/po_datatable') ?>', [[2, 'desc']], 25);
 

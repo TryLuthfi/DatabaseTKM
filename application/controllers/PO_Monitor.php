@@ -17,8 +17,10 @@ class PO_Monitor extends CI_Controller
 
         $selectedBowheer = $this->input->get('bowheer');
         $selectedSla = $this->input->get('sla');
-        $fromMonth = $this->input->get('from_month') ?: date('Y-m');
-        $toMonth = $this->input->get('to_month') ?: date('Y-m');
+        $comparisonFromMonth = $this->input->get('from_month') ?: date('Y-m');
+        $comparisonToMonth = $this->input->get('to_month') ?: date('Y-m');
+        $breakdownFromMonth = $this->input->get('from_month') ?: null;
+        $breakdownToMonth = $this->input->get('to_month') ?: null;
 
         if (!is_array($selectedBowheer)) {
             $selectedBowheer = empty($selectedBowheer) ? [] : [$selectedBowheer];
@@ -42,8 +44,10 @@ class PO_Monitor extends CI_Controller
         $data['targetWeekSummary'] = $this->MPO_Monitor->getTargetWeekSummary();
         $data['projectWeekSummary'] = $this->MPO_Monitor->getProjectWeekSummary();
         $data['carryOverSummary'] = $this->MPO_Monitor->getCarryOverSummary();
-        $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($fromMonth, $toMonth, 'month', false);
-        $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($fromMonth, $toMonth, 'week', false);
+        $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
+        $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'week', false);
+        $data['breakdownRows'] = $this->MPO_Monitor->getBreakdownTargetInvoiceRows($breakdownFromMonth, $breakdownToMonth);
+        $data['breakdownFilterOptions'] = $this->MPO_Monitor->getBreakdownTargetInvoiceFilterOptions($data['breakdownRows']);
         $data['selectedBowheer'] = $selectedBowheer;
         $data['selectedSla'] = $selectedSla;
         $data['isLocalAccess'] = $this->isLocalAccess();
@@ -1156,15 +1160,23 @@ class PO_Monitor extends CI_Controller
         $data = [];
         $start = (int) ($this->input->post('start') ?: 0);
         foreach ($result['data'] as $index => $row) {
+            $sla = strtoupper(trim((string) ($row['sla'] ?: 'AMAN')));
+            $slaClass = 'po-monitor-sla-pill--aman';
+            if ($sla === 'WARNING') {
+                $slaClass = 'po-monitor-sla-pill--warning';
+            } elseif ($sla === 'OVERDUE') {
+                $slaClass = 'po-monitor-sla-pill--overdue';
+            }
+
             $data[] = [
                 $start + $index + 1,
                 htmlspecialchars($row['po_number'] ?: '-'),
                 htmlspecialchars($row['po_date'] ?: '-'),
-                number_format((float) $row['current_release_value'], 0, ',', '.'),
-                number_format((float) $row['total_invoiced'], 0, ',', '.'),
-                number_format((float) $row['remaining'], 0, ',', '.'),
-                htmlspecialchars($row['sla'] ?: 'AMAN'),
-                '<a href="' . site_url('PO_Monitor/detail/' . (int) $row['id_po']) . '" class="btn btn-sm btn-primary">Detail</a>'
+                '<span class="po-monitor-money">RP. ' . number_format((float) $row['current_release_value'], 0, ',', '.') . '</span>',
+                '<span class="po-monitor-money">RP. ' . number_format((float) $row['total_invoiced'], 0, ',', '.') . '</span>',
+                '<span class="po-monitor-money">RP. ' . number_format((float) $row['remaining'], 0, ',', '.') . '</span>',
+                '<span class="po-monitor-sla-pill ' . $slaClass . '">' . htmlspecialchars($sla) . '</span>',
+                '<a href="' . site_url('PO_Monitor/detail/' . (int) $row['id_po']) . '" class="po-monitor-list-detail-btn" title="Detail PO" aria-label="Detail PO"><i class="fas fa-eye"></i></a>'
             ];
         }
 
