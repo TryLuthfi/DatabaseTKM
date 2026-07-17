@@ -407,7 +407,21 @@ $flashMessage = $this->session->flashdata('error_log');
                                 </div>
                                 <div>
                                     <?php if (!empty($allocations)): ?>
-                                        <span class="badge badge-info">Claim per Sub PO</span>
+                                        <?php if ($invoiced > 0): ?>
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-primary js-po-monitor-edit-invoice mb-1"
+                                                data-toggle="modal"
+                                                data-target="#po_monitor_edit_invoice_modal"
+                                                data-id-po="<?= (int) ($po['id_po'] ?? 0) ?>"
+                                                data-id-term="<?= $idTerm ?>"
+                                                data-id-allocation="0"
+                                                data-title="Term <?= (int) ($term['term_index'] ?? 0) ?>"
+                                                data-invoice-date="<?= poMonitorDetailHtml($termInvoiceDate) ?>"
+                                                data-invoice-amount="<?= poMonitorDetailHtml($invoiced) ?>">
+                                                Edit Invoice
+                                            </button>
+                                        <?php endif; ?>
+                                        <div><span class="badge badge-info">Claim per Sub PO</span></div>
                                     <?php else: ?>
                                         <?php if ($invoiced > 0): ?>
                                             <button type="button"
@@ -551,6 +565,13 @@ $flashMessage = $this->session->flashdata('error_log');
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="submit"
+                        class="btn btn-outline-danger mr-auto"
+                        formaction="<?= site_url('PO_Monitor/reset_invoice_claim') ?>"
+                        formmethod="post"
+                        onclick="return confirm('Reset invoice ini ke status belum invoice? Claim invoice akan dihapus.');">
+                        Reset Invoice
+                    </button>
                     <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 </div>

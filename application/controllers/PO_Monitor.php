@@ -1218,6 +1218,23 @@ class PO_Monitor extends CI_Controller
         redirect('PO_Monitor/detail/' . $idPo);
     }
 
+    public function reset_invoice_claim()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idTerm = (int) $this->input->post('id_term');
+        $idPo = (int) $this->input->post('id_po');
+        $idAllocation = (int) $this->input->post('id_allocation');
+
+        $result = $this->MPO_Monitor->resetInvoiceClaim($idTerm, $idAllocation);
+        $this->session->set_flashdata('status', !empty($result['status']));
+        $this->session->set_flashdata('error_log', $result['message']);
+        redirect('PO_Monitor/detail/' . $idPo);
+    }
+
     public function batch_invoice_termin()
     {
         if (empty($this->session->userdata('id_user'))) {

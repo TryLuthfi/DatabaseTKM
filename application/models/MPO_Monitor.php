@@ -1900,7 +1900,13 @@ class MPO_Monitor extends CI_Model
                 ->where('id_term', $idTerm)
                 ->count_all_results('tb_po_term_allocation') > 0;
             if ($hasAllocation) {
-                return ['status' => false, 'message' => 'Edit invoice wajib pilih Sub PO'];
+                $legacyClaimCount = $this->db
+                    ->where('id_term', $idTerm)
+                    ->where('id_allocation IS NULL', null, false)
+                    ->count_all_results('tb_po_term_claim');
+                if ($legacyClaimCount <= 0) {
+                    return ['status' => false, 'message' => 'Edit invoice wajib pilih Sub PO'];
+                }
             }
         }
 
@@ -1967,6 +1973,88 @@ class MPO_Monitor extends CI_Model
 
         $this->db->trans_commit();
         return ['status' => true, 'message' => 'Invoice term berhasil diupdate'];
+    }
+
+    public function resetInvoiceClaim($idTerm, $idAllocation = 0)
+    {
+        $idTerm = (int) $idTerm;
+        $idAllocation = (int) $idAllocation;
+
+        $term = $this->db->get_where('tb_po_term', ['id_term' => $idTerm])->row_array();
+        if (!$term) {
+            return ['status' => false, 'message' => 'Term not found'];
+        }
+
+        $targetStatus = (string) ($term['target_status'] ?? '');
+        if ($idAllocation > 0) {
+            $allocation = $this->db
+                ->where('id_allocation', $idAllocation)
+                ->where('id_term', $idTerm)
+                ->get('tb_po_term_allocation')
+                ->row_array();
+            if (!$allocation) {
+                return ['status' => false, 'message' => 'Sub PO allocation not found'];
+            }
+            $targetStatus = (string) ($allocation['target_status'] ?? '');
+        }
+
+        $this->db->select('COALESCE(SUM(invoice_amount),0) AS total_amount', false);
+        $this->db->select("COALESCE(SUM(CASE WHEN YEAR(invoice_date) = 2026 THEN invoice_amount ELSE 0 END),0) AS amount_2026", false);
+        $this->db->where('id_term', $idTerm);
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation);
+        } else {
+            $this->db->where('id_allocation IS NULL', null, false);
+        }
+        $oldClaim = $this->db->get('tb_po_term_claim')->row_array();
+        $oldTotal = (float) ($oldClaim['total_amount'] ?? 0);
+        $old2026 = (float) ($oldClaim['amount_2026'] ?? 0);
+        if ($oldTotal <= 0) {
+            return ['status' => false, 'message' => 'Invoice claim tidak ditemukan'];
+        }
+
+        $this->db->trans_begin();
+        $this->db->where('id_term', $idTerm);
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation);
+        } else {
+            $this->db->where('id_allocation IS NULL', null, false);
+        }
+        $this->db->delete('tb_po_term_claim');
+
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation)->update('tb_po_term_allocation', [
+                'invoice_date' => null,
+                'submit_raw' => null
+            ]);
+        }
+
+        $remainingTermClaims = $this->db
+            ->where('id_term', $idTerm)
+            ->count_all_results('tb_po_term_claim');
+        if ($remainingTermClaims <= 0) {
+            $this->db->where('id_term', $idTerm)->update('tb_po_term', [
+                'invoice_date' => null,
+                'submit_raw' => null
+            ]);
+        }
+
+        $this->db->set('dashboard_all_invoice', 'GREATEST(COALESCE(dashboard_all_invoice, 0) - ' . $this->db->escape($oldTotal) . ', 0)', false);
+        $this->db->set('dashboard_invoice_2026', 'GREATEST(COALESCE(dashboard_invoice_2026, 0) - ' . $this->db->escape($old2026) . ', 0)', false);
+        if ($targetStatus === 'TARGET_WEEK') {
+            $this->db->set('dashboard_outs_2026', 'COALESCE(dashboard_outs_2026, 0) + ' . $this->db->escape($old2026), false);
+        }
+        $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+
+        $this->rebuildDashboardCache(null);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Failed to reset invoice'];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => true, 'message' => 'Invoice term berhasil direset'];
     }
 
     public function syncMyRepTerminClaim($myrepTerminId, $userId = 0, $cutoffDate = '2026-07-01')
