@@ -2556,20 +2556,45 @@ if (is_array($terminBreakdownRows ?? null)) {
             ['7400128000', '2', '<?= date('Y-m-d') ?>']
         ]);
 
-        function copyPoHeaderTemplateText(text, successMessage) {
+        function showPoCopyButtonCheck($button) {
+            if (!$button || !$button.length) {
+                return;
+            }
+
+            var originalHtml = $button.data('original-html');
+            if (!originalHtml) {
+                originalHtml = $button.html();
+                $button.data('original-html', originalHtml);
+            }
+
+            window.clearTimeout($button.data('copy-reset-timer'));
+            $button
+                .removeClass('btn-outline-info')
+                .addClass('btn-success')
+                .html('<i class="fas fa-check mr-1"></i> Copied');
+
+            $button.data('copy-reset-timer', window.setTimeout(function () {
+                $button
+                    .removeClass('btn-success')
+                    .addClass('btn-outline-info')
+                    .html(originalHtml);
+            }, 1200));
+        }
+
+        function copyPoHeaderTemplateText(text, $button) {
             text = String(text || '');
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(text).then(function () {
-                    alert(successMessage || 'Berhasil dicopy.');
+                    showPoCopyButtonCheck($button);
                 }).catch(function () {
-                    fallbackCopyPoHeaderTemplateText(text, successMessage);
+                    fallbackCopyPoHeaderTemplateText(text, $button);
                 });
                 return;
             }
-            fallbackCopyPoHeaderTemplateText(text, successMessage);
+            fallbackCopyPoHeaderTemplateText(text, $button);
         }
 
-        function fallbackCopyPoHeaderTemplateText(text, successMessage) {
+        function fallbackCopyPoHeaderTemplateText(text, $button) {
             var $temp = $('<textarea readonly></textarea>').css({
                 position: 'fixed',
                 left: '-9999px',
@@ -2579,7 +2604,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             $temp[0].select();
             document.execCommand('copy');
             $temp.remove();
-            alert(successMessage || 'Berhasil dicopy.');
+            showPoCopyButtonCheck($button);
         }
 
         function getBatchHeaderCheck(clusterInput, poType, poCategory, poNumber, poDate, poValue) {
@@ -2812,15 +2837,15 @@ if (is_array($terminBreakdownRows ?? null)) {
         });
 
         $('#po-header-copy-example').on('click', function () {
-            copyPoHeaderTemplateText(poHeaderPasteExample, '5 row contoh PO berhasil dicopy. Paste ke Excel atau textarea.');
+            copyPoHeaderTemplateText(poHeaderPasteExample, $(this));
         });
 
         $('#po-batch-copy-example').on('click', function () {
-            copyPoHeaderTemplateText(poBatchInvoiceExample, '5 row contoh invoice berhasil dicopy. Paste ke Excel atau textarea.');
+            copyPoHeaderTemplateText(poBatchInvoiceExample, $(this));
         });
 
         $('#po-cert-copy-example').on('click', function () {
-            copyPoHeaderTemplateText(poBatchCertificateExample, '5 row contoh sertifikat tanggal berhasil dicopy. Paste ke Excel atau textarea.');
+            copyPoHeaderTemplateText(poBatchCertificateExample, $(this));
         });
 
         $('#po-header-parse-paste').on('click', function () {
@@ -3386,7 +3411,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                   '<input type="hidden" name="certificate_value[]" value="' + escapeHtml(saveValue) + '">'
                 : '';
             var regionalName = (lookup && lookup.regional_name) || '';
-            var projectType = String((lookup && lookup.po_type) || '').toUpperCase() === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            var projectType = String((lookup && lookup.po_type) || '').toUpperCase();
+            if (['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'].indexOf(projectType) === -1) {
+                projectType = 'CLUSTER';
+            }
             var html = '<tr class="po-cert-row ' + rowClass + '" data-valid="' + (valid ? '1' : '0') + '" data-status-code="' + escapeHtml(statusCode) + '" data-copy-status="' + escapeHtml(copyStatus) + '" data-key="' + escapeHtml(key) + '" data-cert-type="' + escapeHtml(type) + '" data-regional="' + escapeHtml(String(regionalName || '').toUpperCase()) + '">' +
                 '<td class="text-center po-cert-row-no"></td>' +
                 '<td>' + escapeHtml((lookup && lookup.po_number) || poNumber || '-') + hiddenInputs + '</td>' +

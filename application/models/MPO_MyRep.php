@@ -2829,7 +2829,9 @@ class MPO_MyRep extends CI_Model
 
         foreach ($rows as $row) {
             $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
-            $poType = $poType === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+                continue;
+            }
             $termNo = (int) ($row['termin_no'] ?? 0);
             $key = $poType . '|' . $termNo;
             if (!isset($summary[$key])) {
@@ -3072,6 +3074,7 @@ class MPO_MyRep extends CI_Model
 
             $filtered[] = [
                 'id_myrep_cluster' => (int) ($row['id_myrep_cluster'] ?? 0),
+                'id_mainfeeder' => (int) ($row['id_mainfeeder'] ?? 0),
                 'cluster_name' => (string) ($row['cluster_name'] ?? '-'),
                 'city_name' => (string) ($row['city_name'] ?? '-'),
                 'regional_name' => (string) ($row['regional_name'] ?? '-'),
@@ -3110,6 +3113,15 @@ class MPO_MyRep extends CI_Model
         $this->ensurePoTerminCertificateColumnForDashboard();
         $poType = strtoupper(trim((string) $poType));
         $termNo = (int) $termNo;
+        $includeClusterRows = ($poType === '' || in_array($poType, ['CLUSTER', 'SUBFEEDER'], true));
+        $includeMainfeederRows = $this->hasMainfeederPoSupport()
+            && ($poType === '' || in_array($poType, ['MAINFEEDER', 'FWA'], true));
+
+        if (!$includeClusterRows) {
+            return $includeMainfeederRows
+                ? $this->getMainfeederCertificateDashboardRows($city, $status, $poType, $termNo)
+                : [];
+        }
 
         $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
             ? 'c.rfs_cluster_id'
@@ -3146,6 +3158,7 @@ class MPO_MyRep extends CI_Model
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->join('tb_myrep_po_termin t', 't.id_po_header = p.id_po_header', 'inner')
+            ->where("UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) IN ('CLUSTER','SUBFEEDER')", null, false)
             ->where('t.termin_no >=', 2)
             ->where('t.termin_no <=', 5);
 
@@ -3172,7 +3185,9 @@ class MPO_MyRep extends CI_Model
             ->result_array();
 
         if (empty($rows)) {
-            return [];
+            return $includeMainfeederRows
+                ? $this->getMainfeederCertificateDashboardRows($city, $status, $poType, $termNo)
+                : [];
         }
 
         $clusterIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_myrep_cluster')))));
@@ -3189,7 +3204,9 @@ class MPO_MyRep extends CI_Model
             $filteredRows[] = $row;
         }
         if (empty($filteredRows)) {
-            return [];
+            return $includeMainfeederRows
+                ? $this->getMainfeederCertificateDashboardRows($city, $status, $poType, $termNo)
+                : [];
         }
 
         $rfsClusterIds = array_values(array_unique(array_filter(array_map('intval', array_column($filteredRows, 'rfs_cluster_id')))));
@@ -3249,7 +3266,266 @@ class MPO_MyRep extends CI_Model
             $result[] = $row;
         }
 
+        if ($includeMainfeederRows) {
+            $result = array_merge($result, $this->getMainfeederCertificateDashboardRows($city, $status, $poType, $termNo));
+        }
+
         return $result;
+    }
+
+    private function getMainfeederCertificateDashboardRows($city = '', $status = '', $poType = '', $termNo = 0)
+    {
+        if (!$this->hasMainfeederPoSupport() || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return [];
+        }
+
+        $poType = strtoupper(trim((string) $poType));
+        $termNo = (int) $termNo;
+        if ($poType !== '' && !in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
+            return [];
+        }
+
+        $certificateSelect = $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
+            ? 't.sertifikat_invoice_date'
+            : "'' AS sertifikat_invoice_date";
+        $remarkSelect = $this->db->field_exists('remark_termin', 'tb_myrep_po_termin')
+            ? 't.remark_termin'
+            : "'' AS remark_termin";
+
+        $this->db
+            ->select("
+                0 AS id_myrep_cluster,
+                0 AS rfs_cluster_id,
+                p.id_mainfeeder,
+                mf.mainfeeder_name AS cluster_name,
+                mf.city_name,
+                mf.regional_name,
+                p.id_po_header,
+                p.po_type,
+                p.po_category,
+                p.po_number,
+                p.po_date,
+                p.status_po,
+                t.id_po_termin,
+                t.termin_no,
+                t.termin_percent,
+                t.termin_value,
+                t.status_termin,
+                t.invoice_date,
+                {$certificateSelect},
+                {$remarkSelect}
+            ", false)
+            ->from('tb_myrep_po_header p')
+            ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'inner')
+            ->join('tb_myrep_po_termin t', 't.id_po_header = p.id_po_header', 'inner')
+            ->where("UPPER(TRIM(COALESCE(p.po_type, ''))) IN ('MAINFEEDER','FWA')", null, false)
+            ->where('t.termin_no >=', 2)
+            ->where('t.termin_no <=', 5);
+
+        if (!$this->applyAllowedCityRestriction('mf.city_name')) {
+            return [];
+        }
+        if ($city !== '') {
+            $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+        }
+        if (in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
+            $this->db->where('UPPER(TRIM(COALESCE(p.po_type, \'\'))) = ' . $this->db->escape($poType), null, false);
+        }
+        if ($termNo >= 2 && $termNo <= 5) {
+            $this->db->where('t.termin_no', $termNo);
+        }
+
+        $rows = $this->db
+            ->order_by('p.po_type', 'ASC')
+            ->order_by('p.po_date', 'DESC')
+            ->order_by('p.po_number', 'ASC')
+            ->order_by('t.termin_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $headerIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_po_header')))));
+        $stageMap = $this->getPoStageMapForHeaderIds($headerIds);
+        $status = strtoupper(trim((string) $status));
+        $filteredRows = [];
+        foreach ($rows as $row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $stageStatus = $stageMap[$headerId] ?? 'NOT ISSUED';
+            if ($status !== '' && $stageStatus !== $status) {
+                continue;
+            }
+            $row['po_stage_status'] = $stageStatus;
+            $filteredRows[] = $row;
+        }
+        if (empty($filteredRows)) {
+            return [];
+        }
+
+        $mainfeederIds = array_values(array_unique(array_filter(array_map('intval', array_column($filteredRows, 'id_mainfeeder')))));
+        $requiredMap = $this->getMainfeederCertificateRequiredMapForDashboard();
+        $readinessMap = $this->getMainfeederCertificateReadinessMapForDashboard($mainfeederIds, $requiredMap);
+        $term4CertificateByHeader = [];
+        foreach ($filteredRows as $row) {
+            if ((int) ($row['termin_no'] ?? 0) === 4) {
+                $term4CertificateByHeader[(int) ($row['id_po_header'] ?? 0)] = (string) ($row['sertifikat_invoice_date'] ?? '');
+            }
+        }
+
+        $result = [];
+        foreach ($filteredRows as $row) {
+            $poTypeRow = strtoupper(trim((string) ($row['po_type'] ?? 'MAINFEEDER')));
+            $poTypeRow = in_array($poTypeRow, ['MAINFEEDER', 'FWA'], true) ? $poTypeRow : 'MAINFEEDER';
+            $terminNo = (int) ($row['termin_no'] ?? 0);
+            $sowType = $this->getCertificateSowType($terminNo);
+            $readyKey = (int) ($row['id_mainfeeder'] ?? 0) . '|' . $sowType;
+            $ready = $readinessMap[$readyKey] ?? [
+                'required_docs' => (int) ($requiredMap[$sowType] ?? 0),
+                'submitted_docs' => 0,
+                'approved_docs' => 0,
+                'is_ready' => false,
+            ];
+
+            if ($terminNo === 5) {
+                $ready = $this->buildCertificateFacReadinessForDashboard((string) ($term4CertificateByHeader[(int) ($row['id_po_header'] ?? 0)] ?? ''));
+            }
+
+            $certificateValue = (string) ($row['sertifikat_invoice_date'] ?? '');
+            $certificateReleaseDate = $this->normalizeCertificateDateForDashboard($certificateValue);
+            $isReleased = $certificateReleaseDate !== '';
+            $isReady = !empty($ready['is_ready']);
+            $certificateStatus = $isReleased ? 'RELEASED' : ($isReady ? 'READY' : ($terminNo === 5 ? 'WAITING_FAC' : 'WAITING_ASTRI'));
+            $statusTermin = strtoupper(trim((string) ($row['status_termin'] ?? 'NOT READY')));
+
+            $row['po_type'] = $poTypeRow;
+            $row['term_label'] = $this->getCertificateTermLabel($terminNo);
+            $row['sow_type'] = $sowType;
+            $row['required_docs'] = (int) ($ready['required_docs'] ?? 0);
+            $row['astri_submitted_docs'] = (int) ($ready['submitted_docs'] ?? 0);
+            $row['astri_approved_docs'] = (int) ($ready['approved_docs'] ?? 0);
+            $row['is_release_ready'] = $isReady;
+            $row['fac_rfs_certificate_date'] = (string) ($ready['rfs_certificate_date'] ?? '');
+            $row['fac_due_date'] = (string) ($ready['due_date'] ?? '');
+            $row['fac_days_remaining'] = (int) ($ready['days_remaining'] ?? 0);
+            $row['fac_days_since_due'] = (int) ($ready['days_since_due'] ?? 0);
+            $row['fac_age_days'] = (int) ($ready['age_days'] ?? 0);
+            $row['sertifikat_invoice_date'] = $certificateValue;
+            $row['sertifikat_release_date'] = $certificateReleaseDate;
+            $row['is_certificate_released'] = $isReleased;
+            $row['certificate_status'] = $certificateStatus;
+            $row['certificate_status_label'] = $this->getCertificateStatusLabel($certificateStatus);
+            $row['release_note'] = $this->buildCertificateReleaseNoteForDashboard($terminNo, $row);
+            $row['is_blocked_billing'] = !$isReleased && !in_array($statusTermin, ['BILLED', 'PAID'], true);
+            $result[] = $row;
+        }
+
+        return $result;
+    }
+
+    private function getPoStageMapForHeaderIds(array $headerIds)
+    {
+        $headerIds = array_values(array_unique(array_filter(array_map('intval', $headerIds))));
+        if (empty($headerIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('id_po_header, termin_no, status_termin, invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', $headerIds)
+            ->order_by('termin_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        $termsByHeader = [];
+        foreach ($rows as $row) {
+            $termsByHeader[(int) ($row['id_po_header'] ?? 0)][] = $row;
+        }
+
+        $map = [];
+        foreach ($headerIds as $headerId) {
+            $map[$headerId] = $this->resolveStageStatus($termsByHeader[$headerId] ?? []);
+        }
+
+        return $map;
+    }
+
+    private function getMainfeederCertificateRequiredMapForDashboard()
+    {
+        if (!$this->mainfeederChecklistTablesReadyForDashboard()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('g.sow_type, COUNT(i.id_doc_item_mainfeeder) AS required_docs', false)
+            ->from('md_rfs_myrep_mainfeeder_doc_group g')
+            ->join('md_rfs_myrep_mainfeeder_doc_item i', 'i.id_doc_group_mainfeeder = g.id_doc_group_mainfeeder AND i.is_active = 1 AND i.is_required = 1', 'inner')
+            ->where('g.is_active', 1)
+            ->where_in('g.sow_type', ['CW ATP', 'FULL OPM', 'RFS'])
+            ->group_by('g.sow_type')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[strtoupper(trim((string) ($row['sow_type'] ?? '')))] = (int) ($row['required_docs'] ?? 0);
+        }
+
+        return $map;
+    }
+
+    private function getMainfeederCertificateReadinessMapForDashboard(array $mainfeederIds, array $requiredMap = [])
+    {
+        $mainfeederIds = array_values(array_unique(array_filter(array_map('intval', $mainfeederIds))));
+        if (empty($mainfeederIds) || !$this->mainfeederChecklistTablesReadyForDashboard()) {
+            return [];
+        }
+        if (empty($requiredMap)) {
+            $requiredMap = $this->getMainfeederCertificateRequiredMapForDashboard();
+        }
+
+        $this->db
+            ->select("
+                p.id_mainfeeder,
+                g.sow_type,
+                SUM(CASE WHEN f.astri_submitted_date IS NOT NULL AND f.astri_submitted_date <> '0000-00-00' AND COALESCE(f.astri_status, 'NY') <> 'NY' THEN 1 ELSE 0 END) AS submitted_docs,
+                SUM(CASE WHEN COALESCE(f.astri_status, 'NY') = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('md_rfs_myrep_mainfeeder_doc_group g', 'g.id_doc_group_mainfeeder = p.id_doc_group_mainfeeder AND g.is_active = 1', 'inner')
+            ->join('md_rfs_myrep_mainfeeder_doc_item i', 'i.id_doc_group_mainfeeder = g.id_doc_group_mainfeeder AND i.is_active = 1 AND i.is_required = 1', 'inner')
+            ->join('tb_rfs_myrep_mainfeeder_doc_file f', 'f.id_doc_package_mainfeeder = p.id_doc_package_mainfeeder AND f.id_doc_item_mainfeeder = i.id_doc_item_mainfeeder', 'left')
+            ->where_in('g.sow_type', ['CW ATP', 'FULL OPM', 'RFS'])
+            ->group_by(['p.id_mainfeeder', 'g.sow_type']);
+        $this->applyIntWhereInChunks('p.id_mainfeeder', $mainfeederIds);
+        $rows = $this->db->get()->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $sowType = strtoupper(trim((string) ($row['sow_type'] ?? '')));
+            $required = (int) ($requiredMap[$sowType] ?? 0);
+            $submitted = (int) ($row['submitted_docs'] ?? 0);
+            $approved = (int) ($row['approved_docs'] ?? 0);
+            $key = (int) ($row['id_mainfeeder'] ?? 0) . '|' . $sowType;
+            $map[$key] = [
+                'required_docs' => $required,
+                'submitted_docs' => $submitted,
+                'approved_docs' => $approved,
+                'is_ready' => $required > 0 && $submitted >= $required && $approved >= $required,
+            ];
+        }
+
+        return $map;
+    }
+
+    private function mainfeederChecklistTablesReadyForDashboard()
+    {
+        return $this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_package')
+            && $this->db->table_exists('tb_rfs_myrep_mainfeeder_doc_file')
+            && $this->db->table_exists('md_rfs_myrep_mainfeeder_doc_group')
+            && $this->db->table_exists('md_rfs_myrep_mainfeeder_doc_item');
     }
 
     private function getCertificateReadinessMapForDashboard(array $rfsClusterIds, array $requiredMap = [])

@@ -2427,6 +2427,290 @@ class MPO_Monitor extends CI_Model
         return $result;
     }
 
+    public function getImportReportHeaders()
+    {
+        $headers = [
+            'BOWHEER', 'STATUS PO', 'NO PO', 'NO PO SUB', 'REGIONAL', 'KOTA PO',
+            'DETAIL PO', 'REMARKS', 'TYPE PROJECT', 'TGL PO', 'PO VALUE',
+            'PO FINAL VALUE', 'PO TERM', 'OUTSTANDING TOTAL',
+            'OUTSTANDING ON TARGET 2026', 'OUTSTANDING CO 2027', 'INVOICE ALL',
+            'INVOICE 2026', 'NY PO 2026', 'NY PO 2027'
+        ];
+
+        for ($term = 1; $term <= 5; $term++) {
+            $headers[] = 'PLAN ' . $term;
+            $headers[] = 'SUBMIT ' . $term;
+            $headers[] = 'NILAI ' . $term;
+        }
+
+        return $headers;
+    }
+
+    public function getImportReportRows()
+    {
+        $rows = array_merge($this->getOnPoImportReportRows(), $this->getNyPoImportReportRows());
+        usort($rows, function ($a, $b) {
+            $bowheerCompare = strcmp((string) ($a['BOWHEER'] ?? ''), (string) ($b['BOWHEER'] ?? ''));
+            return $bowheerCompare !== 0 ? $bowheerCompare : strcmp((string) ($a['NO PO'] ?? ''), (string) ($b['NO PO'] ?? ''));
+        });
+        return $rows;
+    }
+
+    private function getEmptyImportReportRow()
+    {
+        $row = array_fill_keys($this->getImportReportHeaders(), '');
+        $row['STATUS PO'] = 'ON PO';
+        return $row;
+    }
+
+    private function getOnPoImportReportRows()
+    {
+        $rows = [];
+        $rows = array_merge($rows, $this->getAllocatedOnPoImportReportRows());
+        $rows = array_merge($rows, $this->getStandaloneOnPoImportReportRows());
+        return $rows;
+    }
+
+    private function getAllocatedOnPoImportReportRows()
+    {
+        $queryRows = $this->db->query("SELECT
+                p.id_po,
+                COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
+                COALESCE(p.status_po, 'ON PO') AS status_po,
+                p.po_number,
+                p.po_date,
+                p.total_value,
+                COALESCE((SELECT release_value FROM tb_po_amend am WHERE am.id_po = p.id_po ORDER BY am.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
+                p.type_project,
+                t.term_index,
+                t.percent,
+                a.no_po_sub,
+                a.regional,
+                a.kota_po,
+                a.detail_po,
+                a.remarks,
+                a.source_row_no,
+                COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS plan_amount,
+                COALESCE(a.submit_raw, '') AS submit_raw,
+                a.target_status,
+                a.target_week,
+                a.invoice_date,
+                COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation), 0) AS invoice_amount
+            FROM tb_po_term_allocation a
+            JOIN tb_po_term t ON t.id_term = a.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+            ORDER BY bowheer ASC, p.po_number ASC, a.source_row_no ASC, t.term_index ASC")->result_array();
+
+        $groups = [];
+        foreach ($queryRows as $item) {
+            $groupKey = (int) $item['id_po'] . '|alloc|' . (
+                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
+                    ? (string) $item['source_row_no']
+                    : md5(implode('|', [(string) $item['no_po_sub'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks']]))
+            );
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = $this->baseOnPoImportReportRow($item);
+            }
+            $this->applyImportReportTerm($groups[$groupKey], $item);
+        }
+
+        return $this->finalizedImportReportRows($groups);
+    }
+
+    private function getStandaloneOnPoImportReportRows()
+    {
+        $queryRows = $this->db->query("SELECT
+                p.id_po,
+                COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
+                COALESCE(p.status_po, 'ON PO') AS status_po,
+                p.po_number,
+                p.po_date,
+                p.total_value,
+                COALESCE((SELECT release_value FROM tb_po_amend am WHERE am.id_po = p.id_po ORDER BY am.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
+                p.type_project,
+                t.term_index,
+                t.percent,
+                '' AS no_po_sub,
+                '' AS regional,
+                '' AS kota_po,
+                '' AS detail_po,
+                '' AS remarks,
+                NULL AS source_row_no,
+                COALESCE(NULLIF(t.plan_amount, 0), t.value) AS plan_amount,
+                COALESCE(t.submit_raw, '') AS submit_raw,
+                t.target_status,
+                t.target_week,
+                t.invoice_date,
+                COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL), 0) AS invoice_amount
+            FROM tb_po_term t
+            JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+            WHERE NOT EXISTS (SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term)
+            ORDER BY bowheer ASC, p.po_number ASC, t.term_index ASC")->result_array();
+
+        $groups = [];
+        foreach ($queryRows as $item) {
+            $groupKey = (int) $item['id_po'] . '|term';
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = $this->baseOnPoImportReportRow($item);
+            }
+            $this->applyImportReportTerm($groups[$groupKey], $item);
+        }
+
+        return $this->finalizedImportReportRows($groups);
+    }
+
+    private function getNyPoImportReportRows()
+    {
+        if (!$this->db->table_exists('tb_po_target_pipeline')) {
+            return [];
+        }
+
+        $queryRows = $this->db->query("SELECT
+                pl.*,
+                COALESCE(bp.bowheer, pl.dashboard_bowheer, 'Tanpa Bowheer') AS bowheer
+            FROM tb_po_target_pipeline pl
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = pl.id_bowheer
+            ORDER BY bowheer ASC, pl.source_row_no ASC, pl.term_index ASC")->result_array();
+
+        $groups = [];
+        foreach ($queryRows as $item) {
+            $groupKey = 'pipeline|' . (
+                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
+                    ? (string) $item['source_row_no']
+                    : md5(implode('|', [(string) $item['dashboard_bowheer'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks'], (string) $item['type_project']]))
+            );
+            if (!isset($groups[$groupKey])) {
+                $row = $this->getEmptyImportReportRow();
+                $row['BOWHEER'] = (string) ($item['dashboard_bowheer'] ?: $item['bowheer']);
+                $row['STATUS PO'] = 'NY PO';
+                $row['REGIONAL'] = (string) ($item['regional'] ?? '');
+                $row['KOTA PO'] = (string) ($item['kota_po'] ?? '');
+                $row['DETAIL PO'] = (string) ($item['detail_po'] ?? '');
+                $row['REMARKS'] = (string) ($item['remarks'] ?? '');
+                $row['TYPE PROJECT'] = (string) ($item['type_project'] ?? '');
+                $row['TGL PO'] = !empty($item['po_date']) ? (string) $item['po_date'] : '';
+                $row['PO TERM'] = (string) ($item['po_term'] ?? '');
+                $groups[$groupKey] = $row;
+            }
+
+            $term = (int) ($item['term_index'] ?? 0);
+            if ($term < 1 || $term > 5) {
+                continue;
+            }
+
+            $plan = (float) ($item['plan_amount'] ?? 0);
+            $groups[$groupKey]['PLAN ' . $term] = $this->formatImportReportAmount($plan);
+            $groups[$groupKey]['SUBMIT ' . $term] = $this->importReportSubmitValue($item);
+            $groups[$groupKey]['PO VALUE'] = $this->formatImportReportAmount($this->parseImportReportAmount($groups[$groupKey]['PO VALUE']) + $plan);
+            $groups[$groupKey]['OUTSTANDING TOTAL'] = $this->formatImportReportAmount($this->parseImportReportAmount($groups[$groupKey]['OUTSTANDING TOTAL']) + $plan);
+            $groups[$groupKey]['NY PO 2026'] = $this->formatImportReportAmount($this->parseImportReportAmount($groups[$groupKey]['NY PO 2026']) + (float) ($item['ny_po_2026_amount'] ?? 0));
+            $groups[$groupKey]['NY PO 2027'] = $this->formatImportReportAmount($this->parseImportReportAmount($groups[$groupKey]['NY PO 2027']) + (float) ($item['ny_po_2027_amount'] ?? 0));
+        }
+
+        return array_values($groups);
+    }
+
+    private function baseOnPoImportReportRow($item)
+    {
+        $row = $this->getEmptyImportReportRow();
+        $row['BOWHEER'] = (string) ($item['bowheer'] ?? '');
+        $row['STATUS PO'] = (string) ($item['status_po'] ?: 'ON PO');
+        $row['NO PO'] = (string) ($item['po_number'] ?? '');
+        $row['NO PO SUB'] = (string) ($item['no_po_sub'] ?? '');
+        $row['REGIONAL'] = (string) ($item['regional'] ?? '');
+        $row['KOTA PO'] = (string) ($item['kota_po'] ?? '');
+        $row['DETAIL PO'] = (string) ($item['detail_po'] ?? '');
+        $row['REMARKS'] = (string) ($item['remarks'] ?? '');
+        $row['TYPE PROJECT'] = (string) ($item['type_project'] ?? '');
+        $row['TGL PO'] = !empty($item['po_date']) ? (string) $item['po_date'] : '';
+        $row['PO FINAL VALUE'] = (float) ($item['current_release_value'] ?? 0) !== (float) ($item['total_value'] ?? 0)
+            ? $this->formatImportReportAmount($item['current_release_value'])
+            : '';
+        return $row;
+    }
+
+    private function applyImportReportTerm(&$row, $item)
+    {
+        $term = (int) ($item['term_index'] ?? 0);
+        if ($term < 1 || $term > 5) {
+            return;
+        }
+
+        $plan = (float) ($item['plan_amount'] ?? 0);
+        $invoice = (float) ($item['invoice_amount'] ?? 0);
+        $row['PLAN ' . $term] = $this->formatImportReportAmount($plan);
+        $row['SUBMIT ' . $term] = $this->importReportSubmitValue($item);
+        $row['NILAI ' . $term] = $invoice > 0 ? $this->formatImportReportAmount($invoice) : '';
+        $row['PO VALUE'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['PO VALUE']) + $plan);
+        $row['INVOICE ALL'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['INVOICE ALL']) + $invoice);
+
+        if ($invoice > 0 && !empty($item['invoice_date']) && (int) date('Y', strtotime($item['invoice_date'])) === 2026) {
+            $row['INVOICE 2026'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['INVOICE 2026']) + $invoice);
+        }
+        if (strtoupper((string) ($item['target_status'] ?? '')) === 'TARGET_WEEK') {
+            $row['OUTSTANDING ON TARGET 2026'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['OUTSTANDING ON TARGET 2026']) + $plan);
+        }
+        if (strtoupper((string) ($item['target_status'] ?? '')) === 'CARRY_OVER') {
+            $row['OUTSTANDING CO 2027'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['OUTSTANDING CO 2027']) + $plan);
+        }
+    }
+
+    private function finalizedImportReportRows($groups)
+    {
+        $rows = [];
+        foreach ($groups as $row) {
+            $poValue = $this->parseImportReportAmount($row['PO VALUE']);
+            $invoiceAll = $this->parseImportReportAmount($row['INVOICE ALL']);
+            $row['OUTSTANDING TOTAL'] = $this->formatImportReportAmount(max($poValue - $invoiceAll, 0));
+            if ($row['PO TERM'] === '') {
+                $percents = [];
+                for ($term = 1; $term <= 5; $term++) {
+                    $plan = $this->parseImportReportAmount($row['PLAN ' . $term]);
+                    if ($plan > 0 && $poValue > 0) {
+                        $percent = round(($plan / $poValue) * 100, 2);
+                        $percents[] = rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+                    }
+                }
+                $row['PO TERM'] = !empty($percents) ? implode(':', $percents) : '';
+            }
+            $rows[] = $row;
+        }
+        return $rows;
+    }
+
+    private function importReportSubmitValue($item)
+    {
+        $submit = trim((string) ($item['submit_raw'] ?? ''));
+        if ($submit !== '') {
+            return $submit;
+        }
+
+        $status = strtoupper(trim((string) ($item['target_status'] ?? '')));
+        if ($status === 'TARGET_WEEK' && (int) ($item['target_week'] ?? 0) > 0) {
+            return 'W' . (int) $item['target_week'];
+        }
+        if ($status === 'CARRY_OVER') {
+            return '2027';
+        }
+        if (!empty($item['invoice_date'])) {
+            return (string) $item['invoice_date'];
+        }
+        return '';
+    }
+
+    private function formatImportReportAmount($value)
+    {
+        $value = (float) $value;
+        return abs($value) < 0.000001 ? '' : rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    }
+
+    private function parseImportReportAmount($value)
+    {
+        return (float) str_replace(',', '', (string) $value);
+    }
+
     public function importCsv($filePath, $sourceFile, $userId)
     {
         if (!is_readable($filePath)) {

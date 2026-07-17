@@ -50,11 +50,18 @@ class PO_MyRep extends CI_Controller
 
         $projectType = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($mainfeeder['project_type'] ?? 'MAINFEEDER');
         $projectLabel = $projectType === 'FWA' ? 'FWA' : 'Mainfeeder';
+        $certificateTerms = array_values(array_filter(
+            $this->MPO_MyRep->getCertificateDetailRows('', '', $projectType, 0, 'ALL'),
+            static function ($row) use ($mainfeederId) {
+                return (int) ($row['id_mainfeeder'] ?? 0) === $mainfeederId;
+            }
+        ));
         $data['title'] = 'PO ' . $projectLabel;
         $data['section'] = 'po';
         $data['moduleTitle'] = 'PO ' . $projectLabel;
         $data['mainfeeder'] = $mainfeeder;
         $data['poHeaders'] = $poHeaders;
+        $data['certificateTerms'] = $certificateTerms;
         $data['poCategoryOptions'] = ['INITIAL' => 'PO Initial', 'FINAL' => 'PO Final', 'AMANDMENT' => 'PO Amandement'];
         $data['poStatusOptions'] = ['NOT ISSUED' => 'NOT ISSUED', 'ISSUED' => 'ISSUED', 'PARTIAL PAYMENT' => 'PARTIAL PAYMENT', 'FULLY PAID' => 'FULLY PAID', 'CLOSED' => 'CLOSED'];
         $data['terminStatusOptions'] = ['NOT READY' => 'NOT READY', 'READY BILLING' => 'READY BILLING', 'BILLED' => 'BILLED', 'PAID' => 'PAID'];
@@ -800,16 +807,26 @@ class PO_MyRep extends CI_Controller
             }
 
             if ($isDateValue) {
-                $clusterId = (int) ($termin['id_myrep_cluster'] ?? 0);
-                if (!isset($termRowsCache[$clusterId])) {
-                    $cluster = $this->MPO_MyRep->getClusterById($clusterId);
-                    $termRowsCache[$clusterId] = !empty($cluster)
-                        ? $this->MChecklist_Dokument_MyRep->getCertificateTermRows((int) ($cluster['rfs_cluster_id'] ?? 0), $clusterId)
-                        : [];
+                $terminPoType = strtoupper(trim((string) ($termin['po_type'] ?? 'CLUSTER')));
+                $isStandalonePo = in_array($terminPoType, ['MAINFEEDER', 'FWA'], true);
+                $cacheKey = $isStandalonePo
+                    ? $terminPoType . '|' . (int) ($termin['id_mainfeeder'] ?? 0)
+                    : 'CLUSTER|' . (int) ($termin['id_myrep_cluster'] ?? 0);
+
+                if (!isset($termRowsCache[$cacheKey])) {
+                    if ($isStandalonePo) {
+                        $termRowsCache[$cacheKey] = $this->MPO_MyRep->getCertificateDetailRows('', '', $terminPoType, 0, 'ALL');
+                    } else {
+                        $clusterId = (int) ($termin['id_myrep_cluster'] ?? 0);
+                        $cluster = $this->MPO_MyRep->getClusterById($clusterId);
+                        $termRowsCache[$cacheKey] = !empty($cluster)
+                            ? $this->MChecklist_Dokument_MyRep->getCertificateTermRows((int) ($cluster['rfs_cluster_id'] ?? 0), $clusterId)
+                            : [];
+                    }
                 }
 
                 $selectedTerm = null;
-                foreach ($termRowsCache[$clusterId] as $termRow) {
+                foreach ($termRowsCache[$cacheKey] as $termRow) {
                     if ((int) ($termRow['id_po_termin'] ?? 0) === (int) ($termin['id_po_termin'] ?? 0)) {
                         $selectedTerm = $termRow;
                         break;

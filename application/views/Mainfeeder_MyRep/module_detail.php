@@ -18,12 +18,104 @@ if (!function_exists('mfModuleDetailNum')) {
         return number_format((float) $value, 0, ',', '.');
     }
 }
+if (!function_exists('mfModuleHasDate')) {
+    function mfModuleHasDate($date)
+    {
+        return !empty($date) && $date !== '0000-00-00' && $date !== '0000-00-00 00:00:00';
+    }
+}
+if (!function_exists('mfModuleTerminInvoiceValue')) {
+    function mfModuleTerminInvoiceValue($termin)
+    {
+        if (isset($termin['invoice_value']) && $termin['invoice_value'] !== null && $termin['invoice_value'] !== '') {
+            return (float) $termin['invoice_value'];
+        }
+
+        return (float) ($termin['termin_value'] ?? 0);
+    }
+}
+if (!function_exists('mfModuleNormalizeNumber')) {
+    function mfModuleNormalizeNumber($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0;
+        }
+        $value = preg_replace('/\s+/', '', $value);
+        $dotPos = strrpos($value, '.');
+        $commaPos = strrpos($value, ',');
+        if ($dotPos !== false && $commaPos !== false) {
+            $value = $dotPos > $commaPos
+                ? str_replace(',', '', $value)
+                : str_replace(',', '.', str_replace('.', '', $value));
+        } elseif ($commaPos !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif ($dotPos !== false && preg_match('/^\d{1,3}(?:\.\d{3})+$/', $value)) {
+            $value = str_replace('.', '', $value);
+        }
+        $value = preg_replace('/[^0-9.\-]/', '', $value);
+        return is_numeric($value) ? (float) $value : 0;
+    }
+}
+if (!function_exists('mfModuleTerminPlanValue')) {
+    function mfModuleTerminPlanValue($termin)
+    {
+        $remark = (string) ($termin['remark_termin'] ?? '');
+        if (preg_match('/Plan\s+Invoice\s*:\s*([^\r\n;]+)/i', $remark, $matches)) {
+            return mfModuleNormalizeNumber($matches[1]);
+        }
+
+        return (float) ($termin['termin_value'] ?? 0);
+    }
+}
+if (!function_exists('mfModuleCertificateDate')) {
+    function mfModuleCertificateDate($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return date('Y-m-d', strtotime($value));
+        }
+        if (preg_match('/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/', $value)) {
+            $timestamp = strtotime($value);
+            return $timestamp ? date('Y-m-d', $timestamp) : '';
+        }
+
+        return '';
+    }
+}
+if (!function_exists('mfModuleStatusBadge')) {
+    function mfModuleStatusBadge($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        if (in_array($status, ['APPROVED', 'DONE', 'BILLED', 'PAID'], true)) {
+            return 'success';
+        }
+        if ($status === 'REJECTED') {
+            return 'danger';
+        }
+        if (in_array($status, ['READY BILLING', 'UPLOADED', 'ON REVIEW', 'ON PROGRESS'], true)) {
+            return 'warning';
+        }
+
+        return 'secondary';
+    }
+}
 $section = strtolower((string) ($section ?? ''));
 $mainfeederId = (int) ($mainfeeder['id_mainfeeder'] ?? 0);
 $returnUrl = current_url();
 $projectType = strtoupper(trim((string) ($mainfeeder['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
 $projectLabel = $projectType === 'FWA' ? 'FWA' : 'Mainfeeder';
 $moduleTitle = (string) ($moduleTitle ?? $projectLabel);
+$canTambahPo = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'TAMBAH') : true;
+$canEditPo = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT') : true;
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+$canViewCertificateSection = strtoupper(trim((string) $this->session->userdata('homebase'))) === 'HO' || $isSuperAdmin;
+$canReleaseCertificate = $canEditPo && (strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO' || $isSuperAdmin);
+$certificateTerms = isset($certificateTerms) && is_array($certificateTerms) ? $certificateTerms : [];
 $sectionMeta = [
     'drm' => ['icon' => 'fas fa-clipboard-check', 'label' => 'DRM', 'accent' => 'primary'],
     'implementasi' => ['icon' => 'fas fa-tools', 'label' => 'Implementasi', 'accent' => 'success'],
@@ -349,56 +441,280 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
             <?php if ($section === 'po'): ?>
                 <div class="card card-outline card-dark shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">PO <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
+                    <div class="card-header mf-section-header">
+                        <h3 class="card-title mb-1">PO <?= mfModuleDetailHtml($projectLabel) ?></h3>
+                        <span class="badge badge-dark"><?= mfModuleDetailHtml($projectType) ?></span>
+                    </div>
                     <div class="card-body">
-                        <form method="post" action="<?= base_url('Mainfeeder_MyRep/savePo/' . $mainfeederId) ?>" class="row">
-                            <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                            <div class="col-md-3"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" class="form-control" required></div></div>
-                            <div class="col-md-2"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" class="form-control" required></div></div>
-                            <div class="col-md-2"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" class="form-control" required></div></div>
-                            <div class="col-md-2"><div class="form-group"><label>Kategori</label><select name="po_category" class="form-control"><?php foreach (($poCategoryOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Status</label><select name="status_po" class="form-control"><?php foreach (($poStatusOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
-                            <div class="col-md-12"><button type="submit" class="btn btn-dark mf-action-btn">Simpan PO</button></div>
-                        </form>
-                        <hr>
+                        <?php if ($canTambahPo): ?>
+                            <form method="post" action="<?= base_url('Mainfeeder_MyRep/savePo/' . $mainfeederId) ?>" class="row">
+                                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                                <div class="col-md-3"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" class="form-control" required></div></div>
+                                <div class="col-md-2"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" class="form-control" required></div></div>
+                                <div class="col-md-2"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" class="form-control" required></div></div>
+                                <div class="col-md-2"><div class="form-group"><label>Kategori</label><select name="po_category" class="form-control"><?php foreach (($poCategoryOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Status</label><select name="status_po" class="form-control"><?php foreach (($poStatusOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                                <div class="col-md-6"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" class="form-control" placeholder="FINAL 01 / AMANDMENT 01"></div></div>
+                                <div class="col-md-6"><div class="form-group"><label>Remark</label><input type="text" name="remark_po" class="form-control"></div></div>
+                                <div class="col-md-12"><button type="submit" class="btn btn-dark mf-action-btn">Simpan PO</button></div>
+                            </form>
+                            <hr>
+                        <?php endif; ?>
+
+                        <?php if ($canViewCertificateSection): ?>
+                            <div class="card card-outline card-success shadow-sm mb-4">
+                                <div class="card-header mf-section-header">
+                                    <h3 class="card-title mb-1">Sertifikat Claim Invoice</h3>
+                                    <span class="badge badge-info">Term 2-5</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>PO</th>
+                                                    <th>Term</th>
+                                                    <th>Syarat Release</th>
+                                                    <th>Status</th>
+                                                    <th>Sertifikat</th>
+                                                    <th>Invoice</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php if (empty($certificateTerms)): ?>
+                                                    <tr><td colspan="7" class="text-center text-muted">Belum ada term sertifikat untuk <?= mfModuleDetailHtml($projectLabel) ?> ini.</td></tr>
+                                                <?php else: ?>
+                                                    <?php foreach ($certificateTerms as $term): ?>
+                                                        <?php
+                                                        $termNo = (int) ($term['termin_no'] ?? 0);
+                                                        $certValue = trim((string) ($term['sertifikat_invoice_date'] ?? ''));
+                                                        $isReleased = !empty($term['is_certificate_released']);
+                                                        $isReady = !empty($term['is_release_ready']);
+                                                        $isFacTerm = $termNo === 5;
+                                                        $statusBadge = $isReleased ? 'success' : ($isReady ? 'primary' : 'warning');
+                                                        $statusText = $isReleased ? 'Released' : ($isReady ? 'Ready Release' : ($isFacTerm ? (!empty($term['fac_rfs_certificate_date']) ? 'BJT' : 'NY FAC') : 'Waiting ASTRI'));
+                                                        $canClaimCertificate = $canReleaseCertificate && ($isReady || $isReleased);
+                                                        ?>
+                                                        <tr>
+                                                            <td><strong><?= mfModuleDetailHtml($term['po_number'] ?? '-') ?></strong><div class="small text-muted"><?= mfModuleDetailHtml($term['po_category'] ?? '-') ?></div></td>
+                                                            <td><strong><?= mfModuleDetailHtml($term['term_label'] ?? ('Term ' . $termNo)) ?></strong><div class="small text-muted"><?= mfModuleDetailNum($term['termin_value'] ?? 0) ?></div></td>
+                                                            <td>
+                                                                <?php if ($isFacTerm): ?>
+                                                                    <div>RFS Cert <?= mfModuleDetailDate($term['fac_rfs_certificate_date'] ?? '') ?></div>
+                                                                    <div>BJT <?= mfModuleDetailDate($term['fac_due_date'] ?? '') ?></div>
+                                                                    <?php if (!empty($term['fac_rfs_certificate_date'])): ?>
+                                                                        <div>Umur <?= (int) ($term['fac_age_days'] ?? 0) ?> hari</div>
+                                                                    <?php endif; ?>
+                                                                <?php else: ?>
+                                                                    <div>Submit <?= (int) ($term['astri_submitted_docs'] ?? 0) ?>/<?= (int) ($term['required_docs'] ?? 0) ?></div>
+                                                                    <div>Approved <?= (int) ($term['astri_approved_docs'] ?? 0) ?>/<?= (int) ($term['required_docs'] ?? 0) ?></div>
+                                                                <?php endif; ?>
+                                                                <div class="small text-muted"><?= mfModuleDetailHtml($term['release_note'] ?? '') ?></div>
+                                                            </td>
+                                                            <td><span class="badge badge-<?= $statusBadge ?>"><?= mfModuleDetailHtml($statusText) ?></span></td>
+                                                            <td><?= $certValue !== '' ? mfModuleDetailHtml($certValue) : '-' ?></td>
+                                                            <td><span class="badge badge-<?= mfModuleStatusBadge($term['status_termin'] ?? '') ?>"><?= mfModuleDetailHtml($term['status_termin'] ?? '-') ?></span><div class="small text-muted"><?= mfModuleDetailDate($term['invoice_date'] ?? '') ?></div></td>
+                                                            <td>
+                                                                <?php if ($canReleaseCertificate): ?>
+                                                                    <div class="btn-group btn-group-sm" role="group">
+                                                                        <button type="button" class="btn btn-dark js-mf-cert-modal" data-toggle="modal" data-target="#modal-mf-certificate" data-mode="claim" data-termin-id="<?= (int) ($term['id_po_termin'] ?? 0) ?>" data-po-number="<?= mfModuleDetailHtml($term['po_number'] ?? '-') ?>" data-term-label="<?= mfModuleDetailHtml($term['term_label'] ?? ('Term ' . $termNo)) ?>" data-certificate="<?= mfModuleDetailHtml($certValue) ?>" <?= $canClaimCertificate ? '' : 'disabled' ?>>Claim</button>
+                                                                        <button type="button" class="btn btn-outline-secondary js-mf-cert-modal" data-toggle="modal" data-target="#modal-mf-certificate" data-mode="status" data-termin-id="<?= (int) ($term['id_po_termin'] ?? 0) ?>" data-po-number="<?= mfModuleDetailHtml($term['po_number'] ?? '-') ?>" data-term-label="<?= mfModuleDetailHtml($term['term_label'] ?? ('Term ' . $termNo)) ?>" data-certificate="<?= mfModuleDetailHtml($certValue) ?>">Status</button>
+                                                                    </div>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted">Read only</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
                         <?php foreach (($poHeaders ?? []) as $po): ?>
-                            <h5><strong><?= mfModuleDetailHtml($po['po_number'] ?? '-') ?></strong> <span class="badge badge-secondary"><?= mfModuleDetailHtml($po['po_category'] ?? '-') ?></span></h5>
-                            <div class="table-responsive mb-4"><table class="table table-bordered table-hover mf-detail-table"><thead><tr><th>Term</th><th>%</th><th>Value</th><th>Status</th><th>Invoice</th><th>Sertifikat</th><th>Action</th></tr></thead><tbody>
-                                <?php foreach (($po['termin_rows'] ?? []) as $term): ?>
-                                    <tr>
-                                        <td><?= (int) ($term['termin_no'] ?? 0) ?></td>
-                                        <td><?= mfModuleDetailNum($term['termin_percent'] ?? 0) ?>%</td>
-                                        <td><?= mfModuleDetailNum($term['termin_value'] ?? 0) ?></td>
-                                        <td><?= mfModuleDetailHtml($term['status_termin'] ?? '-') ?></td>
-                                        <td><?= mfModuleDetailDate($term['invoice_date'] ?? '') ?> / <?= mfModuleDetailHtml($term['invoice_number'] ?? '-') ?></td>
-                                        <td><?= mfModuleDetailHtml($term['sertifikat_invoice_date'] ?? '-') ?></td>
-                                        <td>
-                                            <form method="post" action="<?= base_url('Mainfeeder_MyRep/updateTermin/' . $mainfeederId) ?>" class="mb-1">
-                                                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                                                <input type="hidden" name="id_po_termin" value="<?= (int) $term['id_po_termin'] ?>">
-                                                <div class="input-group input-group-sm">
-                                                    <select name="status_termin" class="form-control"><?php foreach (($terminStatusOptions ?? []) as $value => $label): ?><option value="<?= $value ?>" <?= strtoupper((string)($term['status_termin'] ?? '')) === $value ? 'selected' : '' ?>><?= $label ?></option><?php endforeach; ?></select>
-                                                    <input type="date" name="invoice_date" value="<?= mfModuleDetailHtml($term['invoice_date'] ?? '') ?>" class="form-control">
-                                                    <input type="text" name="invoice_number" value="<?= mfModuleDetailHtml($term['invoice_number'] ?? '') ?>" class="form-control" placeholder="Invoice">
-                                                    <button type="submit" class="btn btn-primary mf-action-btn">Update</button>
-                                                </div>
-                                            </form>
-                                            <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveTerminCertificate/' . $mainfeederId) ?>">
-                                                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                                                <input type="hidden" name="id_po_termin" value="<?= (int) $term['id_po_termin'] ?>">
-                                                <div class="input-group input-group-sm">
-                                                    <input type="text" name="sertifikat_invoice" value="<?= mfModuleDetailHtml($term['sertifikat_invoice_date'] ?? '') ?>" class="form-control" placeholder="Tanggal/status sertifikat">
-                                                    <button type="submit" class="btn btn-secondary mf-action-btn">Simpan</button>
-                                                </div>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody></table></div>
+                            <div class="card card-outline card-secondary shadow-sm mb-4">
+                                <div class="card-header mf-section-header">
+                                    <div>
+                                        <h3 class="card-title mb-1"><?= mfModuleDetailHtml($po['po_number'] ?? '-') ?></h3>
+                                        <div class="small text-muted"><?= mfModuleDetailHtml($po['po_category'] ?? '-') ?> / <?= mfModuleDetailHtml($po['status_po'] ?? '-') ?></div>
+                                    </div>
+                                    <div class="text-right"><strong><?= mfModuleDetailNum($po['po_value'] ?? 0) ?></strong><div class="small text-muted"><?= mfModuleDetailDate($po['po_date'] ?? '') ?></div></div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm mf-detail-table">
+                                            <thead><tr><th>Term</th><th>%</th><th>Invoice</th><th>Outstanding</th><th>Status</th><th>Sertifikat</th><th>No Invoice</th><th>Tgl Invoice</th><th>BAST</th><th>Payment</th><th>Remark</th><th>Aksi</th></tr></thead>
+                                            <tbody>
+                                                <?php $invoiceTotal = 0; $outstandingTotal = 0; ?>
+                                                <?php foreach (($po['termin_rows'] ?? []) as $term): ?>
+                                                    <?php
+                                                    $hasInvoice = mfModuleHasDate($term['invoice_date'] ?? '');
+                                                    $invoiceValue = $hasInvoice ? mfModuleTerminInvoiceValue($term) : 0;
+                                                    $outstandingValue = $hasInvoice ? 0 : mfModuleTerminPlanValue($term);
+                                                    $invoiceTotal += $invoiceValue;
+                                                    $outstandingTotal += $outstandingValue;
+                                                    $termCertValue = trim((string) ($term['sertifikat_invoice_date'] ?? ''));
+                                                    $termCertDate = mfModuleCertificateDate($termCertValue);
+                                                    ?>
+                                                    <tr>
+                                                        <td class="text-center"><?= (int) ($term['termin_no'] ?? 0) ?></td>
+                                                        <td class="text-center"><?= mfModuleDetailNum($term['termin_percent'] ?? 0) ?>%</td>
+                                                        <td class="text-right"><?= $invoiceValue > 0 ? mfModuleDetailNum($invoiceValue) : '-' ?></td>
+                                                        <td class="text-right"><?= $outstandingValue > 0 ? mfModuleDetailNum($outstandingValue) : '-' ?></td>
+                                                        <td class="text-center"><span class="badge badge-<?= mfModuleStatusBadge($term['status_termin'] ?? '') ?>"><?= mfModuleDetailHtml($term['status_termin'] ?? '-') ?></span></td>
+                                                        <td class="text-center">
+                                                            <?php if ((int) ($term['termin_no'] ?? 0) >= 2): ?>
+                                                                <?php if ($termCertDate !== ''): ?><span class="badge badge-success"><?= mfModuleDetailHtml($termCertValue) ?></span>
+                                                                <?php elseif ($termCertValue !== ''): ?><span class="badge badge-secondary"><?= mfModuleDetailHtml($termCertValue) ?></span>
+                                                                <?php else: ?><span class="badge badge-warning">Waiting</span><?php endif; ?>
+                                                            <?php else: ?>-<?php endif; ?>
+                                                        </td>
+                                                        <td><?= mfModuleDetailHtml($term['invoice_number'] ?? '-') ?></td>
+                                                        <td class="text-center"><?= mfModuleDetailDate($term['invoice_date'] ?? '') ?></td>
+                                                        <td class="text-center"><?= mfModuleDetailDate($term['bast_date'] ?? '') ?></td>
+                                                        <td class="text-center"><?= mfModuleDetailDate($term['payment_date'] ?? '') ?></td>
+                                                        <td><?= !empty($term['remark_termin']) ? mfModuleDetailHtml($term['remark_termin']) : '-' ?></td>
+                                                        <td class="text-center">
+                                                            <?php if ($canEditPo): ?>
+                                                                <button type="button" class="btn btn-sm btn-outline-primary js-mf-termin-modal" data-toggle="modal" data-target="#modal-mf-termin" data-termin-id="<?= (int) ($term['id_po_termin'] ?? 0) ?>" data-po-number="<?= mfModuleDetailHtml($po['po_number'] ?? '') ?>" data-termin-no="<?= (int) ($term['termin_no'] ?? 0) ?>" data-status="<?= mfModuleDetailHtml($term['status_termin'] ?? '') ?>" data-invoice-number="<?= mfModuleDetailHtml($term['invoice_number'] ?? '') ?>" data-invoice-value="<?= mfModuleDetailHtml($term['invoice_value'] ?? '') ?>" data-invoice-date="<?= mfModuleDetailHtml($term['invoice_date'] ?? '') ?>" data-bast-date="<?= mfModuleDetailHtml($term['bast_date'] ?? '') ?>" data-payment-date="<?= mfModuleDetailHtml($term['payment_date'] ?? '') ?>" data-sertifikat="<?= mfModuleDetailHtml($termCertValue) ?>" data-remark="<?= mfModuleDetailHtml($term['remark_termin'] ?? '') ?>">Update</button>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                            <tfoot><tr><th colspan="2" class="text-right">TOTAL</th><th class="text-right"><?= $invoiceTotal > 0 ? mfModuleDetailNum($invoiceTotal) : '-' ?></th><th class="text-right"><?= $outstandingTotal > 0 ? mfModuleDetailNum($outstandingTotal) : '-' ?></th><th colspan="8"></th></tr></tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
+
+                        <?php if (empty($poHeaders)): ?>
+                            <div class="text-center text-muted py-4">Belum ada PO <?= mfModuleDetailHtml($projectLabel) ?>.</div>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endif; ?>
         </div>
     </section>
 </div>
+
+<?php if ($section === 'po' && $canEditPo): ?>
+<div class="modal fade" id="modal-mf-termin" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/updateTermin/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <input type="hidden" name="id_po_termin" id="mf_termin_id">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">Update Termin PO</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>PO:</strong> <span id="mf_termin_po_number">-</span> |
+                        <strong>Termin:</strong> <span id="mf_termin_no">-</span> |
+                        <strong>Sertifikat:</strong> <span id="mf_termin_sertifikat">-</span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Status Termin</label><select name="status_termin" id="mf_termin_status" class="form-control"><?php foreach (($terminStatusOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Nomor Invoice</label><input type="text" name="invoice_number" id="mf_termin_invoice_number" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Nilai Invoice</label><input type="text" name="invoice_value" id="mf_termin_invoice_value" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tanggal Invoice</label><input type="date" name="invoice_date" id="mf_termin_invoice_date" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tanggal BAST</label><input type="date" name="bast_date" id="mf_termin_bast_date" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tanggal Payment</label><input type="date" name="payment_date" id="mf_termin_payment_date" class="form-control"></div></div>
+                        <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_termin" id="mf_termin_remark" class="form-control" rows="3"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info">Update Termin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'po' && $canReleaseCertificate): ?>
+<div class="modal fade" id="modal-mf-certificate" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveTerminCertificate/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <input type="hidden" name="id_po_termin" id="mf_certificate_termin_id">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="mf_certificate_title">Update Sertifikat</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>PO:</strong> <span id="mf_certificate_po_number">-</span> |
+                        <strong>Term:</strong> <span id="mf_certificate_term_label">-</span>
+                    </div>
+                    <div class="form-group">
+                        <label id="mf_certificate_label">Sertifikat</label>
+                        <input type="text" name="sertifikat_invoice" id="mf_certificate_value" class="form-control">
+                        <small class="form-text text-muted" id="mf_certificate_help"></small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-dark" id="mf_certificate_submit">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'po'): ?>
+<script>
+    (function () {
+        $(document).on('click', '.js-mf-termin-modal', function () {
+            var $button = $(this);
+            $('#mf_termin_id').val($button.data('termin-id') || '');
+            $('#mf_termin_po_number').text($button.data('po-number') || '-');
+            $('#mf_termin_no').text($button.data('termin-no') || '-');
+            $('#mf_termin_status').val($button.data('status') || 'NOT READY');
+            $('#mf_termin_invoice_number').val($button.data('invoice-number') || '');
+            $('#mf_termin_invoice_value').val($button.data('invoice-value') || '');
+            $('#mf_termin_invoice_date').val($button.data('invoice-date') || '');
+            $('#mf_termin_bast_date').val($button.data('bast-date') || '');
+            $('#mf_termin_payment_date').val($button.data('payment-date') || '');
+            $('#mf_termin_sertifikat').text($button.data('sertifikat') || '-');
+            $('#mf_termin_remark').val($button.data('remark') || '');
+        });
+
+        $(document).on('click', '.js-mf-cert-modal', function () {
+            var $button = $(this);
+            var mode = String($button.data('mode') || 'claim');
+            var certificateValue = String($button.data('certificate') || '');
+            $('#mf_certificate_termin_id').val($button.data('termin-id') || '');
+            $('#mf_certificate_po_number').text($button.data('po-number') || '-');
+            $('#mf_certificate_term_label').text($button.data('term-label') || '-');
+
+            if (mode === 'status') {
+                $('#mf_certificate_title').text('Update Status Sertifikat');
+                $('#mf_certificate_label').text('Status Sertifikat');
+                $('#mf_certificate_value').attr('type', 'text').val(certificateValue);
+                $('#mf_certificate_help').text('Status text bebas. Tanggal valid akan tetap divalidasi sebagai claim release.');
+                $('#mf_certificate_submit').text('Simpan Status').removeClass('btn-dark').addClass('btn-secondary');
+                return;
+            }
+
+            $('#mf_certificate_title').text('Claim Sertifikat');
+            $('#mf_certificate_label').text('Tanggal Release Sertifikat');
+            $('#mf_certificate_value')
+                .attr('type', 'date')
+                .val(/^\d{4}-\d{2}-\d{2}$/.test(certificateValue) ? certificateValue : '');
+            $('#mf_certificate_help').text('Hanya tanggal valid. Bisa disimpan setelah syarat ASTRI/FAC terpenuhi.');
+            $('#mf_certificate_submit').text('Claim Sertifikat').removeClass('btn-secondary').addClass('btn-dark');
+        });
+    })();
+</script>
+<?php endif; ?>

@@ -476,6 +476,54 @@ class PO_Monitor extends CI_Controller
         redirect('PO_Monitor');
     }
 
+    public function download_import_report()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->canManagePoImport()) {
+            show_error('Fitur download report PO hanya tersedia untuk user khusus.', 403);
+            return;
+        }
+
+        $headers = $this->MPO_Monitor->getImportReportHeaders();
+        $rows = $this->MPO_Monitor->getImportReportRows();
+        $generatedAt = date('Y-m-d H:i:s');
+        $fileName = 'report-database-po-monitor-' . date('Ymd-His') . '.xls';
+
+        $html = '<html><head><meta charset="utf-8"><style>';
+        $html .= 'body{font-family:Arial,sans-serif;}';
+        $html .= 'table{border-collapse:collapse;}';
+        $html .= 'th,td{border:1px solid #999;padding:5px 7px;font-size:10pt;mso-number-format:\@;vertical-align:top;}';
+        $html .= 'th{background:#d9e2f3;font-weight:bold;text-align:center;white-space:nowrap;}';
+        $html .= '.meta td{border:0;font-size:9pt;color:#666;padding:0 0 8px 0;}';
+        $html .= '</style></head><body><table>';
+        $html .= '<tr class="meta"><td colspan="' . count($headers) . '">Report Database PO Monitor - ' . htmlspecialchars($generatedAt, ENT_QUOTES, 'UTF-8') . '</td></tr>';
+        $html .= '<tr>';
+        foreach ($headers as $header) {
+            $html .= '<th>' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $html .= '</tr>';
+
+        foreach ($rows as $row) {
+            $html .= '<tr>';
+            foreach ($headers as $header) {
+                $html .= '<td>' . htmlspecialchars((string) ($row[$header] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            }
+            $html .= '</tr>';
+        }
+
+        $html .= '</table></body></html>';
+
+        $this->output
+            ->set_content_type('application/vnd.ms-excel')
+            ->set_header('Content-Disposition: attachment; filename="' . $fileName . '"')
+            ->set_header('Cache-Control: max-age=0')
+            ->set_output($html);
+    }
+
     private function resolveReadableCsvPath($path)
     {
         $path = trim((string) $path, " \t\n\r\0\x0B\"'");

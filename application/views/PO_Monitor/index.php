@@ -344,6 +344,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
         font-size: 12px;
     }
 
+    .po-monitor-compare-body,
+    .po-monitor-compare-body .dataTables_wrapper,
+    .po-monitor-compare-body .dataTables_scroll,
+    .po-monitor-compare-body .dataTables_scrollHead,
+    .po-monitor-compare-body .dataTables_scrollBody {
+        width: 100% !important;
+    }
+
     #table_po_target_invoice_compare_month_wrapper .dataTables_length label,
     #table_po_target_invoice_compare_week_wrapper .dataTables_length label {
         display: inline-flex;
@@ -1469,21 +1477,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <h1>Dashboard Target PO</h1>
                             <p>Monitor target invoice 2026, outstanding by PO, NY PO, dan realisasi invoice per project dalam satu layar operasional.</p>
                             <div class="po-monitor-hero__actions">
-                                <a href="<?= site_url('PO_Monitor/create') ?>" class="btn btn-light btn-sm font-weight-bold">
-                                    <i class="fas fa-plus mr-1"></i> Tambah PO
-                                </a>
                                 <button type="button" class="btn btn-light btn-sm font-weight-bold" data-toggle="modal" data-target="#po_monitor_batch_po_modal">
-                                    <i class="fas fa-layer-group mr-1"></i> Batch Tambah PO
+                                    <i class="fas fa-plus mr-1"></i> Tambah PO
                                 </button>
                                 <button type="button" class="btn btn-light btn-sm font-weight-bold" data-toggle="modal" data-target="#po_monitor_batch_invoice_modal">
                                     <i class="fas fa-file-invoice-dollar mr-1"></i> Batch Input Invoice Termin
                                 </button>
-                                <a href="#table_po_dashboard_excel" class="btn btn-outline-light btn-sm font-weight-bold">
-                                    <i class="fas fa-table mr-1"></i> Dashboard
-                                </a>
-                                <a href="#table_po_target_invoice_compare_month" class="btn btn-outline-light btn-sm font-weight-bold">
-                                    <i class="fas fa-balance-scale mr-1"></i> Perbandingan
-                                </a>
                             </div>
                         </div>
                         <div class="po-monitor-hero__stats">
@@ -1561,6 +1560,11 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         <div>
                             <h3 class="po-monitor-panel__title">Import Database PO CSV</h3>
                             <p class="po-monitor-panel__subtitle">Import ulang data master PO Monitor standalone dari CSV.</p>
+                        </div>
+                        <div class="po-monitor-table-actions">
+                            <a href="<?= site_url('PO_Monitor/download_import_report') ?>" class="btn btn-success btn-sm font-weight-bold">
+                                <i class="fas fa-file-excel mr-1"></i> Download Excel Report
+                            </a>
                         </div>
                     </div>
                     <div class="po-monitor-panel__body">
@@ -1700,7 +1704,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <p class="po-monitor-panel__subtitle">Bandingkan target paten dan realisasi invoice per bulan atau per week.</p>
                         </div>
                     </div>
-                    <div class="po-monitor-panel__body">
+                    <div class="po-monitor-panel__body po-monitor-compare-body" id="po-monitor-compare-body">
                         <form method="get" action="<?= site_url('PO_Monitor') ?>" class="mb-3">
                             <div class="po-monitor-import-grid">
                                 <div class="po-monitor-field">
@@ -2068,9 +2072,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <h3 class="po-monitor-panel__title">List PO Monitor</h3>
                             <p class="po-monitor-panel__subtitle">Daftar PO standalone yang digunakan halaman PO Monitor.</p>
                         </div>
-                        <div class="po-monitor-table-actions">
-                            <a href="<?= site_url('PO_Monitor/create') ?>" class="btn btn-success">Tambah PO</a>
-                        </div>
                     </div>
                     <div class="po-monitor-panel__body table-responsive">
                         <table id="table_po_monitor_list" class="table table-bordered table-striped">
@@ -2142,7 +2143,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
         <div class="modal-content">
             <form method="post" action="<?= site_url('PO_Monitor/batch_add_po') ?>" id="po-monitor-batch-po-form">
                 <div class="modal-header">
-                    <h5 class="modal-title"><span class="po-monitor-modal-eyebrow">Batch PO</span>Batch Tambah PO</h5>
+                    <h5 class="modal-title"><span class="po-monitor-modal-eyebrow">PO Monitor</span>Tambah PO</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -2228,7 +2229,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         </div>
                         <div class="tab-pane fade" id="po-monitor-batch-po-paste-pane" role="tabpanel">
                             <div class="form-group">
-                                <label>Data PO</label>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
+                                    <label class="mb-0">Data PO</label>
+                                    <button type="button" class="btn btn-sm btn-outline-info" id="po-monitor-batch-po-copy-example">Copy Contoh</button>
+                                </div>
                                 <textarea id="po-monitor-batch-po-paste" class="form-control po-monitor-batch-paste" placeholder="BOWHEER[TAB]STATUS PO[TAB]NO PO[TAB]NO PO SUB[TAB]REGIONAL[TAB]KOTA PO[TAB]DETAIL PO[TAB]REMARKS[TAB]TYPE PROJECT[TAB]TGL PO[TAB]PO VALUE[TAB]PO FINAL VALUE[TAB]PO TERM&#10;PT BANGTELINDO[TAB]ON PO[TAB]PO. 123[TAB]-[TAB]JABODETABEK[TAB]Jakarta[TAB]Detail pekerjaan[TAB]Catatan[TAB]-[TAB]2026-07-10[TAB]100000000[TAB][TAB]50:50"></textarea>
                                 <small class="form-text text-muted">Bisa paste dengan header CSV/Excel. Kolom utama: BOWHEER, STATUS PO, NO PO, NO PO SUB, REGIONAL, KOTA PO, DETAIL PO, REMARKS, TYPE PROJECT, TGL PO, PO VALUE, PO FINAL VALUE, PO TERM.</small>
                             </div>
@@ -2355,7 +2359,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         </div>
                         <div class="tab-pane fade" id="po-monitor-batch-paste-pane" role="tabpanel">
                             <div class="form-group">
-                                <label>Data Invoice</label>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
+                                    <label class="mb-0">Data Invoice</label>
+                                    <button type="button" class="btn btn-sm btn-outline-info" id="po-monitor-batch-copy-example">Copy Contoh</button>
+                                </div>
                                 <textarea id="po-monitor-batch-paste" class="form-control po-monitor-batch-paste" placeholder="PO Number[TAB]Term[TAB]Nilai Invoice&#10;PO. 8000138637[TAB]1[TAB]1000000&#10;PO. 8000138638[TAB]Term 2"></textarea>
                                 <small class="form-text text-muted">Nilai invoice boleh kosong untuk memakai sisa term.</small>
                             </div>
@@ -2446,6 +2453,60 @@ if (!function_exists('po_monitor_term_amount_link')) {
             }
             echo json_encode($poMonitorBatchLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
+        var poMonitorBatchInvoiceExampleText = <?php
+            $poMonitorBatchInvoiceExampleRows = [
+                ['PO Number', 'Term', 'Nilai Invoice'],
+            ];
+            foreach ($batchInvoiceRows as $poMonitorInvoiceExampleRow) {
+                $poMonitorInvoiceExampleNumber = trim((string) ($poMonitorInvoiceExampleRow['po_number'] ?? ''));
+                $poMonitorInvoiceExampleTerm = (int) ($poMonitorInvoiceExampleRow['term_index'] ?? 0);
+                if ($poMonitorInvoiceExampleNumber === '' || $poMonitorInvoiceExampleTerm < 1 || $poMonitorInvoiceExampleTerm > 5) {
+                    continue;
+                }
+                $poMonitorBatchInvoiceExampleRows[] = [
+                    $poMonitorInvoiceExampleNumber,
+                    (string) $poMonitorInvoiceExampleTerm,
+                    (string) (int) max(0, (float) ($poMonitorInvoiceExampleRow['remaining'] ?? 0)),
+                ];
+                if (count($poMonitorBatchInvoiceExampleRows) >= 6) {
+                    break;
+                }
+            }
+            if (count($poMonitorBatchInvoiceExampleRows) === 1) {
+                $poMonitorBatchInvoiceExampleRows[] = ['PO. 8000138637', '1', '1000000'];
+                $poMonitorBatchInvoiceExampleRows[] = ['PO. 8000138638', '2', ''];
+            }
+            echo json_encode(implode("\n", array_map(static function ($row) {
+                return implode("\t", $row);
+            }, $poMonitorBatchInvoiceExampleRows)), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
+        var poMonitorBatchPoExampleText = <?php
+            $poMonitorExampleBowheers = array_values($uniqueBowheer ?? []);
+            $poMonitorBatchPoExampleRows = [
+                ['BOWHEER', 'STATUS PO', 'NO PO', 'NO PO SUB', 'REGIONAL', 'KOTA PO', 'DETAIL PO', 'REMARKS', 'TYPE PROJECT', 'TGL PO', 'PO VALUE', 'PO FINAL VALUE', 'PO TERM'],
+            ];
+            for ($poMonitorExampleIndex = 1; $poMonitorExampleIndex <= 5; $poMonitorExampleIndex++) {
+                $poMonitorExampleBowheer = $poMonitorExampleBowheers[$poMonitorExampleIndex - 1] ?? 'PT CONTOH BOWHEER';
+                $poMonitorBatchPoExampleRows[] = [
+                    $poMonitorExampleBowheer,
+                    $poMonitorExampleIndex % 2 === 0 ? 'NY PO' : 'ON PO',
+                    'CONTOH-PO-' . date('Ymd') . '-' . str_pad((string) $poMonitorExampleIndex, 2, '0', STR_PAD_LEFT),
+                    $poMonitorExampleIndex % 2 === 0 ? 'SUB-' . $poMonitorExampleIndex : '-',
+                    'REGIONAL ' . (($poMonitorExampleIndex % 5) + 1),
+                    ['Jakarta', 'Bandung', 'Surabaya', 'Medan', 'Makassar'][$poMonitorExampleIndex - 1],
+                    'Detail pekerjaan contoh ' . $poMonitorExampleIndex,
+                    'Catatan contoh',
+                    $poMonitorExampleIndex % 2 === 0 ? 'FIBERIZATION' : 'NRO',
+                    date('Y-m-d'),
+                    (string) (100000000 + (($poMonitorExampleIndex - 1) * 25000000)),
+                    $poMonitorExampleIndex % 2 === 0 ? (string) (120000000 + (($poMonitorExampleIndex - 1) * 25000000)) : '',
+                    $poMonitorExampleIndex % 2 === 0 ? '50:50' : '100',
+                ];
+            }
+            echo json_encode(implode("\n", array_map(static function ($row) {
+                return implode("\t", $row);
+            }, $poMonitorBatchPoExampleRows)), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        ?>;
 
         function parseLocaleNumber(value) {
             if (typeof value === 'number') {
@@ -2480,6 +2541,47 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        function showCopyButtonCheck($button) {
+            var originalHtml = $button.data('original-html');
+            if (!originalHtml) {
+                originalHtml = $button.html();
+                $button.data('original-html', originalHtml);
+            }
+            window.clearTimeout($button.data('copy-reset-timer'));
+            $button
+                .removeClass('btn-outline-info')
+                .addClass('btn-success')
+                .html('<i class="fas fa-check mr-1"></i> Copied');
+            $button.data('copy-reset-timer', window.setTimeout(function() {
+                $button
+                    .removeClass('btn-success')
+                    .addClass('btn-outline-info')
+                    .html(originalHtml);
+            }, 1200));
+        }
+
+        function copyTextWithFallback(text) {
+            text = String(text || '');
+            function fallbackCopy() {
+                var $temp = $('<textarea readonly></textarea>').css({
+                    position: 'fixed',
+                    left: '-9999px',
+                    top: '0'
+                }).val(text);
+                $('body').append($temp);
+                $temp[0].select();
+                var copied = document.execCommand('copy');
+                $temp.remove();
+                return copied ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text).catch(fallbackCopy);
+            }
+
+            return fallbackCopy();
         }
 
         function sumColumn(api, columnIndex) {
@@ -2821,15 +2923,25 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $(this).val(formatLocaleNumber(parseLocaleNumber(value)));
             });
 
+            $('#po-monitor-batch-copy-example').off('click.poMonitorBatchCopyExample').on('click.poMonitorBatchCopyExample', function() {
+                var $button = $(this);
+                copyTextWithFallback(poMonitorBatchInvoiceExampleText).then(function() {
+                    showCopyButtonCheck($button);
+                });
+            });
+
             $('#po-monitor-batch-parse-paste').off('click.poMonitorBatchPaste').on('click.poMonitorBatchPaste', function() {
                 var text = $('#po-monitor-batch-paste').val();
-                String(text || '').split(/\r?\n/).forEach(function(line) {
+                String(text || '').split(/\r?\n/).forEach(function(line, index) {
                     if (!line.trim()) {
                         return;
                     }
                     var columns = line.split(/\t/);
                     if (columns.length < 2) {
                         columns = line.split(/[;,]/);
+                    }
+                    if (index === 0 && String(columns[0] || '').trim().toUpperCase() === 'PO NUMBER') {
+                        return;
                     }
                     addBatchInvoiceRow(columns[0] || '', columns[1] || '', columns.length >= 3 ? columns.slice(2).join(' ') : '');
                 });
@@ -2978,6 +3090,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 }
             });
 
+            $('#po-monitor-batch-po-copy-example').off('click.poMonitorBatchPoCopyExample').on('click.poMonitorBatchPoCopyExample', function() {
+                var $button = $(this);
+                copyTextWithFallback(poMonitorBatchPoExampleText).then(function() {
+                    showCopyButtonCheck($button);
+                });
+            });
+
             $('#po-monitor-batch-po-parse-paste').off('click.poMonitorBatchPoPaste').on('click.poMonitorBatchPoPaste', function() {
                 var lines = String($('#po-monitor-batch-po-paste').val() || '').split(/\r?\n/).filter(function(line) {
                     return line.trim() !== '';
@@ -3074,6 +3193,37 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
             compareTables.month = initCompareTable('#table_po_target_invoice_compare_month');
             compareTables.week = initCompareTable('#table_po_target_invoice_compare_week');
+
+            function adjustCompareTables() {
+                var weekMode = $('#po_compare_week_mode').is(':checked');
+                var activeTable = weekMode ? compareTables.week : compareTables.month;
+                if (!activeTable) {
+                    return;
+                }
+
+                activeTable.columns.adjust().draw(false);
+            }
+
+            function scheduleCompareTableAdjust() {
+                [0, 80, 180, 360].forEach(function(delay) {
+                    window.setTimeout(adjustCompareTables, delay);
+                });
+            }
+
+            $(window)
+                .off('resize.poMonitorCompareAdjust')
+                .on('resize.poMonitorCompareAdjust', scheduleCompareTableAdjust);
+
+            $(document)
+                .off('collapsed.lte.pushmenu.poMonitorCompareAdjust shown.lte.pushmenu.poMonitorCompareAdjust expanded.lte.pushmenu.poMonitorCompareAdjust')
+                .on('collapsed.lte.pushmenu.poMonitorCompareAdjust shown.lte.pushmenu.poMonitorCompareAdjust expanded.lte.pushmenu.poMonitorCompareAdjust', scheduleCompareTableAdjust);
+
+            if (window.ResizeObserver && document.getElementById('po-monitor-compare-body')) {
+                var compareResizeObserver = new ResizeObserver(function() {
+                    scheduleCompareTableAdjust();
+                });
+                compareResizeObserver.observe(document.getElementById('po-monitor-compare-body'));
+            }
 
             function applyDetailFilters($modal) {
                 var activeRegional = String($modal.data('active-regional-key') || '');
@@ -3834,6 +3984,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         }, 80);
                     }
                 }
+
+                scheduleCompareTableAdjust();
             }
 
             $('#po_compare_data_only, #po_compare_week_mode')
