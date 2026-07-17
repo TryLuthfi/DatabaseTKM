@@ -262,8 +262,8 @@ class MPO_Monitor extends CI_Model
             p.total_value,
             COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
             COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc JOIN tb_po_term t ON tc.id_term = t.id_term WHERE t.id_po = p.id_po), 0) AS total_invoiced,
-            COALESCE((SELECT SUM(COALESCE(NULLIF(t.plan_amount, 0), t.value)) FROM tb_po_term t WHERE t.id_po = p.id_po AND t.target_status = 'TARGET_WEEK'), 0) AS total_target_week,
-            COALESCE((SELECT SUM(COALESCE(NULLIF(t.plan_amount, 0), t.value)) FROM tb_po_term t WHERE t.id_po = p.id_po AND t.target_status = 'CARRY_OVER'), 0) AS total_carry_over
+            COALESCE((SELECT SUM(COALESCE(NULLIF(t.plan_amount, 0), t.value)) FROM tb_po_term t WHERE t.id_po = p.id_po AND CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci), 0) AS total_target_week,
+            COALESCE((SELECT SUM(COALESCE(NULLIF(t.plan_amount, 0), t.value)) FROM tb_po_term t WHERE t.id_po = p.id_po AND CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci), 0) AS total_carry_over
         FROM tb_po p
         LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
         LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
@@ -686,7 +686,7 @@ class MPO_Monitor extends CI_Model
                     COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount
                 FROM tb_po_term_allocation a
                 JOIN tb_po_term t ON t.id_term = a.id_term
-                WHERE a.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 UNION ALL
                 SELECT
                     t.target_year,
@@ -696,7 +696,7 @@ class MPO_Monitor extends CI_Model
                     t.term_index,
                     COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
                 FROM tb_po_term t
-                WHERE t.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND NOT EXISTS (
                         SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
                     )
@@ -709,7 +709,7 @@ class MPO_Monitor extends CI_Model
                     pl.term_index,
                     pl.plan_amount AS amount
                 FROM tb_po_target_pipeline pl
-                WHERE pl.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
             ) x
             GROUP BY target_year, target_week, target_week_start, target_week_end, term_index
             ORDER BY target_year ASC, target_week ASC, term_index ASC")->result_array();
@@ -1037,7 +1037,7 @@ class MPO_Monitor extends CI_Model
         $rows = $this->db->query("SELECT
                 COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
                 SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 THEN tc.invoice_amount ELSE 0 END) AS manual_done_2026,
-                SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 AND t.target_status = 'TARGET_WEEK' THEN tc.invoice_amount ELSE 0 END) AS manual_target_week_2026
+                SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 AND CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci THEN tc.invoice_amount ELSE 0 END) AS manual_target_week_2026
             FROM tb_po_term_claim tc
             JOIN tb_po_term t ON t.id_term = tc.id_term
             JOIN tb_po p ON p.id_po = t.id_po
@@ -1167,7 +1167,7 @@ class MPO_Monitor extends CI_Model
                 JOIN tb_po p ON p.id_po = t.id_po
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
                 LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
-                WHERE a.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 UNION ALL
                 SELECT
                     CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
@@ -1180,7 +1180,7 @@ class MPO_Monitor extends CI_Model
                 JOIN tb_po p ON p.id_po = t.id_po
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
                 LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
-                WHERE t.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND NOT EXISTS (
                         SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
                     )
@@ -1193,7 +1193,7 @@ class MPO_Monitor extends CI_Model
                     pl.target_week_end,
                     pl.plan_amount AS amount
                 FROM tb_po_target_pipeline pl
-                WHERE pl.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
             ) x
             GROUP BY nama_bowheer, target_year, target_week, target_week_start, target_week_end
             ORDER BY target_year ASC, target_week ASC, nama_bowheer ASC")->result_array();
@@ -1216,7 +1216,7 @@ class MPO_Monitor extends CI_Model
                 JOIN tb_po p ON p.id_po = t.id_po
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
                 LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
-                WHERE a.target_status = 'CARRY_OVER'
+                WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 UNION ALL
                 SELECT
                     CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
@@ -1226,7 +1226,7 @@ class MPO_Monitor extends CI_Model
                 JOIN tb_po p ON p.id_po = t.id_po
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
                 LEFT JOIN tb_master_bowheer_bilco b ON b.id_bowheer = p.id_bowheer
-                WHERE t.target_status = 'CARRY_OVER'
+                WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND NOT EXISTS (
                         SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
                     )
@@ -1236,7 +1236,7 @@ class MPO_Monitor extends CI_Model
                     pl.term_index,
                     pl.plan_amount AS amount
                 FROM tb_po_target_pipeline pl
-                WHERE pl.target_status = 'CARRY_OVER'
+                WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci
             ) x
             GROUP BY nama_bowheer, term_index
             ORDER BY nama_bowheer ASC, term_index ASC")->result_array();
@@ -1285,7 +1285,7 @@ class MPO_Monitor extends CI_Model
             FROM tb_po_term_allocation a
             JOIN tb_po_term t ON t.id_term = a.id_term
             JOIN tb_po p ON p.id_po = t.id_po
-            WHERE a.target_status = 'TARGET_WEEK'
+            WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND a.target_week_start IS NOT NULL
                 AND a.target_week_end IS NOT NULL
             UNION ALL
@@ -1296,7 +1296,7 @@ class MPO_Monitor extends CI_Model
                 COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
             FROM tb_po_term t
             JOIN tb_po p ON p.id_po = t.id_po
-            WHERE t.target_status = 'TARGET_WEEK'
+            WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND t.target_week_start IS NOT NULL
                 AND t.target_week_end IS NOT NULL
                 AND NOT EXISTS (
@@ -1309,7 +1309,7 @@ class MPO_Monitor extends CI_Model
                 pl.target_week_end,
                 pl.plan_amount AS amount
             FROM tb_po_target_pipeline pl
-            WHERE pl.target_status = 'TARGET_WEEK'
+            WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND pl.target_week_start IS NOT NULL
                 AND pl.target_week_end IS NOT NULL")->result_array();
 
@@ -1426,15 +1426,15 @@ class MPO_Monitor extends CI_Model
             FROM (
                 SELECT
                     p.id_bowheer,
-                    COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
-                    COALESCE(bp.pic, '') AS pic,
-                    'TARGET' AS row_type,
-                    p.po_number AS po_number,
-                    COALESCE(NULLIF(a.no_po_sub, ''), '-') AS sub_po,
-                    COALESCE(NULLIF(a.detail_po, ''), '-') AS detail_po,
-                    COALESCE(NULLIF(a.remarks, ''), '-') AS remarks,
-                    COALESCE(NULLIF(a.regional, ''), '-') AS regional,
-                    COALESCE(NULLIF(a.kota_po, ''), '-') AS area,
+                    CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS project,
+                    CONVERT(COALESCE(bp.pic, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS pic,
+                    CONVERT('TARGET' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS row_type,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS sub_po,
+                    CONVERT(COALESCE(NULLIF(a.detail_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CONVERT(COALESCE(NULLIF(a.remarks, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                    CONVERT(COALESCE(NULLIF(a.regional, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                    CONVERT(COALESCE(NULLIF(a.kota_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS area,
                     a.target_week_start AS period_start,
                     a.target_week_end AS period_end,
                     COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS target_amount,
@@ -1443,21 +1443,21 @@ class MPO_Monitor extends CI_Model
                 JOIN tb_po_term t ON t.id_term = a.id_term
                 JOIN tb_po p ON p.id_po = t.id_po
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
-                WHERE a.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND a.target_week_start IS NOT NULL
                     AND a.target_week_end IS NOT NULL
                 UNION ALL
                 SELECT
                     p.id_bowheer,
-                    COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
-                    COALESCE(bp.pic, '') AS pic,
-                    'TARGET' AS row_type,
-                    p.po_number AS po_number,
-                    '-' AS sub_po,
-                    '-' AS detail_po,
-                    '-' AS remarks,
-                    '-' AS regional,
-                    '-' AS area,
+                    CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS project,
+                    CONVERT(COALESCE(bp.pic, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS pic,
+                    CONVERT('TARGET' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS row_type,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS sub_po,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS area,
                     t.target_week_start AS period_start,
                     t.target_week_end AS period_end,
                     COALESCE(NULLIF(t.plan_amount, 0), t.value) AS target_amount,
@@ -1465,7 +1465,7 @@ class MPO_Monitor extends CI_Model
                 FROM tb_po_term t
                 JOIN tb_po p ON p.id_po = t.id_po
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
-                WHERE t.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND t.target_week_start IS NOT NULL
                     AND t.target_week_end IS NOT NULL
                     AND NOT EXISTS (
@@ -1474,22 +1474,22 @@ class MPO_Monitor extends CI_Model
                 UNION ALL
                 SELECT
                     pl.id_bowheer,
-                    COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
-                    COALESCE(bp.pic, '') AS pic,
-                    'TARGET' AS row_type,
-                    '-' AS po_number,
-                    '-' AS sub_po,
-                    COALESCE(NULLIF(pl.detail_po, ''), '-') AS detail_po,
-                    COALESCE(NULLIF(pl.remarks, ''), '-') AS remarks,
-                    COALESCE(NULLIF(pl.regional, ''), '-') AS regional,
-                    COALESCE(NULLIF(pl.kota_po, ''), '-') AS area,
+                    CONVERT(COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS project,
+                    CONVERT(COALESCE(bp.pic, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS pic,
+                    CONVERT('TARGET' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS row_type,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT('-' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS sub_po,
+                    CONVERT(COALESCE(NULLIF(pl.detail_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CONVERT(COALESCE(NULLIF(pl.remarks, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                    CONVERT(COALESCE(NULLIF(pl.regional, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                    CONVERT(COALESCE(NULLIF(pl.kota_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS area,
                     pl.target_week_start AS period_start,
                     pl.target_week_end AS period_end,
                     COALESCE(pl.ny_po_2026_amount, pl.plan_amount, 0) AS target_amount,
                     0 AS achieved_amount
                 FROM tb_po_target_pipeline pl
                 LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = pl.id_bowheer
-                WHERE pl.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND pl.target_week_start IS NOT NULL
                     AND pl.target_week_end IS NOT NULL
             ) x
@@ -1498,15 +1498,15 @@ class MPO_Monitor extends CI_Model
 
         $claimRows = $this->db->query("SELECT
                 p.id_bowheer,
-                COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS project,
-                COALESCE(bp.pic, '') AS pic,
-                'ACHIEVED' AS row_type,
-                p.po_number AS po_number,
-                COALESCE(NULLIF(a.no_po_sub, ''), '-') AS sub_po,
-                COALESCE(NULLIF(a.detail_po, ''), '-') AS detail_po,
-                COALESCE(NULLIF(a.remarks, ''), '-') AS remarks,
-                COALESCE(NULLIF(a.regional, ''), NULLIF(aa.regional, ''), '-') AS regional,
-                COALESCE(NULLIF(a.kota_po, ''), NULLIF(aa.kota_po, ''), '-') AS area,
+                CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS project,
+                CONVERT(COALESCE(bp.pic, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS pic,
+                CONVERT('ACHIEVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS row_type,
+                CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS sub_po,
+                CONVERT(COALESCE(NULLIF(a.detail_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                CONVERT(COALESCE(NULLIF(a.remarks, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                CONVERT(COALESCE(NULLIF(a.regional, ''), NULLIF(aa.regional, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                CONVERT(COALESCE(NULLIF(a.kota_po, ''), NULLIF(aa.kota_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS area,
                 tc.invoice_date AS period_start,
                 tc.invoice_date AS period_end,
                 0 AS target_amount,
@@ -1649,7 +1649,7 @@ class MPO_Monitor extends CI_Model
                     FROM tb_po_term_claim
                     GROUP BY id_term
                 ) tc_term ON tc_term.id_term = t.id_term
-                WHERE a.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND p.id_bowheer = ?
                     AND a.target_week_start IS NOT NULL
                     AND a.target_week_end IS NOT NULL
@@ -1678,7 +1678,7 @@ class MPO_Monitor extends CI_Model
                     FROM tb_po_term_claim
                     GROUP BY id_term
                 ) tc ON tc.id_term = t.id_term
-                WHERE t.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND p.id_bowheer = ?
                     AND t.target_week_start IS NOT NULL
                     AND t.target_week_end IS NOT NULL
@@ -1704,7 +1704,7 @@ class MPO_Monitor extends CI_Model
                     CAST(NULL AS DATE) AS claim_invoice_date,
                     CONVERT('NY PO Target' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_target_pipeline pl
-                WHERE pl.target_status = 'TARGET_WEEK'
+                WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     AND pl.id_bowheer = ?
                     AND pl.target_week_start IS NOT NULL
                     AND pl.target_week_end IS NOT NULL
@@ -1790,13 +1790,13 @@ class MPO_Monitor extends CI_Model
 
         $targetRows = $this->db->query("SELECT a.target_week_start, a.target_week_end
             FROM tb_po_term_allocation a
-            WHERE a.target_status = 'TARGET_WEEK'
+            WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND a.target_week_start IS NOT NULL
                 AND a.target_week_end IS NOT NULL
             UNION ALL
             SELECT t.target_week_start, t.target_week_end
             FROM tb_po_term t
-            WHERE t.target_status = 'TARGET_WEEK'
+            WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND t.target_week_start IS NOT NULL
                 AND t.target_week_end IS NOT NULL
                 AND NOT EXISTS (
@@ -1805,7 +1805,7 @@ class MPO_Monitor extends CI_Model
             UNION ALL
             SELECT pl.target_week_start, pl.target_week_end
             FROM tb_po_target_pipeline pl
-            WHERE pl.target_status = 'TARGET_WEEK'
+            WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND pl.target_week_start IS NOT NULL
                 AND pl.target_week_end IS NOT NULL")->result_array();
 
@@ -2347,7 +2347,11 @@ class MPO_Monitor extends CI_Model
             JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
             WHERE t.invoice_date IS NOT NULL
                 AND DATE(t.invoice_date) >= ?
-                AND UPPER(TRIM(COALESCE(t.status_termin, ''))) IN ('READY BILLING', 'BILLED', 'PAID')
+                AND CONVERT(UPPER(TRIM(COALESCE(t.status_termin, ''))) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (
+                    CONVERT('READY BILLING' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
+                    CONVERT('BILLED' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
+                    CONVERT('PAID' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                )
             ORDER BY t.invoice_date ASC, p.po_number ASC, t.termin_no ASC", [$cutoffDate])->result_array();
 
         $summary = [
