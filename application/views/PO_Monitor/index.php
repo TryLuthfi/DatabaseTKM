@@ -4,7 +4,6 @@ $error_log = $this->session->flashdata('error_log');
 $isLocalAccess = $isLocalAccess ?? false;
 $canManagePoImport = !empty($canManagePoImport);
 $batchInvoiceRows = is_array($batchInvoiceRows ?? null) ? $batchInvoiceRows : [];
-$breakdownRows = is_array($breakdownRows ?? null) ? $breakdownRows : [];
 $breakdownFilterOptions = is_array($breakdownFilterOptions ?? null) ? $breakdownFilterOptions : [
     'projects' => [],
     'pics' => [],
@@ -3210,25 +3209,22 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 .insertAfter($('#table_po_dashboard_excel').closest('.po-monitor-panel'))
                 .show();
 
-            var poBreakdownRows = <?php echo json_encode($breakdownRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
             var poBreakdownState = {
                 mode: 'project',
-                rows: {
-                    project: [],
-                    pic: [],
-                    regional: [],
-                    area: [],
-                    period: [],
-                    date: []
-                }
+                tables: {}
+            };
+            var poBreakdownUrls = {
+                datatable: '<?= site_url('PO_Monitor/breakdown_datatable') ?>',
+                options: '<?= site_url('PO_Monitor/breakdown_options') ?>',
+                detail: '<?= site_url('PO_Monitor/breakdown_detail') ?>'
             };
             var poBreakdownFilterConfig = [
-                { id: 'project', selector: '#po_breakdown_filter_project', field: 'project' },
-                { id: 'pic', selector: '#po_breakdown_filter_pic', field: 'pic' },
-                { id: 'regional', selector: '#po_breakdown_filter_regional', field: 'regional' },
-                { id: 'area', selector: '#po_breakdown_filter_area', field: 'area' },
-                { id: 'month', selector: '#po_breakdown_filter_month', field: 'month', labelField: 'month_label' },
-                { id: 'week', selector: '#po_breakdown_filter_week', field: 'week' }
+                { id: 'project', selector: '#po_breakdown_filter_project', optionKey: 'projects' },
+                { id: 'pic', selector: '#po_breakdown_filter_pic', optionKey: 'pics' },
+                { id: 'regional', selector: '#po_breakdown_filter_regional', optionKey: 'regionals' },
+                { id: 'area', selector: '#po_breakdown_filter_area', optionKey: 'areas' },
+                { id: 'month', selector: '#po_breakdown_filter_month', optionKey: 'months' },
+                { id: 'week', selector: '#po_breakdown_filter_week', optionKey: 'weeks' }
             ];
 
             function poBreakdownSelectValues(selector) {
@@ -3250,163 +3246,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 };
             }
 
-            function poBreakdownStatus(percent) {
-                percent = Number(percent || 0);
-                if (percent >= 100) {
-                    return { label: 'Tercapai', className: 'po-monitor-sla-pill--aman' };
-                }
-                if (percent >= 80) {
-                    return { label: 'On Track', className: 'po-monitor-sla-pill--aman' };
-                }
-                if (percent >= 50) {
-                    return { label: 'Perlu Dorong', className: 'po-monitor-sla-pill--warning' };
-                }
-                return { label: 'Prioritas', className: 'po-monitor-sla-pill--overdue' };
-            }
-
-            function poBreakdownPercent(target, achieved) {
-                target = Number(target || 0);
-                achieved = Number(achieved || 0);
-                if (target <= 0) {
-                    return achieved > 0 ? 100 : 0;
-                }
-                return (achieved / target) * 100;
-            }
-
-            function poBreakdownMoney(value) {
-                return 'RP. ' + formatLocaleNumber(value);
-            }
-
-            function poBreakdownMatches(row, filters) {
-                if (filters.project.length && filters.project.indexOf(row.project) === -1) return false;
-                if (filters.pic.length && filters.pic.indexOf(row.pic) === -1) return false;
-                if (filters.regional.length && filters.regional.indexOf(row.regional) === -1) return false;
-                if (filters.area.length && filters.area.indexOf(row.area) === -1) return false;
-                if (filters.month.length && filters.month.indexOf(row.month) === -1) return false;
-                if (filters.week.length && filters.week.indexOf(row.week) === -1) return false;
-                if (filters.invoicedOnly && Number(row.achieved || 0) <= 0) return false;
-                return true;
-            }
-
-            function poBreakdownMatchesExcept(row, filters, exceptKey) {
-                var relaxed = $.extend({}, filters);
-                relaxed[exceptKey] = [];
-                return poBreakdownMatches(row, relaxed);
-            }
-
-            function poBreakdownUpdateCascade(event) {
-                var filters = poBreakdownFilters();
-                var activeSelector = event && event.currentTarget ? '#' + event.currentTarget.id : '';
-                poBreakdownFilterConfig.forEach(function(config) {
-                    if (activeSelector && activeSelector === config.selector) {
-                        return;
-                    }
-
-                    var selected = poBreakdownSelectValues(config.selector);
-                    var optionMap = {};
-
-                    poBreakdownRows.forEach(function(row) {
-                        if (!poBreakdownMatchesExcept(row, filters, config.id)) {
-                            return;
-                        }
-
-                        var value = String(row[config.field] || '');
-                        if (!value || value === '-') {
-                            return;
-                        }
-                        optionMap[value] = String(row[config.labelField || config.field] || value);
-                    });
-
-                    var sorted = Object.keys(optionMap).sort(function(a, b) {
-                        return optionMap[a].localeCompare(optionMap[b]);
-                    });
-                    var validSelected = selected.filter(function(value) {
-                        return Object.prototype.hasOwnProperty.call(optionMap, value);
-                    });
-                    var html = sorted.map(function(value) {
-                        return '<option value="' + escapeHtml(value) + '">' + escapeHtml(optionMap[value]) + '</option>';
-                    }).join('');
-
-                    var $select = $(config.selector);
-                    $select.html(html).val(validSelected);
-                    if ($select.data('select2')) {
-                        $select.trigger('change.select2');
-                    }
-                });
-            }
-
-            function poBreakdownGroup(rows, mode) {
-                var groups = {};
-                rows.forEach(function(row) {
-                    var key = '';
-                    var label = '';
-                    var meta = {};
-                    if (mode === 'project') {
-                        key = row.project || '-';
-                        label = key;
-                        meta.pic = row.pic || '-';
-                        meta.idBowheer = row.id_bowheer || 0;
-                    } else if (mode === 'pic') {
-                        key = row.pic || '-';
-                        label = key;
-                    } else if (mode === 'regional') {
-                        key = row.regional || '-';
-                        label = key;
-                    } else if (mode === 'area') {
-                        key = row.area || '-';
-                        label = key;
-                        meta.regional = row.regional || '-';
-                    } else if (mode === 'date') {
-                        key = row.date || row.period_start || '-';
-                        label = row.date_label || row.date || '-';
-                        meta.week = row.week || '-';
-                        meta.month = row.month_label || row.month || '-';
-                        meta.periodStart = row.period_start || '';
-                        meta.periodEnd = row.period_end || '';
-                    } else {
-                        key = (row.month || '-') + '|' + (row.week || '-');
-                        label = row.month_label || row.month || '-';
-                        meta.week = row.week || '-';
-                    }
-
-                    if (!groups[key]) {
-                        groups[key] = {
-                            key: key,
-                            label: label,
-                            target: 0,
-                            achieved: 0,
-                            meta: meta,
-                            projectCount: {},
-                            areaCount: {}
-                        };
-                    }
-                    groups[key].target += Number(row.target || 0);
-                    groups[key].achieved += Number(row.achieved || 0);
-                    if (row.project) groups[key].projectCount[row.project] = true;
-                    if (row.area && row.area !== '-') groups[key].areaCount[row.area] = true;
-                });
-
-                return Object.keys(groups).map(function(key) {
-                    var item = groups[key];
-                    item.outstanding = Math.max(item.target - item.achieved, 0);
-                    item.percent = poBreakdownPercent(item.target, item.achieved);
-                    item.totalProject = Object.keys(item.projectCount).length;
-                    item.totalArea = Object.keys(item.areaCount).length;
-                    return item;
-                }).sort(function(a, b) {
-                    if (mode === 'date') {
-                        return String(a.key).localeCompare(String(b.key));
-                    }
-                    return b.target - a.target || String(a.label).localeCompare(String(b.label));
-                });
-            }
-
-            function poBreakdownRowMatchesSearch(row, filters, mode) {
-                if (!filters.search) return true;
-                var haystack = [row.label, row.meta.pic, row.meta.regional, row.meta.month, row.meta.week, row.target, row.achieved, row.outstanding].join(' ').toLowerCase();
-                return haystack.indexOf(filters.search) !== -1;
-            }
-
             function poBreakdownColumns(mode) {
                 if (mode === 'project') {
                     return ['No', 'Project', 'PIC', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Status', 'Detail'];
@@ -3426,11 +3265,21 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 return ['No', 'Bulan', 'Week', 'Target', 'Achieved', 'Outstanding', 'Achieved %', 'Project', 'Area', 'Status', 'Detail'];
             }
 
-            function poBreakdownDetailButton(mode, key) {
-                return '<button type="button" class="po-monitor-list-detail-btn js-po-breakdown-detail" title="Detail" data-breakdown-mode="' + escapeHtml(mode) + '" data-breakdown-key="' + escapeHtml(key) + '"><i class="fas fa-eye"></i></button>';
+            function poBreakdownRequestData(extra) {
+                var filters = poBreakdownFilters();
+                return $.extend({
+                    project: filters.project,
+                    pic: filters.pic,
+                    regional: filters.regional,
+                    area: filters.area,
+                    month: filters.month,
+                    week: filters.week,
+                    breakdown_search: filters.search,
+                    invoiced_only: filters.invoicedOnly ? 1 : 0
+                }, extra || {});
             }
 
-            function poBreakdownRenderTable(mode, rows, filters) {
+            function poBreakdownEnsureHeader(mode) {
                 var $table = $('.po-breakdown-table[data-breakdown-table="' + mode + '"]');
                 if (!$table.length) return;
 
@@ -3438,159 +3287,138 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $table.find('thead').html('<tr>' + columns.map(function(column) {
                     return '<th>' + escapeHtml(column) + '</th>';
                 }).join('') + '</tr>');
+            }
 
-                var visibleRows = rows.filter(function(row) {
-                    return poBreakdownRowMatchesSearch(row, filters, mode);
-                });
-                var totalRows = visibleRows.length;
-                if (filters.limit > 0) {
-                    visibleRows = visibleRows.slice(0, filters.limit);
-                }
-
-                var body = visibleRows.map(function(row, index) {
-                    var status = poBreakdownStatus(row.percent);
-                    var progress = '<div class="po-breakdown-progress"><div class="po-breakdown-progress__track"><div class="po-breakdown-progress__bar" style="width:' + Math.min(row.percent, 100).toFixed(1) + '%"></div></div><span class="po-breakdown-progress__text">' + row.percent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</span></div>';
-                    var statusPill = '<span class="po-monitor-sla-pill ' + status.className + '">' + escapeHtml(status.label) + '</span>';
-                    var detail = poBreakdownDetailButton(mode, row.key);
-
-                    if (mode === 'project') {
-                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.meta.pic || '-') + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
-                    }
-                    if (mode === 'pic' || mode === 'regional') {
-                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
-                    }
-                    if (mode === 'area') {
-                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.meta.regional || '-') + '</td><td>' + escapeHtml(row.label) + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
-                    }
-                    if (mode === 'date') {
-                        return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.meta.month || '-') + '</td><td>' + escapeHtml(row.meta.week || '-') + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + formatLocaleNumber(row.totalProject) + '</td><td>' + formatLocaleNumber(row.totalArea) + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
-                    }
-                    return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(row.label) + '</td><td>' + escapeHtml(row.meta.week || '-') + '</td><td>' + poBreakdownMoney(row.target) + '</td><td>' + poBreakdownMoney(row.achieved) + '</td><td>' + poBreakdownMoney(row.outstanding) + '</td><td>' + progress + '</td><td>' + formatLocaleNumber(row.totalProject) + '</td><td>' + formatLocaleNumber(row.totalArea) + '</td><td>' + statusPill + '</td><td>' + detail + '</td></tr>';
-                }).join('');
-
-                if (!body) {
-                    body = '<tr><td colspan="' + columns.length + '" class="po-breakdown-empty">Tidak ada data.</td></tr>';
-                }
-                $table.find('tbody').html(body);
-
-                var totalTarget = visibleRows.reduce(function(sum, row) { return sum + Number(row.target || 0); }, 0);
-                var totalAchieved = visibleRows.reduce(function(sum, row) { return sum + Number(row.achieved || 0); }, 0);
-                var totalOutstanding = Math.max(totalTarget - totalAchieved, 0);
-                var totalPercent = poBreakdownPercent(totalTarget, totalAchieved);
-                var info = totalRows > visibleRows.length ? ' <span class="text-muted font-weight-normal">(menampilkan ' + visibleRows.length + ' dari ' + totalRows + ')</span>' : '';
-
+            function poBreakdownFooter(mode, totals) {
+                totals = totals || { label: 'Total', target: 'RP. 0', achieved: 'RP. 0', outstanding: 'RP. 0', percent: '0,0 %' };
                 if (mode === 'project') {
-                    $table.find('tfoot').html('<tr><th colspan="3">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th></tr>');
-                } else if (mode === 'area') {
-                    $table.find('tfoot').html('<tr><th colspan="3">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th></tr>');
-                } else if (mode === 'period') {
-                    $table.find('tfoot').html('<tr><th colspan="3">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th><th></th><th></th></tr>');
-                } else if (mode === 'date') {
-                    $table.find('tfoot').html('<tr><th colspan="4">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th><th></th><th></th></tr>');
-                } else {
-                    $table.find('tfoot').html('<tr><th colspan="2">Total' + info + '</th><th>' + poBreakdownMoney(totalTarget) + '</th><th>' + poBreakdownMoney(totalAchieved) + '</th><th>' + poBreakdownMoney(totalOutstanding) + '</th><th>' + totalPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' %</th><th></th><th></th></tr>');
+                    return '<tr><th colspan="3">' + totals.label + '</th><th>' + totals.target + '</th><th>' + totals.achieved + '</th><th>' + totals.outstanding + '</th><th>' + totals.percent + '</th><th></th><th></th></tr>';
+                }
+                if (mode === 'area') {
+                    return '<tr><th colspan="3">' + totals.label + '</th><th>' + totals.target + '</th><th>' + totals.achieved + '</th><th>' + totals.outstanding + '</th><th>' + totals.percent + '</th><th></th><th></th></tr>';
+                }
+                if (mode === 'period') {
+                    return '<tr><th colspan="3">' + totals.label + '</th><th>' + totals.target + '</th><th>' + totals.achieved + '</th><th>' + totals.outstanding + '</th><th>' + totals.percent + '</th><th></th><th></th><th></th><th></th></tr>';
+                }
+                if (mode === 'date') {
+                    return '<tr><th colspan="4">' + totals.label + '</th><th>' + totals.target + '</th><th>' + totals.achieved + '</th><th>' + totals.outstanding + '</th><th>' + totals.percent + '</th><th></th><th></th><th></th><th></th></tr>';
+                }
+                return '<tr><th colspan="2">' + totals.label + '</th><th>' + totals.target + '</th><th>' + totals.achieved + '</th><th>' + totals.outstanding + '</th><th>' + totals.percent + '</th><th></th><th></th></tr>';
+            }
+
+            function poBreakdownTable(mode) {
+                if (poBreakdownState.tables[mode]) {
+                    return poBreakdownState.tables[mode];
+                }
+
+                poBreakdownEnsureHeader(mode);
+                var selector = '.po-breakdown-table[data-breakdown-table="' + mode + '"]';
+                var table = $(selector).DataTable({
+                    processing: true,
+                    serverSide: true,
+                    searching: false,
+                    ordering: false,
+                    lengthChange: false,
+                    autoWidth: false,
+                    pageLength: poBreakdownFilters().limit,
+                    ajax: {
+                        url: poBreakdownUrls.datatable,
+                        type: 'POST',
+                        data: function(data) {
+                            return $.extend(data, poBreakdownRequestData({ mode: mode }));
+                        }
+                    },
+                    language: {
+                        emptyTable: 'Tidak ada data.',
+                        processing: 'Memuat breakdown...',
+                        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                        infoEmpty: 'Showing 0 to 0 of 0 entries',
+                        paginate: {
+                            previous: 'Previous',
+                            next: 'Next'
+                        }
+                    },
+                    drawCallback: function() {
+                        var json = this.api().ajax.json() || {};
+                        $(selector).find('tfoot').html(poBreakdownFooter(mode, json.totals));
+                    }
+                });
+
+                poBreakdownState.tables[mode] = table;
+                return table;
+            }
+
+            function poBreakdownReload(activeOnly) {
+                var limit = poBreakdownFilters().limit;
+                if (activeOnly) {
+                    poBreakdownTable(poBreakdownState.mode).page.len(limit).draw();
+                    return;
+                }
+
+                Object.keys(poBreakdownState.tables).forEach(function(mode) {
+                    poBreakdownState.tables[mode].page.len(limit).ajax.reload(null, true);
+                });
+                if (!poBreakdownState.tables[poBreakdownState.mode]) {
+                    poBreakdownTable(poBreakdownState.mode);
                 }
             }
 
-            function poBreakdownRender() {
-                poBreakdownUpdateCascade();
-                var filters = poBreakdownFilters();
-                var filtered = poBreakdownRows.filter(function(row) {
-                    return poBreakdownMatches(row, filters);
-                });
-
-                ['project', 'pic', 'regional', 'area', 'period', 'date'].forEach(function(mode) {
-                    poBreakdownState.rows[mode] = poBreakdownGroup(filtered, mode);
-                    poBreakdownRenderTable(mode, poBreakdownState.rows[mode], filters);
-                });
-            }
-
-            function poBreakdownRawRowMatchesGroup(row, mode, key) {
-                key = String(key || '');
-                if (mode === 'project') return String(row.project || '-') === key;
-                if (mode === 'pic') return String(row.pic || '-') === key;
-                if (mode === 'regional') return String(row.regional || '-') === key;
-                if (mode === 'area') return String(row.area || '-') === key;
-                if (mode === 'date') return String(row.date || row.period_start || '-') === key;
-                return String((row.month || '-') + '|' + (row.week || '-')) === key;
-            }
-
-            function poBreakdownModeLabel(mode) {
-                var labels = {
-                    project: 'Project',
-                    pic: 'PIC',
-                    regional: 'Regional',
-                    area: 'Kota / Area',
-                    period: 'Periode',
-                    date: 'Tanggal'
-                };
-                return labels[mode] || 'Breakdown';
-            }
-
-            function poBreakdownGroupLabel(mode, key) {
-                var rows = poBreakdownState.rows[mode] || [];
-                var found = null;
-                rows.some(function(row) {
-                    if (String(row.key) === String(key)) {
-                        found = row;
+            function poBreakdownUpdateOptions(activeSelector) {
+                var except = '';
+                poBreakdownFilterConfig.some(function(config) {
+                    if (config.selector === activeSelector) {
+                        except = config.id;
                         return true;
                     }
                     return false;
                 });
-                return found ? found.label : key;
+
+                $.ajax({
+                    url: poBreakdownUrls.options,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: poBreakdownRequestData({ except: except }),
+                    success: function(response) {
+                        var options = response && response.options ? response.options : {};
+                        poBreakdownFilterConfig.forEach(function(config) {
+                            if (activeSelector && config.selector === activeSelector) {
+                                return;
+                            }
+                            var $select = $(config.selector);
+                            var selected = poBreakdownSelectValues(config.selector);
+                            var validValues = {};
+                            var html = (options[config.optionKey] || []).map(function(option) {
+                                validValues[String(option.value)] = true;
+                                return '<option value="' + escapeHtml(option.value) + '">' + escapeHtml(option.label) + '</option>';
+                            }).join('');
+                            var validSelected = selected.filter(function(value) {
+                                return validValues[String(value)];
+                            });
+                            $select.html(html).val(validSelected).trigger('change.select2');
+                        });
+                    }
+                });
             }
 
             function poBreakdownRenderDetail(mode, key) {
-                var filters = poBreakdownFilters();
-                var rows = poBreakdownRows.filter(function(row) {
-                    return poBreakdownMatches(row, filters) && poBreakdownRawRowMatchesGroup(row, mode, key);
-                });
-                var totalTarget = rows.reduce(function(sum, row) { return sum + Number(row.target || 0); }, 0);
-                var totalAchieved = rows.reduce(function(sum, row) { return sum + Number(row.achieved || 0); }, 0);
-                var totalOutstanding = Math.max(totalTarget - totalAchieved, 0);
-                var title = poBreakdownModeLabel(mode) + ' - ' + poBreakdownGroupLabel(mode, key);
                 var $modal = $('#po_breakdown_detail_modal');
-                var body = '<div class="po-monitor-modal-stat-grid mb-3">'
-                    + '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Target</span><span class="po-monitor-modal-stat__value">' + poBreakdownMoney(totalTarget) + '</span></div>'
-                    + '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Achieved</span><span class="po-monitor-modal-stat__value">' + poBreakdownMoney(totalAchieved) + '</span></div>'
-                    + '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Outstanding</span><span class="po-monitor-modal-stat__value">' + poBreakdownMoney(totalOutstanding) + '</span></div>'
-                    + '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Rows</span><span class="po-monitor-modal-stat__value">' + formatLocaleNumber(rows.length) + '</span></div>'
-                    + '</div>';
-
-                body += '<div class="table-responsive"><table class="table table-sm po-monitor-detail-table mb-0"><thead><tr>'
-                    + '<th>No</th><th>Type</th><th>Project</th><th>PIC</th><th>PO</th><th>Sub PO</th><th>Regional</th><th>Area</th><th>Periode / Tanggal</th><th>Detail</th><th>Remarks</th><th class="text-right">Amount</th>'
-                    + '</tr></thead><tbody>';
-
-                if (!rows.length) {
-                    body += '<tr><td colspan="12" class="text-center text-muted">Tidak ada detail.</td></tr>';
-                } else {
-                    rows.forEach(function(row, index) {
-                        var isAchieved = Number(row.achieved || 0) > 0;
-                        var type = isAchieved ? 'Achieved' : 'Target';
-                        var amount = isAchieved ? Number(row.achieved || 0) : Number(row.target || 0);
-                        var period = row.date_label || row.month_label || row.period_start || '-';
-                        var typeClass = isAchieved ? 'badge-success' : 'badge-primary';
-                        body += '<tr>'
-                            + '<td>' + (index + 1) + '</td>'
-                            + '<td><span class="badge ' + typeClass + '">' + type + '</span></td>'
-                            + '<td>' + escapeHtml(row.project || '-') + '</td>'
-                            + '<td>' + escapeHtml(row.pic || '-') + '</td>'
-                            + '<td>' + escapeHtml(row.po_number || '-') + '</td>'
-                            + '<td>' + escapeHtml(row.sub_po || '-') + '</td>'
-                            + '<td>' + escapeHtml(row.regional || '-') + '</td>'
-                            + '<td>' + escapeHtml(row.area || '-') + '</td>'
-                            + '<td>' + escapeHtml(period) + '</td>'
-                            + '<td>' + escapeHtml(row.detail_po || '-') + '</td>'
-                            + '<td>' + escapeHtml(row.remarks || '-') + '</td>'
-                            + '<td class="text-right">' + poBreakdownMoney(amount) + '</td>'
-                            + '</tr>';
-                    });
-                }
-
-                body += '</tbody><tfoot><tr><th colspan="11">Total</th><th class="text-right">' + poBreakdownMoney(totalTarget + totalAchieved) + '</th></tr></tfoot></table></div>';
-                $modal.find('.modal-title').html('<span class="po-monitor-modal-eyebrow">Breakdown Detail</span>' + escapeHtml(title));
-                $modal.find('.modal-body').html(body);
+                $modal.find('.modal-title').html('<span class="po-monitor-modal-eyebrow">Breakdown Detail</span>Memuat detail...');
+                $modal.find('.modal-body').html('<div class="text-muted">Memuat detail...</div>');
                 $modal.modal('show');
+
+                $.ajax({
+                    url: poBreakdownUrls.detail,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: poBreakdownRequestData({ mode: mode, key: key }),
+                    success: function(response) {
+                        $modal.find('.modal-title').html(response && response.title ? response.title : '<span class="po-monitor-modal-eyebrow">Breakdown Detail</span>Detail Target Invoice');
+                        $modal.find('.modal-body').html(response && response.html ? response.html : '<div class="alert alert-info mb-0">Tidak ada detail.</div>');
+                    },
+                    error: function() {
+                        $modal.find('.modal-body').html('<div class="alert alert-danger mb-0">Gagal memuat detail breakdown.</div>');
+                    }
+                });
             }
 
             $('.po-breakdown-filter-select').select2({
@@ -3603,7 +3431,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
             });
 
             $('#po_breakdown_apply').off('click.poBreakdown').on('click.poBreakdown', function() {
-                poBreakdownRender();
+                poBreakdownReload(false);
                 $('#po_breakdown_filter_modal').modal('hide');
             });
             $('#po_breakdown_reset').off('click.poBreakdown').on('click.poBreakdown', function() {
@@ -3613,20 +3441,34 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $('#po_breakdown_search').val('');
                 $('#po_breakdown_invoiced_only').prop('checked', false);
                 $('#po_breakdown_limit').val('10');
-                poBreakdownUpdateCascade();
-                poBreakdownRender();
+                poBreakdownUpdateOptions('');
+                poBreakdownReload(false);
             });
-            $('#po_breakdown_filter_project, #po_breakdown_filter_pic, #po_breakdown_filter_regional, #po_breakdown_filter_area, #po_breakdown_filter_month, #po_breakdown_filter_week').off('change.poBreakdown').on('change.poBreakdown', poBreakdownUpdateCascade);
-            $('#po_breakdown_limit, #po_breakdown_invoiced_only').off('change.poBreakdown').on('change.poBreakdown', poBreakdownRender);
-            $('#po_breakdown_search').off('input.poBreakdown').on('input.poBreakdown', poBreakdownRender);
+            $('#po_breakdown_filter_project, #po_breakdown_filter_pic, #po_breakdown_filter_regional, #po_breakdown_filter_area, #po_breakdown_filter_month, #po_breakdown_filter_week').off('change.poBreakdown').on('change.poBreakdown', function(event) {
+                poBreakdownUpdateOptions('#' + event.currentTarget.id);
+            });
+            $('#po_breakdown_limit, #po_breakdown_invoiced_only').off('change.poBreakdown').on('change.poBreakdown', function() {
+                poBreakdownReload(false);
+            });
+            var poBreakdownSearchTimer = null;
+            $('#po_breakdown_search').off('input.poBreakdown').on('input.poBreakdown', function() {
+                window.clearTimeout(poBreakdownSearchTimer);
+                poBreakdownSearchTimer = window.setTimeout(function() {
+                    poBreakdownReload(false);
+                }, 250);
+            });
             $('.po-breakdown-tabs .nav-link').off('shown.bs.tab.poBreakdown').on('shown.bs.tab.poBreakdown', function() {
                 poBreakdownState.mode = $(this).data('breakdown-mode') || 'project';
-                poBreakdownRender();
+                poBreakdownTable(poBreakdownState.mode).columns.adjust().draw(false);
             });
             $(document).off('click.poBreakdownDetail', '.js-po-breakdown-detail').on('click.poBreakdownDetail', '.js-po-breakdown-detail', function() {
                 poBreakdownRenderDetail($(this).data('breakdown-mode'), $(this).data('breakdown-key'));
             });
-            poBreakdownRender();
+            $('#po_breakdown_filter_modal').off('shown.bs.modal.poBreakdown').on('shown.bs.modal.poBreakdown', function() {
+                poBreakdownUpdateOptions('');
+            });
+            poBreakdownUpdateOptions('');
+            poBreakdownTable('project');
 
             $('.js-po-purge-form').off('submit.poPurge').on('submit.poPurge', function(e) {
                 var confirmText = window.prompt('Ketik HAPUS PO untuk menghapus semua data PO Monitor. Data PO_MyRep tidak akan terpengaruh.');

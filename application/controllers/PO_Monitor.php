@@ -19,8 +19,6 @@ class PO_Monitor extends CI_Controller
         $selectedSla = $this->input->get('sla');
         $comparisonFromMonth = $this->input->get('from_month') ?: date('Y-m');
         $comparisonToMonth = $this->input->get('to_month') ?: date('Y-m');
-        $breakdownFromMonth = $this->input->get('from_month') ?: null;
-        $breakdownToMonth = $this->input->get('to_month') ?: null;
 
         if (!is_array($selectedBowheer)) {
             $selectedBowheer = empty($selectedBowheer) ? [] : [$selectedBowheer];
@@ -46,8 +44,14 @@ class PO_Monitor extends CI_Controller
         $data['carryOverSummary'] = $this->MPO_Monitor->getCarryOverSummary();
         $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
         $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'week', false);
-        $data['breakdownRows'] = $this->MPO_Monitor->getBreakdownTargetInvoiceRows($breakdownFromMonth, $breakdownToMonth);
-        $data['breakdownFilterOptions'] = $this->MPO_Monitor->getBreakdownTargetInvoiceFilterOptions($data['breakdownRows']);
+        $data['breakdownFilterOptions'] = [
+            'projects' => [],
+            'pics' => [],
+            'regionals' => [],
+            'areas' => [],
+            'months' => [],
+            'weeks' => []
+        ];
         $data['selectedBowheer'] = $selectedBowheer;
         $data['selectedSla'] = $selectedSla;
         $data['isLocalAccess'] = $this->isLocalAccess();
@@ -600,6 +604,506 @@ class PO_Monitor extends CI_Controller
                 'filteredTotals' => $this->formatDashboardTotals($result['filteredTotals'] ?? []),
                 'data' => $data
             ]));
+    }
+
+    public function breakdown_datatable()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            show_error('Unauthorized', 401);
+            return;
+        }
+
+        $mode = $this->normalizeBreakdownMode($this->input->post('mode'));
+        $draw = (int) ($this->input->post('draw') ?: 0);
+        $start = max(0, (int) ($this->input->post('start') ?: 0));
+        $length = (int) ($this->input->post('length') === null ? 10 : $this->input->post('length'));
+        $filters = $this->collectBreakdownFilters();
+        $search = trim((string) $this->input->post('breakdown_search'));
+
+        $rawRows = $this->getCachedBreakdownRows();
+        $filteredRows = array_values(array_filter($rawRows, function ($row) use ($filters) {
+            return $this->breakdownRawMatchesFilters($row, $filters);
+        }));
+        $groupedRows = $this->groupBreakdownRows($filteredRows, $mode);
+        $recordsTotal = count($groupedRows);
+
+        if ($search !== '') {
+            $groupedRows = array_values(array_filter($groupedRows, function ($row) use ($search) {
+                return $this->breakdownGroupedMatchesSearch($row, $search);
+            }));
+        }
+
+        $recordsFiltered = count($groupedRows);
+        $pageRows = $length < 0 ? $groupedRows : array_slice($groupedRows, $start, $length);
+        $data = [];
+        foreach ($pageRows as $index => $row) {
+            $data[] = $this->formatBreakdownDatatableRow($row, $mode, $start + $index + 1);
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'totals' => $this->formatBreakdownTotals($this->calculateBreakdownTotals($pageRows), $recordsFiltered, count($pageRows)),
+                'data' => $data
+            ]));
+    }
+
+    public function breakdown_options()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            show_error('Unauthorized', 401);
+            return;
+        }
+
+        $filters = $this->collectBreakdownFilters();
+        $except = trim((string) $this->input->post('except'));
+        $rawRows = $this->getCachedBreakdownRows();
+        $options = $this->buildBreakdownFilterOptions($rawRows, $filters, $except);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['status' => true, 'options' => $options]));
+    }
+
+    public function breakdown_detail()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            show_error('Unauthorized', 401);
+            return;
+        }
+
+        $mode = $this->normalizeBreakdownMode($this->input->post('mode'));
+        $key = trim((string) $this->input->post('key'));
+        $filters = $this->collectBreakdownFilters();
+
+        $rawRows = $this->getCachedBreakdownRows();
+        $rows = array_values(array_filter($rawRows, function ($row) use ($filters, $mode, $key) {
+            return $this->breakdownRawMatchesFilters($row, $filters)
+                && $this->breakdownRawMatchesGroup($row, $mode, $key);
+        }));
+
+        $title = '<span class="po-monitor-modal-eyebrow">Breakdown Detail</span>'
+            . htmlspecialchars($this->breakdownModeLabel($mode) . ' - ' . $this->breakdownDetailLabel($rows, $mode, $key));
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'title' => $title,
+                'html' => $this->renderBreakdownDetailHtml($rows)
+            ]));
+    }
+
+    private function getCachedBreakdownRows()
+    {
+        static $rows = null;
+        if ($rows === null) {
+            $rows = $this->MPO_Monitor->getBreakdownTargetInvoiceRows(null, null);
+        }
+
+        return $rows;
+    }
+
+    private function normalizeBreakdownMode($mode)
+    {
+        $mode = trim((string) $mode);
+        return in_array($mode, ['project', 'pic', 'regional', 'area', 'period', 'date'], true) ? $mode : 'project';
+    }
+
+    private function collectBreakdownFilters()
+    {
+        return [
+            'project' => $this->postStringArray('project'),
+            'pic' => $this->postStringArray('pic'),
+            'regional' => $this->postStringArray('regional'),
+            'area' => $this->postStringArray('area'),
+            'month' => $this->postStringArray('month'),
+            'week' => $this->postStringArray('week'),
+            'invoicedOnly' => (bool) $this->input->post('invoiced_only')
+        ];
+    }
+
+    private function postStringArray($key)
+    {
+        $value = $this->input->post($key);
+        if ($value === null || $value === '') {
+            return [];
+        }
+        if (!is_array($value)) {
+            $value = [$value];
+        }
+
+        $result = [];
+        foreach ($value as $item) {
+            $item = trim((string) $item);
+            if ($item !== '' && !in_array($item, $result, true)) {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
+    }
+
+    private function breakdownRawMatchesFilters($row, array $filters, $except = '')
+    {
+        foreach (['project', 'pic', 'regional', 'area', 'month', 'week'] as $field) {
+            if ($except === $field) {
+                continue;
+            }
+            if (!empty($filters[$field]) && !in_array((string) ($row[$field] ?? ''), $filters[$field], true)) {
+                return false;
+            }
+        }
+
+        if ($except !== 'invoicedOnly' && !empty($filters['invoicedOnly']) && (float) ($row['achieved'] ?? 0) <= 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function buildBreakdownFilterOptions(array $rows, array $filters, $except = '')
+    {
+        $config = [
+            'projects' => ['id' => 'project', 'field' => 'project', 'label' => 'project'],
+            'pics' => ['id' => 'pic', 'field' => 'pic', 'label' => 'pic'],
+            'regionals' => ['id' => 'regional', 'field' => 'regional', 'label' => 'regional'],
+            'areas' => ['id' => 'area', 'field' => 'area', 'label' => 'area'],
+            'months' => ['id' => 'month', 'field' => 'month', 'label' => 'month_label'],
+            'weeks' => ['id' => 'week', 'field' => 'week', 'label' => 'week']
+        ];
+        $options = [];
+
+        foreach ($config as $key => $item) {
+            $map = [];
+            foreach ($rows as $row) {
+                if (!$this->breakdownRawMatchesFilters($row, $filters, $item['id'] === $except ? $item['id'] : '')) {
+                    continue;
+                }
+
+                $value = trim((string) ($row[$item['field']] ?? ''));
+                if ($value === '' || $value === '-') {
+                    continue;
+                }
+                $map[$value] = trim((string) ($row[$item['label']] ?? $value)) ?: $value;
+            }
+
+            asort($map, SORT_NATURAL | SORT_FLAG_CASE);
+            $options[$key] = [];
+            foreach ($map as $value => $label) {
+                $options[$key][] = ['value' => $value, 'label' => $label];
+            }
+        }
+
+        return $options;
+    }
+
+    private function groupBreakdownRows(array $rows, $mode)
+    {
+        $groups = [];
+        foreach ($rows as $row) {
+            $meta = [];
+            if ($mode === 'project') {
+                $key = (string) ($row['project'] ?? '-');
+                $label = $key;
+                $meta['pic'] = (string) ($row['pic'] ?? '-');
+            } elseif ($mode === 'pic') {
+                $key = (string) ($row['pic'] ?? '-');
+                $label = $key;
+            } elseif ($mode === 'regional') {
+                $key = (string) ($row['regional'] ?? '-');
+                $label = $key;
+            } elseif ($mode === 'area') {
+                $key = (string) ($row['area'] ?? '-');
+                $label = $key;
+                $meta['regional'] = (string) ($row['regional'] ?? '-');
+            } elseif ($mode === 'date') {
+                $key = (string) (($row['date'] ?? '') ?: ($row['period_start'] ?? '-'));
+                $label = (string) (($row['date_label'] ?? '') ?: $key);
+                $meta['month'] = (string) (($row['month_label'] ?? '') ?: ($row['month'] ?? '-'));
+                $meta['week'] = (string) ($row['week'] ?? '-');
+            } else {
+                $key = (string) (($row['month'] ?? '-') . '|' . ($row['week'] ?? '-'));
+                $label = (string) (($row['month_label'] ?? '') ?: ($row['month'] ?? '-'));
+                $meta['week'] = (string) ($row['week'] ?? '-');
+            }
+
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'target' => 0,
+                    'achieved' => 0,
+                    'meta' => $meta,
+                    'projectCount' => [],
+                    'areaCount' => []
+                ];
+            }
+
+            $groups[$key]['target'] += (float) ($row['target'] ?? 0);
+            $groups[$key]['achieved'] += (float) ($row['achieved'] ?? 0);
+            if (!empty($row['project'])) {
+                $groups[$key]['projectCount'][(string) $row['project']] = true;
+            }
+            if (!empty($row['area']) && $row['area'] !== '-') {
+                $groups[$key]['areaCount'][(string) $row['area']] = true;
+            }
+        }
+
+        $result = [];
+        foreach ($groups as $item) {
+            $item['outstanding'] = max($item['target'] - $item['achieved'], 0);
+            $item['percent'] = $this->breakdownPercent($item['target'], $item['achieved']);
+            $item['totalProject'] = count($item['projectCount']);
+            $item['totalArea'] = count($item['areaCount']);
+            $result[] = $item;
+        }
+
+        usort($result, function ($a, $b) use ($mode) {
+            if ($mode === 'date') {
+                return strcmp((string) $a['key'], (string) $b['key']);
+            }
+            if ((float) $a['target'] === (float) $b['target']) {
+                return strcasecmp((string) $a['label'], (string) $b['label']);
+            }
+            return (float) $a['target'] < (float) $b['target'] ? 1 : -1;
+        });
+
+        return $result;
+    }
+
+    private function breakdownGroupedMatchesSearch($row, $search)
+    {
+        $search = strtolower(trim((string) $search));
+        if ($search === '') {
+            return true;
+        }
+
+        $meta = is_array($row['meta'] ?? null) ? $row['meta'] : [];
+        $haystack = strtolower(implode(' ', [
+            $row['label'] ?? '',
+            $meta['pic'] ?? '',
+            $meta['regional'] ?? '',
+            $meta['month'] ?? '',
+            $meta['week'] ?? '',
+            $row['target'] ?? '',
+            $row['achieved'] ?? '',
+            $row['outstanding'] ?? ''
+        ]));
+
+        return strpos($haystack, $search) !== false;
+    }
+
+    private function formatBreakdownDatatableRow($row, $mode, $number)
+    {
+        $target = (float) ($row['target'] ?? 0);
+        $achieved = (float) ($row['achieved'] ?? 0);
+        $outstanding = (float) ($row['outstanding'] ?? 0);
+        $percent = (float) ($row['percent'] ?? 0);
+        $progress = $this->renderBreakdownProgress($percent);
+        $status = $this->renderBreakdownStatus($percent);
+        $detail = $this->renderBreakdownDetailButton($mode, $row['key'] ?? '');
+        $meta = is_array($row['meta'] ?? null) ? $row['meta'] : [];
+
+        if ($mode === 'project') {
+            return [$number, htmlspecialchars($row['label']), htmlspecialchars($meta['pic'] ?? '-'), $this->breakdownMoney($target), $this->breakdownMoney($achieved), $this->breakdownMoney($outstanding), $progress, $status, $detail];
+        }
+        if ($mode === 'pic' || $mode === 'regional') {
+            return [$number, htmlspecialchars($row['label']), $this->breakdownMoney($target), $this->breakdownMoney($achieved), $this->breakdownMoney($outstanding), $progress, $status, $detail];
+        }
+        if ($mode === 'area') {
+            return [$number, htmlspecialchars($meta['regional'] ?? '-'), htmlspecialchars($row['label']), $this->breakdownMoney($target), $this->breakdownMoney($achieved), $this->breakdownMoney($outstanding), $progress, $status, $detail];
+        }
+        if ($mode === 'date') {
+            return [$number, htmlspecialchars($row['label']), htmlspecialchars($meta['month'] ?? '-'), htmlspecialchars($meta['week'] ?? '-'), $this->breakdownMoney($target), $this->breakdownMoney($achieved), $this->breakdownMoney($outstanding), $progress, number_format((int) ($row['totalProject'] ?? 0), 0, ',', '.'), number_format((int) ($row['totalArea'] ?? 0), 0, ',', '.'), $status, $detail];
+        }
+
+        return [$number, htmlspecialchars($row['label']), htmlspecialchars($meta['week'] ?? '-'), $this->breakdownMoney($target), $this->breakdownMoney($achieved), $this->breakdownMoney($outstanding), $progress, number_format((int) ($row['totalProject'] ?? 0), 0, ',', '.'), number_format((int) ($row['totalArea'] ?? 0), 0, ',', '.'), $status, $detail];
+    }
+
+    private function calculateBreakdownTotals(array $rows)
+    {
+        $target = 0;
+        $achieved = 0;
+        foreach ($rows as $row) {
+            $target += (float) ($row['target'] ?? 0);
+            $achieved += (float) ($row['achieved'] ?? 0);
+        }
+
+        return [
+            'target' => $target,
+            'achieved' => $achieved,
+            'outstanding' => max($target - $achieved, 0),
+            'percent' => $this->breakdownPercent($target, $achieved)
+        ];
+    }
+
+    private function formatBreakdownTotals(array $totals, $recordsFiltered, $shown)
+    {
+        $info = $recordsFiltered > $shown ? ' <span class="text-muted font-weight-normal">(menampilkan ' . number_format($shown, 0, ',', '.') . ' dari ' . number_format($recordsFiltered, 0, ',', '.') . ')</span>' : '';
+        return [
+            'label' => 'Total' . $info,
+            'target' => $this->breakdownMoney($totals['target'] ?? 0),
+            'achieved' => $this->breakdownMoney($totals['achieved'] ?? 0),
+            'outstanding' => $this->breakdownMoney($totals['outstanding'] ?? 0),
+            'percent' => number_format((float) ($totals['percent'] ?? 0), 1, ',', '.') . ' %'
+        ];
+    }
+
+    private function breakdownPercent($target, $achieved)
+    {
+        $target = (float) $target;
+        $achieved = (float) $achieved;
+        if ($target <= 0) {
+            return $achieved > 0 ? 100 : 0;
+        }
+
+        return ($achieved / $target) * 100;
+    }
+
+    private function breakdownMoney($value)
+    {
+        return 'RP. ' . number_format((float) $value, 0, ',', '.');
+    }
+
+    private function renderBreakdownProgress($percent)
+    {
+        $width = min(max((float) $percent, 0), 100);
+        return '<div class="po-breakdown-progress"><div class="po-breakdown-progress__track"><div class="po-breakdown-progress__bar" style="width:' . number_format($width, 1, '.', '') . '%"></div></div><span class="po-breakdown-progress__text">' . number_format((float) $percent, 1, ',', '.') . ' %</span></div>';
+    }
+
+    private function renderBreakdownStatus($percent)
+    {
+        $percent = (float) $percent;
+        if ($percent >= 100) {
+            $label = 'Tercapai';
+            $className = 'po-monitor-sla-pill--aman';
+        } elseif ($percent >= 80) {
+            $label = 'On Track';
+            $className = 'po-monitor-sla-pill--aman';
+        } elseif ($percent >= 50) {
+            $label = 'Perlu Dorong';
+            $className = 'po-monitor-sla-pill--warning';
+        } else {
+            $label = 'Prioritas';
+            $className = 'po-monitor-sla-pill--overdue';
+        }
+
+        return '<span class="po-monitor-sla-pill ' . $className . '">' . htmlspecialchars($label) . '</span>';
+    }
+
+    private function renderBreakdownDetailButton($mode, $key)
+    {
+        return '<button type="button" class="po-monitor-list-detail-btn js-po-breakdown-detail" title="Detail" data-breakdown-mode="' . htmlspecialchars($mode) . '" data-breakdown-key="' . htmlspecialchars((string) $key) . '"><i class="fas fa-eye"></i></button>';
+    }
+
+    private function breakdownRawMatchesGroup($row, $mode, $key)
+    {
+        $key = (string) $key;
+        if ($mode === 'project') {
+            return (string) ($row['project'] ?? '-') === $key;
+        }
+        if ($mode === 'pic') {
+            return (string) ($row['pic'] ?? '-') === $key;
+        }
+        if ($mode === 'regional') {
+            return (string) ($row['regional'] ?? '-') === $key;
+        }
+        if ($mode === 'area') {
+            return (string) ($row['area'] ?? '-') === $key;
+        }
+        if ($mode === 'date') {
+            return (string) (($row['date'] ?? '') ?: ($row['period_start'] ?? '-')) === $key;
+        }
+
+        return (string) (($row['month'] ?? '-') . '|' . ($row['week'] ?? '-')) === $key;
+    }
+
+    private function breakdownModeLabel($mode)
+    {
+        $labels = [
+            'project' => 'Project',
+            'pic' => 'PIC',
+            'regional' => 'Regional',
+            'area' => 'Kota / Area',
+            'period' => 'Periode',
+            'date' => 'Tanggal'
+        ];
+
+        return $labels[$mode] ?? 'Breakdown';
+    }
+
+    private function breakdownDetailLabel(array $rows, $mode, $key)
+    {
+        if (!empty($rows)) {
+            $row = $rows[0];
+            if ($mode === 'period') {
+                return (($row['month_label'] ?? '') ?: ($row['month'] ?? '-')) . ' - ' . ($row['week'] ?? '-');
+            }
+            if ($mode === 'date') {
+                return (($row['date_label'] ?? '') ?: ($row['date'] ?? $key));
+            }
+            $field = $mode === 'project' ? 'project' : ($mode === 'area' ? 'area' : $mode);
+            return (string) ($row[$field] ?? $key);
+        }
+
+        return (string) $key;
+    }
+
+    private function renderBreakdownDetailHtml(array $rows)
+    {
+        if (empty($rows)) {
+            return '<div class="alert alert-info mb-0">Tidak ada detail untuk filter ini.</div>';
+        }
+
+        $totalTarget = 0;
+        $totalAchieved = 0;
+        foreach ($rows as $row) {
+            $totalTarget += (float) ($row['target'] ?? 0);
+            $totalAchieved += (float) ($row['achieved'] ?? 0);
+        }
+        $totalOutstanding = max($totalTarget - $totalAchieved, 0);
+
+        $html = '<div class="po-monitor-modal-stat-grid mb-3">';
+        $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Target</span><span class="po-monitor-modal-stat__value">' . $this->breakdownMoney($totalTarget) . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Achieved</span><span class="po-monitor-modal-stat__value">' . $this->breakdownMoney($totalAchieved) . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Outstanding</span><span class="po-monitor-modal-stat__value">' . $this->breakdownMoney($totalOutstanding) . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Rows</span><span class="po-monitor-modal-stat__value">' . number_format(count($rows), 0, ',', '.') . '</span></div>';
+        $html .= '</div>';
+
+        $html .= '<div class="table-responsive"><table class="table table-sm po-monitor-detail-table mb-0"><thead><tr>';
+        $html .= '<th>No</th><th>Type</th><th>Project</th><th>PIC</th><th>PO</th><th>Sub PO</th><th>Regional</th><th>Area</th><th>Periode / Tanggal</th><th>Detail</th><th>Remarks</th><th class="text-right">Amount</th>';
+        $html .= '</tr></thead><tbody>';
+
+        foreach ($rows as $index => $row) {
+            $isAchieved = (float) ($row['achieved'] ?? 0) > 0;
+            $type = $isAchieved ? 'Achieved' : 'Target';
+            $typeClass = $isAchieved ? 'badge-success' : 'badge-primary';
+            $amount = $isAchieved ? (float) ($row['achieved'] ?? 0) : (float) ($row['target'] ?? 0);
+            $period = ($row['date_label'] ?? '') ?: (($row['month_label'] ?? '') ?: (($row['period_start'] ?? '') ?: '-'));
+
+            $html .= '<tr>';
+            $html .= '<td>' . ($index + 1) . '</td>';
+            $html .= '<td><span class="badge ' . $typeClass . '">' . $type . '</span></td>';
+            $html .= '<td>' . htmlspecialchars($row['project'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['pic'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['po_number'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['sub_po'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['regional'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['area'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($period) . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['detail_po'] ?? '-') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['remarks'] ?? '-') . '</td>';
+            $html .= '<td class="text-right">' . $this->breakdownMoney($amount) . '</td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody><tfoot><tr><th colspan="11">Total</th><th class="text-right">' . $this->breakdownMoney($totalTarget + $totalAchieved) . '</th></tr></tfoot></table></div>';
+
+        return $html;
     }
 
     public function comparison_detail()
