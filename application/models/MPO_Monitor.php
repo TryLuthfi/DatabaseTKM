@@ -374,44 +374,93 @@ class MPO_Monitor extends CI_Model
 
     public function getBatchInvoiceTerminRows()
     {
-        return $this->db->query("SELECT
-                p.id_po,
-                p.po_number,
-                p.po_date,
-                COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
-                t.id_term,
-                t.term_index,
-                COALESCE(t.value, 0) AS term_value,
-                COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
-                GREATEST(COALESCE(t.value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
-                t.invoice_date
-            FROM tb_po p
-            LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
-            LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
-            JOIN tb_po_term t ON p.id_po = t.id_po
-                AND (
-                    t.id_amend = (
-                        SELECT a.id_amend
-                        FROM tb_po_amend a
-                        WHERE a.id_po = p.id_po
-                        ORDER BY a.amend_no DESC
-                        LIMIT 1
-                    )
-                    OR (
-                        t.id_amend IS NULL
-                        AND NOT EXISTS (
-                            SELECT 1
-                            FROM tb_po_amend a2
-                            WHERE a2.id_po = p.id_po
+        return $this->db->query("SELECT *
+            FROM (
+                SELECT
+                    p.id_po,
+                    CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS parent_po_number,
+                    p.po_date,
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.id_term,
+                    a.id_allocation,
+                    t.term_index,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value, 0) AS term_value,
+                    COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
+                    GREATEST(COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                    COALESCE(a.invoice_date, t.invoice_date) AS invoice_date
+                FROM tb_po p
+                LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
+                JOIN tb_po_term t ON p.id_po = t.id_po
+                    AND (
+                        t.id_amend = (
+                            SELECT am.id_amend
+                            FROM tb_po_amend am
+                            WHERE am.id_po = p.id_po
+                            ORDER BY am.amend_no DESC
+                            LIMIT 1
+                        )
+                        OR (
+                            t.id_amend IS NULL
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM tb_po_amend am2
+                                WHERE am2.id_po = p.id_po
+                            )
                         )
                     )
-                )
-            LEFT JOIN (
-                SELECT id_term, SUM(invoice_amount) AS invoiced_amount
-                FROM tb_po_term_claim
-                GROUP BY id_term
-            ) tc ON t.id_term = tc.id_term
-            ORDER BY p.po_number ASC, t.term_index ASC")->result_array();
+                JOIN tb_po_term_allocation a ON a.id_term = t.id_term
+                LEFT JOIN (
+                    SELECT id_allocation, SUM(invoice_amount) AS invoiced_amount
+                    FROM tb_po_term_claim
+                    WHERE id_allocation IS NOT NULL
+                    GROUP BY id_allocation
+                ) tc ON a.id_allocation = tc.id_allocation
+                UNION ALL
+                SELECT
+                    p.id_po,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS parent_po_number,
+                    p.po_date,
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.id_term,
+                    NULL AS id_allocation,
+                    t.term_index,
+                    COALESCE(t.value, 0) AS term_value,
+                    COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
+                    GREATEST(COALESCE(t.value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                    t.invoice_date
+                FROM tb_po p
+                LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
+                JOIN tb_po_term t ON p.id_po = t.id_po
+                    AND (
+                        t.id_amend = (
+                            SELECT am.id_amend
+                            FROM tb_po_amend am
+                            WHERE am.id_po = p.id_po
+                            ORDER BY am.amend_no DESC
+                            LIMIT 1
+                        )
+                        OR (
+                            t.id_amend IS NULL
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM tb_po_amend am2
+                                WHERE am2.id_po = p.id_po
+                            )
+                        )
+                    )
+                LEFT JOIN (
+                    SELECT id_term, SUM(invoice_amount) AS invoiced_amount
+                    FROM tb_po_term_claim
+                    WHERE id_allocation IS NULL
+                    GROUP BY id_term
+                ) tc ON t.id_term = tc.id_term
+                WHERE NOT EXISTS (SELECT 1 FROM tb_po_term_allocation ax WHERE ax.id_term = t.id_term)
+            ) x
+            ORDER BY po_number ASC, term_index ASC")->result_array();
     }
 
     public function getBowheerTermDetail($idBowheer, $metric, $termIndex = 0)
@@ -1720,7 +1769,7 @@ class MPO_Monitor extends CI_Model
         return (int) date('j', $timestamp) . ' ' . $months[(int) date('n', $timestamp)] . ' ' . date('Y', $timestamp);
     }
 
-    public function claimTerm($idTerm, $invoiceDate, $amount, $userId)
+    public function claimTerm($idTerm, $invoiceDate, $amount, $userId, $idAllocation = 0)
     {
         $term = $this->db->get_where('tb_po_term', ['id_term' => (int) $idTerm])->row_array();
         if (!$term) {
@@ -1732,9 +1781,52 @@ class MPO_Monitor extends CI_Model
             return ['status' => false, 'message' => 'Invoice date and amount are required'];
         }
 
+        $idAllocation = (int) $idAllocation;
+        $allocation = null;
+        if ($idAllocation > 0) {
+            $allocation = $this->db
+                ->select('a.*, COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false)
+                ->from('tb_po_term_allocation a')
+                ->join('tb_po_term_claim tc', 'tc.id_allocation = a.id_allocation', 'left')
+                ->where('a.id_allocation', $idAllocation)
+                ->where('a.id_term', (int) $idTerm)
+                ->group_by('a.id_allocation')
+                ->get()
+                ->row_array();
+
+            if (!$allocation) {
+                return ['status' => false, 'message' => 'Sub PO allocation not found'];
+            }
+
+            $allocationValue = (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
+            $allocationRemaining = max($allocationValue - (float) ($allocation['invoiced_amount'] ?? 0), 0);
+            if ($amount > $allocationRemaining + 0.000001) {
+                return ['status' => false, 'message' => 'Invoice amount exceeds sub PO remaining'];
+            }
+        } else {
+            $hasAllocation = $this->db
+                ->where('id_term', (int) $idTerm)
+                ->count_all_results('tb_po_term_allocation') > 0;
+            if ($hasAllocation) {
+                return ['status' => false, 'message' => 'Claim invoice wajib pilih Sub PO'];
+            }
+
+            $claimed = $this->db
+                ->select('COALESCE(SUM(invoice_amount),0) AS amount', false)
+                ->where('id_term', (int) $idTerm)
+                ->where('id_allocation IS NULL', null, false)
+                ->get('tb_po_term_claim')
+                ->row_array();
+            $termRemaining = max((float) ($term['value'] ?? 0) - (float) ($claimed['amount'] ?? 0), 0);
+            if ($amount > $termRemaining + 0.000001) {
+                return ['status' => false, 'message' => 'Invoice amount exceeds term remaining'];
+            }
+        }
+
         $this->db->trans_begin();
         $this->db->insert('tb_po_term_claim', [
             'id_term' => (int) $idTerm,
+            'id_allocation' => $idAllocation > 0 ? $idAllocation : null,
             'invoice_date' => $invoiceDate,
             'invoice_amount' => $amount,
             'claim_source' => 'MANUAL',
@@ -1746,10 +1838,18 @@ class MPO_Monitor extends CI_Model
             'submit_raw' => $invoiceDate
         ]);
 
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation)->update('tb_po_term_allocation', [
+                'invoice_date' => $invoiceDate,
+                'submit_raw' => $invoiceDate
+            ]);
+        }
+
         $this->db->set('dashboard_all_invoice', 'COALESCE(dashboard_all_invoice, 0) + ' . $this->db->escape($amount), false);
         if ((int) date('Y', strtotime($invoiceDate)) === 2026) {
             $this->db->set('dashboard_invoice_2026', 'COALESCE(dashboard_invoice_2026, 0) + ' . $this->db->escape($amount), false);
-            if (($term['target_status'] ?? '') === 'TARGET_WEEK') {
+            $claimTargetStatus = $allocation ? ($allocation['target_status'] ?? '') : ($term['target_status'] ?? '');
+            if ($claimTargetStatus === 'TARGET_WEEK') {
                 $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) - ' . $this->db->escape($amount) . ', 0)', false);
             }
         }
@@ -1764,6 +1864,109 @@ class MPO_Monitor extends CI_Model
 
         $this->db->trans_commit();
         return ['status' => true, 'message' => 'Term claimed'];
+    }
+
+    public function replaceInvoiceClaim($idTerm, $idAllocation, $invoiceDate, $amount, $userId)
+    {
+        $idTerm = (int) $idTerm;
+        $idAllocation = (int) $idAllocation;
+        $amount = (float) $amount;
+
+        $term = $this->db->get_where('tb_po_term', ['id_term' => $idTerm])->row_array();
+        if (!$term) {
+            return ['status' => false, 'message' => 'Term not found'];
+        }
+        if ($amount <= 0 || empty($invoiceDate)) {
+            return ['status' => false, 'message' => 'Invoice date and amount are required'];
+        }
+
+        $allocation = null;
+        $claimValue = (float) ($term['value'] ?? 0);
+        $targetStatus = (string) ($term['target_status'] ?? '');
+        if ($idAllocation > 0) {
+            $allocation = $this->db
+                ->where('id_allocation', $idAllocation)
+                ->where('id_term', $idTerm)
+                ->get('tb_po_term_allocation')
+                ->row_array();
+            if (!$allocation) {
+                return ['status' => false, 'message' => 'Sub PO allocation not found'];
+            }
+
+            $claimValue = (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
+            $targetStatus = (string) ($allocation['target_status'] ?? '');
+        } else {
+            $hasAllocation = $this->db
+                ->where('id_term', $idTerm)
+                ->count_all_results('tb_po_term_allocation') > 0;
+            if ($hasAllocation) {
+                return ['status' => false, 'message' => 'Edit invoice wajib pilih Sub PO'];
+            }
+        }
+
+        if ($amount > $claimValue + 0.000001) {
+            return ['status' => false, 'message' => 'Invoice amount exceeds claim value'];
+        }
+
+        $this->db->select('COALESCE(SUM(invoice_amount),0) AS total_amount', false);
+        $this->db->select("COALESCE(SUM(CASE WHEN YEAR(invoice_date) = 2026 THEN invoice_amount ELSE 0 END),0) AS amount_2026", false);
+        $this->db->where('id_term', $idTerm);
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation);
+        } else {
+            $this->db->where('id_allocation IS NULL', null, false);
+        }
+        $oldClaim = $this->db->get('tb_po_term_claim')->row_array();
+        $oldTotal = (float) ($oldClaim['total_amount'] ?? 0);
+        $old2026 = (float) ($oldClaim['amount_2026'] ?? 0);
+        $new2026 = (int) date('Y', strtotime($invoiceDate)) === 2026 ? $amount : 0;
+
+        $this->db->trans_begin();
+        $this->db->where('id_term', $idTerm);
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation);
+        } else {
+            $this->db->where('id_allocation IS NULL', null, false);
+        }
+        $this->db->delete('tb_po_term_claim');
+
+        $this->db->insert('tb_po_term_claim', [
+            'id_term' => $idTerm,
+            'id_allocation' => $idAllocation > 0 ? $idAllocation : null,
+            'invoice_date' => $invoiceDate,
+            'invoice_amount' => $amount,
+            'claim_source' => 'MANUAL',
+            'created_by' => $userId ?: null
+        ]);
+
+        $this->db->where('id_term', $idTerm)->update('tb_po_term', [
+            'invoice_date' => $invoiceDate,
+            'submit_raw' => $invoiceDate
+        ]);
+
+        if ($idAllocation > 0) {
+            $this->db->where('id_allocation', $idAllocation)->update('tb_po_term_allocation', [
+                'invoice_date' => $invoiceDate,
+                'submit_raw' => $invoiceDate
+            ]);
+        }
+
+        $this->db->set('dashboard_all_invoice', 'GREATEST(COALESCE(dashboard_all_invoice, 0) + ' . $this->db->escape($amount - $oldTotal) . ', 0)', false);
+        $this->db->set('dashboard_invoice_2026', 'GREATEST(COALESCE(dashboard_invoice_2026, 0) + ' . $this->db->escape($new2026 - $old2026) . ', 0)', false);
+        if ($targetStatus === 'TARGET_WEEK') {
+            $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) + ' . $this->db->escape($old2026 - $new2026) . ', 0)', false);
+        }
+        $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+
+        $this->rebuildDashboardCache(null);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Failed to update invoice'];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => true, 'message' => 'Invoice term berhasil diupdate'];
     }
 
     public function syncMyRepTerminClaim($myrepTerminId, $userId = 0, $cutoffDate = '2026-07-01')

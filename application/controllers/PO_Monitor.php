@@ -116,31 +116,37 @@ class PO_Monitor extends CI_Controller
         }
 
         $normalized = trim((string) $value);
-        $normalized = str_replace(' ', '', $normalized);
+        $normalized = preg_replace('/\s+/', '', $normalized);
+        $normalized = preg_replace('/[^\d,.\-]/', '', $normalized);
 
         $lastDot = strrpos($normalized, '.');
         $lastComma = strrpos($normalized, ',');
 
         if ($lastDot !== false && $lastComma !== false) {
-            if ($lastDot > $lastComma) {
-                $normalized = str_replace(',', '', $normalized);
+            $lastSeparator = max($lastDot, $lastComma);
+            $decimalDigits = strlen($normalized) - $lastSeparator - 1;
+            if ($decimalDigits > 0 && $decimalDigits <= 2) {
+                if ($lastDot > $lastComma) {
+                    $normalized = str_replace(',', '', $normalized);
+                } else {
+                    $normalized = str_replace('.', '', $normalized);
+                    $normalized = str_replace(',', '.', $normalized);
+                }
             } else {
-                $normalized = str_replace('.', '', $normalized);
-                $normalized = str_replace(',', '.', $normalized);
+                $normalized = str_replace([',', '.'], '', $normalized);
             }
         } elseif ($lastComma !== false) {
             $parts = explode(',', $normalized);
-            if (count($parts) > 2 || strlen(end($parts)) === 3) {
+            $lastPart = end($parts);
+            if (count($parts) > 2 || strlen($lastPart) === 3) {
                 $normalized = str_replace(',', '', $normalized);
             } else {
-                $normalized = str_replace('.', '', $normalized);
                 $normalized = str_replace(',', '.', $normalized);
             }
         } else {
             $parts = explode('.', $normalized);
-            if (count($parts) > 2) {
-                $normalized = str_replace('.', '', $normalized);
-            } elseif (count($parts) === 2 && strlen($parts[1]) === 3 && strlen($parts[0]) <= 3) {
+            $lastPart = end($parts);
+            if (count($parts) > 2 || strlen($lastPart) === 3) {
                 $normalized = str_replace('.', '', $normalized);
             }
         }
@@ -1181,11 +1187,32 @@ class PO_Monitor extends CI_Controller
 
         $idTerm = (int) $this->input->post('id_term');
         $idPo = (int) $this->input->post('id_po');
+        $idAllocation = (int) $this->input->post('id_allocation');
         $invoiceDateRaw = $this->input->post('invoice_date');
         $invoiceDate = $invoiceDateRaw ? date('Y-m-d', strtotime($invoiceDateRaw)) : null;
         $amount = $this->normalizeAmount($this->input->post('invoice_amount'));
 
-        $result = $this->MPO_Monitor->claimTerm($idTerm, $invoiceDate, $amount, $this->session->userdata('id_user'));
+        $result = $this->MPO_Monitor->claimTerm($idTerm, $invoiceDate, $amount, $this->session->userdata('id_user'), $idAllocation);
+        $this->session->set_flashdata('status', !empty($result['status']));
+        $this->session->set_flashdata('error_log', $result['message']);
+        redirect('PO_Monitor/detail/' . $idPo);
+    }
+
+    public function update_invoice_claim()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idTerm = (int) $this->input->post('id_term');
+        $idPo = (int) $this->input->post('id_po');
+        $idAllocation = (int) $this->input->post('id_allocation');
+        $invoiceDateRaw = $this->input->post('invoice_date');
+        $invoiceDate = $invoiceDateRaw ? date('Y-m-d', strtotime($invoiceDateRaw)) : null;
+        $amount = $this->normalizeAmount($this->input->post('invoice_amount'));
+
+        $result = $this->MPO_Monitor->replaceInvoiceClaim($idTerm, $idAllocation, $invoiceDate, $amount, $this->session->userdata('id_user'));
         $this->session->set_flashdata('status', !empty($result['status']));
         $this->session->set_flashdata('error_log', $result['message']);
         redirect('PO_Monitor/detail/' . $idPo);
@@ -1249,7 +1276,7 @@ class PO_Monitor extends CI_Controller
                 continue;
             }
 
-            $result = $this->MPO_Monitor->claimTerm((int) $lookup[$key]['id_term'], $invoiceDate, $amount, $this->session->userdata('id_user'));
+            $result = $this->MPO_Monitor->claimTerm((int) $lookup[$key]['id_term'], $invoiceDate, $amount, $this->session->userdata('id_user'), (int) ($lookup[$key]['id_allocation'] ?? 0));
             if (!empty($result['status'])) {
                 $success++;
                 $usedAmount[$key] = (float) ($usedAmount[$key] ?? 0) + $amount;
