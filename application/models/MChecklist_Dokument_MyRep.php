@@ -144,7 +144,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
             ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'inner')
             ->where('p.id_myrep_cluster', $myrepClusterId)
-            ->where_in('p.flow_type', ['POST_DONASI', 'VALSAL'])
+            ->where($this->collatedUpperInSql('p.flow_type', ['POST_DONASI', 'VALSAL']), null, false)
             ->get()
             ->result_array();
 
@@ -1391,7 +1391,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         $summary = $this->db
             ->select("
-                SUM(CASE WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK') THEN 1 ELSE 0 END) AS submitted_docs,
+                SUM(CASE WHEN CONVERT(UPPER(f.astri_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('ON REVIEW' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('REJECTED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING WASPANG' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING PLANNING' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING TL' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING LOGISTIK' USING utf8mb4) COLLATE utf8mb4_unicode_ci) THEN 1 ELSE 0 END) AS submitted_docs,
                 SUM(CASE WHEN f.astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
             ", false)
             ->from('tb_rfs_myrep_mainfeeder_doc_package p')
@@ -1448,8 +1448,8 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_group = g.id_doc_group AND p.cluster_id = ' . (int) $clusterId, 'left', false)
             ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
             ->where('g.is_active', 1)
-            ->where_in('g.scope_type', ['CLUSTER', 'SUBFEEDER'])
-            ->where_in('g.sow_type', ['CW ATP', 'FULL OPM', 'RFS'])
+            ->where($this->collatedUpperInSql('g.scope_type', ['CLUSTER', 'SUBFEEDER']), null, false)
+            ->where($this->collatedUpperInSql('g.sow_type', ['CW ATP', 'FULL OPM', 'RFS']), null, false)
             ->group_by(['g.scope_type', 'g.sow_type'])
             ->get()
             ->result_array();
@@ -2033,7 +2033,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left');
 
-        $query->where("UPPER(COALESCE(NULLIF(TRIM(mf.current_status), ''), 'DRM')) IN ('CHECKLIST','DONE')", null, false);
+        $query->where("CONVERT(UPPER(COALESCE(NULLIF(TRIM(mf.current_status), ''), 'DRM')) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('CHECKLIST' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('DONE' USING utf8mb4) COLLATE utf8mb4_unicode_ci)", null, false);
 
         if (!$this->applyAllowedCityRestriction('COALESCE(mf.city_name, mt.city_name)')) {
             return [];
@@ -2586,7 +2586,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
         $rows = $this->db->select("
                 id_doc_package_mainfeeder,
-                SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs
+                SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND CONVERT(UPPER(status_file) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('UPLOADED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci) THEN 1 ELSE 0 END) AS uploaded_docs
             ", false)
             ->from('tb_rfs_myrep_mainfeeder_doc_file')
             ->where_in('id_doc_package_mainfeeder', $packageIds)
@@ -2614,8 +2614,8 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 SUM(CASE WHEN astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
                 SUM(CASE WHEN astri_status = 'ON REVIEW' THEN 1 ELSE 0 END) AS astri_on_review,
                 SUM(CASE WHEN astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
-                SUM(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') THEN 1 ELSE 0 END) AS astri_submitted,
-                MAX(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') AND astri_submitted_date IS NOT NULL THEN astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
+                SUM(CASE WHEN CONVERT(UPPER(astri_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('ON REVIEW' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('REJECTED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci) THEN 1 ELSE 0 END) AS astri_submitted,
+                MAX(CASE WHEN CONVERT(UPPER(astri_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('ON REVIEW' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('REJECTED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci) AND astri_submitted_date IS NOT NULL THEN astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
                 MAX(CASE WHEN astri_status = 'APPROVED' AND astri_status_updated_at IS NOT NULL THEN DATE(astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
             ", false)
             ->from('tb_rfs_myrep_mainfeeder_doc_file')
@@ -2659,7 +2659,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
              FROM tb_rfs_myrep_mainfeeder_doc_file
              WHERE id_doc_package_mainfeeder = ?
              AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
-             AND status_file IN ('UPLOADED','APPROVED')",
+             AND CONVERT(UPPER(status_file) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('UPLOADED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci)",
             [(int) $packageId]
         )->row()->total;
         $latestUploaded = $this->db->query(
@@ -2667,7 +2667,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
              FROM tb_rfs_myrep_mainfeeder_doc_file
              WHERE id_doc_package_mainfeeder = ?
              AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
-             AND status_file IN ('UPLOADED','APPROVED')",
+             AND CONVERT(UPPER(status_file) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('UPLOADED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci)",
             [(int) $packageId]
         )->row_array();
 
@@ -2975,10 +2975,30 @@ class MChecklist_Dokument_MyRep extends CI_Model
             return false;
         }
 
-        $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
-        $this->db->where('UPPER(' . $columnName . ') IN (' . implode(',', $escapedCities) . ')', null, false);
+        $escapedCities = array_map(function ($cityName) {
+            return 'CONVERT(' . $this->db->escape($cityName) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, array_keys($allowedCitySet));
+        $columnSql = 'CONVERT(UPPER(' . $columnName . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        $this->db->where($columnSql . ' IN (' . implode(',', $escapedCities) . ')', null, false);
 
         return true;
+    }
+
+    private function collatedUpperInSql($expression, array $values)
+    {
+        $normalizedValues = array_values(array_unique(array_filter(array_map(static function ($value) {
+            return strtoupper(trim((string) $value));
+        }, $values))));
+
+        if (empty($normalizedValues)) {
+            return '1 = 0';
+        }
+
+        $escapedValues = array_map(function ($value) {
+            return 'CONVERT(' . $this->db->escape($value) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, $normalizedValues);
+
+        return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (' . implode(',', $escapedValues) . ')';
     }
 
     private function isCityAllowedForCurrentUser($cityName)
@@ -3249,7 +3269,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $chunkRows = $this->db
                 ->select("
                     id_doc_package,
-                    SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs,
+                    SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND CONVERT(UPPER(status_file) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('UPLOADED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci) THEN 1 ELSE 0 END) AS uploaded_docs,
                     SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
                 ", false)
                 ->from('tb_rfs_myrep_doc_file')
@@ -3293,7 +3313,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     SUM(CASE WHEN f.astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
                     SUM(CASE WHEN f.astri_status = 'ON REVIEW' THEN 1 ELSE 0 END) AS astri_on_review,
                     SUM(CASE
-                        WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                        WHEN CONVERT(UPPER(f.astri_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('ON REVIEW' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('REJECTED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING WASPANG' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING PLANNING' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING TL' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING LOGISTIK' USING utf8mb4) COLLATE utf8mb4_unicode_ci)
                             THEN 1
                         WHEN f.astri_status = 'NY'
                             AND p.actual_atp_date IS NOT NULL
@@ -3305,7 +3325,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     END) AS astri_submitted,
                     MAX(CASE
                         WHEN (
-                            f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                            CONVERT(UPPER(f.astri_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('ON REVIEW' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('REJECTED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING WASPANG' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING PLANNING' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING TL' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('WAITING LOGISTIK' USING utf8mb4) COLLATE utf8mb4_unicode_ci)
                             OR (
                                 f.astri_status = 'NY'
                                 AND p.actual_atp_date IS NOT NULL
@@ -3420,7 +3440,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
              FROM tb_rfs_myrep_doc_file
              WHERE id_doc_package = ?
              AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
-             AND status_file IN ('UPLOADED','APPROVED')",
+             AND CONVERT(UPPER(status_file) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('UPLOADED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci)",
             [(int) $packageId]
         )->row()->total;
 
@@ -3429,7 +3449,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
              FROM tb_rfs_myrep_doc_file
              WHERE id_doc_package = ?
              AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
-             AND status_file IN ('UPLOADED','APPROVED')",
+             AND CONVERT(UPPER(status_file) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (CONVERT('UPLOADED' USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT('APPROVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci)",
             [(int) $packageId]
         )->row_array();
 

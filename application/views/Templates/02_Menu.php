@@ -46,6 +46,9 @@ $disabledTargetInvoiceLinkClass = $canAccessTargetInvoicePage ? '' : ' menu-acce
 $disabledTargetInvoiceLinkAttr = $canAccessTargetInvoicePage ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 $disabledRincianInvoiceLinkClass = $canAccessRincianInvoicePage ? '' : ' menu-access-disabled';
 $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$forceVisibleControllerMap = [
+    'BATCH_APPROVAL_MYREP' => $canAccessMyRepublik,
+];
 ?>
 <div class="wrapper premium-shell">
     <!-- Navbar -->
@@ -1095,8 +1098,12 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
         (function () {
             var baseUrl = <?= json_encode(base_url()) ?>;
             var controllerAccess = <?= json_encode($pageAccessControllerMap) ?>;
+            var forceVisibleControllers = <?= json_encode($forceVisibleControllerMap) ?>;
             if (!controllerAccess || typeof controllerAccess !== 'object') {
                 controllerAccess = {};
+            }
+            if (!forceVisibleControllers || typeof forceVisibleControllers !== 'object') {
+                forceVisibleControllers = {};
             }
 
             function hideMenuLink(linkEl) {
@@ -1152,6 +1159,12 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
                 var href = linkEl.getAttribute('href') || '';
                 var controllerName = extractControllerFromHref(href);
                 if (!controllerName) {
+                    return;
+                }
+                if (forceVisibleControllers[controllerName] === true) {
+                    linkEl.classList.remove('menu-access-disabled', 'menu-access-hidden');
+                    linkEl.removeAttribute('tabindex');
+                    linkEl.removeAttribute('aria-disabled');
                     return;
                 }
                 if (!Object.prototype.hasOwnProperty.call(controllerAccess, controllerName)) {

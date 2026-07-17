@@ -96,7 +96,7 @@ class MDRM_MyRep extends CI_Model
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
+            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
@@ -171,7 +171,7 @@ class MDRM_MyRep extends CI_Model
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
+            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
             ->where('UPPER(ba.staging_status)', 'RELEASED');
 
         if ($this->db->table_exists('tb_rfs_myrep_cluster') && $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster') && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')) {
@@ -197,8 +197,7 @@ class MDRM_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $cityList))));
             if (!empty($normalizedCities)) {
-                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
-                $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+                $this->db->where($this->collatedUpperInSql('c.city_name', $normalizedCities), null, false);
             }
         }
         if (!empty($regionalList)) {
@@ -206,8 +205,7 @@ class MDRM_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $regionalList))));
             if (!empty($normalizedRegionals)) {
-                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
-                $this->db->where('UPPER(c.regional_name) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+                $this->db->where($this->collatedUpperInSql('c.regional_name', $normalizedRegionals), null, false);
             }
         }
         if ($drmDateStart !== '') {
@@ -332,8 +330,7 @@ class MDRM_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $cityList))));
             if (!empty($normalizedCities)) {
-                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
-                $this->db->where('UPPER(COALESCE(mf.city_name, mt.city_name)) IN (' . implode(',', $escapedCities) . ')', null, false);
+                $this->db->where($this->collatedUpperInSql('COALESCE(mf.city_name, mt.city_name)', $normalizedCities), null, false);
             }
         }
         if (!empty($regionalList)) {
@@ -341,8 +338,7 @@ class MDRM_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $regionalList))));
             if (!empty($normalizedRegionals)) {
-                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
-                $this->db->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+                $this->db->where($this->collatedUpperInSql('COALESCE(mf.regional_name, mt.regional_name)', $normalizedRegionals), null, false);
             }
         }
         if ($drmDateStart !== '') {
@@ -459,7 +455,7 @@ class MDRM_MyRep extends CI_Model
             ->select('c.regional_name')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
+            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
@@ -496,7 +492,7 @@ class MDRM_MyRep extends CI_Model
             ->select('c.regional_name, c.city_name')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
+            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where('c.city_name IS NOT NULL', null, false)
@@ -2029,10 +2025,30 @@ class MDRM_MyRep extends CI_Model
             return false;
         }
 
-        $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
-        $this->db->where('UPPER(' . $columnName . ') IN (' . implode(',', $escapedCities) . ')', null, false);
+        $escapedCities = array_map(function ($cityName) {
+            return 'CONVERT(' . $this->db->escape($cityName) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, array_keys($allowedCitySet));
+        $columnSql = 'CONVERT(UPPER(' . $columnName . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        $this->db->where($columnSql . ' IN (' . implode(',', $escapedCities) . ')', null, false);
 
         return true;
+    }
+
+    private function collatedUpperInSql($expression, array $values)
+    {
+        $normalizedValues = array_values(array_unique(array_filter(array_map(static function ($value) {
+            return strtoupper(trim((string) $value));
+        }, $values))));
+
+        if (empty($normalizedValues)) {
+            return '1 = 0';
+        }
+
+        $escapedValues = array_map(function ($value) {
+            return 'CONVERT(' . $this->db->escape($value) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, $normalizedValues);
+
+        return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (' . implode(',', $escapedValues) . ')';
     }
 
     private function isCityAllowedForCurrentUser($cityName)

@@ -89,7 +89,9 @@ class MBatch_Approval_MyRep extends CI_Model
 
     private function getValsalApprovedAtSubquery()
     {
-        $escapedNames = array_map([$this->db, 'escape'], $this->getDefaultValsalDocumentNamesForSla());
+        $escapedNames = array_map(function ($docName) {
+            return 'CONVERT(' . $this->db->escape($docName) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, $this->getDefaultValsalDocumentNamesForSla());
         return "(SELECT MAX(valsal_doc_file.approved_at)
             FROM tb_myrep_flow_doc_package valsal_doc_package
             JOIN md_myrep_flow_doc_group valsal_doc_group ON valsal_doc_group.id_doc_group = valsal_doc_package.id_doc_group
@@ -100,7 +102,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 AND valsal_doc_group.flow_type = 'VALSAL'
                 AND valsal_doc_group.group_label = 'VALIDASI SALES'
                 AND valsal_doc_file.status_file = 'APPROVED'
-                AND valsal_doc_item.doc_name IN (" . implode(',', $escapedNames) . ")) AS valsal_approved_at";
+                AND CONVERT(valsal_doc_item.doc_name USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (" . implode(',', $escapedNames) . ")) AS valsal_approved_at";
     }
 
     private function getDefaultValsalDocumentNamesForSla()
@@ -145,7 +147,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
-            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
                 ->or_where('UPPER(c.status_current)', 'VALSAL')
@@ -200,7 +202,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->where('UPPER(c.status_current)', 'VALSAL')
             ->where('ba.id_batch_approval IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
@@ -278,7 +280,7 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         $this->db
-            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
                 ->or_where('UPPER(c.status_current)', 'VALSAL')
@@ -339,8 +341,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $cityList))));
             if (!empty($normalizedCities)) {
-                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
-                $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+                $this->db->where($this->collatedUpperInSql('c.city_name', $normalizedCities), null, false);
             }
         }
         if (!empty($regionalList)) {
@@ -348,8 +349,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $regionalList))));
             if (!empty($normalizedRegionals)) {
-                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
-                $this->db->where('UPPER(c.regional_name) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+                $this->db->where($this->collatedUpperInSql('c.regional_name', $normalizedRegionals), null, false);
             }
         }
         if ($submissionDateStart !== '') {
@@ -413,7 +413,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
                 ->or_where('UPPER(c.status_current)', 'VALSAL')
@@ -443,7 +443,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
                 ->or_where('UPPER(c.status_current)', 'VALSAL')
@@ -503,7 +503,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
-            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->get()
             ->row_array();
 
@@ -1425,7 +1425,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'inner')
             ->where_in('doc_package.id_myrep_cluster', $clusterIds)
-            ->where_in('doc_package.flow_type', ['BAK', 'VALSAL'])
+            ->where($this->collatedUpperInSql('doc_package.flow_type', ['BAK', 'VALSAL']), null, false)
             ->where('doc_group.is_active', 1)
             ->get()
             ->result_array();
@@ -1499,10 +1499,30 @@ class MBatch_Approval_MyRep extends CI_Model
             return false;
         }
 
-        $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
-        $this->db->where('UPPER(' . $columnName . ') IN (' . implode(',', $escapedCities) . ')', null, false);
+        $escapedCities = array_map(function ($cityName) {
+            return 'CONVERT(' . $this->db->escape($cityName) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, array_keys($allowedCitySet));
+        $columnSql = 'CONVERT(UPPER(' . $columnName . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        $this->db->where($columnSql . ' IN (' . implode(',', $escapedCities) . ')', null, false);
 
         return true;
+    }
+
+    private function collatedUpperInSql($expression, array $values)
+    {
+        $normalizedValues = array_values(array_unique(array_filter(array_map(static function ($value) {
+            return strtoupper(trim((string) $value));
+        }, $values))));
+
+        if (empty($normalizedValues)) {
+            return '1 = 0';
+        }
+
+        $escapedValues = array_map(function ($value) {
+            return 'CONVERT(' . $this->db->escape($value) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, $normalizedValues);
+
+        return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (' . implode(',', $escapedValues) . ')';
     }
 
     private function isCityAllowedForCurrentUser($cityName)
