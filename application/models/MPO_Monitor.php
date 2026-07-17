@@ -385,9 +385,9 @@ class MPO_Monitor extends CI_Model
                     t.id_term,
                     a.id_allocation,
                     t.term_index,
-                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value, 0) AS term_value,
+                    COALESCE(NULLIF(a.plan_amount, 0), NULLIF(a.allocation_value, 0), NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0) AS term_value,
                     COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
-                    GREATEST(COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                    GREATEST(COALESCE(NULLIF(a.plan_amount, 0), NULLIF(a.allocation_value, 0), NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
                     COALESCE(a.invoice_date, t.invoice_date) AS invoice_date
                 FROM tb_po p
                 LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
@@ -427,9 +427,9 @@ class MPO_Monitor extends CI_Model
                     t.id_term,
                     NULL AS id_allocation,
                     t.term_index,
-                    COALESCE(t.value, 0) AS term_value,
+                    COALESCE(NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0) AS term_value,
                     COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
-                    GREATEST(COALESCE(t.value, 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                    GREATEST(COALESCE(NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
                     t.invoice_date
                 FROM tb_po p
                 LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
@@ -598,7 +598,16 @@ class MPO_Monitor extends CI_Model
             ->get()
             ->row_array();
 
-        $this->db->select('t.*, COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false);
+        $effectiveValueSql = "COALESCE(NULLIF(t.value, 0), (
+            COALESCE(
+                (SELECT am.release_value FROM tb_po_amend am WHERE am.id_po = t.id_po ORDER BY am.amend_no DESC LIMIT 1),
+                (SELECT p.total_value FROM tb_po p WHERE p.id_po = t.id_po),
+                0
+            ) * COALESCE(t.percent, 0) / 100
+        ), 0)";
+        $this->db->select('t.*', false);
+        $this->db->select($effectiveValueSql . ' AS value', false);
+        $this->db->select('COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false);
         $this->db->from('tb_po_term t');
         $this->db->join('tb_po_term_claim tc', 't.id_term = tc.id_term', 'left');
         $this->db->where('t.id_po', (int) $id_po);
@@ -617,7 +626,18 @@ class MPO_Monitor extends CI_Model
 
     public function getPOAllocations($id_po)
     {
-        $rows = $this->db->select('a.*, t.term_index, COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false)
+        $allocationValueSql = "COALESCE(NULLIF(a.plan_amount, 0), NULLIF(a.allocation_value, 0), NULLIF(t.value, 0), (
+            COALESCE(
+                (SELECT am.release_value FROM tb_po_amend am WHERE am.id_po = t.id_po ORDER BY am.amend_no DESC LIMIT 1),
+                (SELECT p.total_value FROM tb_po p WHERE p.id_po = t.id_po),
+                0
+            ) * COALESCE(t.percent, 0) / 100
+        ), 0)";
+        $rows = $this->db->select('a.*', false)
+            ->select('t.term_index', false)
+            ->select($allocationValueSql . ' AS allocation_value', false)
+            ->select('GREATEST(' . $allocationValueSql . ' - COALESCE(SUM(tc.invoice_amount),0), 0) AS outstanding_amount', false)
+            ->select('COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false)
             ->from('tb_po_term_allocation a')
             ->join('tb_po_term t', 't.id_term = a.id_term')
             ->join('tb_po_term_claim tc', 'tc.id_allocation = a.id_allocation', 'left')
@@ -1799,6 +1819,13 @@ class MPO_Monitor extends CI_Model
             }
 
             $allocationValue = (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
+            if ($allocationValue <= 0) {
+                $releaseValue = (float) ($this->db->query(
+                    "SELECT COALESCE((SELECT am.release_value FROM tb_po_amend am WHERE am.id_po = ? ORDER BY am.amend_no DESC LIMIT 1), total_value, 0) AS value FROM tb_po WHERE id_po = ?",
+                    [(int) $term['id_po'], (int) $term['id_po']]
+                )->row_array()['value'] ?? 0);
+                $allocationValue = (float) (($term['value'] ?? 0) ?: ($releaseValue * (float) ($term['percent'] ?? 0) / 100));
+            }
             $allocationRemaining = max($allocationValue - (float) ($allocation['invoiced_amount'] ?? 0), 0);
             if ($amount > $allocationRemaining + 0.000001) {
                 return ['status' => false, 'message' => 'Invoice amount exceeds sub PO remaining'];
@@ -1894,6 +1921,13 @@ class MPO_Monitor extends CI_Model
             }
 
             $claimValue = (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
+            if ($claimValue <= 0) {
+                $releaseValue = (float) ($this->db->query(
+                    "SELECT COALESCE((SELECT am.release_value FROM tb_po_amend am WHERE am.id_po = ? ORDER BY am.amend_no DESC LIMIT 1), total_value, 0) AS value FROM tb_po WHERE id_po = ?",
+                    [(int) $term['id_po'], (int) $term['id_po']]
+                )->row_array()['value'] ?? 0);
+                $claimValue = (float) (($term['value'] ?? 0) ?: ($releaseValue * (float) ($term['percent'] ?? 0) / 100));
+            }
             $targetStatus = (string) ($allocation['target_status'] ?? '');
         } else {
             $hasAllocation = $this->db
