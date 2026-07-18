@@ -2840,55 +2840,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
 <script>
     (function() {
-        var poMonitorBatchTerminLookup = <?php
-            $poMonitorBatchLookup = [];
-            foreach ($batchInvoiceRows as $poMonitorBatchRow) {
-                $poNumber = trim((string) ($poMonitorBatchRow['po_number'] ?? ''));
-                $termNo = (int) ($poMonitorBatchRow['term_index'] ?? 0);
-                if ($poNumber === '' || $termNo <= 0) {
-                    continue;
-                }
-                $poKey = strtoupper($poNumber);
-                if (!isset($poMonitorBatchLookup[$poKey])) {
-                    $poMonitorBatchLookup[$poKey] = [
-                        'po_number' => $poNumber,
-                        'nama_bowheer' => (string) ($poMonitorBatchRow['nama_bowheer'] ?? ''),
-                        'terms' => []
-                    ];
-                }
-                $poMonitorBatchLookup[$poKey]['terms'][$termNo] = [
-                    'id_term' => (int) ($poMonitorBatchRow['id_term'] ?? 0),
-                    'term_value' => (float) ($poMonitorBatchRow['term_value'] ?? 0),
-                    'invoiced_amount' => (float) ($poMonitorBatchRow['invoiced_amount'] ?? 0),
-                    'remaining' => (float) ($poMonitorBatchRow['remaining'] ?? 0),
-                    'invoice_date' => (string) ($poMonitorBatchRow['invoice_date'] ?? '')
-                ];
-            }
-            echo json_encode($poMonitorBatchLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
-        ?>;
+        var poMonitorBatchTerminLookup = {};
+        var poMonitorBatchLookupUrl = <?= json_encode(site_url('PO_Monitor/batch_invoice_lookup'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
         var poMonitorBatchInvoiceExampleText = <?php
             $poMonitorBatchInvoiceExampleRows = [
                 ['PO Number', 'Term', 'Nilai Invoice'],
+                ['PO. 8000138637', '1', '1000000'],
+                ['PO. 8000138638', '2', ''],
             ];
-            foreach ($batchInvoiceRows as $poMonitorInvoiceExampleRow) {
-                $poMonitorInvoiceExampleNumber = trim((string) ($poMonitorInvoiceExampleRow['po_number'] ?? ''));
-                $poMonitorInvoiceExampleTerm = (int) ($poMonitorInvoiceExampleRow['term_index'] ?? 0);
-                if ($poMonitorInvoiceExampleNumber === '' || $poMonitorInvoiceExampleTerm < 1 || $poMonitorInvoiceExampleTerm > 5) {
-                    continue;
-                }
-                $poMonitorBatchInvoiceExampleRows[] = [
-                    $poMonitorInvoiceExampleNumber,
-                    (string) $poMonitorInvoiceExampleTerm,
-                    (string) (int) max(0, (float) ($poMonitorInvoiceExampleRow['remaining'] ?? 0)),
-                ];
-                if (count($poMonitorBatchInvoiceExampleRows) >= 6) {
-                    break;
-                }
-            }
-            if (count($poMonitorBatchInvoiceExampleRows) === 1) {
-                $poMonitorBatchInvoiceExampleRows[] = ['PO. 8000138637', '1', '1000000'];
-                $poMonitorBatchInvoiceExampleRows[] = ['PO. 8000138638', '2', ''];
-            }
             echo json_encode(implode("\n", array_map(static function ($row) {
                 return implode("\t", $row);
             }, $poMonitorBatchInvoiceExampleRows)), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
@@ -3500,6 +3459,36 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 return used;
             }
 
+            function ensureBatchInvoiceLookup(poNumbers) {
+                var pending = [];
+                var seen = {};
+                (poNumbers || []).forEach(function(poNumber) {
+                    var cleanPo = String(poNumber || '').trim();
+                    var key = cleanPo.toUpperCase();
+                    if (cleanPo === '' || seen[key] || poMonitorBatchTerminLookup[key]) {
+                        return;
+                    }
+                    seen[key] = true;
+                    pending.push(cleanPo);
+                });
+
+                if (!pending.length) {
+                    return $.Deferred().resolve().promise();
+                }
+
+                return $.ajax({
+                    url: poMonitorBatchLookupUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { po_numbers: pending }
+                }).then(function(response) {
+                    var lookup = response && response.lookup ? response.lookup : {};
+                    Object.keys(lookup).forEach(function(key) {
+                        poMonitorBatchTerminLookup[String(key).toUpperCase()] = lookup[key];
+                    });
+                });
+            }
+
             function getBatchInvoiceCheck(poNumber, termNo, invoiceValue) {
                 var poKey = String(poNumber || '').trim().toUpperCase();
                 var lookup = poMonitorBatchTerminLookup[poKey] || null;
@@ -3628,16 +3617,20 @@ if (!function_exists('po_monitor_term_amount_link')) {
             }
 
             $('#po-monitor-batch-add-row').off('click.poMonitorBatch').on('click.poMonitorBatch', function() {
+                var $button = $(this);
+                var poNumber = $('#po-monitor-batch-po-number').val();
+                var termNo = $('#po-monitor-batch-term-no').val();
+                var invoiceValue = $('#po-monitor-batch-invoice-value').val();
+                $button.prop('disabled', true);
                 syncBatchInvoiceAutoAmount(false);
-                var added = addBatchInvoiceRow(
-                    $('#po-monitor-batch-po-number').val(),
-                    $('#po-monitor-batch-term-no').val(),
-                    $('#po-monitor-batch-invoice-value').val()
-                );
-                if (added) {
-                    $('#po-monitor-batch-po-number').val('').focus();
-                    $('#po-monitor-batch-invoice-value').val('');
-                }
+                ensureBatchInvoiceLookup([poNumber]).always(function() {
+                    var added = addBatchInvoiceRow(poNumber, termNo, invoiceValue);
+                    if (added) {
+                        $('#po-monitor-batch-po-number').val('').focus();
+                        $('#po-monitor-batch-invoice-value').val('');
+                    }
+                    $button.prop('disabled', false);
+                });
             });
 
             $('#po-monitor-batch-po-number, #po-monitor-batch-term-no')
@@ -3662,7 +3655,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
             });
 
             $('#po-monitor-batch-parse-paste').off('click.poMonitorBatchPaste').on('click.poMonitorBatchPaste', function() {
+                var $button = $(this);
                 var text = $('#po-monitor-batch-paste').val();
+                var rows = [];
+                var poNumbers = [];
                 String(text || '').split(/\r?\n/).forEach(function(line, index) {
                     if (!line.trim()) {
                         return;
@@ -3674,9 +3670,18 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     if (index === 0 && String(columns[0] || '').trim().toUpperCase() === 'PO NUMBER') {
                         return;
                     }
-                    addBatchInvoiceRow(columns[0] || '', columns[1] || '', columns.length >= 3 ? columns.slice(2).join(' ') : '');
+                    rows.push([columns[0] || '', columns[1] || '', columns.length >= 3 ? columns.slice(2).join(' ') : '']);
+                    poNumbers.push(columns[0] || '');
                 });
-                updateBatchInvoiceState();
+
+                $button.prop('disabled', true);
+                ensureBatchInvoiceLookup(poNumbers).always(function() {
+                    rows.forEach(function(row) {
+                        addBatchInvoiceRow(row[0], row[1], row[2]);
+                    });
+                    updateBatchInvoiceState();
+                    $button.prop('disabled', false);
+                });
             });
 
             $('#po-monitor-batch-clear-list').off('click.poMonitorBatchClear').on('click.poMonitorBatchClear', function() {

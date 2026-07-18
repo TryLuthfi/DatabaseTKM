@@ -166,11 +166,20 @@ class MPO_Monitor extends CI_Model
         $this->dropIndexIfExists('tb_po', 'uk_tb_po_po_number');
         $this->addIndexIfMissing('tb_po', 'idx_tb_po_source_hash', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_source_hash` (`source_hash`)");
         $this->addIndexIfMissing('tb_po', 'idx_tb_po_number_bowheer', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_number_bowheer` (`po_number`, `id_bowheer`)");
+        $this->addIndexIfMissing('tb_po', 'idx_tb_po_status_date', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_status_date` (`status_po`, `po_date`)");
         $this->addIndexIfMissing('tb_po', 'idx_tb_po_dashboard_bowheer', "ALTER TABLE `tb_po` ADD KEY `idx_tb_po_dashboard_bowheer` (`dashboard_bowheer`)");
+        $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_po_term', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_po_term` (`id_po`, `term_index`)");
         $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_target_week', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_target_week` (`target_year`, `target_week`)");
         $this->addIndexIfMissing('tb_po_term', 'idx_tb_po_term_status', "ALTER TABLE `tb_po_term` ADD KEY `idx_tb_po_term_status` (`target_status`)");
         $this->addIndexIfMissing('tb_po_term_claim', 'idx_tb_po_term_claim_allocation', "ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_allocation` (`id_allocation`)");
         $this->addIndexIfMissing('tb_po_term_claim', 'idx_tb_po_term_claim_source', "ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_source` (`claim_source`, `source_raw`)");
+        $this->addIndexIfMissing('tb_po_term_claim', 'idx_tb_po_term_claim_term_source_amount', "ALTER TABLE `tb_po_term_claim` ADD KEY `idx_tb_po_term_claim_term_source_amount` (`id_term`, `claim_source`, `invoice_amount`)");
+        if ($this->db->table_exists('tb_myrep_po_header')) {
+            $this->addIndexIfMissing('tb_myrep_po_header', 'idx_myrep_po_header_number', "ALTER TABLE `tb_myrep_po_header` ADD KEY `idx_myrep_po_header_number` (`po_number`)");
+        }
+        if ($this->db->table_exists('tb_myrep_po_termin')) {
+            $this->addIndexIfMissing('tb_myrep_po_termin', 'idx_myrep_po_termin_invoice_status', "ALTER TABLE `tb_myrep_po_termin` ADD KEY `idx_myrep_po_termin_invoice_status` (`invoice_date`, `status_termin`)");
+        }
         $this->seedBowheerPo();
     }
 
@@ -459,6 +468,117 @@ class MPO_Monitor extends CI_Model
                     GROUP BY id_term
                 ) tc ON t.id_term = tc.id_term
                 WHERE NOT EXISTS (SELECT 1 FROM tb_po_term_allocation ax WHERE ax.id_term = t.id_term)
+            ) x
+            ORDER BY po_number ASC, term_index ASC")->result_array();
+    }
+
+    public function getBatchInvoiceTerminRowsByPoNumbers(array $poNumbers)
+    {
+        $cleanPoNumbers = [];
+        foreach ($poNumbers as $poNumber) {
+            $poNumber = trim((string) $poNumber);
+            if ($poNumber !== '') {
+                $cleanPoNumbers[strtoupper($poNumber)] = $poNumber;
+            }
+        }
+
+        if (empty($cleanPoNumbers)) {
+            return [];
+        }
+
+        $escapedPoNumbers = [];
+        foreach (array_values($cleanPoNumbers) as $poNumber) {
+            $escapedPoNumbers[] = $this->db->escape($poNumber);
+        }
+        $poInSql = implode(',', $escapedPoNumbers);
+
+        return $this->db->query("SELECT *
+            FROM (
+                SELECT
+                    p.id_po,
+                    CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS parent_po_number,
+                    p.po_date,
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.id_term,
+                    a.id_allocation,
+                    t.term_index,
+                    GREATEST(COALESCE(NULLIF(a.plan_amount, 0), NULLIF(a.allocation_value, 0), NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0), COALESCE(p.total_value, 0) * COALESCE(t.percent, 0) / 100) AS term_value,
+                    COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
+                    GREATEST(GREATEST(COALESCE(NULLIF(a.plan_amount, 0), NULLIF(a.allocation_value, 0), NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0), COALESCE(p.total_value, 0) * COALESCE(t.percent, 0) / 100) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                    COALESCE(a.invoice_date, t.invoice_date) AS invoice_date
+                FROM tb_po p
+                LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
+                JOIN tb_po_term t ON p.id_po = t.id_po
+                    AND (
+                        t.id_amend = (
+                            SELECT am.id_amend
+                            FROM tb_po_amend am
+                            WHERE am.id_po = p.id_po
+                            ORDER BY am.amend_no DESC
+                            LIMIT 1
+                        )
+                        OR (
+                            t.id_amend IS NULL
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM tb_po_amend am2
+                                WHERE am2.id_po = p.id_po
+                            )
+                        )
+                    )
+                JOIN tb_po_term_allocation a ON a.id_term = t.id_term
+                LEFT JOIN (
+                    SELECT id_allocation, SUM(invoice_amount) AS invoiced_amount
+                    FROM tb_po_term_claim
+                    WHERE id_allocation IS NOT NULL
+                    GROUP BY id_allocation
+                ) tc ON a.id_allocation = tc.id_allocation
+                WHERE p.po_number IN ({$poInSql}) OR a.no_po_sub IN ({$poInSql})
+                UNION ALL
+                SELECT
+                    p.id_po,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS parent_po_number,
+                    p.po_date,
+                    CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
+                    t.id_term,
+                    NULL AS id_allocation,
+                    t.term_index,
+                    GREATEST(COALESCE(NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0), COALESCE(p.total_value, 0) * COALESCE(t.percent, 0) / 100) AS term_value,
+                    COALESCE(tc.invoiced_amount, 0) AS invoiced_amount,
+                    GREATEST(GREATEST(COALESCE(NULLIF(t.value, 0), (COALESCE((SELECT release_value FROM tb_po_amend amv WHERE amv.id_po = p.id_po ORDER BY amv.amend_no DESC LIMIT 1), p.total_value, 0) * COALESCE(t.percent, 0) / 100), 0), COALESCE(p.total_value, 0) * COALESCE(t.percent, 0) / 100) - COALESCE(tc.invoiced_amount, 0), 0) AS remaining,
+                    t.invoice_date
+                FROM tb_po p
+                LEFT JOIN tb_bowheer_po bp ON p.id_bowheer = bp.id_bowheer
+                LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
+                JOIN tb_po_term t ON p.id_po = t.id_po
+                    AND (
+                        t.id_amend = (
+                            SELECT am.id_amend
+                            FROM tb_po_amend am
+                            WHERE am.id_po = p.id_po
+                            ORDER BY am.amend_no DESC
+                            LIMIT 1
+                        )
+                        OR (
+                            t.id_amend IS NULL
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM tb_po_amend am2
+                                WHERE am2.id_po = p.id_po
+                            )
+                        )
+                    )
+                LEFT JOIN (
+                    SELECT id_term, SUM(invoice_amount) AS invoiced_amount
+                    FROM tb_po_term_claim
+                    WHERE id_allocation IS NULL
+                    GROUP BY id_term
+                ) tc ON t.id_term = tc.id_term
+                WHERE p.po_number IN ({$poInSql})
+                    AND NOT EXISTS (SELECT 1 FROM tb_po_term_allocation ax WHERE ax.id_term = t.id_term)
             ) x
             ORDER BY po_number ASC, term_index ASC")->result_array();
     }
@@ -2668,9 +2788,24 @@ class MPO_Monitor extends CI_Model
     private function findPoMonitorTermForMyRep($poNumber, $termNo)
     {
         $termNo = (int) $termNo;
+        $poNumber = trim((string) $poNumber);
         $normalizedPo = $this->normalizePoMonitorSyncPoNumber($poNumber);
         if ($normalizedPo === '' || $termNo < 1 || $termNo > 5) {
             return [];
+        }
+
+        $directRow = $this->db
+            ->select('t.id_term, t.id_po, t.term_index, t.target_status, p.po_number')
+            ->from('tb_po p')
+            ->join('tb_po_term t', 't.id_po = p.id_po', 'inner')
+            ->where('p.po_number', $poNumber)
+            ->where('t.term_index', $termNo)
+            ->order_by('t.id_term', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($directRow)) {
+            return $directRow;
         }
 
         $rows = $this->db
@@ -2678,6 +2813,7 @@ class MPO_Monitor extends CI_Model
             ->from('tb_po_term t')
             ->join('tb_po p', 'p.id_po = t.id_po', 'inner')
             ->where('t.term_index', $termNo)
+            ->like('p.po_number', $normalizedPo)
             ->get()
             ->result_array();
 

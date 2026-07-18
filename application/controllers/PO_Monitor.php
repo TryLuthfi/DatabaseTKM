@@ -13,8 +13,6 @@ class PO_Monitor extends CI_Controller
 
     public function index()
     {
-        $this->MPO_Monitor->rebuildMyRepSyncClaimsSince(null, (int) $this->session->userdata('id_user'));
-
         $selectedBowheer = $this->input->get('bowheer');
         $selectedSla = $this->input->get('sla');
         $comparisonFromMonth = $this->input->get('from_month') ?: date('Y-m');
@@ -30,18 +28,13 @@ class PO_Monitor extends CI_Controller
 
         $filteredPoList = [];
         $bowheerSummary = $this->MPO_Monitor->getPOSummaryByBowheer();
-        $bowheerTermBreakdown = $this->MPO_Monitor->getBowheerTermBreakdown();
 
         $data['title'] = 'PO Monitoring';
         $data['poList'] = $filteredPoList;
         $data['bowheerSummary'] = $bowheerSummary;
-        $data['bowheerTermBreakdown'] = $bowheerTermBreakdown;
-        $data['batchInvoiceRows'] = $this->MPO_Monitor->getBatchInvoiceTerminRows();
+        $data['batchInvoiceRows'] = [];
         $data['dashboardSummary'] = $this->MPO_Monitor->getDashboardSummary();
         $data['dashboardInitialTotals'] = $this->MPO_Monitor->getDashboardInitialTotals();
-        $data['targetWeekSummary'] = $this->MPO_Monitor->getTargetWeekSummary();
-        $data['projectWeekSummary'] = $this->MPO_Monitor->getProjectWeekSummary();
-        $data['carryOverSummary'] = $this->MPO_Monitor->getCarryOverSummary();
         $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
         $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'week', false);
         $data['breakdownFilterOptions'] = [
@@ -1777,7 +1770,7 @@ class PO_Monitor extends CI_Controller
         }
 
         $lookup = [];
-        foreach ($this->MPO_Monitor->getBatchInvoiceTerminRows() as $row) {
+        foreach ($this->MPO_Monitor->getBatchInvoiceTerminRowsByPoNumbers($poNumbers) as $row) {
             $key = strtoupper(trim((string) $row['po_number'])) . '|' . (int) $row['term_index'];
             $lookup[$key] = $row;
         }
@@ -1828,5 +1821,55 @@ class PO_Monitor extends CI_Controller
         }
         $this->session->set_flashdata('error_log', $message);
         redirect('PO_Monitor');
+    }
+
+    public function batch_invoice_lookup()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_status_header(401)
+                ->set_output(json_encode(['status' => false, 'message' => 'Unauthorized']));
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            show_404();
+            return;
+        }
+
+        $poNumbers = $this->input->post('po_numbers');
+        if (!is_array($poNumbers)) {
+            $poNumbers = [$this->input->post('po_number')];
+        }
+
+        $lookup = [];
+        foreach ($this->MPO_Monitor->getBatchInvoiceTerminRowsByPoNumbers($poNumbers) as $row) {
+            $poNumber = trim((string) ($row['po_number'] ?? ''));
+            $termNo = (int) ($row['term_index'] ?? 0);
+            if ($poNumber === '' || $termNo <= 0) {
+                continue;
+            }
+
+            $poKey = strtoupper($poNumber);
+            if (!isset($lookup[$poKey])) {
+                $lookup[$poKey] = [
+                    'po_number' => $poNumber,
+                    'nama_bowheer' => (string) ($row['nama_bowheer'] ?? ''),
+                    'terms' => []
+                ];
+            }
+            $lookup[$poKey]['terms'][$termNo] = [
+                'id_term' => (int) ($row['id_term'] ?? 0),
+                'term_value' => (float) ($row['term_value'] ?? 0),
+                'invoiced_amount' => (float) ($row['invoiced_amount'] ?? 0),
+                'remaining' => (float) ($row['remaining'] ?? 0),
+                'invoice_date' => (string) ($row['invoice_date'] ?? '')
+            ];
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['status' => true, 'lookup' => $lookup]));
     }
 }
