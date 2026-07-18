@@ -1536,6 +1536,211 @@ class MPO_Monitor extends CI_Model
         ];
     }
 
+    public function syncEmrNroComparisonClaims($fromMonth = null, $toMonth = null, $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $bounds = $this->resolveComparisonBounds($fromMonth, $toMonth);
+        $fromTime = strtotime($bounds['from'] . '-01');
+        $toTime = strtotime($bounds['to'] . '-01');
+
+        $emr = $this->db
+            ->select('id_bowheer')
+            ->where("UPPER(TRIM(CONVERT(bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci)) = CONVERT('PT EMR - NRO' USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->limit(1)
+            ->get('tb_bowheer_po')
+            ->row_array();
+
+        $idBowheer = (int) ($emr['id_bowheer'] ?? 0);
+        if ($idBowheer <= 0) {
+            return [
+                'status' => false,
+                'synced' => 0,
+                'po_count' => 0,
+                'message' => 'Bowheer PT EMR - NRO tidak ditemukan'
+            ];
+        }
+
+        $targetRows = $this->db->query("SELECT DISTINCT
+                p.po_number,
+                COALESCE(a.target_week_start, t.target_week_start) AS target_week_start,
+                COALESCE(a.target_week_end, t.target_week_end) AS target_week_end
+            FROM tb_po p
+            JOIN tb_po_term t ON t.id_po = p.id_po
+            LEFT JOIN tb_po_term_allocation a ON a.id_term = t.id_term
+            WHERE p.id_bowheer = ?
+                AND (
+                    (
+                        CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        AND a.target_week_start IS NOT NULL
+                        AND a.target_week_end IS NOT NULL
+                    )
+                    OR (
+                        CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        AND t.target_week_start IS NOT NULL
+                        AND t.target_week_end IS NOT NULL
+                        AND NOT EXISTS (
+                            SELECT 1 FROM tb_po_term_allocation ax WHERE ax.id_term = t.id_term
+                        )
+                    )
+                )", [$idBowheer])->result_array();
+
+        $poNumbers = [];
+        foreach ($targetRows as $row) {
+            $periodMonth = $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
+            $periodTime = strtotime($periodMonth . '-01');
+            if (!$periodTime || $periodTime < $fromTime || $periodTime > $toTime) {
+                continue;
+            }
+
+            $poNumber = trim((string) ($row['po_number'] ?? ''));
+            if ($poNumber !== '') {
+                $poNumbers[strtoupper($poNumber)] = $poNumber;
+            }
+        }
+
+        $extendedStart = date('Y-m-d', strtotime($bounds['from'] . '-01 -6 days'));
+        $extendedEnd = date('Y-m-d', strtotime(date('Y-m-t', strtotime($bounds['to'] . '-01')) . ' +6 days'));
+
+        if ($this->db->table_exists('tb_myrep_po_termin') && $this->db->table_exists('tb_myrep_po_header')) {
+            $invoiceRows = $this->db->query("SELECT DISTINCT
+                    h.po_number,
+                    t.invoice_date
+                FROM tb_myrep_po_termin t
+                JOIN tb_myrep_po_header h ON h.id_po_header = t.id_po_header
+                JOIN tb_po p ON CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(h.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                WHERE p.id_bowheer = ?
+                    AND t.invoice_date IS NOT NULL
+                    AND DATE(t.invoice_date) BETWEEN ? AND ?", [$idBowheer, $extendedStart, $extendedEnd])->result_array();
+
+            foreach ($invoiceRows as $row) {
+                $periodMonth = $this->monthKeyFromInvoiceWeek($row['invoice_date']);
+                $periodTime = strtotime($periodMonth . '-01');
+                if (!$periodTime || $periodTime < $fromTime || $periodTime > $toTime) {
+                    continue;
+                }
+
+                $poNumber = trim((string) ($row['po_number'] ?? ''));
+                if ($poNumber !== '') {
+                    $poNumbers[strtoupper($poNumber)] = $poNumber;
+                }
+            }
+        }
+
+        $claimRows = $this->db->query("SELECT DISTINCT
+                p.po_number,
+                tc.invoice_date
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            WHERE p.id_bowheer = ?
+                AND tc.claim_source = 'MYREP_SYNC'
+                AND tc.invoice_date IS NOT NULL
+                AND DATE(tc.invoice_date) BETWEEN ? AND ?", [$idBowheer, $extendedStart, $extendedEnd])->result_array();
+
+        foreach ($claimRows as $row) {
+            $periodMonth = $this->monthKeyFromInvoiceWeek($row['invoice_date']);
+            $periodTime = strtotime($periodMonth . '-01');
+            if (!$periodTime || $periodTime < $fromTime || $periodTime > $toTime) {
+                continue;
+            }
+
+            $poNumber = trim((string) ($row['po_number'] ?? ''));
+            if ($poNumber !== '') {
+                $poNumbers[strtoupper($poNumber)] = $poNumber;
+            }
+        }
+
+        $summary = [
+            'status' => true,
+            'synced' => 0,
+            'po_count' => count($poNumbers),
+            'matched' => 0,
+            'inserted' => 0,
+            'updated' => 0,
+            'deleted' => 0,
+            'skipped' => 0,
+            'unchanged' => 0,
+            'unmatched' => [],
+            'message' => 'Sync comparison PT EMR - NRO selesai'
+        ];
+
+        if (empty($poNumbers)) {
+            return $summary;
+        }
+
+        if (!$this->db->table_exists('tb_myrep_po_termin') || !$this->db->table_exists('tb_myrep_po_header')) {
+            $summary['status'] = false;
+            $summary['message'] = 'Tabel MyRep tidak ditemukan';
+            return $summary;
+        }
+
+        $invoiceValueSql = $this->db->field_exists('invoice_value', 'tb_myrep_po_termin')
+            ? 'COALESCE(t.invoice_value, t.termin_value, 0)'
+            : 'COALESCE(t.termin_value, 0)';
+
+        $myrepRows = [];
+        foreach (array_chunk(array_values($poNumbers), 500) as $poChunk) {
+            $poInSql = implode(',', array_map(function ($poNumber) {
+                return "CONVERT(" . $this->db->escape($poNumber) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+            }, $poChunk));
+
+            $rows = $this->db
+                ->select("t.id_po_termin,
+                    t.id_po_header,
+                    t.termin_no,
+                    t.termin_value,
+                    {$invoiceValueSql} AS invoice_amount,
+                    t.status_termin,
+                    t.invoice_date,
+                    t.invoice_number,
+                    p.po_number,
+                    p.po_type,
+                    p.po_category", false)
+                ->from('tb_myrep_po_termin t')
+                ->join('tb_myrep_po_header p', 'p.id_po_header = t.id_po_header', 'inner')
+                ->where("CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci IN ({$poInSql})", null, false)
+                ->order_by('p.po_number', 'ASC')
+                ->order_by('t.termin_no', 'ASC')
+                ->order_by('t.invoice_date IS NULL', 'ASC', false)
+                ->order_by('t.invoice_date', 'DESC')
+                ->order_by('t.id_po_termin', 'DESC')
+                ->get()
+                ->result_array();
+
+            foreach ($rows as $row) {
+                $termNo = (int) ($row['termin_no'] ?? 0);
+                $poNumber = strtoupper(trim((string) ($row['po_number'] ?? '')));
+                $key = $poNumber . '|' . $termNo;
+                if ($poNumber !== '' && $termNo > 0 && !isset($myrepRows[$key])) {
+                    $myrepRows[$key] = $row;
+                }
+            }
+        }
+
+        foreach ($myrepRows as $row) {
+            $result = $this->syncMyRepTerminRowToMonitor($row, $userId, null, false);
+            $action = (string) ($result['action'] ?? 'skipped');
+            if (!empty($result['status'])) {
+                $summary['matched']++;
+                $summary['synced']++;
+            }
+            if (isset($summary[$action])) {
+                $summary[$action]++;
+            } else {
+                $summary['skipped']++;
+            }
+            if (empty($result['status']) && !empty($result['po_number'])) {
+                $summary['unmatched'][] = [
+                    'po_number' => $result['po_number'],
+                    'term' => $result['term'] ?? null,
+                    'message' => $result['message'] ?? 'Unmatched'
+                ];
+            }
+        }
+
+        return $summary;
+    }
+
     public function getBreakdownTargetInvoiceRows($fromMonth = null, $toMonth = null)
     {
         $bounds = $this->resolveComparisonBounds($fromMonth, $toMonth);
@@ -2224,6 +2429,7 @@ class MPO_Monitor extends CI_Model
         }
 
         $this->db->trans_commit();
+        $this->syncEmrNroMonitorInvoiceToMyRep($idTerm, $invoiceDate, $amount, $userId, false);
         return ['status' => true, 'message' => 'Term claimed'];
     }
 
@@ -2346,6 +2552,7 @@ class MPO_Monitor extends CI_Model
         }
 
         $this->db->trans_commit();
+        $this->syncEmrNroMonitorInvoiceToMyRep($idTerm, $invoiceDate, $amount, $userId, false);
         return ['status' => true, 'message' => 'Invoice term berhasil diupdate'];
     }
 
@@ -2406,7 +2613,8 @@ class MPO_Monitor extends CI_Model
         $remainingTermClaims = $this->db
             ->where('id_term', $idTerm)
             ->count_all_results('tb_po_term_claim');
-        if ($remainingTermClaims <= 0) {
+        $syncMyRepReset = $remainingTermClaims <= 0;
+        if ($syncMyRepReset) {
             $this->db->where('id_term', $idTerm)->update('tb_po_term', [
                 'invoice_date' => null,
                 'submit_raw' => null
@@ -2428,7 +2636,65 @@ class MPO_Monitor extends CI_Model
         }
 
         $this->db->trans_commit();
+        if ($syncMyRepReset) {
+            $this->syncEmrNroMonitorInvoiceToMyRep($idTerm, null, 0, 0, true);
+        }
         return ['status' => true, 'message' => 'Invoice term berhasil direset'];
+    }
+
+    private function syncEmrNroMonitorInvoiceToMyRep($idTerm, $invoiceDate, $amount, $userId = 0, $reset = false)
+    {
+        if (!$this->db->table_exists('tb_myrep_po_header') || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return false;
+        }
+
+        $term = $this->db
+            ->select('t.id_term, t.term_index, t.value, p.po_number, COALESCE(bp.bowheer, b.nama_bowheer, "") AS bowheer')
+            ->from('tb_po_term t')
+            ->join('tb_po p', 'p.id_po = t.id_po', 'inner')
+            ->join('tb_bowheer_po bp', 'bp.id_bowheer = p.id_bowheer', 'left')
+            ->join('tb_master_bowheer_bilco b', 'b.id_bowheer = p.id_bowheer', 'left')
+            ->where('t.id_term', (int) $idTerm)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($term) || strtoupper(trim((string) ($term['bowheer'] ?? ''))) !== 'PT EMR - NRO') {
+            return false;
+        }
+
+        $myrepTermin = $this->db
+            ->select('t.*, h.po_number, h.po_type, h.id_myrep_cluster')
+            ->from('tb_myrep_po_termin t')
+            ->join('tb_myrep_po_header h', 'h.id_po_header = t.id_po_header', 'inner')
+            ->where("CONVERT(h.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) $term['po_number']) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where('t.termin_no', (int) $term['term_index'])
+            ->order_by('t.invoice_date IS NULL', 'ASC', false)
+            ->order_by('t.invoice_date', 'DESC')
+            ->order_by('t.id_po_termin', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($myrepTermin)) {
+            return false;
+        }
+
+        $this->load->model('MPO_MyRep');
+        $currentStatus = strtoupper(trim((string) ($myrepTermin['status_termin'] ?? 'NOT READY')));
+        $status = $reset ? 'READY BILLING' : ($currentStatus === 'PAID' ? 'PAID' : 'BILLED');
+        $invoiceValue = $reset ? null : ((float) $amount > 0 ? (float) $amount : (float) ($term['value'] ?? 0));
+
+        return $this->MPO_MyRep->updateTermin((int) $myrepTermin['id_po_termin'], [
+            'status_termin' => $status,
+            'invoice_number' => $reset ? '' : (string) ($myrepTermin['invoice_number'] ?? ''),
+            'invoice_date' => $reset ? null : $this->normalizeSyncDate($invoiceDate),
+            'invoice_value' => $invoiceValue,
+            'bast_date' => $reset ? null : ($myrepTermin['bast_date'] ?? null),
+            'payment_date' => $reset ? null : ($myrepTermin['payment_date'] ?? null),
+            'remark_termin' => (string) ($myrepTermin['remark_termin'] ?? ''),
+            'updated_by' => (int) $userId
+        ]);
     }
 
     public function syncMyRepTerminClaim($myrepTerminId, $userId = 0, $cutoffDate = null)

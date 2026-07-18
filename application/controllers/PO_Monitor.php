@@ -35,6 +35,7 @@ class PO_Monitor extends CI_Controller
         $data['batchInvoiceRows'] = [];
         $data['dashboardSummary'] = $this->MPO_Monitor->getDashboardSummary();
         $data['dashboardInitialTotals'] = $this->MPO_Monitor->getDashboardInitialTotals();
+        $this->MPO_Monitor->syncEmrNroComparisonClaims($comparisonFromMonth, $comparisonToMonth, (int) $this->session->userdata('id_user'));
         $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
         $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'week', false);
         $data['breakdownFilterOptions'] = [
@@ -1126,6 +1127,13 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
+        if (strtoupper(trim((string) $project['bowheer'])) === 'PT EMR - NRO') {
+            $syncMonth = $this->comparisonSyncMonthKey($periodKey, $groupBy);
+            if ($syncMonth !== '') {
+                $this->MPO_Monitor->syncEmrNroComparisonClaims($syncMonth, $syncMonth, (int) $this->session->userdata('id_user'));
+            }
+        }
+
         $rows = $this->MPO_Monitor->getComparisonDetail($idBowheer, $periodKey, $groupBy, $type);
         $title = '<span class="po-monitor-modal-eyebrow">Detail Perbandingan</span>'
             . htmlspecialchars(ucfirst($type) . ' - ' . $project['bowheer'] . ' - ' . $this->comparisonPeriodLabel($periodKey, $groupBy));
@@ -1544,6 +1552,35 @@ class PO_Monitor extends CI_Controller
         }
 
         return $periodKey;
+    }
+
+    private function comparisonSyncMonthKey($periodKey, $groupBy)
+    {
+        if ($groupBy !== 'week') {
+            return preg_match('/^\d{4}-\d{2}$/', $periodKey) ? $periodKey : '';
+        }
+
+        if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $periodKey, $match)) {
+            return '';
+        }
+
+        $year = (int) $match[1];
+        $week = (int) $match[2];
+        $jan1 = new DateTime($year . '-01-01');
+        $start = clone $jan1;
+        $start->modify('-' . (int) $jan1->format('w') . ' days');
+        $start->modify('+' . (($week - 1) * 7) . ' days');
+
+        $counts = [];
+        for ($i = 0; $i < 7; $i++) {
+            $day = clone $start;
+            $day->modify('+' . $i . ' days');
+            $key = $day->format('Y-m');
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        arsort($counts);
+        return (string) key($counts);
     }
 
     private function formatIndonesianMonth($monthKey)

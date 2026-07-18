@@ -28,6 +28,9 @@ if (!function_exists('poMonitorTargetText')) {
     function poMonitorTargetText($row)
     {
         $status = strtoupper(trim((string) ($row['target_status'] ?? '')));
+        if (!empty($row['invoice_date'])) {
+            return 'Invoiced<div class="small text-muted">' . poMonitorDetailDate($row['invoice_date'] ?? '') . '</div>';
+        }
         if ($status === 'TARGET_WEEK') {
             return 'W' . (int) ($row['target_week'] ?? 0) . ' / ' . (int) ($row['target_year'] ?? 0)
                 . '<div class="small text-muted">' . poMonitorDetailHtml(($row['target_week_start'] ?? '') . ' s/d ' . ($row['target_week_end'] ?? '')) . '</div>';
@@ -36,7 +39,7 @@ if (!function_exists('poMonitorTargetText')) {
             return 'Carry Over ' . poMonitorDetailHtml(($row['target_year'] ?? '') ?: '2027');
         }
         if ($status === 'INVOICED') {
-            return 'Invoiced<div class="small text-muted">' . poMonitorDetailDate($row['invoice_date'] ?? '') . '</div>';
+            return 'Invoiced<div class="small text-muted">-</div>';
         }
         if (!empty($row['due_date'])) {
             return poMonitorDetailDate($row['due_date']);

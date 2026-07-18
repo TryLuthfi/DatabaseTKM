@@ -279,6 +279,15 @@ if (!function_exists('po_monitor_term_amount_link')) {
     .po-compare-table tfoot th {
         padding: 5px 7px !important;
         white-space: nowrap;
+        background: #f8fafc !important;
+        color: #0f172a;
+        font-weight: 900;
+        text-align: right;
+        border-top: 2px solid #cbd5e1 !important;
+    }
+
+    .po-compare-table tfoot th.po-compare-footer-label {
+        text-align: left;
     }
 
     .po-compare-table thead .po-compare-week-cell {
@@ -2155,15 +2164,15 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <td><?= $compareNo++ ?></td>
                                             <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                                             <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                                <td><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
-                                                <td><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
+                                                <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
+                                                <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
                                                 <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
                                             <?php endforeach; ?>
-                                            <td><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
                                             <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
                                             <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
                                         </tr>
@@ -2171,7 +2180,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="3">Total</th>
+                                        <th colspan="3" class="po-compare-footer-label">Total</th>
                                         <th><?= number_format((float) $comparisonMatrix['totals']['total_target'], 0, ',', '.') ?></th>
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                             <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
@@ -2226,15 +2235,15 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <td><?= $compareWeekNo++ ?></td>
                                             <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                                             <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
                                             <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                                <td><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'week', 'target') ?></td>
-                                                <td><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'week', 'achieved') ?></td>
+                                                <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'week', 'target') ?></td>
+                                                <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'week', 'achieved') ?></td>
                                                 <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
                                             <?php endforeach; ?>
-                                            <td><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
                                             <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
                                             <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
                                         </tr>
@@ -2242,7 +2251,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="3">Total</th>
+                                        <th colspan="3" class="po-compare-footer-label">Total</th>
                                         <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_target'], 0, ',', '.') ?></th>
                                         <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
                                             <?php $monthTotal = $comparisonWeekMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
@@ -2930,6 +2939,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             });
+        }
+
+        function formatLocalePercent(value) {
+            return formatLocaleNumber(value) + '%';
         }
 
         function escapeHtml(value) {
@@ -3923,8 +3936,68 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     autoWidth: false,
                     responsive: false,
                     scrollX: true,
-                    ordering: false
+                    ordering: false,
+                    footerCallback: function() {
+                        updateCompareFooter(this.api());
+                    }
                 });
+            }
+
+            function compareCellAmount($cells, index) {
+                var $cell = $cells.eq(index);
+                var raw = $cell.attr('data-po-amount');
+                return raw !== undefined ? parseLocaleNumber(raw) : parseLocaleNumber($cell.html());
+            }
+
+            function updateCompareFooter(api) {
+                var columnCount = api.columns().count();
+                var periodCount = Math.max(0, Math.floor((columnCount - 8) / 3));
+                var monthTotals = [];
+                var totalTarget = 0;
+                var totalAchieved = 0;
+                var rowCount = 0;
+
+                for (var i = 0; i < periodCount; i++) {
+                    monthTotals.push({ target: 0, achieved: 0 });
+                }
+
+                api.rows({ search: 'applied' }).every(function() {
+                    var $cells = $(this.node()).children('td');
+                    rowCount++;
+                    totalTarget += compareCellAmount($cells, 3);
+
+                    for (var i = 0; i < periodCount; i++) {
+                        var targetIndex = 4 + (i * 3);
+                        var achievedIndex = targetIndex + 1;
+                        monthTotals[i].target += compareCellAmount($cells, targetIndex);
+                        monthTotals[i].achieved += compareCellAmount($cells, achievedIndex);
+                    }
+
+                    totalAchieved += compareCellAmount($cells, 4 + (periodCount * 3));
+                });
+
+                var deviasi = Math.max(totalTarget - totalAchieved, 0);
+                var achievedPercent = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : (totalAchieved > 0 ? 100 : 0);
+                var deviasiPercent = Math.max(100 - achievedPercent, 0);
+                var html = '<th colspan="3" class="po-compare-footer-label">Total (' + rowCount + ' row)</th>';
+                html += '<th>' + formatLocaleNumber(totalTarget) + '</th>';
+
+                monthTotals.forEach(function(total) {
+                    var percent = total.target > 0 ? (total.achieved / total.target) * 100 : (total.achieved > 0 ? 100 : 0);
+                    html += '<th>' + formatLocaleNumber(total.target) + '</th>';
+                    html += '<th>' + formatLocaleNumber(total.achieved) + '</th>';
+                    html += '<th>' + formatLocalePercent(percent) + '</th>';
+                });
+
+                html += '<th>' + formatLocaleNumber(totalAchieved) + '</th>';
+                html += '<th>' + formatLocaleNumber(deviasi) + '</th>';
+                html += '<th>' + formatLocalePercent(achievedPercent) + '</th>';
+                html += '<th>' + formatLocalePercent(deviasiPercent) + '</th>';
+
+                var $wrapper = $(api.table().container());
+                var $footers = $(api.table().footer());
+                $footers = $footers.add($wrapper.find('.dataTables_scrollFoot tfoot'));
+                $footers.find('tr').html(html);
             }
 
             compareTables.month = initCompareTable('#table_po_target_invoice_compare_month');
