@@ -1469,7 +1469,7 @@ class MPO_Monitor extends CI_Model
 
             $periodKey = $groupBy === 'week'
                 ? $this->weekKeyFromDate($row['invoice_date'])
-                : date('Y-m', strtotime($row['invoice_date']));
+                : $this->monthKeyFromInvoiceWeek($row['invoice_date']);
 
             if (!isset($projectMap[$id]['months'][$periodKey])) {
                 continue;
@@ -1878,7 +1878,7 @@ class MPO_Monitor extends CI_Model
         return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
             $rowPeriod = $groupBy === 'week'
                 ? $this->weekKeyFromDate($row['invoice_date'])
-                : date('Y-m', strtotime($row['invoice_date']));
+                : $this->monthKeyFromInvoiceWeek($row['invoice_date']);
 
             return $rowPeriod === $periodKey;
         }));
@@ -1940,7 +1940,7 @@ class MPO_Monitor extends CI_Model
             ->result_array();
 
         foreach ($claimRows as $row) {
-            $keys[] = date('Y-m', strtotime($row['invoice_date']));
+            $keys[] = $this->monthKeyFromInvoiceWeek($row['invoice_date']);
         }
 
         $keys = array_values(array_filter(array_unique($keys)));
@@ -2049,6 +2049,23 @@ class MPO_Monitor extends CI_Model
         $week = (int) floor($diffDays / 7) + 1;
 
         return $this->weekKey($year, $week);
+    }
+
+    private function monthKeyFromInvoiceWeek($date)
+    {
+        $timestamp = strtotime($date);
+        if (!$timestamp) {
+            return '';
+        }
+
+        $year = (int) date('Y', $timestamp);
+        $weekKey = $this->weekKeyFromDate($date);
+        if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $weekKey, $matches)) {
+            return date('Y-m', $timestamp);
+        }
+
+        $period = $this->weekPeriod((int) $matches[1], (int) $matches[2]);
+        return $this->majorityMonthKey($period['start'], $period['end']);
     }
 
     private function weekKey($year, $week)
