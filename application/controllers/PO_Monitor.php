@@ -94,6 +94,9 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
+        $this->MPO_Monitor->syncMyRepClaimsForPoNumber((string) ($po['po_number'] ?? ''), (int) $this->session->userdata('id_user'));
+        $po = $this->MPO_Monitor->getPOById((int) $id_po);
+
         $data['title'] = 'PO Detail: ' . $po['po_number'];
         $data['po'] = $po;
         $data['terms'] = $this->MPO_Monitor->getPOTerms((int) $id_po);

@@ -2512,6 +2512,87 @@ class MPO_Monitor extends CI_Model
         return $summary;
     }
 
+    public function syncMyRepClaimsForPoNumber($poNumber, $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $poNumber = trim((string) $poNumber);
+        if ($poNumber === '' || !$this->db->table_exists('tb_myrep_po_termin') || !$this->db->table_exists('tb_myrep_po_header')) {
+            return [
+                'status' => false,
+                'message' => 'PO MyRep tidak ditemukan.',
+                'matched' => 0,
+                'inserted' => 0,
+                'updated' => 0,
+                'deleted' => 0,
+                'skipped' => 0,
+                'unmatched' => []
+            ];
+        }
+
+        $invoiceValueSql = $this->db->field_exists('invoice_value', 'tb_myrep_po_termin')
+            ? 'COALESCE(t.invoice_value, t.termin_value, 0)'
+            : 'COALESCE(t.termin_value, 0)';
+
+        $rows = $this->db->query("SELECT
+                t.id_po_termin,
+                t.id_po_header,
+                t.termin_no,
+                t.termin_value,
+                {$invoiceValueSql} AS invoice_amount,
+                t.status_termin,
+                t.invoice_date,
+                t.invoice_number,
+                p.po_number,
+                p.po_type,
+                p.po_category
+            FROM tb_myrep_po_termin t
+            JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
+            WHERE p.po_number = ?
+            ORDER BY t.termin_no ASC, t.invoice_date IS NULL ASC, t.invoice_date DESC, t.id_po_termin DESC", [$poNumber])->result_array();
+
+        $rowsByTerm = [];
+        foreach ($rows as $row) {
+            $termNo = (int) ($row['termin_no'] ?? 0);
+            if ($termNo > 0 && !isset($rowsByTerm[$termNo])) {
+                $rowsByTerm[$termNo] = $row;
+            }
+        }
+        $rows = array_values($rowsByTerm);
+
+        $summary = [
+            'status' => true,
+            'message' => 'Sync PO selesai.',
+            'matched' => 0,
+            'inserted' => 0,
+            'updated' => 0,
+            'deleted' => 0,
+            'skipped' => 0,
+            'unmatched' => []
+        ];
+
+        foreach ($rows as $row) {
+            $result = $this->syncMyRepTerminRowToMonitor($row, $userId, null, false);
+            $action = (string) ($result['action'] ?? 'skipped');
+            if (!empty($result['status'])) {
+                $summary['matched']++;
+            }
+            if (isset($summary[$action])) {
+                $summary[$action]++;
+            } else {
+                $summary['skipped']++;
+            }
+            if (empty($result['status']) && !empty($result['po_number'])) {
+                $summary['unmatched'][] = [
+                    'po_number' => $result['po_number'],
+                    'term' => $result['term'] ?? null,
+                    'message' => $result['message'] ?? 'Unmatched'
+                ];
+            }
+        }
+
+        return $summary;
+    }
+
     public function rebuildMyRepSyncClaimsSince($cutoffDate = null, $userId = 0)
     {
         $this->ensureStandaloneSchema();
@@ -2611,6 +2692,36 @@ class MPO_Monitor extends CI_Model
                 return ['status' => true, 'action' => 'deleted', 'message' => 'Sync claim removed'];
             }
 
+            $term = $this->findPoMonitorTermForMyRep($poNumber, $termNo);
+            if (!empty($term) && $amount > 0) {
+                $staleClaim = $this->db
+                    ->from('tb_po_term_claim')
+                    ->where('id_term', (int) $term['id_term'])
+                    ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 1, false)
+                    ->where_in('claim_source', ['MYREP_SYNC', 'IMPORT'])
+                    ->order_by("CASE WHEN claim_source = 'MYREP_SYNC' THEN 0 ELSE 1 END", '', false)
+                    ->order_by('id_claim', 'ASC')
+                    ->limit(1)
+                    ->get()
+                    ->row_array();
+
+                if (!empty($staleClaim)) {
+                    $this->db->trans_begin();
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $staleClaim['invoice_date'], -1 * (float) $staleClaim['invoice_amount']);
+                    $this->db->where('id_claim', (int) $staleClaim['id_claim'])->delete('tb_po_term_claim');
+                    $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                    if ($rebuildCache) {
+                        $this->rebuildDashboardCache(null);
+                    }
+                    if ($this->db->trans_status() === false) {
+                        $this->db->trans_rollback();
+                        return ['status' => false, 'action' => 'skipped', 'message' => 'Failed to remove stale claim'];
+                    }
+                    $this->db->trans_commit();
+                    return ['status' => true, 'action' => 'deleted', 'message' => 'Stale claim removed'];
+                }
+            }
+
             return [
                 'status' => false,
                 'action' => 'skipped',
@@ -2655,12 +2766,29 @@ class MPO_Monitor extends CI_Model
             } else {
                 $action = 'unchanged';
             }
+
+            $duplicateClaim = $this->db
+                ->from('tb_po_term_claim')
+                ->where('id_term', (int) $term['id_term'])
+                ->where('id_claim !=', (int) $existingClaim['id_claim'])
+                ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 1, false)
+                ->where('claim_source', 'IMPORT')
+                ->order_by('id_claim', 'ASC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($duplicateClaim)) {
+                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $duplicateClaim['invoice_date'], -1 * (float) $duplicateClaim['invoice_amount']);
+                $this->db->where('id_claim', (int) $duplicateClaim['id_claim'])->delete('tb_po_term_claim');
+                $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                $action = $action === 'unchanged' ? 'updated' : $action;
+            }
         } else {
             $siblingSyncClaim = $this->db
                 ->from('tb_po_term_claim')
                 ->where('id_term', (int) $term['id_term'])
                 ->where('claim_source', 'MYREP_SYNC')
-                ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 0.01, false)
+                ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 1, false)
                 ->order_by('id_claim', 'ASC')
                 ->limit(1)
                 ->get()
@@ -2687,11 +2815,28 @@ class MPO_Monitor extends CI_Model
                 } else {
                     $action = 'unchanged';
                 }
+
+                $duplicateClaim = $this->db
+                    ->from('tb_po_term_claim')
+                    ->where('id_term', (int) $term['id_term'])
+                    ->where('id_claim !=', (int) $siblingSyncClaim['id_claim'])
+                    ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 1, false)
+                    ->where('claim_source', 'IMPORT')
+                    ->order_by('id_claim', 'ASC')
+                    ->limit(1)
+                    ->get()
+                    ->row_array();
+                if (!empty($duplicateClaim)) {
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $duplicateClaim['invoice_date'], -1 * (float) $duplicateClaim['invoice_amount']);
+                    $this->db->where('id_claim', (int) $duplicateClaim['id_claim'])->delete('tb_po_term_claim');
+                    $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                    $action = $action === 'unchanged' ? 'updated' : $action;
+                }
             } else {
                 $adoptedClaim = $this->db
                     ->from('tb_po_term_claim')
                     ->where('id_term', (int) $term['id_term'])
-                    ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 0.01, false)
+                    ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 1, false)
                     ->group_start()
                         ->where('claim_source !=', 'MYREP_SYNC')
                         ->or_where('claim_source IS NULL', null, false)
