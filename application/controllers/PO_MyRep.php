@@ -524,7 +524,7 @@ class PO_MyRep extends CI_Controller
         ]);
 
         if ($result) {
-            $this->MPO_Monitor->syncMyRepTerminClaim($terminId, (int) $this->session->userdata('id_user'), '2026-07-01');
+            $this->MPO_Monitor->syncMyRepTerminClaim($terminId, (int) $this->session->userdata('id_user'));
         }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Termin berhasil diupdate.' : 'Termin gagal diupdate.');
@@ -622,7 +622,7 @@ class PO_MyRep extends CI_Controller
             ]);
 
             if ($updated) {
-                $this->MPO_Monitor->syncMyRepTerminClaim((int) ($termin['id_po_termin'] ?? 0), (int) $this->session->userdata('id_user'), '2026-07-01');
+                $this->MPO_Monitor->syncMyRepTerminClaim((int) ($termin['id_po_termin'] ?? 0), (int) $this->session->userdata('id_user'));
                 $updatedCount++;
             } else {
                 $skippedMessages[] = $rowLabel . ': gagal disimpan.';

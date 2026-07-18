@@ -13,7 +13,7 @@ class PO_Monitor extends CI_Controller
 
     public function index()
     {
-        $this->MPO_Monitor->rebuildMyRepSyncClaimsSince('2026-07-01', (int) $this->session->userdata('id_user'));
+        $this->MPO_Monitor->rebuildMyRepSyncClaimsSince(null, (int) $this->session->userdata('id_user'));
 
         $selectedBowheer = $this->input->get('bowheer');
         $selectedSla = $this->input->get('sla');

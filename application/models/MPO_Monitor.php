@@ -2294,7 +2294,7 @@ class MPO_Monitor extends CI_Model
         return ['status' => true, 'message' => 'Invoice term berhasil direset'];
     }
 
-    public function syncMyRepTerminClaim($myrepTerminId, $userId = 0, $cutoffDate = '2026-07-01')
+    public function syncMyRepTerminClaim($myrepTerminId, $userId = 0, $cutoffDate = null)
     {
         $this->ensureStandaloneSchema();
         $myrepTerminId = (int) $myrepTerminId;
@@ -2310,10 +2310,10 @@ class MPO_Monitor extends CI_Model
         return $this->syncMyRepTerminRowToMonitor($myrep, $userId, $cutoffDate);
     }
 
-    public function syncMyRepClaimsSince($cutoffDate = '2026-07-01', $userId = 0)
+    public function syncMyRepClaimsSince($cutoffDate = null, $userId = 0)
     {
         $this->ensureStandaloneSchema();
-        $cutoffDate = $this->normalizeSyncDate($cutoffDate) ?: '2026-07-01';
+        $cutoffDate = $this->normalizeSyncDate($cutoffDate);
         if (!$this->db->table_exists('tb_myrep_po_termin') || !$this->db->table_exists('tb_myrep_po_header')) {
             return [
                 'status' => false,
@@ -2331,6 +2331,9 @@ class MPO_Monitor extends CI_Model
             ? 'COALESCE(t.invoice_value, t.termin_value, 0)'
             : 'COALESCE(t.termin_value, 0)';
 
+        $whereDateSql = $cutoffDate !== null ? 'AND DATE(t.invoice_date) >= ?' : '';
+        $queryParams = $cutoffDate !== null ? [$cutoffDate] : [];
+
         $rows = $this->db->query("SELECT
                 t.id_po_termin,
                 t.id_po_header,
@@ -2346,13 +2349,13 @@ class MPO_Monitor extends CI_Model
             FROM tb_myrep_po_termin t
             JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
             WHERE t.invoice_date IS NOT NULL
-                AND DATE(t.invoice_date) >= ?
+                {$whereDateSql}
                 AND CONVERT(UPPER(TRIM(COALESCE(t.status_termin, ''))) USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (
                     CONVERT('READY BILLING' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
                     CONVERT('BILLED' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
                     CONVERT('PAID' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 )
-            ORDER BY t.invoice_date ASC, p.po_number ASC, t.termin_no ASC", [$cutoffDate])->result_array();
+            ORDER BY t.invoice_date ASC, p.po_number ASC, t.termin_no ASC", $queryParams)->result_array();
 
         $summary = [
             'status' => true,
@@ -2389,18 +2392,19 @@ class MPO_Monitor extends CI_Model
         return $summary;
     }
 
-    public function rebuildMyRepSyncClaimsSince($cutoffDate = '2026-07-01', $userId = 0)
+    public function rebuildMyRepSyncClaimsSince($cutoffDate = null, $userId = 0)
     {
         $this->ensureStandaloneSchema();
-        $cutoffDate = $this->normalizeSyncDate($cutoffDate) ?: '2026-07-01';
+        $cutoffDate = $this->normalizeSyncDate($cutoffDate);
 
-        $existingClaims = $this->db
+        $existingClaimsQuery = $this->db
             ->select('id_claim, id_term, invoice_date, invoice_amount')
             ->from('tb_po_term_claim')
-            ->where('claim_source', 'MYREP_SYNC')
-            ->where('invoice_date >=', $cutoffDate)
-            ->get()
-            ->result_array();
+            ->where('claim_source', 'MYREP_SYNC');
+        if ($cutoffDate !== null) {
+            $existingClaimsQuery->where('invoice_date >=', $cutoffDate);
+        }
+        $existingClaims = $existingClaimsQuery->get()->result_array();
 
         $affectedTermIds = [];
         $this->db->trans_begin();
@@ -2410,10 +2414,16 @@ class MPO_Monitor extends CI_Model
             $this->applyPoMonitorClaimDelta($idTerm, $claim['invoice_date'], -1 * (float) $claim['invoice_amount']);
         }
 
-        $this->db
-            ->where('claim_source', 'MYREP_SYNC')
-            ->where('invoice_date >=', $cutoffDate)
-            ->delete('tb_po_term_claim');
+        if ($cutoffDate !== null) {
+            $this->db
+                ->where('claim_source', 'MYREP_SYNC')
+                ->where('invoice_date >=', $cutoffDate)
+                ->delete('tb_po_term_claim');
+        } else {
+            $this->db
+                ->where('claim_source', 'MYREP_SYNC')
+                ->delete('tb_po_term_claim');
+        }
 
         foreach (array_unique(array_filter($affectedTermIds)) as $idTerm) {
             $this->refreshPoMonitorTermInvoiceDate((int) $idTerm);
@@ -2439,7 +2449,7 @@ class MPO_Monitor extends CI_Model
         return $summary;
     }
 
-    private function syncMyRepTerminRowToMonitor(array $myrep, $userId = 0, $cutoffDate = '2026-07-01', $rebuildCache = true)
+    private function syncMyRepTerminRowToMonitor(array $myrep, $userId = 0, $cutoffDate = null, $rebuildCache = true)
     {
         $sourceRaw = 'MYREP_TERMIN:' . (int) ($myrep['id_po_termin'] ?? 0);
         $existingClaim = $this->db
@@ -2458,8 +2468,9 @@ class MPO_Monitor extends CI_Model
         $statusTermin = strtoupper(trim((string) ($myrep['status_termin'] ?? '')));
         $termNo = (int) ($myrep['termin_no'] ?? 0);
         $poNumber = (string) ($myrep['po_number'] ?? '');
+        $cutoffDate = $this->normalizeSyncDate($cutoffDate);
         $isSyncable = $invoiceDate !== null
-            && strtotime($invoiceDate) >= strtotime($cutoffDate)
+            && ($cutoffDate === null || strtotime($invoiceDate) >= strtotime($cutoffDate))
             && $amount > 0
             && in_array($statusTermin, ['READY BILLING', 'BILLED', 'PAID'], true);
 
@@ -2525,46 +2536,79 @@ class MPO_Monitor extends CI_Model
                 $action = 'unchanged';
             }
         } else {
-            $adoptedClaim = $this->db
+            $siblingSyncClaim = $this->db
                 ->from('tb_po_term_claim')
                 ->where('id_term', (int) $term['id_term'])
+                ->where('claim_source', 'MYREP_SYNC')
                 ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 0.01, false)
-                ->group_start()
-                    ->where('claim_source !=', 'MYREP_SYNC')
-                    ->or_where('claim_source IS NULL', null, false)
-                ->group_end()
-                ->order_by("CASE WHEN claim_source = 'IMPORT' THEN 0 ELSE 1 END", '', false)
                 ->order_by('id_claim', 'ASC')
                 ->limit(1)
                 ->get()
                 ->row_array();
 
-            if (!empty($adoptedClaim)) {
-                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $adoptedClaim['invoice_date'], -1 * (float) $adoptedClaim['invoice_amount']);
-                $this->db
-                    ->where('id_claim', (int) $adoptedClaim['id_claim'])
-                    ->update('tb_po_term_claim', [
+            if (!empty($siblingSyncClaim)) {
+                $changed = (string) $siblingSyncClaim['invoice_date'] !== (string) $invoiceDate
+                    || abs((float) $siblingSyncClaim['invoice_amount'] - $amount) >= 0.01
+                    || (string) ($siblingSyncClaim['source_raw'] ?? '') !== $sourceRaw;
+
+                if ($changed) {
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $siblingSyncClaim['invoice_date'], -1 * (float) $siblingSyncClaim['invoice_amount']);
+                    $this->db
+                        ->where('id_claim', (int) $siblingSyncClaim['id_claim'])
+                        ->update('tb_po_term_claim', [
+                            'invoice_date' => $invoiceDate,
+                            'invoice_amount' => $amount,
+                            'source_raw' => $sourceRaw,
+                            'created_by' => $userId ?: null
+                        ]);
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
+                    $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                    $action = 'updated';
+                } else {
+                    $action = 'unchanged';
+                }
+            } else {
+                $adoptedClaim = $this->db
+                    ->from('tb_po_term_claim')
+                    ->where('id_term', (int) $term['id_term'])
+                    ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 0.01, false)
+                    ->group_start()
+                        ->where('claim_source !=', 'MYREP_SYNC')
+                        ->or_where('claim_source IS NULL', null, false)
+                    ->group_end()
+                    ->order_by("CASE WHEN claim_source = 'IMPORT' THEN 0 ELSE 1 END", '', false)
+                    ->order_by('id_claim', 'ASC')
+                    ->limit(1)
+                    ->get()
+                    ->row_array();
+
+                if (!empty($adoptedClaim)) {
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $adoptedClaim['invoice_date'], -1 * (float) $adoptedClaim['invoice_amount']);
+                    $this->db
+                        ->where('id_claim', (int) $adoptedClaim['id_claim'])
+                        ->update('tb_po_term_claim', [
+                            'invoice_date' => $invoiceDate,
+                            'claim_source' => 'MYREP_SYNC',
+                            'source_raw' => $sourceRaw,
+                            'created_by' => $userId ?: null
+                        ]);
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
+                    $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                    $action = 'updated';
+                } else {
+                    $this->db->insert('tb_po_term_claim', [
+                        'id_term' => (int) $term['id_term'],
+                        'id_allocation' => null,
                         'invoice_date' => $invoiceDate,
+                        'invoice_amount' => $amount,
                         'claim_source' => 'MYREP_SYNC',
                         'source_raw' => $sourceRaw,
                         'created_by' => $userId ?: null
                     ]);
-                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
-                $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
-                $action = 'updated';
-            } else {
-                $this->db->insert('tb_po_term_claim', [
-                    'id_term' => (int) $term['id_term'],
-                    'id_allocation' => null,
-                    'invoice_date' => $invoiceDate,
-                    'invoice_amount' => $amount,
-                    'claim_source' => 'MYREP_SYNC',
-                    'source_raw' => $sourceRaw,
-                    'created_by' => $userId ?: null
-                ]);
-                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
-                $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
-                $action = 'inserted';
+                    $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
+                    $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                    $action = 'inserted';
+                }
             }
         }
 
