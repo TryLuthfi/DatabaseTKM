@@ -2528,25 +2528,28 @@ class MPO_Monitor extends CI_Model
             $adoptedClaim = $this->db
                 ->from('tb_po_term_claim')
                 ->where('id_term', (int) $term['id_term'])
-                ->where('invoice_date', $invoiceDate)
                 ->where('ABS(invoice_amount - ' . $this->db->escape($amount) . ') <', 0.01, false)
                 ->group_start()
                     ->where('claim_source !=', 'MYREP_SYNC')
                     ->or_where('claim_source IS NULL', null, false)
                 ->group_end()
+                ->order_by("CASE WHEN claim_source = 'IMPORT' THEN 0 ELSE 1 END", '', false)
                 ->order_by('id_claim', 'ASC')
                 ->limit(1)
                 ->get()
                 ->row_array();
 
             if (!empty($adoptedClaim)) {
+                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $adoptedClaim['invoice_date'], -1 * (float) $adoptedClaim['invoice_amount']);
                 $this->db
                     ->where('id_claim', (int) $adoptedClaim['id_claim'])
                     ->update('tb_po_term_claim', [
+                        'invoice_date' => $invoiceDate,
                         'claim_source' => 'MYREP_SYNC',
                         'source_raw' => $sourceRaw,
                         'created_by' => $userId ?: null
                     ]);
+                $this->applyPoMonitorClaimDelta((int) $term['id_term'], $invoiceDate, $amount);
                 $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
                 $action = 'updated';
             } else {
