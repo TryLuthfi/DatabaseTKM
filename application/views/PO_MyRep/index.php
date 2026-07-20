@@ -2467,11 +2467,12 @@ if (is_array($terminBreakdownRows ?? null)) {
 
         function formatBatchValue(value) {
             var parsed = parseLocaleNumber(value);
-            return parsed > 0 ? parsed.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '';
+            return parsed !== 0 ? parsed.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '';
         }
 
         function formatBatchInvoiceInput($input) {
             var raw = String($input.val() || '');
+            var isNegative = raw.trim().charAt(0) === '-';
             var digits = raw.replace(/\D/g, '');
             var selectionStart = $input[0] && typeof $input[0].selectionStart === 'number'
                 ? $input[0].selectionStart
@@ -2479,11 +2480,11 @@ if (is_array($terminBreakdownRows ?? null)) {
             var digitsBeforeCaret = raw.slice(0, selectionStart).replace(/\D/g, '').length;
 
             if (digits === '') {
-                $input.val('');
+                $input.val(isNegative ? '-' : '');
                 return;
             }
 
-            var formatted = Number(digits).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+            var formatted = (isNegative ? '-' : '') + Number(digits).toLocaleString('id-ID', { maximumFractionDigits: 0 });
             $input.val(formatted);
 
             if (!$input[0] || typeof $input[0].setSelectionRange !== 'function') {
@@ -2994,13 +2995,13 @@ if (is_array($terminBreakdownRows ?? null)) {
             $('#po-batch-submit').prop('disabled', $validRows.length === 0);
             $('#po-batch-clear-list').prop('disabled', $rows.length === 0);
             $('#po-batch-summary-total-count').text($validRows.length);
-            $('#po-batch-summary-total-value').text(totalValue > 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-summary-total-value').text(totalValue !== 0 ? totalValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
             $('#po-batch-status-valid-count').text($validRows.length);
             $('#po-batch-status-need-certif-count').text($needCertifRows.length);
             $('#po-batch-status-invalid-count').text($invalidRows.length);
-            $('#po-batch-status-valid-value').text(validValue > 0 ? validValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
-            $('#po-batch-status-need-certif-value').text(needCertifValue > 0 ? needCertifValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
-            $('#po-batch-status-invalid-value').text(invalidValue > 0 ? invalidValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-status-valid-value').text(validValue !== 0 ? validValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-status-need-certif-value').text(needCertifValue !== 0 ? needCertifValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+            $('#po-batch-status-invalid-value').text(invalidValue !== 0 ? invalidValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
             $('.po-batch-status-filter').toggleClass('is-active', false);
             if (poBatchActiveStatusFilter) {
                 $('.po-batch-status-filter[data-batch-status-filter="' + poBatchActiveStatusFilter + '"]').addClass('is-active');
@@ -3008,7 +3009,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             Object.keys(termSummary).forEach(function (termNo) {
                 var summary = termSummary[termNo];
                 $('#po-batch-summary-count-' + termNo).text(summary.count);
-                $('#po-batch-summary-term-' + termNo).text(summary.total > 0 ? summary.total.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
+                $('#po-batch-summary-term-' + termNo).text(summary.total !== 0 ? summary.total.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '0');
             });
         }
 
@@ -3021,12 +3022,13 @@ if (is_array($terminBreakdownRows ?? null)) {
             var poKey = String(poNumber || '').trim().toUpperCase();
             var lookup = poBatchTerminLookup[poKey] || null;
 
-            if (!poKey || !termNo || !invoiceValue) {
+            var parsedInvoiceValue = parseLocaleNumber(invoiceValue);
+            if (!poKey || !termNo || String(invoiceValue || '').trim() === '' || parsedInvoiceValue === 0) {
                 return {
                     valid: false,
                     label: 'Invalid',
                     statusCode: 'invalid',
-                    message: 'Nomor PO, term, dan nilai invoice wajib diisi.'
+                    message: 'Nomor PO, term, dan nilai invoice wajib diisi dan tidak boleh 0.'
                 };
             }
 

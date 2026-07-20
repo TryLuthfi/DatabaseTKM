@@ -575,7 +575,7 @@ class PO_MyRep extends CI_Controller
             $termNo = $this->normalizeTerminNoInput($termInputs[$index] ?? '');
             $invoiceValue = $this->normalizeNumber($invoiceValues[$index] ?? '');
 
-            if ($poNumber === '' && $termNo <= 0 && $invoiceValue <= 0) {
+            if ($poNumber === '' && $termNo <= 0 && abs((float) $invoiceValue) < 0.000001) {
                 continue;
             }
 
@@ -584,8 +584,8 @@ class PO_MyRep extends CI_Controller
                 $skippedMessages[] = $rowLabel . ': nomor PO atau term tidak valid.';
                 continue;
             }
-            if ($invoiceValue <= 0) {
-                $skippedMessages[] = $rowLabel . ': nilai invoice wajib lebih dari 0.';
+            if (abs((float) $invoiceValue) < 0.000001) {
+                $skippedMessages[] = $rowLabel . ': nilai invoice wajib diisi dan tidak boleh 0.';
                 continue;
             }
 
