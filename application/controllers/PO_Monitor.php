@@ -617,7 +617,7 @@ class PO_Monitor extends CI_Controller
         $filters = $this->collectBreakdownFilters();
         $search = trim((string) $this->input->post('breakdown_search'));
 
-        $rawRows = $this->getCachedBreakdownRows();
+        $rawRows = $this->getBreakdownRowsForRequest($mode, $filters);
         $filteredRows = array_values(array_filter($rawRows, function ($row) use ($filters) {
             return $this->breakdownRawMatchesFilters($row, $filters);
         }));
@@ -643,7 +643,7 @@ class PO_Monitor extends CI_Controller
                 'draw' => $draw,
                 'recordsTotal' => $recordsTotal,
                 'recordsFiltered' => $recordsFiltered,
-                'totals' => $this->formatBreakdownTotals($this->calculateBreakdownTotals($pageRows), $recordsFiltered, count($pageRows)),
+                'totals' => $this->formatBreakdownTotals($this->calculateBreakdownTotals($groupedRows), $recordsFiltered, count($pageRows)),
                 'data' => $data
             ]));
     }
@@ -676,7 +676,7 @@ class PO_Monitor extends CI_Controller
         $key = trim((string) $this->input->post('key'));
         $filters = $this->collectBreakdownFilters();
 
-        $rawRows = $this->getCachedBreakdownRows();
+        $rawRows = $this->getBreakdownRowsForRequest($mode, $filters);
         $rows = array_values(array_filter($rawRows, function ($row) use ($filters, $mode, $key) {
             return $this->breakdownRawMatchesFilters($row, $filters)
                 && $this->breakdownRawMatchesGroup($row, $mode, $key);
@@ -702,6 +702,34 @@ class PO_Monitor extends CI_Controller
         }
 
         return $rows;
+    }
+
+    private function getBreakdownRowsForRequest($mode, array $filters)
+    {
+        if ($this->useDashboardBreakdownRows($mode, $filters)) {
+            return $this->MPO_Monitor->getDashboardTargetInvoiceBreakdownRows();
+        }
+
+        return $this->getCachedBreakdownRows();
+    }
+
+    private function useDashboardBreakdownRows($mode, array $filters)
+    {
+        if (!in_array($mode, ['project', 'pic'], true)) {
+            return false;
+        }
+
+        if (!empty($filters['invoicedOnly'])) {
+            return false;
+        }
+
+        foreach (['project', 'pic', 'regional', 'area', 'month', 'week'] as $field) {
+            if (!empty($filters[$field])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function normalizeBreakdownMode($mode)
@@ -1631,6 +1659,7 @@ class PO_Monitor extends CI_Controller
             'done_inv_2026' => $this->dashboardNumber($totals['done_inv_2026'] ?? 0),
             'outs_2026_on_target' => $this->dashboardNumber($totals['outs_2026_on_target'] ?? 0),
             'ny_po_on_target_2026' => $this->dashboardNumber($totals['ny_po_on_target_2026'] ?? 0),
+            'acceleration_target_2026' => $this->dashboardNumber(($totals['all_po'] ?? 0) + ($totals['done_inv_2026'] ?? 0) + ($totals['outs_2026_on_target'] ?? 0) + ($totals['ny_po_on_target_2026'] ?? 0)),
             'done_outs_ny_2026' => $this->dashboardNumber(($totals['done_inv_2026'] ?? 0) + ($totals['outs_2026_on_target'] ?? 0) + ($totals['ny_po_on_target_2026'] ?? 0)),
             'grandtotal_target' => $this->dashboardNumber($totals['grandtotal_target'] ?? 0),
             'ny_po_total' => $this->dashboardNumber($totals['ny_po_total'] ?? 0),

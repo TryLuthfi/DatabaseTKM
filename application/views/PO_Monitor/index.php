@@ -1906,8 +1906,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $dashboardDoneInvoice = (float) ($dashboardTotals['done_inv_2026'] ?? 0);
                 $dashboardOutsOnTarget = (float) ($dashboardTotals['outs_2026_on_target'] ?? 0);
                 $dashboardNyPoTarget = (float) ($dashboardTotals['ny_po_on_target_2026'] ?? 0);
-                $dashboardInitialCombinedTargetInvoice = (float) ($dashboardInitialTotals['done_outs_ny_2026'] ?? ($dashboardDoneInvoice + $dashboardOutsOnTarget + $dashboardNyPoTarget));
-                $dashboardAccelerationTarget = $dashboardInitialCombinedTargetInvoice + $dashboardDoneInvoice;
+                $dashboardPo2026 = (float) ($dashboardTotals['all_po'] ?? 0);
+                $dashboardAccelerationTarget = $dashboardPo2026 + $dashboardDoneInvoice + $dashboardOutsOnTarget + $dashboardNyPoTarget;
 
                 $summaryTotals = [
                     'total_po_count' => 0,
@@ -1975,22 +1975,22 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         <div class="po-monitor-hero__stats">
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Target Akselerasi 2026</span>
-                                <span class="po-monitor-hero-stat__value"><?= number_format($dashboardAccelerationTarget, 0, ',', '.') ?></span>
-                                <span class="po-monitor-hero-stat__hint">Target awal + done invoice 2026</span>
+                                <span class="po-monitor-hero-stat__value" id="summary_total_po_hero"><?= number_format($dashboardAccelerationTarget, 0, ',', '.') ?></span>
+                                <span class="po-monitor-hero-stat__hint">PO 2026 + done invoice + outs target + NY PO target</span>
                             </div>
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Done Invoice</span>
-                                <span class="po-monitor-hero-stat__value"><?= number_format($dashboardDoneInvoice, 0, ',', '.') ?></span>
+                                <span class="po-monitor-hero-stat__value" id="summary_done_invoice_hero"><?= number_format($dashboardDoneInvoice, 0, ',', '.') ?></span>
                                 <span class="po-monitor-hero-stat__hint">Invoice selesai di 2026</span>
                             </div>
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Outs By PO</span>
-                                <span class="po-monitor-hero-stat__value"><?= number_format($dashboardOutsOnTarget, 0, ',', '.') ?></span>
+                                <span class="po-monitor-hero-stat__value" id="summary_target_week_hero"><?= number_format($dashboardOutsOnTarget, 0, ',', '.') ?></span>
                                 <span class="po-monitor-hero-stat__hint">Outstanding target berjalan</span>
                             </div>
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Outstanding NY PO</span>
-                                <span class="po-monitor-hero-stat__value"><?= number_format($dashboardNyPoTarget, 0, ',', '.') ?></span>
+                                <span class="po-monitor-hero-stat__value" id="summary_carry_over_hero"><?= number_format($dashboardNyPoTarget, 0, ',', '.') ?></span>
                                 <span class="po-monitor-hero-stat__hint">Estimasi target tanpa PO</span>
                             </div>
                         </div>
@@ -3044,6 +3044,11 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     totals.co_to_2027 || '-',
                     totals.total_outs || '-'
                 ];
+
+                $('#summary_total_po, #summary_total_po_hero').text(totals.acceleration_target_2026 || '-');
+                $('#summary_done_invoice, #summary_done_invoice_hero').text(totals.done_inv_2026 || '-');
+                $('#summary_target_week, #summary_target_week_hero').text(totals.outs_2026_on_target || '-');
+                $('#summary_carry_over, #summary_carry_over_hero').text(totals.ny_po_on_target_2026 || '-');
 
                 var $wrapper = $(selector).closest('.dataTables_wrapper');
                 var $footers = $(selector).find('tfoot');

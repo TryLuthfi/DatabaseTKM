@@ -1209,6 +1209,85 @@ class MPO_Monitor extends CI_Model
         return $totals;
     }
 
+    public function getDashboardTargetInvoiceBreakdownRows()
+    {
+        $rows = $this->db
+            ->select('pic, bowheer, outs_2026_on_target, ny_po_on_target_2026, done_inv_2026, sort_order, has_data')
+            ->order_by('sort_order', 'ASC')
+            ->order_by('bowheer', 'ASC')
+            ->get('tb_po_dashboard_cache')
+            ->result_array();
+
+        if (empty($rows)) {
+            $summary = $this->calculateDashboardSummary();
+            $rows = $summary['rows'] ?? [];
+        }
+
+        $targetAdjustments = $this->getDashboardTargetWeekClaimAdjustments();
+        $result = [];
+        foreach ($rows as $row) {
+            $project = trim((string) ($row['bowheer'] ?? ''));
+            if ($project === '') {
+                continue;
+            }
+
+            $target = (float) ($row['outs_2026_on_target'] ?? 0)
+                + (float) ($targetAdjustments[$project]['target_week_2026'] ?? 0)
+                + (float) ($row['ny_po_on_target_2026'] ?? 0);
+            $achieved = (float) ($row['done_inv_2026'] ?? 0);
+
+            if ((int) ($row['has_data'] ?? 1) !== 1 && abs($target) < 0.5 && abs($achieved) < 0.5) {
+                continue;
+            }
+
+            $result[] = [
+                'id_bowheer' => 0,
+                'project' => $project,
+                'pic' => trim((string) ($row['pic'] ?? '')) ?: $this->dashboardPic($project),
+                'row_type' => 'DASHBOARD',
+                'po_number' => '-',
+                'sub_po' => '-',
+                'detail_po' => 'Dashboard Target PO',
+                'remarks' => 'Target: Grandtotal Target data awal. Achieved: Done Inv 2026 live.',
+                'regional' => '-',
+                'area' => '-',
+                'month' => '-',
+                'month_label' => '-',
+                'week' => '-',
+                'date' => '',
+                'date_label' => '-',
+                'target' => $target,
+                'achieved' => $achieved
+            ];
+        }
+
+        return $result;
+    }
+
+    private function getDashboardTargetWeekClaimAdjustments()
+    {
+        $rows = $this->db->query("SELECT
+                CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS bowheer,
+                SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 THEN tc.invoice_amount ELSE 0 END) AS target_week_2026
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
+            LEFT JOIN tb_po_term_allocation a ON a.id_allocation = tc.id_allocation
+            WHERE tc.invoice_date IS NOT NULL
+                AND COALESCE(CONVERT(NULLIF(a.target_status, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci) = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            GROUP BY CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci")->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['bowheer']] = [
+                'target_week_2026' => (float) ($row['target_week_2026'] ?? 0)
+            ];
+        }
+
+        return $map;
+    }
+
     public function getPODatatable($post)
     {
         $columns = ['p.id_po', 'p.po_number', 'p.po_date', 'current_release_value', 'total_invoiced', 'remaining', 'nama_bowheer'];
@@ -2417,9 +2496,12 @@ class MPO_Monitor extends CI_Model
             $claimTargetStatus = $allocation ? ($allocation['target_status'] ?? '') : ($term['target_status'] ?? '');
             if ($claimTargetStatus === 'TARGET_WEEK') {
                 $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) - ' . $this->db->escape($amount) . ', 0)', false);
+            } elseif ($claimTargetStatus === 'CARRY_OVER') {
+                $this->db->set('dashboard_co_2027', 'GREATEST(COALESCE(dashboard_co_2027, 0) - ' . $this->db->escape($amount) . ', 0)', false);
             }
         }
         $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+        $this->refreshPoDashboardMetrics((int) $term['id_po']);
 
         $this->rebuildDashboardCache(null);
 
@@ -2541,8 +2623,11 @@ class MPO_Monitor extends CI_Model
         $this->db->set('dashboard_invoice_2026', 'GREATEST(COALESCE(dashboard_invoice_2026, 0) + ' . $this->db->escape($new2026 - $old2026) . ', 0)', false);
         if ($targetStatus === 'TARGET_WEEK') {
             $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) + ' . $this->db->escape($old2026 - $new2026) . ', 0)', false);
+        } elseif ($targetStatus === 'CARRY_OVER') {
+            $this->db->set('dashboard_co_2027', 'GREATEST(COALESCE(dashboard_co_2027, 0) + ' . $this->db->escape($old2026 - $new2026) . ', 0)', false);
         }
         $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+        $this->refreshPoDashboardMetrics((int) $term['id_po']);
 
         $this->rebuildDashboardCache(null);
 
@@ -2625,8 +2710,11 @@ class MPO_Monitor extends CI_Model
         $this->db->set('dashboard_invoice_2026', 'GREATEST(COALESCE(dashboard_invoice_2026, 0) - ' . $this->db->escape($old2026) . ', 0)', false);
         if ($targetStatus === 'TARGET_WEEK') {
             $this->db->set('dashboard_outs_2026', 'COALESCE(dashboard_outs_2026, 0) + ' . $this->db->escape($old2026), false);
+        } elseif ($targetStatus === 'CARRY_OVER') {
+            $this->db->set('dashboard_co_2027', 'COALESCE(dashboard_co_2027, 0) + ' . $this->db->escape($old2026), false);
         }
         $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+        $this->refreshPoDashboardMetrics((int) $term['id_po']);
 
         $this->rebuildDashboardCache(null);
 
@@ -3160,6 +3248,8 @@ class MPO_Monitor extends CI_Model
             }
         }
 
+        $this->refreshPoDashboardMetrics((int) $term['id_po']);
+
         if ($rebuildCache) {
             $this->rebuildDashboardCache(null);
         }
@@ -3267,9 +3357,102 @@ class MPO_Monitor extends CI_Model
             $this->db->set('dashboard_invoice_2026', 'GREATEST(COALESCE(dashboard_invoice_2026, 0) + ' . $this->db->escape($amountDelta) . ', 0)', false);
             if (($term['target_status'] ?? '') === 'TARGET_WEEK') {
                 $this->db->set('dashboard_outs_2026', 'GREATEST(COALESCE(dashboard_outs_2026, 0) - ' . $this->db->escape($amountDelta) . ', 0)', false);
+            } elseif (($term['target_status'] ?? '') === 'CARRY_OVER') {
+                $this->db->set('dashboard_co_2027', 'GREATEST(COALESCE(dashboard_co_2027, 0) - ' . $this->db->escape($amountDelta) . ', 0)', false);
             }
         }
         $this->db->where('id_po', (int) $term['id_po'])->update('tb_po');
+        $this->refreshPoDashboardMetrics((int) $term['id_po']);
+    }
+
+    private function refreshPoDashboardMetrics($idPo)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0) {
+            return;
+        }
+
+        $baseRows = $this->db->query("SELECT
+                target_status,
+                invoice_date,
+                SUM(amount) AS amount
+            FROM (
+                SELECT
+                    COALESCE(CONVERT(NULLIF(a.target_status, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci) AS target_status,
+                    COALESCE(a.invoice_date, t.invoice_date) AS invoice_date,
+                    COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value, 0) AS amount
+                FROM tb_po_term_allocation a
+                JOIN tb_po_term t ON t.id_term = a.id_term
+                WHERE t.id_po = ?
+                UNION ALL
+                SELECT
+                    CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci AS target_status,
+                    t.invoice_date,
+                    COALESCE(NULLIF(t.plan_amount, 0), t.value, 0) AS amount
+                FROM tb_po_term t
+                WHERE t.id_po = ?
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+            ) x
+            GROUP BY target_status, invoice_date", [$idPo, $idPo])->result_array();
+
+        $metrics = [
+            'all_invoice' => 0,
+            'invoice_2026' => 0,
+            'outs_2026' => 0,
+            'co_2027' => 0
+        ];
+
+        foreach ($baseRows as $row) {
+            $status = strtoupper(trim((string) ($row['target_status'] ?? '')));
+            $amount = (float) ($row['amount'] ?? 0);
+            $invoiceDate = $this->normalizeSyncDate($row['invoice_date'] ?? null);
+
+            if ($status === 'INVOICED') {
+                $metrics['all_invoice'] += $amount;
+                if ($invoiceDate !== null && (int) date('Y', strtotime($invoiceDate)) === 2026) {
+                    $metrics['invoice_2026'] += $amount;
+                }
+            } elseif ($status === 'TARGET_WEEK') {
+                $metrics['outs_2026'] += $amount;
+            } elseif ($status === 'CARRY_OVER') {
+                $metrics['co_2027'] += $amount;
+            }
+        }
+
+        $claimRows = $this->db->query("SELECT
+                COALESCE(CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci, CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci) AS target_status,
+                tc.invoice_date,
+                SUM(tc.invoice_amount) AS amount
+            FROM tb_po_term_claim tc
+            JOIN tb_po_term t ON t.id_term = tc.id_term
+            LEFT JOIN tb_po_term_allocation a ON a.id_allocation = tc.id_allocation
+            WHERE t.id_po = ?
+            GROUP BY target_status, tc.invoice_date", [$idPo])->result_array();
+
+        foreach ($claimRows as $row) {
+            $status = strtoupper(trim((string) ($row['target_status'] ?? '')));
+            $amount = (float) ($row['amount'] ?? 0);
+            $invoiceDate = $this->normalizeSyncDate($row['invoice_date'] ?? null);
+
+            $metrics['all_invoice'] += $amount;
+            if ($invoiceDate !== null && (int) date('Y', strtotime($invoiceDate)) === 2026) {
+                $metrics['invoice_2026'] += $amount;
+                if ($status === 'TARGET_WEEK') {
+                    $metrics['outs_2026'] -= $amount;
+                } elseif ($status === 'CARRY_OVER') {
+                    $metrics['co_2027'] -= $amount;
+                }
+            }
+        }
+
+        $this->db->where('id_po', $idPo)->update('tb_po', [
+            'dashboard_all_invoice' => max($metrics['all_invoice'], 0),
+            'dashboard_invoice_2026' => max($metrics['invoice_2026'], 0),
+            'dashboard_outs_2026' => max($metrics['outs_2026'], 0),
+            'dashboard_co_2027' => max($metrics['co_2027'], 0)
+        ]);
     }
 
     private function refreshPoMonitorTermInvoiceDate($idTerm)
