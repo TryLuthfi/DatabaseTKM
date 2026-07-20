@@ -5,6 +5,7 @@ $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Impl
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'HAPUS') : true;
 $canApprovalDailyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_DAILY') : true;
 $canApprovalComplyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_FOTO_COMPLY') : true;
+$canSavePhotoRotation = $canTambah;
 
 if (!function_exists('implHistoryNumber')) {
     function implHistoryNumber($value, $zeroAsDash = true)
@@ -1560,6 +1561,16 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         cursor: not-allowed;
     }
 
+    .impl-lightbox__save {
+        width: auto;
+        min-width: 82px;
+        padding: 0 .8rem;
+        border-radius: 999px;
+        background: #0f766e;
+        color: #fff;
+        font-size: .82rem;
+    }
+
     .impl-lightbox__body {
         padding: 1rem;
         overflow: hidden;
@@ -2358,7 +2369,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             <td class="impl-gallery-table__photo">
                                                                 <div class="impl-gallery-photo-grid" data-lightbox-group="gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . $galleryIndex)) ?>">
                                                                     <?php foreach (($galleryItem['photos'] ?? []) as $photo): ?>
-                                                                        <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
+                                                                        <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
                                                                             <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>" loading="lazy" decoding="async">
                                                                         </a>
                                                                     <?php endforeach; ?>
@@ -2443,7 +2454,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
-                                                                            <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
+                                                                            <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
                                                                                 <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
                                                                             </a>
                                                                             <div class="impl-gallery-photo-card__meta">
@@ -2887,6 +2898,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-zoom-in" aria-label="Zoom In">+</button>
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-rotate-left" aria-label="Rotate Kiri">&#8634;</button>
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-rotate-right" aria-label="Rotate Kanan">&#8635;</button>
+                <?php if ($canSavePhotoRotation): ?>
+                    <button type="button" class="impl-lightbox__action impl-lightbox__save" id="impl-lightbox-save-rotation" aria-label="Simpan Rotasi" disabled>Simpan</button>
+                <?php endif; ?>
                 <button type="button" class="impl-lightbox__action" id="impl-lightbox-next" aria-label="Berikutnya">&#8250;</button>
                 <button type="button" class="impl-lightbox__close" id="impl-lightbox-close" aria-label="Tutup">&times;</button>
             </div>
@@ -2903,6 +2917,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 <script>
     (function () {
         var canApproveComplyPhoto = <?= (!empty($canApprove) && $canApprovalComplyAction) ? 'true' : 'false' ?>;
+        var canSavePhotoRotation = <?= $canSavePhotoRotation ? 'true' : 'false' ?>;
+        var clusterId = <?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>;
+        var rotatePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateProgressPhoto') ?>';
         var progressModal = document.getElementById('modal-progress');
         var progressSelector = document.querySelector('.js-progress-item-selector');
         var progressAddButton = document.querySelector('.js-add-progress-item');
@@ -3413,12 +3430,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lightboxZoomOut = document.getElementById('impl-lightbox-zoom-out');
         var lightboxRotateLeft = document.getElementById('impl-lightbox-rotate-left');
         var lightboxRotateRight = document.getElementById('impl-lightbox-rotate-right');
+        var lightboxSaveRotation = document.getElementById('impl-lightbox-save-rotation');
         var lightboxStage = document.querySelector('#impl-lightbox .impl-lightbox__stage');
         var lightboxItems = [];
         var lightboxIndex = -1;
         var lightboxScale = 1;
         var lightboxMinScale = 0.5;
         var lightboxRotation = 0;
+        var lightboxIsSavingRotation = false;
 
         function escapeAttr(value) {
             return String(value || '')
@@ -3612,6 +3631,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var hasMultiple = lightboxItems.length > 1;
             lightboxPrev.disabled = !hasMultiple;
             lightboxNext.disabled = !hasMultiple;
+            syncLightboxSaveButton();
+        }
+
+        function syncLightboxSaveButton() {
+            if (!lightboxSaveRotation) {
+                return;
+            }
+
+            var activeItem = lightboxItems[lightboxIndex] || {};
+            var photoId = parseInt(activeItem.photoId || 0, 10) || 0;
+            lightboxSaveRotation.disabled = !canSavePhotoRotation || lightboxIsSavingRotation || photoId <= 0 || lightboxRotation === 0;
+            lightboxSaveRotation.textContent = lightboxIsSavingRotation ? 'Menyimpan...' : 'Simpan';
         }
 
         function applyLightboxTransform() {
@@ -3645,6 +3676,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxImage.style.marginRight = Math.ceil(horizontalMargin) + 'px';
             lightboxImage.style.transform = 'rotate(' + normalizedRotation + 'deg)';
             lightboxImage.style.transformOrigin = 'center center';
+            syncLightboxSaveButton();
         }
 
         function calculateLightboxFitScale() {
@@ -3795,6 +3827,145 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             resetLightboxToFit();
         }
 
+        function stripCacheQuery(url) {
+            return String(url || '').split('?')[0];
+        }
+
+        function refreshPhotoImageUrl(photoId, imageUrl) {
+            photoId = parseInt(photoId || 0, 10) || 0;
+            if (photoId <= 0 || !imageUrl) {
+                return;
+            }
+
+            Array.prototype.forEach.call(document.querySelectorAll('.js-open-lightbox[data-photo-id="' + photoId + '"]'), function (node) {
+                node.setAttribute('href', imageUrl);
+                node.setAttribute('data-image', imageUrl);
+                var img = node.querySelector('img');
+                if (img) {
+                    img.src = imageUrl;
+                }
+            });
+
+            lightboxItems.forEach(function (item) {
+                if ((parseInt(item.photoId || 0, 10) || 0) === photoId) {
+                    item.image = imageUrl;
+                }
+            });
+        }
+
+        function getImageMimeFromUrl(url) {
+            var cleanUrl = stripCacheQuery(url).toLowerCase();
+            if (cleanUrl.indexOf('.png') !== -1) {
+                return 'image/png';
+            }
+            if (cleanUrl.indexOf('.webp') !== -1) {
+                return 'image/webp';
+            }
+            return 'image/jpeg';
+        }
+
+        function buildRotatedPhotoBlob(rotationDegrees, imageUrl) {
+            return new Promise(function (resolve, reject) {
+                if (!lightboxImage || !lightboxImage.complete || !lightboxImage.naturalWidth || !lightboxImage.naturalHeight) {
+                    reject(new Error('Foto belum selesai dimuat.'));
+                    return;
+                }
+
+                var normalizedRotation = ((rotationDegrees % 360) + 360) % 360;
+                var sourceWidth = lightboxImage.naturalWidth;
+                var sourceHeight = lightboxImage.naturalHeight;
+                var isSideways = normalizedRotation === 90 || normalizedRotation === 270;
+                var canvas = document.createElement('canvas');
+                canvas.width = isSideways ? sourceHeight : sourceWidth;
+                canvas.height = isSideways ? sourceWidth : sourceHeight;
+
+                var context = canvas.getContext('2d');
+                if (!context) {
+                    reject(new Error('Browser tidak mendukung canvas.'));
+                    return;
+                }
+
+                context.translate(canvas.width / 2, canvas.height / 2);
+                context.rotate(normalizedRotation * Math.PI / 180);
+                context.drawImage(lightboxImage, -sourceWidth / 2, -sourceHeight / 2);
+
+                var mimeType = getImageMimeFromUrl(imageUrl);
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        reject(new Error('Gagal membuat file hasil rotasi.'));
+                        return;
+                    }
+                    resolve(blob);
+                }, mimeType, 0.9);
+            });
+        }
+
+        function saveLightboxRotation() {
+            if (!lightbox || !lightbox.classList.contains('is-open') || lightboxIndex < 0 || lightboxIsSavingRotation) {
+                return;
+            }
+
+            var activeItem = lightboxItems[lightboxIndex] || {};
+            var photoId = parseInt(activeItem.photoId || 0, 10) || 0;
+            if (photoId <= 0 || lightboxRotation === 0) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('cluster_id', clusterId);
+            formData.append('photo_id', photoId);
+            formData.append('rotation', lightboxRotation);
+            var pendingRotation = lightboxRotation;
+            lightboxIsSavingRotation = true;
+            syncLightboxSaveButton();
+
+            buildRotatedPhotoBlob(pendingRotation, activeItem.image)
+                .then(function (blob) {
+                    formData.append('rotated_photo', blob, 'rotated_photo');
+                    return fetch(rotatePhotoUrl, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                })
+                .then(function (response) {
+                    return response.text().then(function (text) {
+                        var data = {};
+                        try {
+                            data = text ? JSON.parse(text) : {};
+                        } catch (e) {
+                            data = { status: false, message: 'Response server tidak valid.' };
+                        }
+                        if (!response.ok && data.status !== true) {
+                            data.status = false;
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    if (!data.status) {
+                        alert(data.message || 'Gagal menyimpan rotasi foto.');
+                        return;
+                    }
+
+                    refreshPhotoImageUrl(photoId, data.image_url || activeItem.image);
+                    lightboxRotation = 0;
+                    lightboxImage.src = data.image_url || activeItem.image;
+                    resetLightboxToFit();
+                })
+                .catch(function (error) {
+                    alert(error && error.message ? error.message : 'Gagal menyimpan rotasi foto. Coba lagi beberapa saat.');
+                })
+                .finally(function () {
+                    lightboxIsSavingRotation = false;
+                    syncLightboxSaveButton();
+                });
+        }
+
         function renderLightbox(index) {
             if (!lightboxItems.length || !lightboxImage) {
                 return;
@@ -3844,6 +4015,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var groupedTriggers = document.querySelectorAll(groupSelector);
             Array.prototype.forEach.call(groupedTriggers, function (node) {
                 lightboxItems.push({
+                    photoId: node.getAttribute('data-photo-id') || '0',
                     image: node.getAttribute('data-image') || '',
                     title: node.getAttribute('data-title') || 'Preview Foto',
                     caption: node.getAttribute('data-caption') || '-',
@@ -3852,6 +4024,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             if (!lightboxItems.length) {
                 lightboxItems.push({
+                    photoId: triggerElement ? (triggerElement.getAttribute('data-photo-id') || '0') : '0',
                     image: imageUrl || '',
                     title: title || 'Preview Foto',
                     caption: caption || '-',
@@ -3860,7 +4033,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             var foundIndex = 0;
             for (var i = 0; i < lightboxItems.length; i++) {
-                if (lightboxItems[i].image === (imageUrl || '') && lightboxItems[i].caption === (caption || '-')) {
+                if (stripCacheQuery(lightboxItems[i].image) === stripCacheQuery(imageUrl || '') && lightboxItems[i].caption === (caption || '-')) {
                     foundIndex = i;
                     break;
                 }
@@ -3938,6 +4111,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxRotateRight.addEventListener('click', function () {
                 rotateLightbox(90);
             });
+        }
+
+        if (lightboxSaveRotation) {
+            lightboxSaveRotation.addEventListener('click', saveLightboxRotation);
         }
 
         if (lightbox) {
@@ -4171,7 +4348,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                 var imagePath = (photo.file_path || '').replace(/^\/+/, '');
                                 var imageUrl = '<?= base_url() ?>' + imagePath;
                                 var photoCaption = photo.caption || photo.file_name || 'Foto';
-                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-image="' + imageUrl + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
+                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + imageUrl + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                                 htmlDaily += '<img src="' + imageUrl + '" alt="' + escapeAttr(photo.file_name || 'Foto') + '" loading="lazy" decoding="async" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
                                 htmlDaily += '</a>';
                             });
@@ -4282,7 +4459,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         }
                         var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
                         html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">';
-                        html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-open-lightbox d-block" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
+                        html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-open-lightbox d-block" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                         html += '<img src="<?= base_url() ?>' + (photo.file_path || '') + '" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '" loading="lazy" decoding="async">';
                         html += '<div>' + escapeAttr(photoCaption) + '</div>';
                         html += '</a>';

@@ -16,6 +16,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'approveComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
                 'rejectComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
                 'saveDailyActivity' => 'APPROVAL_DAILY',
+                'rotateProgressPhoto' => 'TAMBAH',
             ]);
         }
     }
@@ -1183,6 +1184,53 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
     }
 
+    public function rotateProgressPhoto()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session habis. Silakan login ulang.', ['redirect_url' => base_url('Auth')], 401);
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $photoId = (int) $this->input->post('photo_id');
+        $rotation = (int) $this->input->post('rotation');
+        $rotation = (($rotation % 360) + 360) % 360;
+
+        if ($clusterId <= 0 || $photoId <= 0 || !in_array($rotation, [90, 180, 270], true)) {
+            $this->jsonResponse(false, 'Data rotasi foto tidak valid.', [], 422);
+            return;
+        }
+
+        $photo = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($photoId);
+        if (empty($photo) || (int) ($photo['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            $this->jsonResponse(false, 'Foto tidak ditemukan.', [], 404);
+            return;
+        }
+
+        $fullPath = $this->resolveProgressPhotoFullPath((string) ($photo['file_path'] ?? ''));
+        if ($fullPath === '' || !is_file($fullPath)) {
+            $this->jsonResponse(false, 'File foto tidak ditemukan di server.', [], 404);
+            return;
+        }
+
+        $result = !empty($_FILES['rotated_photo']['tmp_name'])
+            ? $this->replaceProgressPhotoFromUpload($fullPath, $_FILES['rotated_photo'])
+            : $this->rotateImageFile($fullPath, $rotation);
+        if (!$result) {
+            $this->jsonResponse(false, 'Gagal menyimpan rotasi foto. Format gambar belum didukung server.', [], 500);
+            return;
+        }
+
+        clearstatcache(true, $fullPath);
+        $version = (string) (@filemtime($fullPath) ?: time());
+        $imageUrl = base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') . '?v=' . rawurlencode($version);
+
+        $this->jsonResponse(true, 'Rotasi foto berhasil disimpan.', [
+            'photo_id' => $photoId,
+            'image_url' => $imageUrl,
+        ]);
+    }
+
     public function uploadComplyPhoto()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -1515,6 +1563,121 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         ]);
         @$this->image_lib->resize();
         $this->image_lib->clear();
+    }
+
+    private function resolveProgressPhotoFullPath($filePath)
+    {
+        $relativePath = trim(str_replace('\\', '/', (string) $filePath));
+        $relativePath = ltrim($relativePath, '/');
+        if ($relativePath === '' || strpos($relativePath, '..') !== false) {
+            return '';
+        }
+
+        $allowedPrefixes = [
+            'uploads/myrep_boq_progress/',
+        ];
+        $isAllowed = false;
+        foreach ($allowedPrefixes as $prefix) {
+            if (strpos($relativePath, $prefix) === 0) {
+                $isAllowed = true;
+                break;
+            }
+        }
+        if (!$isAllowed) {
+            return '';
+        }
+
+        $fullPath = FCPATH . $relativePath;
+        $realBase = realpath(FCPATH . 'uploads/myrep_boq_progress');
+        $realFileDir = realpath(dirname($fullPath));
+        if ($realBase === false || $realFileDir === false || strpos($realFileDir, $realBase) !== 0) {
+            return '';
+        }
+
+        return $fullPath;
+    }
+
+    private function rotateImageFile($fullPath, $clockwiseDegrees)
+    {
+        $extension = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
+        $createFunction = null;
+        $saveFunction = null;
+
+        if (in_array($extension, ['jpg', 'jpeg'], true)) {
+            $createFunction = 'imagecreatefromjpeg';
+            $saveFunction = static function ($image, $path) {
+                return imagejpeg($image, $path, 88);
+            };
+        } elseif ($extension === 'png') {
+            $createFunction = 'imagecreatefrompng';
+            $saveFunction = static function ($image, $path) {
+                imagealphablending($image, false);
+                imagesavealpha($image, true);
+                return imagepng($image, $path, 6);
+            };
+        } elseif ($extension === 'webp' && function_exists('imagecreatefromwebp') && function_exists('imagewebp')) {
+            $createFunction = 'imagecreatefromwebp';
+            $saveFunction = static function ($image, $path) {
+                imagealphablending($image, false);
+                imagesavealpha($image, true);
+                return imagewebp($image, $path, 88);
+            };
+        }
+
+        if ($createFunction === null || !function_exists($createFunction) || !function_exists('imagerotate')) {
+            return false;
+        }
+
+        $source = @$createFunction($fullPath);
+        if (!$source) {
+            return false;
+        }
+
+        $transparent = imagecolorallocatealpha($source, 0, 0, 0, 127);
+        $gdAngle = (360 - (int) $clockwiseDegrees) % 360;
+        $rotated = imagerotate($source, $gdAngle, $transparent);
+        imagedestroy($source);
+
+        if (!$rotated) {
+            return false;
+        }
+
+        imagealphablending($rotated, false);
+        imagesavealpha($rotated, true);
+        $saved = (bool) $saveFunction($rotated, $fullPath);
+        imagedestroy($rotated);
+
+        return $saved;
+    }
+
+    private function replaceProgressPhotoFromUpload($fullPath, array $uploadedFile)
+    {
+        if (empty($uploadedFile['tmp_name']) || !is_uploaded_file($uploadedFile['tmp_name'])) {
+            return false;
+        }
+
+        if ((int) ($uploadedFile['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return false;
+        }
+
+        $info = @getimagesize($uploadedFile['tmp_name']);
+        if ($info === false || empty($info['mime'])) {
+            return false;
+        }
+
+        $extension = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
+        $allowedMimeByExtension = [
+            'jpg' => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'png' => ['image/png'],
+            'webp' => ['image/webp'],
+        ];
+
+        if (empty($allowedMimeByExtension[$extension]) || !in_array((string) $info['mime'], $allowedMimeByExtension[$extension], true)) {
+            return false;
+        }
+
+        return move_uploaded_file($uploadedFile['tmp_name'], $fullPath);
     }
 
     private function normalizeDate($value)
