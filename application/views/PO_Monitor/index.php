@@ -2665,7 +2665,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     </div>
                                 </div>
                                 <textarea id="po-monitor-batch-po-paste" class="form-control po-monitor-batch-paste" placeholder="NY PO REF[TAB]BOWHEER[TAB]STATUS PO[TAB]NO PO[TAB]NO PO SUB[TAB]REGIONAL[TAB]KOTA PO[TAB]DETAIL PO[TAB]REMARKS[TAB]TYPE PROJECT[TAB]TGL PO[TAB]PO VALUE[TAB]PO FINAL VALUE[TAB]PO TERM&#10;[TAB]PT BANGTELINDO[TAB]ON PO[TAB]PO. 123[TAB]-[TAB]JABODETABEK[TAB]Jakarta[TAB]Detail pekerjaan[TAB]Catatan[TAB]-[TAB]2026-07-10[TAB]100000000[TAB][TAB]50:50"></textarea>
-                                <small class="form-text text-muted">Bisa paste dengan header CSV/Excel. NY PO REF opsional; kalau kosong sistem auto-match, kalau kandidat lebih dari satu row akan invalid.</small>
+                                <small class="form-text text-muted">Bisa paste dengan header CSV/Excel. NY PO REF opsional; jika ref sudah terhubung ke PO lain, submit akan replace ke PO tujuan.</small>
                             </div>
                             <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
                                 <button type="button" class="btn btn-outline-secondary" id="po-monitor-batch-po-parse-paste">Preview PO</button>

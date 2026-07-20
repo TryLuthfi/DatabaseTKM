@@ -1092,14 +1092,17 @@ class MPO_Monitor extends CI_Model
 
         if ($mode === 'initial') {
             $adjustments = $this->getDashboardManualClaimAdjustments();
+            $initialPipeline = $this->getDashboardInitialPipelineAmounts();
             foreach ($rows as &$row) {
                 $key = (string) $row['bowheer'];
                 $manualDone = (float) ($adjustments[$key]['manual_done_2026'] ?? 0);
                 $manualTargetWeek = (float) ($adjustments[$key]['manual_target_week_2026'] ?? 0);
+                $initialNy2026 = (float) ($initialPipeline[$key]['ny_po_2026'] ?? 0);
 
                 $row['all_invoice'] = (float) $row['all_invoice'] - $manualDone;
                 $row['done_inv_2026'] = (float) $row['done_inv_2026'] - $manualDone;
                 $row['outs_2026_on_target'] = (float) $row['outs_2026_on_target'] + $manualTargetWeek;
+                $row['ny_po_on_target_2026'] = $initialNy2026;
                 $row['grandtotal_target'] = (float) $row['outs_2026_on_target'] + (float) $row['ny_po_on_target_2026'];
                 $row['ny_po_total'] = (float) $row['ny_po_on_target_2026'] + (float) $row['co_to_2027'];
                 $row['total_outs'] = (float) $row['grandtotal_target'] + (float) $row['co_to_2027'];
@@ -1190,6 +1193,30 @@ class MPO_Monitor extends CI_Model
         return $map;
     }
 
+    private function getDashboardInitialPipelineAmounts()
+    {
+        if (!$this->db->table_exists('tb_po_target_pipeline')) {
+            return [];
+        }
+
+        $rows = $this->db->query("SELECT
+                CONVERT(dashboard_bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci AS bowheer,
+                SUM(COALESCE(ny_po_2026_amount, 0)) AS ny_po_2026,
+                SUM(COALESCE(ny_po_2027_amount, 0)) AS ny_po_2027
+            FROM tb_po_target_pipeline
+            GROUP BY CONVERT(dashboard_bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci")->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['bowheer']] = [
+                'ny_po_2026' => (float) ($row['ny_po_2026'] ?? 0),
+                'ny_po_2027' => (float) ($row['ny_po_2027'] ?? 0)
+            ];
+        }
+
+        return $map;
+    }
+
     public function getDashboardInitialTotals()
     {
         $rows = $this->db
@@ -1197,6 +1224,7 @@ class MPO_Monitor extends CI_Model
             ->get('tb_po_dashboard_cache')
             ->result_array();
         $adjustments = $this->getDashboardManualClaimAdjustments();
+        $initialPipeline = $this->getDashboardInitialPipelineAmounts();
 
         $totals = [
             'done_inv_2026' => 0,
@@ -1212,7 +1240,7 @@ class MPO_Monitor extends CI_Model
 
             $done = (float) $row['done_inv_2026'] - $manualDone;
             $outs = (float) $row['outs_2026_on_target'] + $manualTargetWeek;
-            $ny = (float) $row['ny_po_on_target_2026'];
+            $ny = (float) ($initialPipeline[$key]['ny_po_2026'] ?? 0);
 
             $totals['done_inv_2026'] += $done;
             $totals['outs_2026_on_target'] += $outs;
@@ -3714,6 +3742,7 @@ class MPO_Monitor extends CI_Model
         $summary = [
             'inserted' => 0,
             'skipped' => 0,
+            'replaced' => 0,
             'terms' => 0,
             'allocations' => 0,
             'errors' => []
@@ -3750,12 +3779,6 @@ class MPO_Monitor extends CI_Model
                 $group['allocation_hash']
             ]));
 
-            if ($this->poNumberExists($poNumber)) {
-                $summary['skipped']++;
-                $summary['errors'][] = 'PO ' . $poNumber . ' sudah ada di PO Monitor.';
-                continue;
-            }
-
             $pipelineMatch = $this->resolveNyPoPipelineForBatchGroup($group);
             if (!empty($pipelineMatch['error'])) {
                 $summary['skipped']++;
@@ -3764,6 +3787,24 @@ class MPO_Monitor extends CI_Model
             }
 
             $linkedPipeline = !empty($pipelineMatch['row']) ? $pipelineMatch['row'] : null;
+            $existingPo = $this->getPoByNumberInsensitive($poNumber);
+            if ($existingPo) {
+                if ($linkedPipeline && trim((string) ($group['ny_po_ref'] ?? '')) !== '') {
+                    $replace = $this->replaceNyPoPipelineLink($linkedPipeline, (int) $existingPo['id_po'], $poNumber, $group, $userId);
+                    if (empty($replace['status'])) {
+                        $summary['skipped']++;
+                        $summary['errors'][] = 'PO ' . $poNumber . ': ' . ($replace['message'] ?? 'gagal replace NY PO REF.');
+                        continue;
+                    }
+
+                    $summary['replaced']++;
+                    continue;
+                }
+
+                $summary['skipped']++;
+                $summary['errors'][] = 'PO ' . $poNumber . ' sudah ada di PO Monitor.';
+                continue;
+            }
 
             $existing = $this->db->get_where('tb_po', ['source_hash' => $sourceHash])->row_array();
             if ($existing) {
@@ -3867,17 +3908,7 @@ class MPO_Monitor extends CI_Model
             }
 
             if ($linkedPipeline) {
-                $this->db
-                    ->where('id_pipeline', (int) $linkedPipeline['id_pipeline'])
-                    ->where('linked_id_po IS NULL', null, false)
-                    ->update('tb_po_target_pipeline', [
-                        'linked_id_po' => $idPo,
-                        'linked_po_number' => $poNumber,
-                        'pipeline_status' => 'CONVERTED',
-                        'converted_at' => date('Y-m-d H:i:s'),
-                        'converted_by' => $userId ?: null
-                    ]);
-                $this->refreshPoDashboardMetrics($idPo);
+                $this->replaceNyPoPipelineLink($linkedPipeline, $idPo, $poNumber, $group, $userId, false);
             }
 
             $summary['inserted']++;
@@ -3891,7 +3922,7 @@ class MPO_Monitor extends CI_Model
         }
 
         $this->db->trans_commit();
-        return ['status' => $summary['inserted'] > 0, 'message' => 'Batch PO selesai.', 'summary' => $summary];
+        return ['status' => $summary['inserted'] > 0 || $summary['replaced'] > 0, 'message' => 'Batch PO selesai.', 'summary' => $summary];
     }
 
     private function buildBatchPoGroups(array $rows, array &$summary)
@@ -3988,15 +4019,23 @@ class MPO_Monitor extends CI_Model
 
     private function poNumberExists($poNumber)
     {
+        return !empty($this->getPoByNumberInsensitive($poNumber));
+    }
+
+    private function getPoByNumberInsensitive($poNumber)
+    {
         $poNumber = trim((string) $poNumber);
         if ($poNumber === '') {
-            return false;
+            return null;
         }
 
-        return (int) $this->db
+        return $this->db
             ->from('tb_po')
             ->where("CONVERT(po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape($poNumber) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
-            ->count_all_results() > 0;
+            ->order_by('id_po', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row_array();
     }
 
     private function resolveNyPoPipelineForBatchGroup(array $group)
@@ -4010,12 +4049,11 @@ class MPO_Monitor extends CI_Model
 
             $row = $this->db
                 ->where('id_pipeline', $idPipeline)
-                ->where('linked_id_po IS NULL', null, false)
                 ->get('tb_po_target_pipeline')
                 ->row_array();
 
             if (!$row) {
-                return ['row' => null, 'error' => 'NY PO REF ' . $ref . ' tidak ditemukan atau sudah converted.'];
+                return ['row' => null, 'error' => 'NY PO REF ' . $ref . ' tidak ditemukan.'];
             }
 
             return ['row' => $row, 'error' => null];
@@ -4027,6 +4065,143 @@ class MPO_Monitor extends CI_Model
         }
 
         return ['row' => $candidates[0] ?? null, 'error' => null];
+    }
+
+    private function replaceNyPoPipelineLink(array $pipeline, $idPo, $poNumber, array $group, $userId, $applyTarget = true)
+    {
+        $idPo = (int) $idPo;
+        $oldIdPo = (int) ($pipeline['linked_id_po'] ?? 0);
+        if ($idPo <= 0) {
+            return ['status' => false, 'message' => 'PO tujuan tidak valid.'];
+        }
+
+        if ($oldIdPo > 0 && $oldIdPo !== $idPo) {
+            $this->clearNyPipelineTargetFromPo($oldIdPo, $pipeline);
+        }
+
+        if ($applyTarget && !$this->applyNyPipelineTargetToPo($idPo, $pipeline, $group)) {
+            return ['status' => false, 'message' => 'Term tujuan untuk NY PO REF tidak ditemukan.'];
+        }
+
+        $this->db
+            ->where('id_pipeline', (int) $pipeline['id_pipeline'])
+            ->update('tb_po_target_pipeline', [
+                'linked_id_po' => $idPo,
+                'linked_po_number' => $poNumber,
+                'pipeline_status' => 'CONVERTED',
+                'converted_at' => date('Y-m-d H:i:s'),
+                'converted_by' => $userId ?: null
+            ]);
+
+        if ($oldIdPo > 0 && $oldIdPo !== $idPo) {
+            $this->refreshPoDashboardMetrics($oldIdPo);
+        }
+        $this->refreshPoDashboardMetrics($idPo);
+
+        return ['status' => true];
+    }
+
+    private function clearNyPipelineTargetFromPo($idPo, array $pipeline)
+    {
+        $termIndex = (int) ($pipeline['term_index'] ?? 0);
+        if ($idPo <= 0 || $termIndex <= 0) {
+            return;
+        }
+
+        $start = $pipeline['target_week_start'] ?? null;
+        $end = $pipeline['target_week_end'] ?? null;
+
+        $this->db->query("UPDATE tb_po_term_allocation a
+            JOIN tb_po_term t ON t.id_term = a.id_term
+            SET a.target_status = 'OPEN',
+                a.target_year = NULL,
+                a.target_week = NULL,
+                a.target_week_start = NULL,
+                a.target_week_end = NULL,
+                a.submit_raw = NULL
+            WHERE t.id_po = ?
+                AND t.term_index = ?
+                AND CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                AND ((a.target_week_start <=> ?) AND (a.target_week_end <=> ?))", [$idPo, $termIndex, $start, $end]);
+
+        $this->db->query("UPDATE tb_po_term
+            SET target_status = 'OPEN',
+                target_year = NULL,
+                target_week = NULL,
+                target_week_start = NULL,
+                target_week_end = NULL,
+                submit_raw = NULL
+            WHERE id_po = ?
+                AND term_index = ?
+                AND CONVERT(target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                AND ((target_week_start <=> ?) AND (target_week_end <=> ?))", [$idPo, $termIndex, $start, $end]);
+    }
+
+    private function applyNyPipelineTargetToPo($idPo, array $pipeline, array $group)
+    {
+        $termIndex = (int) ($pipeline['term_index'] ?? 0);
+        if ($idPo <= 0 || $termIndex <= 0) {
+            return false;
+        }
+
+        $term = $this->db
+            ->where('id_po', (int) $idPo)
+            ->where('term_index', $termIndex)
+            ->get('tb_po_term')
+            ->row_array();
+        if (!$term) {
+            return false;
+        }
+
+        $payload = [
+            'target_status' => 'TARGET_WEEK',
+            'target_year' => (int) ($pipeline['target_year'] ?? 0) ?: null,
+            'target_week' => (int) ($pipeline['target_week'] ?? 0) ?: null,
+            'target_week_start' => $pipeline['target_week_start'] ?? null,
+            'target_week_end' => $pipeline['target_week_end'] ?? null,
+            'submit_raw' => $pipeline['submit_raw'] ?? null
+        ];
+
+        $allocations = $this->db
+            ->where('id_term', (int) $term['id_term'])
+            ->order_by('source_row_no', 'ASC')
+            ->order_by('id_allocation', 'ASC')
+            ->get('tb_po_term_allocation')
+            ->result_array();
+
+        if (!empty($allocations)) {
+            $targetAllocation = $this->chooseNyPipelineTargetAllocation($allocations, $pipeline, $group);
+            if (!$targetAllocation) {
+                return false;
+            }
+
+            $this->db->where('id_allocation', (int) $targetAllocation['id_allocation'])->update('tb_po_term_allocation', $payload);
+        }
+
+        $this->db->where('id_term', (int) $term['id_term'])->update('tb_po_term', $payload);
+        return true;
+    }
+
+    private function chooseNyPipelineTargetAllocation(array $allocations, array $pipeline, array $group)
+    {
+        $groupAllocation = !empty($group['allocations']) ? (array) $group['allocations'][0] : [];
+        foreach ($allocations as $allocation) {
+            if ($this->batchAllocationMatchesPipeline($allocation, $pipeline, (float) ($allocation['allocation_value'] ?? 0))) {
+                return $allocation;
+            }
+        }
+
+        if (!empty($groupAllocation)) {
+            foreach ($allocations as $allocation) {
+                if ($this->normalizeNyPoMatchText((string) ($allocation['regional'] ?? '')) === $this->normalizeNyPoMatchText((string) ($groupAllocation['regional'] ?? ''))
+                    && $this->normalizeNyPoMatchText((string) ($allocation['kota_po'] ?? '')) === $this->normalizeNyPoMatchText((string) ($groupAllocation['kota_po'] ?? ''))
+                    && $this->normalizeNyPoMatchText((string) ($allocation['detail_po'] ?? '')) === $this->normalizeNyPoMatchText((string) ($groupAllocation['detail_po'] ?? ''))) {
+                    return $allocation;
+                }
+            }
+        }
+
+        return count($allocations) === 1 ? $allocations[0] : null;
     }
 
     private function parseNyPoReferenceId($ref)
@@ -4351,6 +4526,8 @@ class MPO_Monitor extends CI_Model
         $rows = $this->db->query("SELECT
                 CONCAT('NY-', pl.id_pipeline) AS ny_po_ref,
                 COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
+                COALESCE(pl.linked_po_number, '') AS linked_po_number,
+                COALESCE(pl.pipeline_status, 'OPEN') AS pipeline_status,
                 COALESCE(pl.type_project, '') AS type_project,
                 COALESCE(pl.regional, '') AS regional,
                 COALESCE(pl.kota_po, '') AS kota_po,
@@ -4361,8 +4538,7 @@ class MPO_Monitor extends CI_Model
                 pl.target_week_end
             FROM tb_po_target_pipeline pl
             LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = pl.id_bowheer
-            WHERE pl.linked_id_po IS NULL
-                AND CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
             ORDER BY bowheer ASC, pl.regional ASC, pl.kota_po ASC, pl.term_index ASC, pl.id_pipeline ASC")->result_array();
 
         foreach ($rows as &$row) {

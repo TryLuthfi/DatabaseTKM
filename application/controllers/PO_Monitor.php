@@ -406,6 +406,7 @@ class PO_Monitor extends CI_Controller
         $this->session->set_flashdata('status', !empty($result['status']));
 
         $message = 'Batch tambah PO selesai. Insert: ' . (int) ($summary['inserted'] ?? 0)
+            . ', replace: ' . (int) ($summary['replaced'] ?? 0)
             . ', skip: ' . (int) ($summary['skipped'] ?? 0)
             . ', terms: ' . (int) ($summary['terms'] ?? 0)
             . ', allocations: ' . (int) ($summary['allocations'] ?? 0) . '.';
@@ -543,7 +544,7 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
-        $headers = ['NY PO REF', 'BOWHEER', 'TYPE PROJECT', 'REGIONAL', 'KOTA PO', 'DETAIL PO', 'TERM', 'AMOUNT', 'PERIOD'];
+        $headers = ['NY PO REF', 'CURRENT PO', 'STATUS REF', 'BOWHEER', 'TYPE PROJECT', 'REGIONAL', 'KOTA PO', 'DETAIL PO', 'TERM', 'AMOUNT', 'PERIOD'];
         $rows = $this->MPO_Monitor->getNyPoReferenceRows();
         $fileName = 'ny-po-reference-' . date('Ymd-His') . '.xls';
 
@@ -561,6 +562,8 @@ class PO_Monitor extends CI_Controller
         foreach ($rows as $row) {
             $html .= '<tr>';
             $html .= '<td>' . htmlspecialchars((string) ($row['ny_po_ref'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['linked_po_number'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['pipeline_status'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
             $html .= '<td>' . htmlspecialchars((string) ($row['bowheer'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
             $html .= '<td>' . htmlspecialchars((string) ($row['type_project'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
             $html .= '<td>' . htmlspecialchars((string) ($row['regional'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
