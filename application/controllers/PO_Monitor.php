@@ -362,6 +362,7 @@ class PO_Monitor extends CI_Controller
         }
 
         $fields = [
+            'ny_po_ref',
             'bowheer',
             'status_po',
             'po_number',
@@ -523,6 +524,51 @@ class PO_Monitor extends CI_Controller
             foreach ($headers as $header) {
                 $html .= '<td>' . htmlspecialchars((string) ($row[$header] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
             }
+            $html .= '</tr>';
+        }
+
+        $html .= '</table></body></html>';
+
+        $this->output
+            ->set_content_type('application/vnd.ms-excel')
+            ->set_header('Content-Disposition: attachment; filename="' . $fileName . '"')
+            ->set_header('Cache-Control: max-age=0')
+            ->set_output($html);
+    }
+
+    public function download_ny_po_reference()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $headers = ['NY PO REF', 'BOWHEER', 'TYPE PROJECT', 'REGIONAL', 'KOTA PO', 'DETAIL PO', 'TERM', 'AMOUNT', 'PERIOD'];
+        $rows = $this->MPO_Monitor->getNyPoReferenceRows();
+        $fileName = 'ny-po-reference-' . date('Ymd-His') . '.xls';
+
+        $html = '<html><head><meta charset="utf-8"><style>';
+        $html .= 'body{font-family:Arial,sans-serif;}';
+        $html .= 'table{border-collapse:collapse;}';
+        $html .= 'th,td{border:1px solid #999;padding:5px 7px;font-size:10pt;mso-number-format:\@;vertical-align:top;}';
+        $html .= 'th{background:#d9ead3;font-weight:bold;text-align:center;white-space:nowrap;}';
+        $html .= '</style></head><body><table><tr>';
+        foreach ($headers as $header) {
+            $html .= '<th>' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $html .= '</tr>';
+
+        foreach ($rows as $row) {
+            $html .= '<tr>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['ny_po_ref'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['bowheer'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['type_project'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['regional'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['kota_po'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['detail_po'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['term_label'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['amount'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['period'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
             $html .= '</tr>';
         }
 

@@ -257,6 +257,7 @@ class PO_MyRep extends CI_Controller
         }
 
         $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, '', (int) $this->session->userdata('id_user'));
+        $this->MPO_Monitor->ensurePoMonitorFromMyRepCluster($clusterId, (int) $this->session->userdata('id_user'));
         $cluster = $this->MPO_MyRep->getClusterById($clusterId);
 
         $poHeaders = $this->MPO_MyRep->getPoHeadersByClusterId($clusterId);
@@ -349,6 +350,10 @@ class PO_MyRep extends CI_Controller
             'created_by' => $userId,
             'updated_by' => $userId,
         ]);
+
+        if ($result > 0) {
+            $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader((int) $result, $userId);
+        }
 
         $this->session->set_flashdata($result > 0 ? 'success' : 'error', $result > 0 ? 'PO berhasil disimpan.' : 'PO gagal disimpan.');
         redirect('PO_MyRep/detail/' . $clusterId);
@@ -444,6 +449,7 @@ class PO_MyRep extends CI_Controller
             ]);
 
             if ($result > 0) {
+                $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader((int) $result, $userId);
                 $updatedCount++;
             } else {
                 $skippedMessages[] = $rowLabel . ': gagal disimpan.';

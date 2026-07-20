@@ -2601,6 +2601,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     </select>
                                 </div>
                                 <div class="po-monitor-field">
+                                    <label>NY PO REF</label>
+                                    <input type="text" id="po-monitor-batch-po-ny-ref" class="form-control" placeholder="Opsional, contoh NY-123">
+                                </div>
+                                <div class="po-monitor-field">
                                     <label>NO PO</label>
                                     <input type="text" id="po-monitor-batch-po-number-new" class="form-control">
                                 </div>
@@ -2653,10 +2657,15 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <div class="form-group">
                                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
                                     <label class="mb-0">Data PO</label>
-                                    <button type="button" class="btn btn-sm btn-outline-info" id="po-monitor-batch-po-copy-example">Copy Contoh</button>
+                                    <div class="d-flex flex-wrap" style="gap:8px;">
+                                        <a href="<?= site_url('PO_Monitor/download_ny_po_reference') ?>" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-file-excel mr-1"></i> Download NY PO Reference
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-info" id="po-monitor-batch-po-copy-example">Copy Contoh</button>
+                                    </div>
                                 </div>
-                                <textarea id="po-monitor-batch-po-paste" class="form-control po-monitor-batch-paste" placeholder="BOWHEER[TAB]STATUS PO[TAB]NO PO[TAB]NO PO SUB[TAB]REGIONAL[TAB]KOTA PO[TAB]DETAIL PO[TAB]REMARKS[TAB]TYPE PROJECT[TAB]TGL PO[TAB]PO VALUE[TAB]PO FINAL VALUE[TAB]PO TERM&#10;PT BANGTELINDO[TAB]ON PO[TAB]PO. 123[TAB]-[TAB]JABODETABEK[TAB]Jakarta[TAB]Detail pekerjaan[TAB]Catatan[TAB]-[TAB]2026-07-10[TAB]100000000[TAB][TAB]50:50"></textarea>
-                                <small class="form-text text-muted">Bisa paste dengan header CSV/Excel. Kolom utama: BOWHEER, STATUS PO, NO PO, NO PO SUB, REGIONAL, KOTA PO, DETAIL PO, REMARKS, TYPE PROJECT, TGL PO, PO VALUE, PO FINAL VALUE, PO TERM.</small>
+                                <textarea id="po-monitor-batch-po-paste" class="form-control po-monitor-batch-paste" placeholder="NY PO REF[TAB]BOWHEER[TAB]STATUS PO[TAB]NO PO[TAB]NO PO SUB[TAB]REGIONAL[TAB]KOTA PO[TAB]DETAIL PO[TAB]REMARKS[TAB]TYPE PROJECT[TAB]TGL PO[TAB]PO VALUE[TAB]PO FINAL VALUE[TAB]PO TERM&#10;[TAB]PT BANGTELINDO[TAB]ON PO[TAB]PO. 123[TAB]-[TAB]JABODETABEK[TAB]Jakarta[TAB]Detail pekerjaan[TAB]Catatan[TAB]-[TAB]2026-07-10[TAB]100000000[TAB][TAB]50:50"></textarea>
+                                <small class="form-text text-muted">Bisa paste dengan header CSV/Excel. NY PO REF opsional; kalau kosong sistem auto-match, kalau kandidat lebih dari satu row akan invalid.</small>
                             </div>
                             <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
                                 <button type="button" class="btn btn-outline-secondary" id="po-monitor-batch-po-parse-paste">Preview PO</button>
@@ -2681,6 +2690,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <thead class="thead-light">
                                 <tr>
                                     <th style="width:50px;">No</th>
+                                    <th>NY REF</th>
                                     <th>BOWHEER</th>
                                     <th>NO PO</th>
                                     <th>TGL PO</th>
@@ -2694,14 +2704,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             </thead>
                             <tbody>
                                 <tr class="po-monitor-batch-po-empty-row">
-                                    <td colspan="10" class="text-center text-muted">Belum ada row PO.</td>
+                                    <td colspan="11" class="text-center text-muted">Belum ada row PO.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
-                    <div class="text-muted small">Submit hanya membuat PO dan term OPEN. Tidak membuat target week atau claim invoice.</div>
+                    <div class="text-muted small">Jika match ke NY PO, target otomatis pindah dari NY PO ke ON PO.</div>
                     <div>
                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
                         <button type="submit" class="btn btn-dark" id="po-monitor-batch-po-submit" disabled>Simpan Batch PO</button>
@@ -2864,11 +2874,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
         var poMonitorBatchPoExampleText = <?php
             $poMonitorExampleBowheers = array_values($uniqueBowheer ?? []);
             $poMonitorBatchPoExampleRows = [
-                ['BOWHEER', 'STATUS PO', 'NO PO', 'NO PO SUB', 'REGIONAL', 'KOTA PO', 'DETAIL PO', 'REMARKS', 'TYPE PROJECT', 'TGL PO', 'PO VALUE', 'PO FINAL VALUE', 'PO TERM'],
+                ['NY PO REF', 'BOWHEER', 'STATUS PO', 'NO PO', 'NO PO SUB', 'REGIONAL', 'KOTA PO', 'DETAIL PO', 'REMARKS', 'TYPE PROJECT', 'TGL PO', 'PO VALUE', 'PO FINAL VALUE', 'PO TERM'],
             ];
             for ($poMonitorExampleIndex = 1; $poMonitorExampleIndex <= 5; $poMonitorExampleIndex++) {
                 $poMonitorExampleBowheer = $poMonitorExampleBowheers[$poMonitorExampleIndex - 1] ?? 'PT CONTOH BOWHEER';
                 $poMonitorBatchPoExampleRows[] = [
+                    '',
                     $poMonitorExampleBowheer,
                     $poMonitorExampleIndex % 2 === 0 ? 'NY PO' : 'ON PO',
                     'CONTOH-PO-' . date('Ymd') . '-' . str_pad((string) $poMonitorExampleIndex, 2, '0', STR_PAD_LEFT),
@@ -3786,7 +3797,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 var termCount = normalizeBatchPoTerm(term).length;
                 var isValid = bowheer !== '' && poNumber !== '' && effectiveValue > 0;
 
-                var fields = ['bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
+                var fields = ['ny_po_ref', 'bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
                 var hiddenInputs = '';
                 if (isValid) {
                     fields.forEach(function(field) {
@@ -3796,6 +3807,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
                 var html = '<tr class="po-monitor-batch-po-row ' + (isValid ? 'table-success' : 'table-danger') + '" data-effective-value="' + escapeHtml(effectiveValue) + '" data-term-count="' + escapeHtml(termCount) + '">' +
                     '<td></td>' +
+                    '<td>' + escapeHtml(row.ny_po_ref || '-') + '</td>' +
                     '<td>' + escapeHtml(bowheer) + hiddenInputs + '</td>' +
                     '<td>' + escapeHtml(poNumber) + '</td>' +
                     '<td>' + escapeHtml(row.po_date || '-') + '</td>' +
@@ -3814,6 +3826,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
             function readBatchPoManualRow() {
                 return {
+                    ny_po_ref: $('#po-monitor-batch-po-ny-ref').val(),
                     bowheer: $('#po-monitor-batch-po-bowheer').val(),
                     status_po: $('#po-monitor-batch-po-status').val(),
                     po_number: $('#po-monitor-batch-po-number-new').val(),
@@ -3832,7 +3845,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
             $('#po-monitor-batch-po-add-row').off('click.poMonitorBatchPo').on('click.poMonitorBatchPo', function() {
                 if (addBatchPoRow(readBatchPoManualRow())) {
-                    $('#po-monitor-batch-po-number-new, #po-monitor-batch-po-sub, #po-monitor-batch-po-regional, #po-monitor-batch-po-city, #po-monitor-batch-po-detail, #po-monitor-batch-po-remarks, #po-monitor-batch-po-value, #po-monitor-batch-po-final-value').val('');
+                    $('#po-monitor-batch-po-ny-ref, #po-monitor-batch-po-number-new, #po-monitor-batch-po-sub, #po-monitor-batch-po-regional, #po-monitor-batch-po-city, #po-monitor-batch-po-detail, #po-monitor-batch-po-remarks, #po-monitor-batch-po-value, #po-monitor-batch-po-final-value').val('');
                     $('#po-monitor-batch-po-number-new').focus();
                 }
             });
@@ -3860,7 +3873,11 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 }
 
                 var defaultOrder = ['bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
+                var defaultOrderWithRef = ['ny_po_ref', 'bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
                 var headerMap = {
+                    'NY PO REF': 'ny_po_ref',
+                    'NY REF': 'ny_po_ref',
+                    'NO REF': 'ny_po_ref',
                     'BOWHEER': 'bowheer',
                     'STATUS PO': 'status_po',
                     'NO PO': 'po_number',
@@ -3886,6 +3903,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         return headerMap[header] || '';
                     });
                     startIndex = 1;
+                } else if (firstColumns.length >= defaultOrderWithRef.length && (/^NY[\s-]*\d+$/i.test(String(firstColumns[0] || '').trim()) || String(firstColumns[0] || '').trim() === '')) {
+                    columnOrder = defaultOrderWithRef;
                 }
 
                 for (var i = startIndex; i < lines.length; i++) {
