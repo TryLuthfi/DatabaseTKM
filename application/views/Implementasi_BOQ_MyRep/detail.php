@@ -20,6 +20,27 @@ if (!function_exists('implHistoryNumber')) {
     }
 }
 
+if (!function_exists('implProgressPhotoPreviewUrl')) {
+    function implProgressPhotoPreviewUrl($photoId, $size = 'thumb')
+    {
+        return base_url('Implementasi_BOQ_MyRep/progressPhotoPreview/' . (int) $photoId . '/' . rawurlencode((string) $size));
+    }
+}
+
+if (!function_exists('implPhotoMimeFromPath')) {
+    function implPhotoMimeFromPath($filePath)
+    {
+        $extension = strtolower(pathinfo((string) $filePath, PATHINFO_EXTENSION));
+        if ($extension === 'png') {
+            return 'image/png';
+        }
+        if ($extension === 'webp') {
+            return 'image/webp';
+        }
+        return 'image/jpeg';
+    }
+}
+
 if (!function_exists('implAddWorkingDays')) {
     function implAddWorkingDays($dateString, $workingDays)
     {
@@ -2380,8 +2401,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             <td class="impl-gallery-table__photo">
                                                                 <div class="impl-gallery-photo-grid" data-lightbox-group="gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . $galleryIndex)) ?>">
                                                                     <?php foreach (($galleryItem['photos'] ?? []) as $photo): ?>
-                                                                        <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
-                                                                            <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>" loading="lazy" decoding="async">
+                                                                        <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
+                                                                            <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb') ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>" loading="lazy" decoding="async">
                                                                         </a>
                                                                     <?php endforeach; ?>
                                                                 </div>
@@ -2465,8 +2486,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
-                                                                            <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
-                                                                                <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
+                                                                            <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
+                                                                                <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb') ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
                                                                             </a>
                                                                             <div class="impl-gallery-photo-card__meta">
                                                                                 <div class="small font-weight-bold text-dark mb-2"><?= htmlspecialchars($photoCaption) ?></div>
@@ -2931,6 +2952,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var canSavePhotoRotation = <?= $canSavePhotoRotation ? 'true' : 'false' ?>;
         var clusterId = <?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>;
         var rotatePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateProgressPhoto') ?>';
+        var photoPreviewBaseUrl = '<?= base_url('Implementasi_BOQ_MyRep/progressPhotoPreview') ?>';
         var lazyPhotoPlaceholder = '<?= $implLazyPhotoPlaceholder ?>';
         var progressModal = document.getElementById('modal-progress');
         var progressSelector = document.querySelector('.js-progress-item-selector');
@@ -3893,11 +3915,20 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return String(url || '').split('?')[0];
         }
 
-        function refreshPhotoImageUrl(photoId, imageUrl) {
+        function getProgressPhotoPreviewUrl(photoId, size) {
+            photoId = parseInt(photoId || 0, 10) || 0;
+            if (photoId <= 0) {
+                return '';
+            }
+            return photoPreviewBaseUrl + '/' + encodeURIComponent(photoId) + '/' + encodeURIComponent(size || 'thumb');
+        }
+
+        function refreshPhotoImageUrl(photoId, imageUrl, thumbUrl) {
             photoId = parseInt(photoId || 0, 10) || 0;
             if (photoId <= 0 || !imageUrl) {
                 return;
             }
+            thumbUrl = thumbUrl || imageUrl;
 
             Array.prototype.forEach.call(document.querySelectorAll('.js-open-lightbox[data-photo-id="' + photoId + '"]'), function (node) {
                 node.setAttribute('href', imageUrl);
@@ -3905,9 +3936,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 var img = node.querySelector('img');
                 if (img) {
                     if (img.classList.contains('is-loaded')) {
-                        img.src = imageUrl;
+                        img.src = thumbUrl;
                     } else {
-                        img.setAttribute('data-src', imageUrl);
+                        img.setAttribute('data-src', thumbUrl);
                         img.src = lazyPhotoPlaceholder;
                     }
                 }
@@ -3931,7 +3962,15 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return 'image/jpeg';
         }
 
-        function buildRotatedPhotoBlob(rotationDegrees, imageUrl) {
+        function getImageMimeForLightboxItem(item) {
+            var mime = String((item && item.mime) || '').toLowerCase();
+            if (mime === 'image/png' || mime === 'image/webp' || mime === 'image/jpeg') {
+                return mime;
+            }
+            return getImageMimeFromUrl((item && item.image) || '');
+        }
+
+        function buildRotatedPhotoBlob(rotationDegrees, mimeType) {
             return new Promise(function (resolve, reject) {
                 if (!lightboxImage || !lightboxImage.complete || !lightboxImage.naturalWidth || !lightboxImage.naturalHeight) {
                     reject(new Error('Foto belum selesai dimuat.'));
@@ -3956,7 +3995,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 context.rotate(normalizedRotation * Math.PI / 180);
                 context.drawImage(lightboxImage, -sourceWidth / 2, -sourceHeight / 2);
 
-                var mimeType = getImageMimeFromUrl(imageUrl);
                 canvas.toBlob(function (blob) {
                     if (!blob) {
                         reject(new Error('Gagal membuat file hasil rotasi.'));
@@ -3986,7 +4024,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxIsSavingRotation = true;
             syncLightboxSaveButton();
 
-            buildRotatedPhotoBlob(pendingRotation, activeItem.image)
+            buildRotatedPhotoBlob(pendingRotation, getImageMimeForLightboxItem(activeItem))
                 .then(function (blob) {
                     formData.append('rotated_photo', blob, 'rotated_photo');
                     return fetch(rotatePhotoUrl, {
@@ -4019,10 +4057,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         return;
                     }
 
-                    refreshPhotoImageUrl(photoId, data.image_url || activeItem.image);
+                    refreshPhotoImageUrl(photoId, data.image_url || activeItem.image, data.thumb_url || data.image_url || activeItem.image);
                     lightboxRotation = 0;
                     lightboxImage.src = data.image_url || activeItem.image;
-                    resetLightboxToFit();
                 })
                 .catch(function (error) {
                     alert(error && error.message ? error.message : 'Gagal menyimpan rotasi foto. Coba lagi beberapa saat.');
@@ -4084,6 +4121,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 lightboxItems.push({
                     photoId: node.getAttribute('data-photo-id') || '0',
                     image: node.getAttribute('data-image') || '',
+                    mime: node.getAttribute('data-mime') || '',
                     title: node.getAttribute('data-title') || 'Preview Foto',
                     caption: node.getAttribute('data-caption') || '-',
                 });
@@ -4093,6 +4131,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 lightboxItems.push({
                     photoId: triggerElement ? (triggerElement.getAttribute('data-photo-id') || '0') : '0',
                     image: imageUrl || '',
+                    mime: triggerElement ? (triggerElement.getAttribute('data-mime') || '') : '',
                     title: title || 'Preview Foto',
                     caption: caption || '-',
                 });
@@ -4412,11 +4451,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         } else {
                             htmlDaily += '<div class="d-flex flex-wrap" data-lightbox-group="daily-detail-' + escapeAttr(activity.id_daily_activity || 0) + '">';
                             photos.forEach(function (photo) {
+                                var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
                                 var imagePath = (photo.file_path || '').replace(/^\/+/, '');
-                                var imageUrl = '<?= base_url() ?>' + imagePath;
+                                var imageUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : ('<?= base_url() ?>' + imagePath);
+                                var thumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : imageUrl;
                                 var photoCaption = photo.caption || photo.file_name || 'Foto';
-                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + imageUrl + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
-                                htmlDaily += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + imageUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto') + '" loading="lazy" decoding="async" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
+                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + imageUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
+                                htmlDaily += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + thumbUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto') + '" loading="lazy" decoding="async" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
                                 htmlDaily += '</a>';
                             });
                             htmlDaily += '</div>';
@@ -4526,9 +4567,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                             photoCaption = photoCategory + ' - ' + photoCaption;
                         }
                         var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
+                        var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
+                        var photoOriginalUrl = '<?= base_url() ?>' + (photo.file_path || '');
+                        var photoPreviewUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : photoOriginalUrl;
+                        var photoThumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : photoOriginalUrl;
                         html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">';
-                        html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-open-lightbox d-block" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
-                        html += '<img src="' + lazyPhotoPlaceholder + '" data-src="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '" loading="lazy" decoding="async">';
+                        html += '<a href="' + photoPreviewUrl + '" class="js-open-lightbox d-block" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + photoPreviewUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
+                        html += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + photoThumbUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '" loading="lazy" decoding="async">';
                         html += '<div>' + escapeAttr(photoCaption) + '</div>';
                         html += '</a>';
                         html += '<div class="small mt-1"><span class="badge badge-' + getComplyBadgeClass(photoStatus) + (isComplyPhoto ? ' js-comply-photo-status' : '') + '">' + escapeAttr(photoStatus) + '</span></div>';

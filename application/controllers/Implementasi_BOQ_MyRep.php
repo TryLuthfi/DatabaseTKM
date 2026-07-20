@@ -1222,13 +1222,43 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         clearstatcache(true, $fullPath);
-        $version = (string) (@filemtime($fullPath) ?: time());
-        $imageUrl = base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') . '?v=' . rawurlencode($version);
+        $this->clearProgressPhotoDerivativeCache($photoId);
+        $version = str_replace('.', '', uniqid('', true));
+        $imageUrl = base_url('Implementasi_BOQ_MyRep/progressPhotoPreview/' . $photoId . '/preview') . '?v=' . rawurlencode($version);
+        $thumbUrl = base_url('Implementasi_BOQ_MyRep/progressPhotoPreview/' . $photoId . '/thumb') . '?v=' . rawurlencode($version);
 
         $this->jsonResponse(true, 'Rotasi foto berhasil disimpan.', [
             'photo_id' => $photoId,
             'image_url' => $imageUrl,
+            'thumb_url' => $thumbUrl,
         ]);
+    }
+
+    public function progressPhotoPreview($photoId = 0, $size = 'thumb')
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            show_404();
+            return;
+        }
+
+        $photoId = (int) $photoId;
+        $photo = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($photoId);
+        if ($photoId <= 0 || empty($photo)) {
+            show_404();
+            return;
+        }
+
+        $fullPath = $this->resolveProgressPhotoFullPath((string) ($photo['file_path'] ?? ''));
+        if ($fullPath === '' || !is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $size = strtolower(trim((string) $size));
+        $maxSide = $size === 'preview' ? 1280 : 220;
+        $quality = $size === 'preview' ? 78 : 62;
+        $derivativePath = $this->buildProgressPhotoDerivative($photoId, $fullPath, $maxSide, $quality);
+        $this->outputImageFile($derivativePath !== '' ? $derivativePath : $fullPath);
     }
 
     public function uploadComplyPhoto()
@@ -1678,6 +1708,103 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         return move_uploaded_file($uploadedFile['tmp_name'], $fullPath);
+    }
+
+    private function buildProgressPhotoDerivative($photoId, $fullPath, $maxSide, $quality)
+    {
+        $info = @getimagesize($fullPath);
+        if ($info === false || empty($info[0]) || empty($info[1])) {
+            return '';
+        }
+
+        $sourceWidth = (int) $info[0];
+        $sourceHeight = (int) $info[1];
+        if ($sourceWidth <= 0 || $sourceHeight <= 0) {
+            return '';
+        }
+
+        $cacheDir = FCPATH . 'uploads/myrep_boq_progress/_preview/';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0777, true);
+        }
+        if (!is_dir($cacheDir) || !is_writable($cacheDir)) {
+            return '';
+        }
+
+        $sourceMtime = (string) (@filemtime($fullPath) ?: time());
+        $cachePath = $cacheDir . 'PHOTO_' . (int) $photoId . '_' . (int) $maxSide . '_' . $sourceMtime . '.jpg';
+        if (is_file($cachePath)) {
+            return $cachePath;
+        }
+
+        if (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg')) {
+            return '';
+        }
+
+        $mime = (string) ($info['mime'] ?? '');
+        if ($mime === 'image/jpeg' && function_exists('imagecreatefromjpeg')) {
+            $source = @imagecreatefromjpeg($fullPath);
+        } elseif ($mime === 'image/png' && function_exists('imagecreatefrompng')) {
+            $source = @imagecreatefrompng($fullPath);
+        } elseif ($mime === 'image/webp' && function_exists('imagecreatefromwebp')) {
+            $source = @imagecreatefromwebp($fullPath);
+        } else {
+            $source = false;
+        }
+
+        if (!$source) {
+            return '';
+        }
+
+        $scale = min(1, (int) $maxSide / max($sourceWidth, $sourceHeight));
+        $targetWidth = max(1, (int) round($sourceWidth * $scale));
+        $targetHeight = max(1, (int) round($sourceHeight * $scale));
+        $target = imagecreatetruecolor($targetWidth, $targetHeight);
+        if (!$target) {
+            imagedestroy($source);
+            return '';
+        }
+
+        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
+        $saved = imagejpeg($target, $cachePath, max(35, min(90, (int) $quality)));
+        imagedestroy($target);
+        imagedestroy($source);
+
+        return $saved && is_file($cachePath) ? $cachePath : '';
+    }
+
+    private function clearProgressPhotoDerivativeCache($photoId)
+    {
+        $cacheDir = FCPATH . 'uploads/myrep_boq_progress/_preview/';
+        if (!is_dir($cacheDir)) {
+            return;
+        }
+
+        foreach ((array) glob($cacheDir . 'PHOTO_' . (int) $photoId . '_*.jpg') as $cacheFile) {
+            if (is_file($cacheFile)) {
+                @unlink($cacheFile);
+            }
+        }
+    }
+
+    private function outputImageFile($fullPath)
+    {
+        if ($fullPath === '' || !is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $mime = 'image/jpeg';
+        $info = @getimagesize($fullPath);
+        if ($info !== false && !empty($info['mime'])) {
+            $mime = (string) $info['mime'];
+        }
+
+        $this->output
+            ->set_content_type($mime)
+            ->set_header('Cache-Control: private, max-age=86400')
+            ->set_header('Content-Length: ' . (string) filesize($fullPath))
+            ->set_output(file_get_contents($fullPath));
     }
 
     private function normalizeDate($value)
