@@ -237,6 +237,67 @@ class PO_MyRep extends CI_Controller
         ]);
     }
 
+    public function download_cluster_reference()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $rows = $this->MPO_MyRep->getRows('', '');
+        $headers = ['CLUSTER INPUT', 'CLUSTER CODE', 'CLUSTER NAME', 'KOTA', 'REGIONAL', 'STATUS'];
+        $fileName = 'myrep-cluster-reference-' . date('Ymd-His') . '.xls';
+
+        $html = '<html><head><meta charset="utf-8"><style>';
+        $html .= 'body{font-family:Arial,sans-serif;}';
+        $html .= 'table{border-collapse:collapse;}';
+        $html .= 'th,td{border:1px solid #999;padding:5px 7px;font-size:10pt;mso-number-format:\@;vertical-align:top;}';
+        $html .= 'th{background:#d9eaf7;font-weight:bold;text-align:center;white-space:nowrap;}';
+        $html .= '</style></head><body><table><tr>';
+        foreach ($headers as $header) {
+            $html .= '<th>' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $html .= '</tr>';
+
+        $seen = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if ($clusterId <= 0 || isset($seen[$clusterId])) {
+                continue;
+            }
+            $seen[$clusterId] = true;
+
+            $clusterCode = trim((string) ($row['cluster_code'] ?? ''));
+            $clusterName = trim((string) ($row['cluster_name'] ?? ''));
+            $cityName = trim((string) ($row['city_name'] ?? ''));
+            $regionalName = trim((string) ($row['regional_name'] ?? ''));
+            $clusterInput = trim($clusterCode . ' | ' . $clusterName . ' | ' . $cityName, " \t\n\r\0\x0B|");
+
+            $html .= '<tr>';
+            $html .= '<td>' . htmlspecialchars($clusterInput, ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars($clusterCode, ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars($clusterName, ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars($cityName, ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars($regionalName, ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars((string) ($row['status_current'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</table></body></html>';
+
+        $this->output
+            ->set_content_type('application/vnd.ms-excel')
+            ->set_header('Content-Disposition: attachment; filename="' . $fileName . '"')
+            ->set_header('Cache-Control: max-age=0')
+            ->set_output($html);
+    }
+
     public function detail($clusterId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {

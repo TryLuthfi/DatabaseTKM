@@ -1716,6 +1716,9 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             <a href="<?= site_url('PO_Monitor/download_ny_po_reference') ?>" class="btn btn-sm btn-outline-success">
                                                 <i class="fas fa-file-excel mr-1"></i> Download NY PO Reference
                                             </a>
+                                            <a href="<?= site_url('PO_MyRep/download_cluster_reference') ?>" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-file-excel mr-1"></i> Download Cluster Reference
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-outline-info" id="po-header-copy-example">Copy Contoh</button>
                                         </div>
                                     </div>
