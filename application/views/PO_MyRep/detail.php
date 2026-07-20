@@ -428,6 +428,25 @@ if (!function_exists('poMyRepStatusBadge')) {
                                         <div class="col-md-3"><strong>Versi</strong><div><?= !empty($header['po_version_label']) ? htmlspecialchars((string) $header['po_version_label']) : '-' ?></div></div>
                                         <div class="col-md-3"><strong>Remark</strong><div><?= !empty($header['remark_po']) ? htmlspecialchars((string) $header['remark_po']) : '-' ?></div></div>
                                     </div>
+                                    <div class="mt-3">
+                                        <?php if ($canEdit): ?>
+                                            <form method="post" action="<?= base_url('PO_MyRep/setPoNyRef') ?>" class="form-inline">
+                                                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                                <input type="hidden" name="id_po_header" value="<?= (int) ($header['id_po_header'] ?? 0) ?>">
+                                                <label class="mr-2 mb-2 mb-sm-0"><strong>NY PO REF</strong></label>
+                                                <input
+                                                    type="text"
+                                                    name="ny_po_ref"
+                                                    class="form-control form-control-sm mr-2"
+                                                    placeholder="NY-123"
+                                                    value="<?= htmlspecialchars((string) ($header['po_monitor_ny_ref'] ?? ''), ENT_QUOTES) ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">Update Ref</button>
+                                            </form>
+                                        <?php else: ?>
+                                            <strong>NY PO REF</strong>
+                                            <div><?= !empty($header['po_monitor_ny_ref']) ? htmlspecialchars((string) $header['po_monitor_ny_ref']) : '-' ?></div>
+                                        <?php endif; ?>
+                                    </div>
 
                                     <div class="table-responsive mt-3">
                                         <table class="table table-bordered table-sm po-termin-table">
@@ -554,8 +573,9 @@ if (!function_exists('poMyRepStatusBadge')) {
                         <div class="col-md-6"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" class="form-control" required></div></div>
                         <div class="col-md-3"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" class="form-control" value="<?= date('Y-m-d') ?>" required></div></div>
                         <div class="col-md-3"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" class="form-control" required></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>NY PO REF</label><input type="text" name="ny_po_ref" class="form-control" placeholder="NY-123 (opsional)"></div></div>
                         <div class="col-md-6"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" class="form-control" placeholder="Contoh: FINAL 01 / AMANDMENT 01"></div></div>
-                        <div class="col-md-6"><div class="form-group"><label>Parent PO</label><select name="parent_po_header_id" class="form-control"><option value="">PO Baru</option><?php foreach (array_merge($poGroups['CLUSTER'], $poGroups['SUBFEEDER']) as $existingPo): ?><option value="<?= (int) ($existingPo['id_po_header'] ?? 0) ?>"><?= htmlspecialchars((string) ($existingPo['po_number'] ?? '-')) ?> - <?= htmlspecialchars((string) ($existingPo['po_category'] ?? '-')) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-8"><div class="form-group"><label>Parent PO</label><select name="parent_po_header_id" class="form-control"><option value="">PO Baru</option><?php foreach (array_merge($poGroups['CLUSTER'], $poGroups['SUBFEEDER']) as $existingPo): ?><option value="<?= (int) ($existingPo['id_po_header'] ?? 0) ?>"><?= htmlspecialchars((string) ($existingPo['po_number'] ?? '-')) ?> - <?= htmlspecialchars((string) ($existingPo['po_category'] ?? '-')) ?></option><?php endforeach; ?></select></div></div>
                         <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_po" class="form-control" rows="3"></textarea></div></div>
                     </div>
                 </div>

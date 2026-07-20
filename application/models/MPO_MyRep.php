@@ -3740,6 +3740,20 @@ class MPO_MyRep extends CI_Model
         return $this->db->field_exists('invoice_value', 'tb_myrep_po_termin');
     }
 
+    public function ensurePoHeaderNyRefColumn()
+    {
+        if (!$this->db->table_exists('tb_myrep_po_header')) {
+            return false;
+        }
+
+        if (!$this->db->field_exists('po_monitor_ny_ref', 'tb_myrep_po_header')) {
+            $afterColumn = $this->db->field_exists('remark_po', 'tb_myrep_po_header') ? ' AFTER `remark_po`' : '';
+            $this->db->query('ALTER TABLE `tb_myrep_po_header` ADD COLUMN `po_monitor_ny_ref` VARCHAR(50) NULL' . $afterColumn);
+        }
+
+        return $this->db->field_exists('po_monitor_ny_ref', 'tb_myrep_po_header');
+    }
+
     public function getTerminByPoNumberAndTerm($poNumber, $terminNo)
     {
         if (!$this->tablesReady()) {
@@ -3878,6 +3892,30 @@ class MPO_MyRep extends CI_Model
             ->count_all_results() > 0;
     }
 
+    public function updatePoHeaderNyRef($poHeaderId, $nyPoRef, $userId = 0)
+    {
+        if (!$this->tablesReady() || !$this->ensurePoHeaderNyRefColumn()) {
+            return false;
+        }
+
+        $poHeaderId = (int) $poHeaderId;
+        if ($poHeaderId <= 0) {
+            return false;
+        }
+
+        $nyPoRef = strtoupper(trim((string) $nyPoRef));
+        $payload = [
+            'po_monitor_ny_ref' => $nyPoRef !== '' ? $nyPoRef : null,
+            'updated_by' => (int) $userId,
+        ];
+        if ($this->db->field_exists('updated_at', 'tb_myrep_po_header')) {
+            $payload['updated_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->db->where('id_po_header', $poHeaderId)->update('tb_myrep_po_header', $payload);
+        return $this->db->affected_rows() >= 0;
+    }
+
     public function getTerminRowsByPoId($poId)
     {
         if (!$this->tablesReady()) {
@@ -3948,6 +3986,10 @@ class MPO_MyRep extends CI_Model
         ];
         if ($this->db->field_exists('on_target', 'tb_myrep_po_header')) {
             $headerPayload['on_target'] = array_key_exists('on_target', $payload) ? (int) $payload['on_target'] : 1;
+        }
+        if ($this->ensurePoHeaderNyRefColumn()) {
+            $nyRef = strtoupper(trim((string) ($payload['po_monitor_ny_ref'] ?? '')));
+            $headerPayload['po_monitor_ny_ref'] = $nyRef !== '' ? $nyRef : null;
         }
 
         $this->db->insert('tb_myrep_po_header', $headerPayload);

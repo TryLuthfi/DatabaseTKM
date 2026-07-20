@@ -4067,6 +4067,106 @@ class MPO_Monitor extends CI_Model
         return ['row' => $candidates[0] ?? null, 'error' => null];
     }
 
+    public function linkNyPoReferenceToPo($nyPoRef, $idPo, $poNumber, $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $nyPoRef = trim((string) $nyPoRef);
+        $idPo = (int) $idPo;
+        $poNumber = trim((string) $poNumber);
+        if ($nyPoRef === '' || $idPo <= 0) {
+            return ['status' => false, 'message' => 'NY PO REF atau PO tujuan tidak valid.'];
+        }
+
+        $idPipeline = $this->parseNyPoReferenceId($nyPoRef);
+        if ($idPipeline <= 0) {
+            return ['status' => false, 'message' => 'NY PO REF tidak valid. Gunakan format NY-123.'];
+        }
+
+        $pipeline = $this->db
+            ->where('id_pipeline', $idPipeline)
+            ->get('tb_po_target_pipeline')
+            ->row_array();
+        if (!$pipeline) {
+            return ['status' => false, 'message' => 'NY PO REF ' . $nyPoRef . ' tidak ditemukan.'];
+        }
+
+        return $this->replaceNyPoPipelineLink($pipeline, $idPo, $poNumber, [], $userId, true);
+    }
+
+    public function unlinkNyPoReferenceFromPo($nyPoRef, $idPo = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $nyPoRef = trim((string) $nyPoRef);
+        $idPipeline = $this->parseNyPoReferenceId($nyPoRef);
+        if ($idPipeline <= 0) {
+            return false;
+        }
+
+        $pipeline = $this->db
+            ->where('id_pipeline', $idPipeline)
+            ->get('tb_po_target_pipeline')
+            ->row_array();
+        if (!$pipeline) {
+            return false;
+        }
+
+        $linkedIdPo = (int) ($pipeline['linked_id_po'] ?? 0);
+        $idPo = (int) $idPo;
+        if ($idPo > 0 && $linkedIdPo > 0 && $linkedIdPo !== $idPo) {
+            return false;
+        }
+
+        if ($linkedIdPo > 0) {
+            $this->clearNyPipelineTargetFromPo($linkedIdPo, $pipeline);
+        }
+
+        $this->db
+            ->where('id_pipeline', $idPipeline)
+            ->update('tb_po_target_pipeline', [
+                'linked_id_po' => null,
+                'linked_po_number' => null,
+                'pipeline_status' => 'OPEN',
+                'converted_at' => null,
+                'converted_by' => null
+            ]);
+
+        if ($linkedIdPo > 0) {
+            $this->refreshPoDashboardMetrics($linkedIdPo);
+        }
+
+        return true;
+    }
+
+    public function linkNyPoReferenceToMyRepHeader($poHeaderId, $nyPoRef, $userId = 0)
+    {
+        $poHeaderId = (int) $poHeaderId;
+        $nyPoRef = trim((string) $nyPoRef);
+        if ($poHeaderId <= 0 || $nyPoRef === '') {
+            return ['status' => false, 'message' => 'PO MyRep atau NY PO REF kosong.'];
+        }
+
+        $ensure = $this->ensurePoMonitorFromMyRepPoHeader($poHeaderId, $userId);
+        if (empty($ensure['status']) || empty($ensure['id_po'])) {
+            return ['status' => false, 'message' => $ensure['message'] ?? 'PO Monitor belum berhasil dibuat.'];
+        }
+
+        $poNumber = '';
+        if ($this->db->table_exists('tb_myrep_po_header')) {
+            $header = $this->db
+                ->select('po_number')
+                ->where('id_po_header', $poHeaderId)
+                ->get('tb_myrep_po_header')
+                ->row_array();
+            $poNumber = trim((string) ($header['po_number'] ?? ''));
+        }
+        if ($poNumber === '') {
+            $po = $this->db->select('po_number')->where('id_po', (int) $ensure['id_po'])->get('tb_po')->row_array();
+            $poNumber = trim((string) ($po['po_number'] ?? ''));
+        }
+
+        return $this->linkNyPoReferenceToPo($nyPoRef, (int) $ensure['id_po'], $poNumber, $userId);
+    }
+
     private function replaceNyPoPipelineLink(array $pipeline, $idPo, $poNumber, array $group, $userId, $applyTarget = true)
     {
         $idPo = (int) $idPo;

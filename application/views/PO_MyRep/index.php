@@ -1700,6 +1700,10 @@ if (is_array($terminBreakdownRows ?? null)) {
                                         <input type="text" id="po-header-value-input" class="form-control" placeholder="Contoh: 1.000.000">
                                     </div>
                                     <div>
+                                        <label class="mb-1">NY PO REF</label>
+                                        <input type="text" id="po-header-ny-ref-input" class="form-control" placeholder="NY-123">
+                                    </div>
+                                    <div>
                                         <button type="button" class="btn btn-outline-primary" id="po-header-add-row">Tambah Row</button>
                                     </div>
                                 </div>
@@ -1712,8 +1716,8 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             <button type="button" class="btn btn-sm btn-outline-info" id="po-header-copy-example">Copy Contoh</button>
                                         </div>
                                     </div>
-                                    <textarea id="po-header-paste" class="form-control po-batch-invoice__paste" placeholder="Cluster[TAB]Tipe PO[TAB]Kategori[TAB]Nomor PO[TAB]Tanggal PO[TAB]Nilai PO&#10;CL001 | Cluster A | BANDUNG[TAB]CLUSTER[TAB]INITIAL[TAB]7400123456[TAB]2026-06-29[TAB]100000000"></textarea>
-                                    <small class="form-text text-muted">Format: Cluster, Tipe PO, Kategori, Nomor PO, Tanggal PO, Nilai PO. Kategori hanya INITIAL atau FINAL.</small>
+                                    <textarea id="po-header-paste" class="form-control po-batch-invoice__paste" placeholder="NY PO REF[TAB]Cluster[TAB]Tipe PO[TAB]Kategori[TAB]Nomor PO[TAB]Tanggal PO[TAB]Nilai PO&#10;NY-123[TAB]CL001 | Cluster A | BANDUNG[TAB]CLUSTER[TAB]INITIAL[TAB]7400123456[TAB]2026-06-29[TAB]100000000"></textarea>
+                                    <small class="form-text text-muted">Format baru: NY PO REF, Cluster, Tipe PO, Kategori, Nomor PO, Tanggal PO, Nilai PO. Kolom NY PO REF boleh kosong.</small>
                                 </div>
                                 <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
                                     <button type="button" class="btn btn-outline-secondary" id="po-header-parse-paste">Cek PO</button>
@@ -1762,13 +1766,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                                         <th>Nomor PO</th>
                                         <th style="width:130px;">Tanggal PO</th>
                                         <th style="width:180px;">Nilai PO</th>
+                                        <th style="width:120px;">NY Ref</th>
                                         <th style="width:220px;">Status</th>
                                         <th style="width:90px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr class="po-header-empty-row">
-                                        <td colspan="9" class="text-center text-muted">Belum ada row PO.</td>
+                                        <td colspan="10" class="text-center text-muted">Belum ada row PO.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2427,6 +2432,7 @@ if (is_array($terminBreakdownRows ?? null)) {
 
                 $exampleIndex = count($poHeaderPasteExampleRows) + 1;
                 $poHeaderPasteExampleRows[] = [
+                    '',
                     $exampleClusterLabel,
                     $exampleIndex % 2 === 0 ? 'SUBFEEDER' : 'CLUSTER',
                     $exampleIndex % 2 === 0 ? 'FINAL' : 'INITIAL',
@@ -2535,12 +2541,12 @@ if (is_array($terminBreakdownRows ?? null)) {
             }).join('\n');
         }
 
-        var poHeaderPasteExample = buildTsvExample(['Cluster', 'Tipe PO', 'Kategori', 'Nomor PO', 'Tanggal PO', 'Nilai PO'], poHeaderPasteExampleRows, [
-            ['CL001 | Cluster A | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO001', '<?= date('Y-m-d') ?>', '100000000'],
-            ['CL002 | Cluster B | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO002', '<?= date('Y-m-d') ?>', '101000000'],
-            ['CL003 | Cluster C | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO003', '<?= date('Y-m-d') ?>', '102000000'],
-            ['CL004 | Cluster D | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO004', '<?= date('Y-m-d') ?>', '103000000'],
-            ['CL005 | Cluster E | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO005', '<?= date('Y-m-d') ?>', '104000000']
+        var poHeaderPasteExample = buildTsvExample(['NY PO REF', 'Cluster', 'Tipe PO', 'Kategori', 'Nomor PO', 'Tanggal PO', 'Nilai PO'], poHeaderPasteExampleRows, [
+            ['', 'CL001 | Cluster A | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO001', '<?= date('Y-m-d') ?>', '100000000'],
+            ['NY-123', 'CL002 | Cluster B | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO002', '<?= date('Y-m-d') ?>', '101000000'],
+            ['', 'CL003 | Cluster C | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO003', '<?= date('Y-m-d') ?>', '102000000'],
+            ['NY-124', 'CL004 | Cluster D | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO004', '<?= date('Y-m-d') ?>', '103000000'],
+            ['', 'CL005 | Cluster E | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO005', '<?= date('Y-m-d') ?>', '104000000']
         ]);
         var poBatchInvoiceExample = buildTsvExample(['PO Number', 'Term', 'Nilai Invoice'], poBatchInvoiceExampleRows, [
             ['PO-001', '1', '1000000'],
@@ -2752,14 +2758,26 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
         }
 
-        function addBatchHeaderRow(clusterInput, poType, poCategory, poNumber, poDate, poValue) {
+        function normalizeNyPoRef(value) {
+            return String(value || '').trim().toUpperCase();
+        }
+
+        function addBatchHeaderRow(clusterInput, poType, poCategory, poNumber, poDate, poValue, nyPoRef) {
             var normalizedType = String(poType || '').trim().toUpperCase();
             var normalizedCategory = String(poCategory || '').trim().toUpperCase();
             var normalizedNumber = String(poNumber || '').trim();
+            var normalizedNyPoRef = normalizeNyPoRef(nyPoRef);
             var parsedValue = parseLocaleNumber(poValue);
             var check = getBatchHeaderCheck(clusterInput, normalizedType, normalizedCategory, normalizedNumber, poDate, parsedValue);
             var cluster = check.cluster;
             var normalizedDate = check.poDate || '';
+
+            if (normalizedNyPoRef && !/^NY-\d+$/.test(normalizedNyPoRef)) {
+                check.valid = false;
+                check.label = 'Invalid';
+                check.statusCode = 'invalid';
+                check.message = 'NY PO REF harus format NY-123.';
+            }
 
             if (cluster && cluster.id_myrep_cluster) {
                 var duplicateBatchKey = [
@@ -2798,6 +2816,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 '<td>' + escapeHtml(normalizedNumber || '-') + '</td>' +
                 '<td class="text-center">' + escapeHtml(normalizedDate || '-') + '</td>' +
                 '<td class="text-right">' + escapeHtml(formattedValue || '-') + '</td>' +
+                '<td class="text-center">' + escapeHtml(normalizedNyPoRef || '-') + '</td>' +
                 '<td><span class="badge badge-' + (check.valid ? 'success' : (check.statusCode === 'duplicate' ? 'warning' : 'danger')) + '">' + escapeHtml(check.label) + '</span><div class="small text-muted">' + escapeHtml(check.message || '-') + '</div></td>' +
                 '<td class="text-center">' +
                     '<input type="hidden" name="cluster_id[]" value="' + escapeHtml(clusterId) + '">' +
@@ -2806,6 +2825,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                     '<input type="hidden" name="po_number[]" value="' + escapeHtml(normalizedNumber) + '">' +
                     '<input type="hidden" name="po_date[]" value="' + escapeHtml(normalizedDate) + '">' +
                     '<input type="hidden" name="po_value[]" value="' + escapeHtml(parsedValue) + '">' +
+                    '<input type="hidden" name="ny_po_ref[]" value="' + escapeHtml(normalizedNyPoRef) + '">' +
                     '<button type="button" class="btn btn-sm btn-outline-danger po-header-remove-row">Hapus</button>' +
                 '</td>' +
             '</tr>';
@@ -2822,12 +2842,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                 $('#po-header-category-input').val(),
                 $('#po-header-number-input').val(),
                 $('#po-header-date-input').val(),
-                $('#po-header-value-input').val()
+                $('#po-header-value-input').val(),
+                $('#po-header-ny-ref-input').val()
             );
             if (added) {
                 $('#po-header-cluster-input').val('');
                 $('#po-header-number-input').val('');
                 $('#po-header-value-input').val('');
+                $('#po-header-ny-ref-input').val('');
                 $('#po-header-category-input').val('INITIAL');
                 $('#po-header-cluster-input').focus();
             }
@@ -2869,17 +2891,36 @@ if (is_array($terminBreakdownRows ?? null)) {
 
                 var normalizedFirstColumn = String(columns[0] || '').trim().toUpperCase();
                 var normalizedFourthColumn = String(columns[3] || '').trim().toUpperCase();
-                if (normalizedFirstColumn === 'CLUSTER' && normalizedFourthColumn === 'NOMOR PO') {
+                var normalizedFifthColumn = String(columns[4] || '').trim().toUpperCase();
+                if (
+                    (normalizedFirstColumn === 'CLUSTER' && normalizedFourthColumn === 'NOMOR PO')
+                    || (normalizedFirstColumn === 'NY PO REF' && normalizedFifthColumn === 'NOMOR PO')
+                ) {
                     return;
                 }
 
+                var nyPoRef = '';
                 var clusterInput = columns[0];
                 var poType = columns[1];
                 var poCategory = columns[2];
                 var poNumber = columns[3];
                 var poDate = columns[4];
                 var poValue = columns.slice(5).join(' ');
-                if (addBatchHeaderRow(clusterInput, poType, poCategory, poNumber, poDate, poValue)) {
+                var looksLikeNewFormat = columns.length >= 7
+                    && (normalizedFirstColumn === '' || /^NY[\s-]*\d+$/i.test(normalizedFirstColumn))
+                    && ['CLUSTER', 'SUBFEEDER'].indexOf(String(columns[2] || '').trim().toUpperCase()) !== -1;
+
+                if (looksLikeNewFormat) {
+                    nyPoRef = columns[0];
+                    clusterInput = columns[1];
+                    poType = columns[2];
+                    poCategory = columns[3];
+                    poNumber = columns[4];
+                    poDate = columns[5];
+                    poValue = columns.slice(6).join(' ');
+                }
+
+                if (addBatchHeaderRow(clusterInput, poType, poCategory, poNumber, poDate, poValue, nyPoRef)) {
                     addedCount++;
                 }
             });
