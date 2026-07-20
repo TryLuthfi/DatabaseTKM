@@ -1713,6 +1713,9 @@ if (is_array($terminBreakdownRows ?? null)) {
                                     <div class="d-flex flex-wrap justify-content-between align-items-center mb-2" style="gap:8px;">
                                         <label class="mb-0">Data PO Initial / Final</label>
                                         <div class="d-flex flex-wrap" style="gap:8px;">
+                                            <a href="<?= site_url('PO_Monitor/download_ny_po_reference') ?>" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-file-excel mr-1"></i> Download NY PO Reference
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-outline-info" id="po-header-copy-example">Copy Contoh</button>
                                         </div>
                                     </div>
