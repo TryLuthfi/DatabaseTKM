@@ -50,6 +50,13 @@ if (!function_exists('implPhotoMimeFromPath')) {
     }
 }
 
+if (!function_exists('implNaturalCompare')) {
+    function implNaturalCompare($left, $right)
+    {
+        return strnatcasecmp(trim((string) $left), trim((string) $right));
+    }
+}
+
 if (!function_exists('implAddWorkingDays')) {
     function implAddWorkingDays($dateString, $workingDays)
     {
@@ -559,6 +566,7 @@ foreach ($compareRows as $row) {
                 'comply_label' => (string) ($photo['comply_label'] ?? ''),
                 'id_progress_photo' => (int) ($photo['id_progress_photo'] ?? 0),
                 'uploaded_by' => (int) ($photo['uploaded_by'] ?? 0),
+                'comply_print_order' => (int) ($photo['comply_print_order'] ?? 0),
                 'status_photo' => (string) ($photo['status_photo'] ?? ''),
                 'review_remark' => (string) ($photo['review_remark'] ?? ''),
             ];
@@ -670,6 +678,7 @@ foreach ($galleryRows as $galleryRow) {
             'dates' => [],
             'remarks' => [],
             'photos' => [],
+            'print_order' => 0,
         ];
     }
 
@@ -685,6 +694,7 @@ foreach ($galleryRows as $galleryRow) {
     $targetGroups[$galleryType][$galleryKey]['photos'][] = [
         'id_progress_photo' => (int) ($galleryRow['id_progress_photo'] ?? 0),
         'uploaded_by' => (int) ($galleryRow['uploaded_by'] ?? 0),
+        'comply_print_order' => (int) ($galleryRow['comply_print_order'] ?? 0),
         'file_name' => (string) ($galleryRow['file_name'] ?? 'Foto Progress'),
         'file_path' => (string) ($galleryRow['file_path'] ?? ''),
         'caption' => (string) ($galleryRow['caption'] ?? ''),
@@ -694,11 +704,45 @@ foreach ($galleryRows as $galleryRow) {
         'review_remark' => (string) ($galleryRow['review_remark'] ?? ''),
     ];
 
+    $printOrder = (int) ($galleryRow['comply_print_order'] ?? 0);
+    if ($galleryBucket === 'comply' && $printOrder > 0) {
+        $currentPrintOrder = (int) ($targetGroups[$galleryType][$galleryKey]['print_order'] ?? 0);
+        if ($currentPrintOrder <= 0 || $printOrder < $currentPrintOrder) {
+            $targetGroups[$galleryType][$galleryKey]['print_order'] = $printOrder;
+        }
+    }
+
     if ($galleryBucket === 'comply') {
         $complyGalleryGroups = $targetGroups;
     } else {
         $implementationGalleryGroups = $targetGroups;
     }
+}
+
+foreach ($complyGalleryGroups as $galleryType => $galleryItems) {
+    uasort($galleryItems, static function ($a, $b) {
+        $orderA = (int) ($a['print_order'] ?? 0);
+        $orderB = (int) ($b['print_order'] ?? 0);
+        if ($orderA > 0 || $orderB > 0) {
+            if ($orderA <= 0) {
+                $orderA = PHP_INT_MAX;
+            }
+            if ($orderB <= 0) {
+                $orderB = PHP_INT_MAX;
+            }
+            if ($orderA !== $orderB) {
+                return $orderA <=> $orderB;
+            }
+        }
+
+        $itemCompare = implNaturalCompare($a['item_name'] ?? '', $b['item_name'] ?? '');
+        if ($itemCompare !== 0) {
+            return $itemCompare;
+        }
+
+        return implNaturalCompare($a['comply_label'] ?? '', $b['comply_label'] ?? '');
+    });
+    $complyGalleryGroups[$galleryType] = $galleryItems;
 }
 
 $complyGalleryKindOptions = [];
@@ -1461,7 +1505,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         min-height: 74px;
     }
 
-    .js-comply-photo-actions {
+    .impl-gallery-photo-card__meta .js-comply-photo-actions {
         position: absolute;
         top: .55rem;
         right: .65rem;
@@ -1519,6 +1563,100 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     .impl-gallery-table__date {
         min-width: 110px;
         font-size: .92rem;
+    }
+
+    .impl-row-drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin-right: .35rem;
+        border: 1px solid #d7dee9;
+        border-radius: 999px;
+        color: #64748b;
+        cursor: grab;
+        font-size: .82rem;
+        line-height: 1;
+        vertical-align: middle;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+        transition: transform .22s cubic-bezier(.2, .8, .2, 1), box-shadow .22s ease, border-color .22s ease, color .22s ease, background .22s ease;
+    }
+
+    .impl-row-drag-handle:hover {
+        border-color: #64748b;
+        color: #0f172a;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, .12);
+        transform: translateY(-1px) scale(1.03);
+    }
+
+    .impl-gallery-table.is-row-reordering .js-comply-gallery-row {
+        transition: transform .24s cubic-bezier(.2, .8, .2, 1), opacity .2s ease, filter .2s ease;
+    }
+
+    .impl-gallery-table.is-row-reordering .js-comply-gallery-row:not(.is-dragging) {
+        filter: saturate(.92);
+    }
+
+    .js-comply-gallery-row.is-dragging {
+        opacity: .98;
+        transform: translateY(-3px) scale(1.018);
+        position: relative;
+        z-index: 4;
+    }
+
+    .js-comply-gallery-row.is-dragging .impl-row-drag-handle {
+        cursor: grabbing;
+        border-color: #0f766e;
+        color: #0f766e;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 118, 110, .22);
+    }
+
+    .js-comply-gallery-row.is-dragging td {
+        background: linear-gradient(180deg, #ffffff, #f8fffd);
+        box-shadow: inset 0 0 0 1px #99f6e4, 0 16px 38px rgba(15, 23, 42, .18);
+    }
+
+    .js-comply-gallery-row.is-dragging td:first-child {
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+
+    .js-comply-gallery-row.is-dragging td:last-child {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    .js-comply-gallery-row.is-dragging td:first-child::after {
+        content: "Mengatur urutan print";
+        display: block;
+        width: max-content;
+        max-width: 138px;
+        margin: .35rem auto 0;
+        padding: .18rem .45rem;
+        border-radius: 999px;
+        background: #ccfbf1;
+        color: #115e59;
+        font-size: .62rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        box-shadow: 0 4px 10px rgba(15, 118, 110, .12);
+    }
+
+    .js-comply-gallery-row.is-drag-over td {
+        border-top-color: #14b8a6;
+        border-top-width: 4px;
+        background: #f0fdfa;
+    }
+
+    .impl-gallery-table.is-order-saving {
+        outline: 1px solid #99f6e4;
+        outline-offset: 3px;
+        border-radius: 10px;
+        box-shadow: 0 0 0 4px rgba(20, 184, 166, .08);
+        transition: box-shadow .24s ease, outline-color .24s ease;
     }
 
     .impl-comply-upload-card {
@@ -2615,9 +2753,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             implode(' ', $remarks),
                                                             implode(' ', $dates),
                                                         ]);
+                                                        $rowPhotoIds = array_values(array_filter(array_map(static function ($photoRow) {
+                                                            return (int) ($photoRow['id_progress_photo'] ?? 0);
+                                                        }, (array) ($galleryItem['photos'] ?? []))));
+                                                        $rowOrderPhotoId = (int) ($rowPhotoIds[0] ?? 0);
                                                         ?>
-                                                        <tr class="js-comply-gallery-row" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
-                                                            <td class="impl-gallery-table__no js-comply-gallery-no"><?= $galleryIndex++ ?></td>
+                                                        <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
+                                                            <td class="impl-gallery-table__no"><span class="impl-row-drag-handle" title="Geser urutan print">&#8942;&#8942;</span><span class="js-comply-gallery-no"><?= $galleryIndex++ ?></span></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__photo">
@@ -3093,6 +3235,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var clusterId = <?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>;
         var rotatePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateProgressPhoto') ?>';
         var deletePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/deleteProgressPhoto') ?>';
+        var saveComplyPhotoOrderUrl = '<?= base_url('Implementasi_BOQ_MyRep/saveComplyPhotoOrder') ?>';
         var photoPreviewBaseUrl = '<?= base_url('Implementasi_BOQ_MyRep/progressPhotoPreview') ?>';
         var lazyPhotoPlaceholder = '<?= $implLazyPhotoPlaceholder ?>';
         var progressModal = document.getElementById('modal-progress');
@@ -3616,6 +3759,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lazyPhotoObserver = null;
         var lightboxImageCache = {};
         var photoPreviewVersionMap = {};
+        var activeDraggedComplyRow = null;
+        var manualDraggedComplyRow = null;
+        var manualDraggedComplyTbody = null;
         var complyCategoryFilter = document.getElementById('impl-comply-category-filter');
         var complyKindFilter = document.getElementById('impl-comply-kind-filter');
         var complySearchFilter = document.getElementById('impl-comply-search-filter');
@@ -4018,6 +4164,197 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
 
             observeLazyPhotos(document.getElementById('impl-comply-pane'));
+        }
+
+        function saveComplyRowOrder(tbody) {
+            if (!tbody || !window.fetch || !window.FormData) {
+                return;
+            }
+
+            var table = tbody.closest('.impl-gallery-table');
+            var orderedIds = [];
+            Array.prototype.forEach.call(tbody.querySelectorAll('.js-comply-gallery-row'), function (row) {
+                var photoId = parseInt(row.getAttribute('data-order-photo-id') || '0', 10) || 0;
+                if (photoId > 0) {
+                    orderedIds.push(photoId);
+                }
+            });
+
+            if (!orderedIds.length) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('cluster_id', clusterId);
+            formData.append('ordered_photo_ids', orderedIds.join(','));
+            if (table) {
+                table.classList.add('is-order-saving');
+            }
+
+            fetch(saveComplyPhotoOrderUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(function (response) {
+                    return response.text().then(function (text) {
+                        var data = {};
+                        try {
+                            data = text ? JSON.parse(text) : {};
+                        } catch (e) {
+                            data = { status: false, message: 'Response server tidak valid.' };
+                        }
+                        if (!response.ok && data.status !== true) {
+                            data.status = false;
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    showComplyReviewMessage(data.message || (data.status ? 'Urutan print tersimpan.' : 'Gagal menyimpan urutan foto comply.'), !!data.status);
+                })
+                .catch(function () {
+                    showComplyReviewMessage('Gagal menyimpan urutan foto comply. Coba lagi beberapa saat.', false);
+                })
+                .finally(function () {
+                    if (table) {
+                        window.setTimeout(function () {
+                            table.classList.remove('is-order-saving');
+                        }, 450);
+                    }
+                });
+        }
+
+        function getComplyDragAfterRow(tbody, clientY) {
+            var rows = Array.prototype.filter.call(tbody.querySelectorAll('.js-comply-gallery-row:not(.is-dragging)'), function (row) {
+                return !row.classList.contains('d-none');
+            });
+
+            return rows.reduce(function (closest, row) {
+                var box = row.getBoundingClientRect();
+                var offset = clientY - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: row };
+                }
+                return closest;
+            }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+        }
+
+        function bindComplyRowDragDrop() {
+            var pane = document.getElementById('impl-comply-pane');
+            if (!pane || pane.dataset.dragDropReady === '1') {
+                return;
+            }
+            pane.dataset.dragDropReady = '1';
+
+            pane.addEventListener('dragstart', function (event) {
+                var row = event.target.closest('.js-comply-gallery-row');
+                if (!row || !event.target.closest('.impl-row-drag-handle')) {
+                    event.preventDefault();
+                    return;
+                }
+
+                activeDraggedComplyRow = row;
+                row.classList.add('is-dragging');
+                if (event.dataTransfer) {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', row.getAttribute('data-order-photo-id') || '');
+                }
+            });
+
+            pane.addEventListener('dragover', function (event) {
+                if (!activeDraggedComplyRow) {
+                    return;
+                }
+
+                var tbody = event.target.closest('tbody');
+                if (!tbody || activeDraggedComplyRow.closest('tbody') !== tbody) {
+                    return;
+                }
+
+                event.preventDefault();
+                var afterRow = getComplyDragAfterRow(tbody, event.clientY);
+                Array.prototype.forEach.call(tbody.querySelectorAll('.js-comply-gallery-row.is-drag-over'), function (row) {
+                    row.classList.remove('is-drag-over');
+                });
+                if (afterRow) {
+                    afterRow.classList.add('is-drag-over');
+                    tbody.insertBefore(activeDraggedComplyRow, afterRow);
+                } else {
+                    tbody.appendChild(activeDraggedComplyRow);
+                }
+            });
+
+            pane.addEventListener('dragend', function () {
+                if (!activeDraggedComplyRow) {
+                    return;
+                }
+
+                var tbody = activeDraggedComplyRow.closest('tbody');
+                activeDraggedComplyRow.classList.remove('is-dragging');
+                activeDraggedComplyRow = null;
+                Array.prototype.forEach.call(pane.querySelectorAll('.js-comply-gallery-row.is-drag-over'), function (row) {
+                    row.classList.remove('is-drag-over');
+                });
+                applyComplyGalleryFilter();
+                saveComplyRowOrder(tbody);
+            });
+
+            pane.addEventListener('mousedown', function (event) {
+                var handle = event.target.closest('.impl-row-drag-handle');
+                if (!handle) {
+                    return;
+                }
+
+                var row = handle.closest('.js-comply-gallery-row');
+                if (!row) {
+                    return;
+                }
+
+                manualDraggedComplyRow = row;
+                manualDraggedComplyTbody = row.closest('tbody');
+                var table = manualDraggedComplyTbody ? manualDraggedComplyTbody.closest('.impl-gallery-table') : null;
+                if (table) {
+                    table.classList.add('is-row-reordering');
+                }
+                row.classList.add('is-dragging');
+                event.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function (event) {
+                if (!manualDraggedComplyRow || !manualDraggedComplyTbody) {
+                    return;
+                }
+
+                var afterRow = getComplyDragAfterRow(manualDraggedComplyTbody, event.clientY);
+                if (afterRow) {
+                    manualDraggedComplyTbody.insertBefore(manualDraggedComplyRow, afterRow);
+                } else {
+                    manualDraggedComplyTbody.appendChild(manualDraggedComplyRow);
+                }
+                event.preventDefault();
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (!manualDraggedComplyRow) {
+                    return;
+                }
+
+                var tbody = manualDraggedComplyTbody;
+                var table = tbody ? tbody.closest('.impl-gallery-table') : null;
+                manualDraggedComplyRow.classList.remove('is-dragging');
+                if (table) {
+                    table.classList.remove('is-row-reordering');
+                }
+                manualDraggedComplyRow = null;
+                manualDraggedComplyTbody = null;
+                applyComplyGalleryFilter();
+                saveComplyRowOrder(tbody);
+            });
         }
 
         function syncLightboxSaveButton() {
@@ -5138,6 +5475,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             complySearchFilter.addEventListener('input', applyComplyGalleryFilter);
         }
 
+        bindComplyRowDragDrop();
         applyComplyGalleryFilter();
         observeLazyPhotos(document);
 

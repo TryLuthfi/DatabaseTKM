@@ -1069,6 +1069,69 @@ class MPO_Monitor extends CI_Model
         }
     }
 
+    public function rebuildDashboardMetricsFromClaims($batchId = null)
+    {
+        $this->ensureStandaloneSchema();
+
+        $this->db->query("UPDATE tb_po p
+            LEFT JOIN (
+                SELECT
+                    t.id_po,
+                    COALESCE(SUM(tc.invoice_amount), 0) AS all_invoice,
+                    COALESCE(SUM(CASE WHEN YEAR(tc.invoice_date) = 2026 THEN tc.invoice_amount ELSE 0 END), 0) AS invoice_2026
+                FROM tb_po_term_claim tc
+                JOIN tb_po_term t ON t.id_term = tc.id_term
+                GROUP BY t.id_po
+            ) c ON c.id_po = p.id_po
+            LEFT JOIN (
+                SELECT
+                    y.id_po,
+                    COALESCE(SUM(CASE WHEN y.target_status = 'TARGET_WEEK' THEN y.amount ELSE 0 END), 0) AS target_week_amount,
+                    COALESCE(SUM(CASE WHEN y.target_status = 'CARRY_OVER' THEN y.amount ELSE 0 END), 0) AS carry_over_amount
+                FROM (
+                    SELECT
+                        t.id_po,
+                        CONVERT(COALESCE(NULLIF(a.target_status, ''), t.target_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS target_status,
+                        COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value, 0) AS amount
+                    FROM tb_po_term_allocation a
+                    JOIN tb_po_term t ON t.id_term = a.id_term
+                    UNION ALL
+                    SELECT
+                        t.id_po,
+                        CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci AS target_status,
+                        COALESCE(NULLIF(t.plan_amount, 0), t.value, 0) AS amount
+                    FROM tb_po_term t
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term
+                    )
+                ) y
+                GROUP BY y.id_po
+            ) b ON b.id_po = p.id_po
+            LEFT JOIN (
+                SELECT
+                    t.id_po,
+                    COALESCE(SUM(CASE
+                        WHEN YEAR(tc.invoice_date) = 2026
+                            AND CONVERT(COALESCE(NULLIF(a.target_status, ''), t.target_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        THEN tc.invoice_amount ELSE 0 END), 0) AS target_week_invoice_2026,
+                    COALESCE(SUM(CASE
+                        WHEN YEAR(tc.invoice_date) = 2026
+                            AND CONVERT(COALESCE(NULLIF(a.target_status, ''), t.target_status) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        THEN tc.invoice_amount ELSE 0 END), 0) AS carry_over_invoice_2026
+                FROM tb_po_term_claim tc
+                JOIN tb_po_term t ON t.id_term = tc.id_term
+                LEFT JOIN tb_po_term_allocation a ON a.id_allocation = tc.id_allocation
+                GROUP BY t.id_po
+            ) ci ON ci.id_po = p.id_po
+            SET
+                p.dashboard_all_invoice = GREATEST(COALESCE(c.all_invoice, 0), 0),
+                p.dashboard_invoice_2026 = GREATEST(COALESCE(c.invoice_2026, 0), 0),
+                p.dashboard_outs_2026 = GREATEST(COALESCE(b.target_week_amount, 0) - COALESCE(ci.target_week_invoice_2026, 0), 0),
+                p.dashboard_co_2027 = GREATEST(COALESCE(b.carry_over_amount, 0) - COALESCE(ci.carry_over_invoice_2026, 0), 0)");
+
+        $this->rebuildDashboardCache($batchId);
+    }
+
     public function getDashboardDatatable($post)
     {
         $columns = ['sort_order', 'pic', 'bowheer', 'all_po', 'done_inv_2026', 'outs_2026_on_target', 'ny_po_on_target_2026', 'grandtotal_target', 'ny_po_total', 'co_to_2027', 'total_outs'];
@@ -3654,12 +3717,7 @@ class MPO_Monitor extends CI_Model
             $amount = (float) ($row['amount'] ?? 0);
             $invoiceDate = $this->normalizeSyncDate($row['invoice_date'] ?? null);
 
-            if ($status === 'INVOICED') {
-                $metrics['all_invoice'] += $amount;
-                if ($invoiceDate !== null && (int) date('Y', strtotime($invoiceDate)) === 2026) {
-                    $metrics['invoice_2026'] += $amount;
-                }
-            } elseif ($status === 'TARGET_WEEK') {
+            if ($status === 'TARGET_WEEK') {
                 $metrics['outs_2026'] += $amount;
             } elseif ($status === 'CARRY_OVER') {
                 $metrics['co_2027'] += $amount;

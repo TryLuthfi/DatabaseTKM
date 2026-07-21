@@ -448,6 +448,19 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return true;
     }
 
+    public function ensureComplyPrintOrderColumn()
+    {
+        if (!$this->db->table_exists('tb_myrep_boq_progress_photo')) {
+            return false;
+        }
+
+        if ($this->db->field_exists('comply_print_order', 'tb_myrep_boq_progress_photo')) {
+            return true;
+        }
+
+        return (bool) $this->db->query('ALTER TABLE `tb_myrep_boq_progress_photo` ADD COLUMN `comply_print_order` INT NULL AFTER `comply_label`');
+    }
+
     public function getCityOptions()
     {
         if (!$this->tablesReady()) {
@@ -775,8 +788,9 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        $rows = $this->db
-            ->select('
+        $hasPrintOrder = $this->db->field_exists('comply_print_order', 'tb_myrep_boq_progress_photo');
+
+        $select = '
                 photo.id_progress_photo,
                 photo.file_name,
                 photo.file_path,
@@ -789,7 +803,13 @@ class MImplementasi_BOQ_MyRep extends CI_Model
                 boq_item.item_type,
                 boq_item.excel_item_name,
                 boq_item.sort_no
-            ')
+            ';
+        if ($hasPrintOrder) {
+            $select .= ', photo.comply_print_order';
+        }
+
+        $rows = $this->db
+            ->select($select)
             ->from('tb_myrep_boq_progress_photo photo')
             ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
             ->join('tb_myrep_boq_baseline_item baseline_item', 'baseline_item.id_boq_baseline_item = progress.id_boq_baseline_item', 'inner')
@@ -799,7 +819,6 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->where("UPPER(COALESCE(photo.status_photo, 'UPLOADED')) = 'APPROVED'", null, false)
             ->order_by('boq_item.sort_no', 'ASC')
             ->order_by('boq_item.item_name', 'ASC')
-            ->order_by('photo.comply_label', 'ASC')
             ->order_by('photo.id_progress_photo', 'ASC')
             ->get()
             ->result_array();
@@ -807,6 +826,45 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         if (empty($rows)) {
             return [];
         }
+
+        usort($rows, function ($a, $b) {
+            $sortA = (int) ($a['sort_no'] ?? 0);
+            $sortB = (int) ($b['sort_no'] ?? 0);
+            if ($sortA !== $sortB) {
+                return $sortA <=> $sortB;
+            }
+
+            $itemCompare = strnatcasecmp((string) ($a['item_name'] ?? ''), (string) ($b['item_name'] ?? ''));
+            if ($itemCompare !== 0) {
+                return $itemCompare;
+            }
+
+            $sectionCompare = strnatcasecmp($this->resolveComplyPrintSectionTitle($a), $this->resolveComplyPrintSectionTitle($b));
+            if ($sectionCompare !== 0) {
+                return $sectionCompare;
+            }
+
+            $orderA = (int) ($a['comply_print_order'] ?? 0);
+            $orderB = (int) ($b['comply_print_order'] ?? 0);
+            if ($orderA > 0 || $orderB > 0) {
+                if ($orderA <= 0) {
+                    $orderA = PHP_INT_MAX;
+                }
+                if ($orderB <= 0) {
+                    $orderB = PHP_INT_MAX;
+                }
+                if ($orderA !== $orderB) {
+                    return $orderA <=> $orderB;
+                }
+            }
+
+            $labelCompare = strnatcasecmp((string) ($a['comply_label'] ?? ''), (string) ($b['comply_label'] ?? ''));
+            if ($labelCompare !== 0) {
+                return $labelCompare;
+            }
+
+            return ((int) ($a['id_progress_photo'] ?? 0)) <=> ((int) ($b['id_progress_photo'] ?? 0));
+        });
 
         $groups = [];
         foreach ($rows as $row) {
@@ -996,6 +1054,57 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         return (bool) $deleted;
+    }
+
+    public function updateComplyPrintOrder($clusterId, array $orderedPhotoIds)
+    {
+        $clusterId = (int) $clusterId;
+        $orderedPhotoIds = array_values(array_unique(array_filter(array_map('intval', $orderedPhotoIds))));
+        if ($clusterId <= 0 || empty($orderedPhotoIds) || !$this->ensureComplyPrintOrderColumn()) {
+            return false;
+        }
+
+        $seedRows = $this->db
+            ->select('photo.id_progress_photo, photo.comply_label, progress.id_boq_baseline_item')
+            ->from('tb_myrep_boq_progress_photo photo')
+            ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+            ->where('progress.id_myrep_cluster', $clusterId)
+            ->where_in('photo.id_progress_photo', $orderedPhotoIds)
+            ->where("UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY'", null, false)
+            ->get()
+            ->result_array();
+
+        if (empty($seedRows)) {
+            return false;
+        }
+
+        $seedMap = [];
+        foreach ($seedRows as $row) {
+            $seedMap[(int) ($row['id_progress_photo'] ?? 0)] = $row;
+        }
+
+        $this->db->trans_start();
+        $order = 1;
+        foreach ($orderedPhotoIds as $photoId) {
+            if (empty($seedMap[$photoId])) {
+                continue;
+            }
+
+            $row = $seedMap[$photoId];
+            $progressSubquery = $this->db->select('id_progress_item')->from('tb_myrep_boq_progress_item')->where('id_boq_baseline_item', (int) ($row['id_boq_baseline_item'] ?? 0))->where('id_myrep_cluster', $clusterId)->get_compiled_select();
+
+            $this->db
+                ->where("id_progress_item IN ($progressSubquery)", null, false)
+                ->where("UPPER(COALESCE(photo_category, 'HARIAN')) = 'COMPLY'", null, false)
+                ->where('comply_label', (string) ($row['comply_label'] ?? ''))
+                ->update('tb_myrep_boq_progress_photo', [
+                    'comply_print_order' => $order,
+                ]);
+            $order++;
+        }
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
     }
 
     public function getDashboardSummary($rows)

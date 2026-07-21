@@ -17,6 +17,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'rejectComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
                 'saveDailyActivity' => 'APPROVAL_DAILY',
                 'rotateProgressPhoto' => 'TAMBAH',
+                'saveComplyPhotoOrder' => 'TAMBAH',
             ]);
         }
     }
@@ -1269,6 +1270,27 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $this->jsonResponse((bool) $deleted, $deleted ? 'Foto berhasil dihapus.' : 'Gagal menghapus foto.', [
             'photo_id' => $photoId,
         ], $deleted ? 200 : 500);
+    }
+
+    public function saveComplyPhotoOrder()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session habis. Silakan login ulang.', ['redirect_url' => base_url('Auth')], 401);
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $orderedIdsRaw = $this->input->post('ordered_photo_ids');
+        $orderedIds = is_array($orderedIdsRaw) ? $orderedIdsRaw : explode(',', (string) $orderedIdsRaw);
+        $orderedIds = array_values(array_filter(array_map('intval', $orderedIds)));
+
+        if ($clusterId <= 0 || empty($orderedIds)) {
+            $this->jsonResponse(false, 'Data urutan foto comply tidak valid.', [], 422);
+            return;
+        }
+
+        $saved = $this->MImplementasi_BOQ_MyRep->updateComplyPrintOrder($clusterId, $orderedIds);
+        $this->jsonResponse((bool) $saved, $saved ? 'Urutan print foto comply berhasil disimpan.' : 'Gagal menyimpan urutan foto comply.', [], $saved ? 200 : 500);
     }
 
     public function progressPhotoPreview($photoId = 0, $size = 'thumb')

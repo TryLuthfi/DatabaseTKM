@@ -2012,6 +2012,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <p class="po-monitor-panel__subtitle">Import ulang data master PO Monitor standalone dari CSV.</p>
                         </div>
                         <div class="po-monitor-table-actions">
+                            <a href="<?= site_url('PO_Monitor/rebuild_dashboard_metrics') ?>" class="btn btn-outline-primary btn-sm font-weight-bold">
+                                <i class="fas fa-sync-alt mr-1"></i> Rebuild Dashboard
+                            </a>
                             <a href="<?= site_url('PO_Monitor/download_import_report') ?>" class="btn btn-success btn-sm font-weight-bold">
                                 <i class="fas fa-file-excel mr-1"></i> Download Excel Report
                             </a>

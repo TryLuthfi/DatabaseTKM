@@ -28,6 +28,7 @@ class PO_Monitor extends CI_Controller
 
         $filteredPoList = [];
         $bowheerSummary = $this->MPO_Monitor->getPOSummaryByBowheer();
+        $this->MPO_Monitor->syncEmrNroComparisonClaims($comparisonFromMonth, $comparisonToMonth, (int) $this->session->userdata('id_user'));
 
         $data['title'] = 'PO Monitoring';
         $data['poList'] = $filteredPoList;
@@ -35,7 +36,6 @@ class PO_Monitor extends CI_Controller
         $data['batchInvoiceRows'] = [];
         $data['dashboardSummary'] = $this->MPO_Monitor->getDashboardSummary();
         $data['dashboardInitialTotals'] = $this->MPO_Monitor->getDashboardInitialTotals();
-        $this->MPO_Monitor->syncEmrNroComparisonClaims($comparisonFromMonth, $comparisonToMonth, (int) $this->session->userdata('id_user'));
         $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
         $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'week', false);
         $data['breakdownFilterOptions'] = [
@@ -56,6 +56,24 @@ class PO_Monitor extends CI_Controller
         $this->load->view('PO_Monitor/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function rebuild_dashboard_metrics()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->canManagePoImport()) {
+            show_error('Forbidden', 403);
+            return;
+        }
+
+        $this->MPO_Monitor->rebuildDashboardMetricsFromClaims(null);
+        $this->session->set_flashdata('status', true);
+        $this->session->set_flashdata('error_log', 'Dashboard Target PO berhasil direbuild dari claim invoice.');
+        redirect('PO_Monitor');
     }
 
     private function resolveSlaStatus($terms)
