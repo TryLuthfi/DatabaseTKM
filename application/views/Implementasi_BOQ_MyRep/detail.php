@@ -1427,13 +1427,26 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         border: 1px solid #dbe7f3;
         border-radius: 14px;
         background: #fff;
-        overflow: hidden;
+        overflow: visible;
         box-shadow: 0 10px 24px rgba(15, 23, 42, .05);
+        position: relative;
+    }
+
+    .impl-gallery-photo-card--shell .impl-gallery-photo-card {
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
     }
 
     .impl-gallery-photo-card__meta {
         padding: .7rem .8rem .8rem;
         border-top: 1px solid #e2e8f0;
+    }
+
+    .js-comply-photo-actions {
+        position: absolute;
+        top: .45rem;
+        right: .45rem;
+        z-index: 3;
     }
 
     .impl-photo-action-menu .dropdown-toggle {
@@ -1443,6 +1456,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         border-radius: 999px;
         font-weight: 800;
         line-height: 1;
+        background: rgba(255, 255, 255, .94);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .18);
     }
 
     .impl-photo-action-menu .dropdown-toggle::after {
@@ -2586,6 +2601,27 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $canDeleteThisPhoto = (int) ($photo['uploaded_by'] ?? 0) === $currentUserId;
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>" data-can-delete-photo="<?= $canDeleteThisPhoto ? '1' : '0' ?>">
+                                                                            <?php if ((!empty($canApprove) && $canApprovalComplyAction) || $canDeleteThisPhoto): ?>
+                                                                                <div class="js-comply-photo-actions">
+                                                                                    <div class="dropdown impl-photo-action-menu">
+                                                                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>
+                                                                                        <div class="dropdown-menu dropdown-menu-right">
+                                                                                            <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED')): ?>
+                                                                                                <button type="button" class="dropdown-item text-success js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Approve</button>
+                                                                                            <?php endif; ?>
+                                                                                            <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'APPROVED')): ?>
+                                                                                                <button type="button" class="dropdown-item text-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Reject</button>
+                                                                                            <?php endif; ?>
+                                                                                            <?php if ($canDeleteThisPhoto): ?>
+                                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
+                                                                                                    <div class="dropdown-divider"></div>
+                                                                                                <?php endif; ?>
+                                                                                                <button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Hapus</button>
+                                                                                            <?php endif; ?>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            <?php endif; ?>
                                                                             <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
                                                                                 <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb', (string) ($photo['file_path'] ?? '')) ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
                                                                             </a>
@@ -2595,27 +2631,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                                     <span class="badge badge-<?= $photoBadgeClass ?> js-comply-photo-status"><?= htmlspecialchars($photoStatus) ?></span>
                                                                                 </div>
                                                                                 <div class="small text-muted mb-2 js-comply-review-remark <?= empty($photo['review_remark']) ? 'd-none' : '' ?>">Review: <span><?= htmlspecialchars((string) ($photo['review_remark'] ?? '')) ?></span></div>
-                                                                                <?php if ((!empty($canApprove) && $canApprovalComplyAction) || $canDeleteThisPhoto): ?>
-                                                                                    <div class="js-comply-photo-actions">
-                                                                                        <div class="dropdown impl-photo-action-menu">
-                                                                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>
-                                                                                            <div class="dropdown-menu dropdown-menu-right">
-                                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED')): ?>
-                                                                                                    <button type="button" class="dropdown-item text-success js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Approve</button>
-                                                                                                <?php endif; ?>
-                                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'APPROVED')): ?>
-                                                                                                    <button type="button" class="dropdown-item text-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Reject</button>
-                                                                                                <?php endif; ?>
-                                                                                                <?php if ($canDeleteThisPhoto): ?>
-                                                                                                    <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
-                                                                                                        <div class="dropdown-divider"></div>
-                                                                                                    <?php endif; ?>
-                                                                                                    <button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Hapus</button>
-                                                                                                <?php endif; ?>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                <?php endif; ?>
                                                                             </div>
                                                                         </div>
                                                                     <?php endforeach; ?>
