@@ -701,6 +701,23 @@ foreach ($galleryRows as $galleryRow) {
     }
 }
 
+$complyGalleryKindOptions = [];
+foreach ((array) $complyGalleryGroups as $galleryType => $galleryItems) {
+    $categoryKey = strtoupper(trim((string) $galleryType));
+    foreach ((array) $galleryItems as $galleryItem) {
+        $kindName = trim((string) ($galleryItem['item_name'] ?? ''));
+        if ($categoryKey === '' || $kindName === '') {
+            continue;
+        }
+        $complyGalleryKindOptions[$categoryKey][$kindName] = true;
+    }
+}
+foreach ($complyGalleryKindOptions as $categoryKey => $kindOptions) {
+    $kindNames = array_keys($kindOptions);
+    sort($kindNames, SORT_NATURAL | SORT_FLAG_CASE);
+    $complyGalleryKindOptions[$categoryKey] = $kindNames;
+}
+
 $poleExtLabelCounters = [
     'CLUSTER' => 0,
     'SUBFEEDER' => 0,
@@ -2552,6 +2569,17 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
+                                    <div class="impl-gallery-filter__group">
+                                        <label for="impl-comply-kind-filter">Jenis</label>
+                                        <select class="form-control form-control-sm" id="impl-comply-kind-filter">
+                                            <option value="">Semua Jenis</option>
+                                            <?php foreach ((array) $complyGalleryKindOptions as $kindCategory => $kindNames): ?>
+                                                <?php foreach ((array) $kindNames as $kindName): ?>
+                                                    <option value="<?= htmlspecialchars(strtoupper(trim((string) $kindName)), ENT_QUOTES) ?>" data-category="<?= htmlspecialchars(strtoupper(trim((string) $kindCategory)), ENT_QUOTES) ?>"><?= htmlspecialchars((string) $kindName) ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                     <div class="impl-gallery-filter__search">
                                         <label for="impl-comply-search-filter">Search Nama</label>
                                         <input type="search" class="form-control form-control-sm" id="impl-comply-search-filter" placeholder="Cari item, nama/nomor, remark, status...">
@@ -2588,7 +2616,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             implode(' ', $dates),
                                                         ]);
                                                         ?>
-                                                        <tr class="js-comply-gallery-row" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
+                                                        <tr class="js-comply-gallery-row" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
                                                             <td class="impl-gallery-table__no js-comply-gallery-no"><?= $galleryIndex++ ?></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
@@ -3589,6 +3617,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lightboxImageCache = {};
         var photoPreviewVersionMap = {};
         var complyCategoryFilter = document.getElementById('impl-comply-category-filter');
+        var complyKindFilter = document.getElementById('impl-comply-kind-filter');
         var complySearchFilter = document.getElementById('impl-comply-search-filter');
         var complyFilterEmpty = document.getElementById('impl-comply-filter-empty');
 
@@ -3921,11 +3950,40 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
         }
 
+        function syncComplyKindOptions() {
+            if (!complyKindFilter) {
+                return;
+            }
+
+            var selectedCategory = complyCategoryFilter ? normalizeFilterText(complyCategoryFilter.value) : '';
+            var activeValueStillVisible = false;
+            Array.prototype.forEach.call(complyKindFilter.querySelectorAll('option'), function (option) {
+                if (option.value === '') {
+                    option.hidden = false;
+                    return;
+                }
+
+                var optionCategory = normalizeFilterText(option.getAttribute('data-category') || '');
+                var visible = selectedCategory === '' || optionCategory === selectedCategory;
+                option.hidden = !visible;
+                if (visible && option.value === complyKindFilter.value) {
+                    activeValueStillVisible = true;
+                }
+            });
+
+            if (complyKindFilter.value !== '' && !activeValueStillVisible) {
+                complyKindFilter.value = '';
+            }
+        }
+
         function applyComplyGalleryFilter() {
             var selectedCategory = complyCategoryFilter ? normalizeFilterText(complyCategoryFilter.value) : '';
+            var selectedKind = complyKindFilter ? normalizeFilterText(complyKindFilter.value) : '';
             var keyword = complySearchFilter ? normalizeFilterText(complySearchFilter.value) : '';
             var sections = document.querySelectorAll('.js-comply-gallery-section');
             var visibleSectionCount = 0;
+
+            syncComplyKindOptions();
 
             Array.prototype.forEach.call(sections, function (section) {
                 var sectionCategory = normalizeFilterText(section.getAttribute('data-gallery-category') || '');
@@ -3934,9 +3992,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 var rows = section.querySelectorAll('.js-comply-gallery-row');
 
                 Array.prototype.forEach.call(rows, function (row) {
+                    var rowKind = normalizeFilterText(row.getAttribute('data-gallery-kind') || '');
                     var searchable = normalizeFilterText(row.getAttribute('data-search') || row.textContent || '');
+                    var kindMatch = selectedKind === '' || rowKind === selectedKind;
                     var keywordMatch = keyword === '' || searchable.indexOf(keyword) !== -1;
-                    var visible = categoryMatch && keywordMatch;
+                    var visible = categoryMatch && kindMatch && keywordMatch;
                     row.classList.toggle('d-none', !visible);
                     if (visible) {
                         visibleRowCount++;
@@ -5068,6 +5128,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
         if (complyCategoryFilter) {
             complyCategoryFilter.addEventListener('change', applyComplyGalleryFilter);
+        }
+
+        if (complyKindFilter) {
+            complyKindFilter.addEventListener('change', applyComplyGalleryFilter);
         }
 
         if (complySearchFilter) {
