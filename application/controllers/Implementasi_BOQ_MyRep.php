@@ -1800,10 +1800,31 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $mime = (string) $info['mime'];
         }
 
+        $mtime = (int) (@filemtime($fullPath) ?: time());
+        $size = (int) (@filesize($fullPath) ?: 0);
+        $etag = '"' . sha1($fullPath . '|' . $mtime . '|' . $size) . '"';
+        $lastModified = gmdate('D, d M Y H:i:s', $mtime) . ' GMT';
+        $ifNoneMatch = trim((string) $this->input->server('HTTP_IF_NONE_MATCH'));
+        $ifModifiedSince = trim((string) $this->input->server('HTTP_IF_MODIFIED_SINCE'));
+
+        if ($ifNoneMatch === $etag || ($ifModifiedSince !== '' && strtotime($ifModifiedSince) >= $mtime)) {
+            $this->output
+                ->set_status_header(304)
+                ->set_header('Cache-Control: private, max-age=604800, immutable')
+                ->set_header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 604800) . ' GMT')
+                ->set_header('ETag: ' . $etag)
+                ->set_header('Last-Modified: ' . $lastModified)
+                ->set_output('');
+            return;
+        }
+
         $this->output
             ->set_content_type($mime)
-            ->set_header('Cache-Control: private, max-age=86400')
-            ->set_header('Content-Length: ' . (string) filesize($fullPath))
+            ->set_header('Cache-Control: private, max-age=604800, immutable')
+            ->set_header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 604800) . ' GMT')
+            ->set_header('ETag: ' . $etag)
+            ->set_header('Last-Modified: ' . $lastModified)
+            ->set_header('Content-Length: ' . (string) $size)
             ->set_output(file_get_contents($fullPath));
     }
 

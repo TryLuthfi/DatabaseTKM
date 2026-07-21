@@ -21,9 +21,17 @@ if (!function_exists('implHistoryNumber')) {
 }
 
 if (!function_exists('implProgressPhotoPreviewUrl')) {
-    function implProgressPhotoPreviewUrl($photoId, $size = 'thumb')
+    function implProgressPhotoPreviewUrl($photoId, $size = 'thumb', $filePath = '')
     {
-        return base_url('Implementasi_BOQ_MyRep/progressPhotoPreview/' . (int) $photoId . '/' . rawurlencode((string) $size));
+        $url = base_url('Implementasi_BOQ_MyRep/progressPhotoPreview/' . (int) $photoId . '/' . rawurlencode((string) $size));
+        $relativePath = ltrim(str_replace('\\', '/', (string) $filePath), '/');
+        if ($relativePath !== '' && strpos($relativePath, '..') === false) {
+            $fullPath = FCPATH . $relativePath;
+            if (is_file($fullPath)) {
+                $url .= '?v=' . rawurlencode((string) filemtime($fullPath));
+            }
+        }
+        return $url;
     }
 }
 
@@ -1334,6 +1342,42 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         margin-bottom: .65rem;
     }
 
+    .impl-gallery-filter {
+        display: flex;
+        align-items: flex-end;
+        gap: .75rem;
+        padding: .8rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        margin-bottom: 1rem;
+    }
+
+    .impl-gallery-filter__group {
+        min-width: 180px;
+    }
+
+    .impl-gallery-filter__search {
+        flex: 1 1 260px;
+    }
+
+    .impl-gallery-filter label {
+        font-size: .72rem;
+        font-weight: 800;
+        color: #475569;
+        text-transform: uppercase;
+        margin-bottom: .25rem;
+    }
+
+    .impl-gallery-empty {
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #64748b;
+        text-align: center;
+        padding: 1.5rem;
+    }
+
     .impl-gallery-table {
         margin-bottom: 0;
     }
@@ -1668,6 +1712,17 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         }
 
         .impl-lightbox__dialog {
+            width: 100%;
+        }
+
+        .impl-gallery-filter {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .impl-gallery-filter__group,
+        .impl-gallery-filter__search {
+            min-width: 0;
             width: 100%;
         }
     }
@@ -2401,8 +2456,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             <td class="impl-gallery-table__photo">
                                                                 <div class="impl-gallery-photo-grid" data-lightbox-group="gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . $galleryIndex)) ?>">
                                                                     <?php foreach (($galleryItem['photos'] ?? []) as $photo): ?>
-                                                                        <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
-                                                                            <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb') ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>" loading="lazy" decoding="async">
+                                                                        <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-'), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars((string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Progress')), ENT_QUOTES) ?>">
+                                                                            <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb', (string) ($photo['file_path'] ?? '')) ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Progress')) ?>" loading="lazy" decoding="async">
                                                                         </a>
                                                                     <?php endforeach; ?>
                                                                 </div>
@@ -2449,8 +2504,24 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                             </div>
 
                             <?php if (!empty($complyGalleryGroups)): ?>
+                                <div class="impl-gallery-filter" id="impl-comply-gallery-filter">
+                                    <div class="impl-gallery-filter__group">
+                                        <label for="impl-comply-category-filter">Kategori</label>
+                                        <select class="form-control form-control-sm" id="impl-comply-category-filter">
+                                            <option value="">Semua Kategori</option>
+                                            <?php foreach (array_keys((array) $complyGalleryGroups) as $complyFilterType): ?>
+                                                <option value="<?= htmlspecialchars(strtoupper(trim((string) $complyFilterType)), ENT_QUOTES) ?>"><?= htmlspecialchars((string) $complyFilterType) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="impl-gallery-filter__search">
+                                        <label for="impl-comply-search-filter">Search Nama</label>
+                                        <input type="search" class="form-control form-control-sm" id="impl-comply-search-filter" placeholder="Cari item, nama/nomor, remark, status...">
+                                    </div>
+                                </div>
+                                <div class="impl-gallery-empty d-none" id="impl-comply-filter-empty">Tidak ada foto comply sesuai filter.</div>
                                 <?php foreach ($complyGalleryGroups as $galleryType => $galleryItems): ?>
-                                    <div class="impl-gallery-section">
+                                    <div class="impl-gallery-section js-comply-gallery-section" data-gallery-category="<?= htmlspecialchars(strtoupper(trim((string) $galleryType)), ENT_QUOTES) ?>">
                                         <div class="impl-gallery-section__title">Kategori <?= htmlspecialchars((string) $galleryType) ?></div>
                                         <div class="table-responsive">
                                             <table class="table table-bordered impl-gallery-table">
@@ -2471,9 +2542,16 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         $dates = array_values(array_unique($galleryItem['dates']));
                                                         sort($dates);
                                                         $remarks = array_values(array_unique($galleryItem['remarks']));
+                                                        $searchText = implode(' ', [
+                                                            (string) $galleryType,
+                                                            (string) ($galleryItem['item_name'] ?? ''),
+                                                            (string) ($galleryItem['comply_label'] ?? ''),
+                                                            implode(' ', $remarks),
+                                                            implode(' ', $dates),
+                                                        ]);
                                                         ?>
-                                                        <tr>
-                                                            <td class="impl-gallery-table__no"><?= $galleryIndex++ ?></td>
+                                                        <tr class="js-comply-gallery-row" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
+                                                            <td class="impl-gallery-table__no js-comply-gallery-no"><?= $galleryIndex++ ?></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__photo">
@@ -2486,8 +2564,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
-                                                                            <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview') ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
-                                                                                <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb') ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
+                                                                            <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
+                                                                                <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb', (string) ($photo['file_path'] ?? '')) ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
                                                                             </a>
                                                                             <div class="impl-gallery-photo-card__meta">
                                                                                 <div class="small font-weight-bold text-dark mb-2"><?= htmlspecialchars($photoCaption) ?></div>
@@ -3473,6 +3551,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lightboxRotation = 0;
         var lightboxIsSavingRotation = false;
         var lazyPhotoObserver = null;
+        var lightboxImageCache = {};
+        var photoPreviewVersionMap = {};
+        var complyCategoryFilter = document.getElementById('impl-comply-category-filter');
+        var complySearchFilter = document.getElementById('impl-comply-search-filter');
+        var complyFilterEmpty = document.getElementById('impl-comply-filter-empty');
 
         function escapeAttr(value) {
             return String(value || '')
@@ -3718,6 +3801,49 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             Array.prototype.slice.call(photos, 0, 12).forEach(loadLazyPhoto);
         }
 
+        function normalizeFilterText(value) {
+            return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function applyComplyGalleryFilter() {
+            var selectedCategory = complyCategoryFilter ? normalizeFilterText(complyCategoryFilter.value) : '';
+            var keyword = complySearchFilter ? normalizeFilterText(complySearchFilter.value) : '';
+            var sections = document.querySelectorAll('.js-comply-gallery-section');
+            var visibleSectionCount = 0;
+
+            Array.prototype.forEach.call(sections, function (section) {
+                var sectionCategory = normalizeFilterText(section.getAttribute('data-gallery-category') || '');
+                var categoryMatch = selectedCategory === '' || sectionCategory === selectedCategory;
+                var visibleRowCount = 0;
+                var rows = section.querySelectorAll('.js-comply-gallery-row');
+
+                Array.prototype.forEach.call(rows, function (row) {
+                    var searchable = normalizeFilterText(row.getAttribute('data-search') || row.textContent || '');
+                    var keywordMatch = keyword === '' || searchable.indexOf(keyword) !== -1;
+                    var visible = categoryMatch && keywordMatch;
+                    row.classList.toggle('d-none', !visible);
+                    if (visible) {
+                        visibleRowCount++;
+                        var noNode = row.querySelector('.js-comply-gallery-no');
+                        if (noNode) {
+                            noNode.textContent = visibleRowCount;
+                        }
+                    }
+                });
+
+                section.classList.toggle('d-none', visibleRowCount === 0);
+                if (visibleRowCount > 0) {
+                    visibleSectionCount++;
+                }
+            });
+
+            if (complyFilterEmpty) {
+                complyFilterEmpty.classList.toggle('d-none', visibleSectionCount > 0);
+            }
+
+            observeLazyPhotos(document.getElementById('impl-comply-pane'));
+        }
+
         function syncLightboxSaveButton() {
             if (!lightboxSaveRotation) {
                 return;
@@ -3898,6 +4024,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
         if (lightboxImage) {
             lightboxImage.addEventListener('load', function () {
+                if (lightboxImage.src) {
+                    lightboxImageCache[lightboxImage.src] = true;
+                }
                 resetLightboxToFit();
             });
         }
@@ -3920,7 +4049,23 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (photoId <= 0) {
                 return '';
             }
-            return photoPreviewBaseUrl + '/' + encodeURIComponent(photoId) + '/' + encodeURIComponent(size || 'thumb');
+            var url = photoPreviewBaseUrl + '/' + encodeURIComponent(photoId) + '/' + encodeURIComponent(size || 'thumb');
+            if (photoPreviewVersionMap[photoId]) {
+                url += '?v=' + encodeURIComponent(photoPreviewVersionMap[photoId]);
+            }
+            return url;
+        }
+
+        function getUrlQueryParam(url, key) {
+            var query = String(url || '').split('?')[1] || '';
+            var parts = query.split('&');
+            for (var i = 0; i < parts.length; i++) {
+                var pair = parts[i].split('=');
+                if (decodeURIComponent(pair[0] || '') === key) {
+                    return decodeURIComponent(pair[1] || '');
+                }
+            }
+            return '';
         }
 
         function refreshPhotoImageUrl(photoId, imageUrl, thumbUrl) {
@@ -3929,6 +4074,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 return;
             }
             thumbUrl = thumbUrl || imageUrl;
+            var nextVersion = getUrlQueryParam(imageUrl, 'v') || getUrlQueryParam(thumbUrl, 'v');
+            if (nextVersion) {
+                photoPreviewVersionMap[photoId] = nextVersion;
+            }
 
             Array.prototype.forEach.call(document.querySelectorAll('.js-open-lightbox[data-photo-id="' + photoId + '"]'), function (node) {
                 node.setAttribute('href', imageUrl);
@@ -4084,7 +4233,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             lightboxIndex = index;
             var activeItem = lightboxItems[index] || {};
-            lightboxImage.src = activeItem.image || '';
+            var nextImage = activeItem.image || '';
+            if (lightboxImage.getAttribute('src') !== nextImage) {
+                lightboxImage.src = nextImage;
+            }
             lightboxTitle.textContent = activeItem.title || 'Preview Foto';
             lightboxCaption.textContent = activeItem.caption || '-';
             lightboxScale = 1;
@@ -4156,7 +4308,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
 
             lightbox.classList.remove('is-open');
-            lightboxImage.src = '';
             lightboxImage.style.width = '';
             lightboxImage.style.height = 'auto';
             lightboxImage.style.margin = '';
@@ -4775,6 +4926,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         window.location.hash = target;
                     }
                     observeLazyPhotos(document.querySelector(target));
+                    if (target === '#impl-comply-pane') {
+                        applyComplyGalleryFilter();
+                    }
                 }
             });
 
@@ -4786,6 +4940,15 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
         }
 
+        if (complyCategoryFilter) {
+            complyCategoryFilter.addEventListener('change', applyComplyGalleryFilter);
+        }
+
+        if (complySearchFilter) {
+            complySearchFilter.addEventListener('input', applyComplyGalleryFilter);
+        }
+
+        applyComplyGalleryFilter();
         observeLazyPhotos(document);
 
         if (window.jQuery && progressModal) {
