@@ -980,6 +980,24 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ]);
     }
 
+    public function deleteProgressPhotoById($photoId)
+    {
+        $photo = $this->getProgressPhotoById($photoId);
+        if (empty($photo)) {
+            return false;
+        }
+
+        $deleted = $this->db
+            ->where('id_progress_photo', (int) $photoId)
+            ->delete('tb_myrep_boq_progress_photo');
+
+        if ($deleted) {
+            $this->deletePhysicalFile((string) ($photo['file_path'] ?? ''));
+        }
+
+        return (bool) $deleted;
+    }
+
     public function getDashboardSummary($rows)
     {
         $summary = [

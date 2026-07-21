@@ -6,6 +6,7 @@ $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Imple
 $canApprovalDailyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_DAILY') : true;
 $canApprovalComplyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_FOTO_COMPLY') : true;
 $canSavePhotoRotation = $canTambah;
+$currentUserId = (int) $this->session->userdata('id_user');
 $implLazyPhotoPlaceholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="110" viewBox="0 0 160 110"%3E%3Crect width="160" height="110" fill="%23eef2f7"/%3E%3Cpath d="M30 78l26-28 19 19 14-15 41 24H30z" fill="%23cbd5e1"/%3E%3Ccircle cx="112" cy="35" r="12" fill="%23dbe3ef"/%3E%3C/svg%3E';
 
 if (!function_exists('implHistoryNumber')) {
@@ -557,6 +558,7 @@ foreach ($compareRows as $row) {
                 'photo_category' => (string) ($photo['photo_category'] ?? 'HARIAN'),
                 'comply_label' => (string) ($photo['comply_label'] ?? ''),
                 'id_progress_photo' => (int) ($photo['id_progress_photo'] ?? 0),
+                'uploaded_by' => (int) ($photo['uploaded_by'] ?? 0),
                 'status_photo' => (string) ($photo['status_photo'] ?? ''),
                 'review_remark' => (string) ($photo['review_remark'] ?? ''),
             ];
@@ -682,6 +684,7 @@ foreach ($galleryRows as $galleryRow) {
 
     $targetGroups[$galleryType][$galleryKey]['photos'][] = [
         'id_progress_photo' => (int) ($galleryRow['id_progress_photo'] ?? 0),
+        'uploaded_by' => (int) ($galleryRow['uploaded_by'] ?? 0),
         'file_name' => (string) ($galleryRow['file_name'] ?? 'Foto Progress'),
         'file_path' => (string) ($galleryRow['file_path'] ?? ''),
         'caption' => (string) ($galleryRow['caption'] ?? ''),
@@ -1431,6 +1434,24 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     .impl-gallery-photo-card__meta {
         padding: .7rem .8rem .8rem;
         border-top: 1px solid #e2e8f0;
+    }
+
+    .impl-photo-action-menu .dropdown-toggle {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: 999px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .impl-photo-action-menu .dropdown-toggle::after {
+        display: none;
+    }
+
+    .impl-photo-action-menu .dropdown-menu {
+        min-width: 8.5rem;
+        font-size: .82rem;
     }
 
     .impl-gallery-photo-card img {
@@ -2562,8 +2583,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoBadgeClass = $photoStatus === 'APPROVED' ? 'success' : ($photoStatus === 'REJECTED' ? 'danger' : 'warning');
                                                                         $photoCaption = (string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Comply'));
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
+                                                                        $canDeleteThisPhoto = (int) ($photo['uploaded_by'] ?? 0) === $currentUserId;
                                                                         ?>
-                                                                        <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
+                                                                        <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>" data-can-delete-photo="<?= $canDeleteThisPhoto ? '1' : '0' ?>">
                                                                             <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
                                                                                 <img src="<?= $implLazyPhotoPlaceholder ?>" data-src="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'thumb', (string) ($photo['file_path'] ?? '')) ?>" class="js-lazy-photo" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>" loading="lazy" decoding="async">
                                                                             </a>
@@ -2573,30 +2595,25 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                                     <span class="badge badge-<?= $photoBadgeClass ?> js-comply-photo-status"><?= htmlspecialchars($photoStatus) ?></span>
                                                                                 </div>
                                                                                 <div class="small text-muted mb-2 js-comply-review-remark <?= empty($photo['review_remark']) ? 'd-none' : '' ?>">Review: <span><?= htmlspecialchars((string) ($photo['review_remark'] ?? '')) ?></span></div>
-                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
+                                                                                <?php if ((!empty($canApprove) && $canApprovalComplyAction) || $canDeleteThisPhoto): ?>
                                                                                     <div class="js-comply-photo-actions">
-                                                                                        <?php if ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED'): ?>
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                class="btn btn-sm btn-outline-success mr-1 js-open-comply-approve"
-                                                                                                data-toggle="modal"
-                                                                                                data-target="#modal-comply-approve"
-                                                                                                data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>"
-                                                                                                data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
-                                                                                                Approve
-                                                                                            </button>
-                                                                                        <?php endif; ?>
-                                                                                        <?php if ($photoStatus === 'UPLOADED' || $photoStatus === 'APPROVED'): ?>
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                class="btn btn-sm btn-outline-danger js-open-comply-reject"
-                                                                                                data-toggle="modal"
-                                                                                                data-target="#modal-comply-reject"
-                                                                                                data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>"
-                                                                                                data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
-                                                                                                Reject
-                                                                                            </button>
-                                                                                        <?php endif; ?>
+                                                                                        <div class="dropdown impl-photo-action-menu">
+                                                                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>
+                                                                                            <div class="dropdown-menu dropdown-menu-right">
+                                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED')): ?>
+                                                                                                    <button type="button" class="dropdown-item text-success js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Approve</button>
+                                                                                                <?php endif; ?>
+                                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'APPROVED')): ?>
+                                                                                                    <button type="button" class="dropdown-item text-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Reject</button>
+                                                                                                <?php endif; ?>
+                                                                                                <?php if ($canDeleteThisPhoto): ?>
+                                                                                                    <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
+                                                                                                        <div class="dropdown-divider"></div>
+                                                                                                    <?php endif; ?>
+                                                                                                    <button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Hapus</button>
+                                                                                                <?php endif; ?>
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
                                                                                 <?php endif; ?>
                                                                             </div>
@@ -3030,6 +3047,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var canSavePhotoRotation = <?= $canSavePhotoRotation ? 'true' : 'false' ?>;
         var clusterId = <?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>;
         var rotatePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateProgressPhoto') ?>';
+        var deletePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/deleteProgressPhoto') ?>';
         var photoPreviewBaseUrl = '<?= base_url('Implementasi_BOQ_MyRep/progressPhotoPreview') ?>';
         var lazyPhotoPlaceholder = '<?= $implLazyPhotoPlaceholder ?>';
         var progressModal = document.getElementById('modal-progress');
@@ -3576,22 +3594,32 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return 'warning';
         }
 
-        function buildComplyReviewButtons(photoId, photoLabel, status) {
-            if (!canApproveComplyPhoto) {
+        function buildComplyReviewButtons(photoId, photoLabel, status, canDeletePhoto) {
+            if (!canApproveComplyPhoto && !canDeletePhoto) {
                 return '';
             }
 
             status = String(status || 'UPLOADED').toUpperCase();
             var safeId = escapeAttr(photoId);
             var safeLabel = escapeAttr(photoLabel || '-');
-            var html = '';
+            var html = '<div class="dropdown impl-photo-action-menu">';
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>';
+            html += '<div class="dropdown-menu dropdown-menu-right">';
 
-            if (status === 'UPLOADED' || status === 'REJECTED') {
-                html += '<button type="button" class="btn btn-sm btn-outline-success mr-1 js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Approve</button>';
+            if (canApproveComplyPhoto && (status === 'UPLOADED' || status === 'REJECTED')) {
+                html += '<button type="button" class="dropdown-item text-success js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Approve</button>';
             }
-            if (status === 'UPLOADED' || status === 'APPROVED') {
-                html += '<button type="button" class="btn btn-sm btn-outline-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Reject</button>';
+            if (canApproveComplyPhoto && (status === 'UPLOADED' || status === 'APPROVED')) {
+                html += '<button type="button" class="dropdown-item text-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Reject</button>';
             }
+            if (canDeletePhoto) {
+                if (canApproveComplyPhoto) {
+                    html += '<div class="dropdown-divider"></div>';
+                }
+                html += '<button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Hapus</button>';
+            }
+
+            html += '</div></div>';
 
             return html;
         }
@@ -3613,6 +3641,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             Array.prototype.forEach.call(cards, function (card) {
                 var label = card.getAttribute('data-photo-label') || '-';
+                var canDeletePhoto = card.getAttribute('data-can-delete-photo') === '1';
                 var badge = card.querySelector('.js-comply-photo-status');
                 var remarkWrap = card.querySelector('.js-comply-review-remark');
                 var remarkText = remarkWrap ? remarkWrap.querySelector('span') : null;
@@ -3630,7 +3659,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 }
 
                 if (actions) {
-                    actions.innerHTML = buildComplyReviewButtons(photoId, label, status);
+                    actions.innerHTML = buildComplyReviewButtons(photoId, label, status, canDeletePhoto);
                 }
             });
         }
@@ -3674,6 +3703,76 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             submitButton.disabled = false;
             submitButton.textContent = submitButton.dataset.originalText || submitButton.textContent;
+        }
+
+        function removeDeletedPhotoCard(photoId) {
+            photoId = parseInt(photoId || 0, 10) || 0;
+            if (photoId <= 0) {
+                return;
+            }
+
+            Array.prototype.forEach.call(document.querySelectorAll('.js-comply-photo-review-card[data-photo-id="' + photoId + '"]'), function (card) {
+                var row = card.closest('.js-comply-gallery-row');
+                var grid = card.parentNode;
+                card.remove();
+                if (grid && grid.querySelectorAll('.js-comply-photo-review-card').length === 0 && row) {
+                    row.remove();
+                }
+            });
+
+            applyComplyGalleryFilter();
+        }
+
+        function deleteProgressPhoto(photoId, photoLabel) {
+            photoId = parseInt(photoId || 0, 10) || 0;
+            if (photoId <= 0) {
+                alert('Data foto tidak valid.');
+                return;
+            }
+
+            if (!window.confirm('Hapus foto ini?\n' + (photoLabel || 'Foto'))) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('cluster_id', clusterId);
+            formData.append('photo_id', photoId);
+
+            fetch(deletePhotoUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(function (response) {
+                    return response.text().then(function (text) {
+                        var data = {};
+                        try {
+                            data = text ? JSON.parse(text) : {};
+                        } catch (e) {
+                            data = { status: false, message: 'Response server tidak valid.' };
+                        }
+                        if (!response.ok && data.status !== true) {
+                            data.status = false;
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    if (!data.status) {
+                        alert(data.message || 'Gagal menghapus foto.');
+                        return;
+                    }
+
+                    removeDeletedPhotoCard(photoId);
+                    showComplyReviewMessage(data.message || 'Foto berhasil dihapus.', true);
+                })
+                .catch(function () {
+                    alert('Gagal menghapus foto. Coba lagi beberapa saat.');
+                });
         }
 
         function bindComplyReviewForms() {
@@ -4675,6 +4774,15 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     return;
                 }
 
+                var deletePhotoButton = event.target.closest('.js-delete-progress-photo');
+                if (deletePhotoButton) {
+                    deleteProgressPhoto(
+                        deletePhotoButton.getAttribute('data-photo-id') || '0',
+                        deletePhotoButton.getAttribute('data-photo-label') || 'Foto'
+                    );
+                    return;
+                }
+
                 return;
             }
 
@@ -4719,19 +4827,20 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         }
                         var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
                         var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
+                        var canDeletePhoto = (parseInt(photo.uploaded_by || 0, 10) || 0) === <?= (int) $currentUserId ?>;
                         var photoOriginalUrl = '<?= base_url() ?>' + (photo.file_path || '');
                         var photoPreviewUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : photoOriginalUrl;
                         var photoThumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : photoOriginalUrl;
-                        html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">';
+                        html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '" data-can-delete-photo="' + (canDeletePhoto ? '1' : '0') + '">';
                         html += '<a href="' + photoPreviewUrl + '" class="js-open-lightbox d-block" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + photoPreviewUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                         html += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + photoThumbUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '" loading="lazy" decoding="async">';
                         html += '<div>' + escapeAttr(photoCaption) + '</div>';
                         html += '</a>';
                         html += '<div class="small mt-1"><span class="badge badge-' + getComplyBadgeClass(photoStatus) + (isComplyPhoto ? ' js-comply-photo-status' : '') + '">' + escapeAttr(photoStatus) + '</span></div>';
                         html += '<div class="small text-muted mt-1 js-comply-review-remark' + (photo.review_remark ? '' : ' d-none') + '">Review: <span>' + escapeAttr(photo.review_remark || '') + '</span></div>';
-                        if (canApproveComplyPhoto && isComplyPhoto) {
+                        if (isComplyPhoto && (canApproveComplyPhoto || canDeletePhoto)) {
                             html += '<div class="mt-2 js-comply-photo-actions">';
-                            html += buildComplyReviewButtons(photo.id_progress_photo || 0, photoCaption, photoStatus);
+                            html += buildComplyReviewButtons(photo.id_progress_photo || 0, photoCaption, photoStatus, canDeletePhoto);
                             html += '</div>';
                         }
                         html += '</div>';

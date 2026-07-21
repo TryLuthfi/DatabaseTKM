@@ -1234,6 +1234,43 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         ]);
     }
 
+    public function deleteProgressPhoto()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session habis. Silakan login ulang.', ['redirect_url' => base_url('Auth')], 401);
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $photoId = (int) $this->input->post('photo_id');
+        $userId = (int) $this->session->userdata('id_user');
+
+        $photo = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($photoId);
+        if ($clusterId <= 0 || empty($photo) || (int) ($photo['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            $this->jsonResponse(false, 'Foto tidak ditemukan.', [], 404);
+            return;
+        }
+
+        if ((int) ($photo['uploaded_by'] ?? 0) !== $userId) {
+            $this->jsonResponse(false, 'Foto hanya bisa dihapus oleh akun yang upload foto tersebut.', [], 403);
+            return;
+        }
+
+        if (strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) !== 'COMPLY') {
+            $this->jsonResponse(false, 'Hapus dari menu ini hanya berlaku untuk foto comply.', [], 422);
+            return;
+        }
+
+        $deleted = $this->MImplementasi_BOQ_MyRep->deleteProgressPhotoById($photoId);
+        if ($deleted) {
+            $this->clearProgressPhotoDerivativeCache($photoId);
+        }
+
+        $this->jsonResponse((bool) $deleted, $deleted ? 'Foto berhasil dihapus.' : 'Gagal menghapus foto.', [
+            'photo_id' => $photoId,
+        ], $deleted ? 200 : 500);
+    }
+
     public function progressPhotoPreview($photoId = 0, $size = 'thumb')
     {
         if (empty($this->session->userdata('id_user'))) {
