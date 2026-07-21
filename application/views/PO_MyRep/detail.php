@@ -482,7 +482,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                     <tr>
                                                         <td class="text-center"><?= (int) ($termin['termin_no'] ?? 0) ?></td>
                                                         <td class="text-center"><?= poMyRepValue((float) ($termin['termin_percent'] ?? 0)) ?>%</td>
-                                                        <td class="text-right"><?= $terminInvoiceValue > 0 ? poMyRepValue($terminInvoiceValue) : '-' ?></td>
+                                                        <td class="text-right"><?= abs($terminInvoiceValue) > 0.000001 ? poMyRepValue($terminInvoiceValue) : '-' ?></td>
                                                         <td class="text-right"><?= $terminOutstandingValue > 0 ? poMyRepValue($terminOutstandingValue) : '-' ?></td>
                                                         <td class="text-center"><span class="badge badge-secondary"><?= htmlspecialchars((string) ($termin['status_termin'] ?? '-')) ?></span></td>
                                                         <td class="text-center">

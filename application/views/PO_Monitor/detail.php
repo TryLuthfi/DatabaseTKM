@@ -77,11 +77,12 @@ $doneTerms = 0;
 foreach ($terms as $termRow) {
     $termValue = (float) ($termRow['value'] ?? 0);
     $invoiced = (float) ($termRow['invoiced_amount'] ?? 0);
+    $hasInvoice = abs($invoiced) > 0.000001 || !empty($termRow['invoice_date']);
     $remaining = max($termValue - $invoiced, 0);
     $totalTermValue += $termValue;
     $totalInvoiced += $invoiced;
     $totalRemaining += $remaining;
-    if ($remaining <= 0 && $termValue > 0) {
+    if ($hasInvoice && ($remaining <= 0 || abs($termValue) <= 0.000001)) {
         $doneTerms++;
     }
 }
@@ -386,11 +387,12 @@ $flashMessage = $this->session->flashdata('error_log');
                         $value = (float) ($term['value'] ?? 0);
                         $invoiced = (float) ($term['invoiced_amount'] ?? 0);
                         $remaining = max($value - $invoiced, 0);
+                        $hasInvoice = abs($invoiced) > 0.000001 || !empty($term['invoice_date']);
                         $dueDate = !empty($term['target_week_end']) ? $term['target_week_end'] : ($term['due_date'] ?? '');
                         $sla = poMonitorSlaMeta($remaining, $dueDate);
                         $allocations = $allocationMap[$idTerm] ?? [];
                         $collapseId = 'po-monitor-term-' . $idTerm;
-                        $termStatusClass = $invoiced > 0 ? 'is-invoiced' : 'is-pending';
+                        $termStatusClass = $hasInvoice ? 'is-invoiced' : 'is-pending';
                         $termInvoiceDate = !empty($term['invoice_date']) ? date('Y-m-d', strtotime($term['invoice_date'])) : date('Y-m-d');
                         ?>
                         <article class="po-monitor-term-card <?= $termStatusClass ?>">
@@ -410,7 +412,7 @@ $flashMessage = $this->session->flashdata('error_log');
                                 </div>
                                 <div>
                                     <?php if (!empty($allocations)): ?>
-                                        <?php if ($invoiced > 0): ?>
+                                        <?php if ($hasInvoice): ?>
                                             <button type="button"
                                                 class="btn btn-sm btn-outline-primary js-po-monitor-edit-invoice mb-1"
                                                 data-toggle="modal"
@@ -426,7 +428,7 @@ $flashMessage = $this->session->flashdata('error_log');
                                         <?php endif; ?>
                                         <div><span class="badge badge-info">Claim per Sub PO</span></div>
                                     <?php else: ?>
-                                        <?php if ($invoiced > 0): ?>
+                                        <?php if ($hasInvoice): ?>
                                             <button type="button"
                                                 class="btn btn-sm btn-outline-primary js-po-monitor-edit-invoice mb-1"
                                                 data-toggle="modal"
@@ -440,7 +442,7 @@ $flashMessage = $this->session->flashdata('error_log');
                                                 Edit Invoice
                                             </button>
                                         <?php endif; ?>
-                                        <?php if ($remaining > 0): ?>
+                                        <?php if (!$hasInvoice && $remaining > 0): ?>
                                         <form method="post" action="<?= site_url('PO_Monitor/claim_term') ?>" class="po-monitor-claim-form">
                                             <input type="hidden" name="id_po" value="<?= (int) ($po['id_po'] ?? 0) ?>">
                                             <input type="hidden" name="id_term" value="<?= $idTerm ?>">
@@ -448,7 +450,7 @@ $flashMessage = $this->session->flashdata('error_log');
                                             <input type="text" name="invoice_amount" class="form-control form-control-sm" value="<?= poMonitorDetailNum($remaining) ?>" style="width: 120px;" required>
                                             <button type="submit" class="btn btn-sm btn-success">Claim</button>
                                         </form>
-                                        <?php elseif ($invoiced <= 0): ?>
+                                        <?php elseif (!$hasInvoice): ?>
                                         <span class="badge badge-success">Done</span>
                                         <?php endif; ?>
                                     <?php endif; ?>
@@ -485,8 +487,9 @@ $flashMessage = $this->session->flashdata('error_log');
                                                         $idAllocation = (int) ($allocation['id_allocation'] ?? 0);
                                                         $allocationValue = (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
                                                         $allocationInvoiced = (float) ($allocation['invoiced_amount'] ?? 0);
+                                                        $allocationHasInvoice = abs($allocationInvoiced) > 0.000001 || !empty($allocation['invoice_date']);
                                                         $allocationOutstanding = max((float) ($allocation['outstanding_amount'] ?? ($allocationValue - $allocationInvoiced)), 0);
-                                                        $allocationStatusClass = $allocationInvoiced > 0 ? 'is-invoiced' : 'is-pending';
+                                                        $allocationStatusClass = $allocationHasInvoice ? 'is-invoiced' : 'is-pending';
                                                         $allocationInvoiceDate = !empty($allocation['invoice_date']) ? date('Y-m-d', strtotime($allocation['invoice_date'])) : date('Y-m-d');
                                                         ?>
                                                         <tr class="po-monitor-allocation-row <?= $allocationStatusClass ?>">
@@ -500,7 +503,7 @@ $flashMessage = $this->session->flashdata('error_log');
                                                             <td class="text-right"><?= poMonitorDetailNum($allocationOutstanding) ?></td>
                                                             <td><?= poMonitorTargetText($allocation) ?></td>
                                                             <td>
-                                                                <?php if ($allocationInvoiced > 0): ?>
+                                                                <?php if ($allocationHasInvoice): ?>
                                                                     <button type="button"
                                                                         class="btn btn-sm btn-outline-primary js-po-monitor-edit-invoice mb-1"
                                                                         data-toggle="modal"
@@ -514,7 +517,7 @@ $flashMessage = $this->session->flashdata('error_log');
                                                                         Edit
                                                                     </button>
                                                                 <?php endif; ?>
-                                                                <?php if ($allocationOutstanding > 0): ?>
+                                                                <?php if (!$allocationHasInvoice && $allocationOutstanding > 0): ?>
                                                                     <form method="post" action="<?= site_url('PO_Monitor/claim_term') ?>" class="po-monitor-claim-form">
                                                                         <input type="hidden" name="id_po" value="<?= (int) ($po['id_po'] ?? 0) ?>">
                                                                         <input type="hidden" name="id_term" value="<?= $idTerm ?>">
@@ -564,7 +567,7 @@ $flashMessage = $this->session->flashdata('error_log');
                     <div class="form-group mb-0">
                         <label for="po-monitor-edit-invoice-amount">Nilai Invoice</label>
                         <input type="text" name="invoice_amount" id="po-monitor-edit-invoice-amount" class="form-control" required>
-                        <small class="form-text text-muted">Boleh pakai format 3000000, 3.000.000, atau 3,000,000.</small>
+                        <small class="form-text text-muted">Boleh pakai format 3000000, 3.000.000, 3,000,000, atau -1.459.800.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

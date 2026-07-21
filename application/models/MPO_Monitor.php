@@ -2521,7 +2521,7 @@ class MPO_Monitor extends CI_Model
         }
 
         $amount = (float) $amount;
-        if ($amount <= 0 || empty($invoiceDate)) {
+        if (abs($amount) < 0.000001 || empty($invoiceDate)) {
             return ['status' => false, 'message' => 'Invoice date and amount are required'];
         }
 
@@ -2636,7 +2636,7 @@ class MPO_Monitor extends CI_Model
         if (!$term) {
             return ['status' => false, 'message' => 'Term not found'];
         }
-        if ($amount <= 0 || empty($invoiceDate)) {
+        if (abs($amount) < 0.000001 || empty($invoiceDate)) {
             return ['status' => false, 'message' => 'Invoice date and amount are required'];
         }
 
@@ -2786,7 +2786,7 @@ class MPO_Monitor extends CI_Model
         $oldClaim = $this->db->get('tb_po_term_claim')->row_array();
         $oldTotal = (float) ($oldClaim['total_amount'] ?? 0);
         $old2026 = (float) ($oldClaim['amount_2026'] ?? 0);
-        if ($oldTotal <= 0) {
+        if (abs($oldTotal) < 0.000001) {
             return ['status' => false, 'message' => 'Invoice claim tidak ditemukan'];
         }
 
@@ -2882,7 +2882,7 @@ class MPO_Monitor extends CI_Model
         $this->load->model('MPO_MyRep');
         $currentStatus = strtoupper(trim((string) ($myrepTermin['status_termin'] ?? 'NOT READY')));
         $status = $reset ? 'READY BILLING' : ($currentStatus === 'PAID' ? 'PAID' : 'BILLED');
-        $invoiceValue = $reset ? null : ((float) $amount > 0 ? (float) $amount : (float) ($term['value'] ?? 0));
+        $invoiceValue = $reset ? null : (float) $amount;
 
         return $this->MPO_MyRep->updateTermin((int) $myrepTermin['id_po_termin'], [
             'status_termin' => $status,
@@ -3341,7 +3341,7 @@ class MPO_Monitor extends CI_Model
 
         $invoiceDate = $this->normalizeSyncDate($myrep['invoice_date'] ?? null);
         $amount = (float) ($myrep['invoice_amount'] ?? 0);
-        if ($amount <= 0 && isset($myrep['termin_value'])) {
+        if (abs($amount) < 0.000001 && isset($myrep['termin_value'])) {
             $amount = (float) $myrep['termin_value'];
         }
 
@@ -3351,7 +3351,7 @@ class MPO_Monitor extends CI_Model
         $cutoffDate = $this->normalizeSyncDate($cutoffDate);
         $isSyncable = $invoiceDate !== null
             && ($cutoffDate === null || strtotime($invoiceDate) >= strtotime($cutoffDate))
-            && $amount > 0
+            && abs($amount) >= 0.000001
             && in_array($statusTermin, ['READY BILLING', 'BILLED', 'PAID'], true);
 
         if (!$isSyncable) {
@@ -3372,7 +3372,7 @@ class MPO_Monitor extends CI_Model
             }
 
             $term = $this->findPoMonitorTermForMyRep($poNumber, $termNo);
-            if (!empty($term) && $amount > 0) {
+            if (!empty($term) && abs($amount) >= 0.000001) {
                 $staleClaim = $this->db
                     ->from('tb_po_term_claim')
                     ->where('id_term', (int) $term['id_term'])

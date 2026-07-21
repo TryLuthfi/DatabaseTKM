@@ -1565,13 +1565,68 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         font-size: .92rem;
     }
 
+    .impl-row-order-tools {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .42rem;
+        min-width: 44px;
+    }
+
+    .impl-row-order-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid #8392ad;
+        border-radius: 10px;
+        color: #ffffff;
+        background: linear-gradient(180deg, #b9c5dc 0%, #536587 54%, #33445f 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 8px 18px rgba(30, 41, 59, .2);
+        cursor: pointer;
+        transition: transform .18s ease, box-shadow .18s ease, filter .18s ease, opacity .18s ease;
+    }
+
+    .impl-row-order-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.06);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .62), 0 12px 24px rgba(30, 41, 59, .25);
+    }
+
+    .impl-row-order-btn:active {
+        transform: translateY(0) scale(.96);
+        box-shadow: inset 0 2px 5px rgba(15, 23, 42, .28), 0 5px 12px rgba(30, 41, 59, .18);
+    }
+
+    .impl-row-order-btn:disabled {
+        cursor: not-allowed;
+        opacity: .34;
+        filter: grayscale(.35);
+        transform: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 4px 10px rgba(30, 41, 59, .1);
+    }
+
+    .impl-row-order-btn i {
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .impl-row-order-mid {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .28rem;
+        min-height: 28px;
+    }
+
     .impl-row-drag-handle {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 28px;
         height: 28px;
-        margin-right: .35rem;
         border: 1px solid #d7dee9;
         border-radius: 999px;
         color: #64748b;
@@ -1649,6 +1704,17 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         border-top-color: #14b8a6;
         border-top-width: 4px;
         background: #f0fdfa;
+    }
+
+    .js-comply-gallery-row.is-last-moved td {
+        background: linear-gradient(180deg, #f0fdfa, #ffffff);
+        box-shadow: inset 0 0 0 1px #5eead4;
+        transition: background .2s ease, box-shadow .2s ease;
+    }
+
+    .js-comply-gallery-row.is-last-moved:hover td {
+        background: #ccfbf1;
+        box-shadow: inset 0 0 0 2px #14b8a6, 0 10px 26px rgba(15, 118, 110, .12);
     }
 
     .impl-gallery-table.is-order-saving {
@@ -2759,7 +2825,20 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         $rowOrderPhotoId = (int) ($rowPhotoIds[0] ?? 0);
                                                         ?>
                                                         <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
-                                                            <td class="impl-gallery-table__no"><span class="impl-row-drag-handle" title="Geser urutan print">&#8942;&#8942;</span><span class="js-comply-gallery-no"><?= $galleryIndex++ ?></span></td>
+                                                            <td class="impl-gallery-table__no">
+                                                                <div class="impl-row-order-tools">
+                                                                    <button type="button" class="impl-row-order-btn js-comply-row-move-up" title="Geser ke atas" aria-label="Geser row ke atas">
+                                                                        <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                                                                    </button>
+                                                                    <div class="impl-row-order-mid">
+                                                                        <span class="impl-row-drag-handle" title="Geser urutan print">&#8942;&#8942;</span>
+                                                                        <span class="js-comply-gallery-no"><?= $galleryIndex++ ?></span>
+                                                                    </div>
+                                                                    <button type="button" class="impl-row-order-btn js-comply-row-move-down" title="Geser ke bawah" aria-label="Geser row ke bawah">
+                                                                        <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__photo">
@@ -3762,6 +3841,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var activeDraggedComplyRow = null;
         var manualDraggedComplyRow = null;
         var manualDraggedComplyTbody = null;
+        var lastMovedComplyRow = null;
         var complyCategoryFilter = document.getElementById('impl-comply-category-filter');
         var complyKindFilter = document.getElementById('impl-comply-kind-filter');
         var complySearchFilter = document.getElementById('impl-comply-search-filter');
@@ -4122,6 +4202,75 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
         }
 
+        function updateComplyRowMoveButtons(section) {
+            if (!section) {
+                return;
+            }
+
+            var visibleRows = Array.prototype.filter.call(section.querySelectorAll('.js-comply-gallery-row'), function (row) {
+                return !row.classList.contains('d-none');
+            });
+
+            visibleRows.forEach(function (row, index) {
+                var upButton = row.querySelector('.js-comply-row-move-up');
+                var downButton = row.querySelector('.js-comply-row-move-down');
+                if (upButton) {
+                    upButton.disabled = index === 0;
+                }
+                if (downButton) {
+                    downButton.disabled = index === visibleRows.length - 1;
+                }
+            });
+        }
+
+        function markComplyRowMoved(row) {
+            if (lastMovedComplyRow && lastMovedComplyRow !== row) {
+                lastMovedComplyRow.classList.remove('is-last-moved');
+            }
+
+            lastMovedComplyRow = row || null;
+            if (lastMovedComplyRow) {
+                lastMovedComplyRow.classList.add('is-last-moved');
+            }
+        }
+
+        function getComplyVisibleSibling(row, direction) {
+            var sibling = direction === 'up' ? row.previousElementSibling : row.nextElementSibling;
+            while (sibling) {
+                if (sibling.classList && sibling.classList.contains('js-comply-gallery-row') && !sibling.classList.contains('d-none')) {
+                    return sibling;
+                }
+                sibling = direction === 'up' ? sibling.previousElementSibling : sibling.nextElementSibling;
+            }
+            return null;
+        }
+
+        function moveComplyRow(row, direction) {
+            if (!row) {
+                return;
+            }
+
+            var tbody = row.closest('tbody');
+            if (!tbody) {
+                return;
+            }
+
+            var sibling = getComplyVisibleSibling(row, direction);
+            if (!sibling) {
+                return;
+            }
+
+            if (direction === 'up') {
+                tbody.insertBefore(row, sibling);
+            } else {
+                tbody.insertBefore(sibling, row);
+            }
+
+            markComplyRowMoved(row);
+            applyComplyGalleryFilter();
+            saveComplyRowOrder(tbody);
+        }
+
         function applyComplyGalleryFilter() {
             var selectedCategory = complyCategoryFilter ? normalizeFilterText(complyCategoryFilter.value) : '';
             var selectedKind = complyKindFilter ? normalizeFilterText(complyKindFilter.value) : '';
@@ -4153,6 +4302,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     }
                 });
 
+                updateComplyRowMoveButtons(section);
                 section.classList.toggle('d-none', visibleRowCount === 0);
                 if (visibleRowCount > 0) {
                     visibleSectionCount++;
@@ -4251,6 +4401,16 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
             pane.dataset.dragDropReady = '1';
 
+            pane.addEventListener('click', function (event) {
+                var moveButton = event.target.closest('.js-comply-row-move-up, .js-comply-row-move-down');
+                if (!moveButton || moveButton.disabled) {
+                    return;
+                }
+
+                var row = moveButton.closest('.js-comply-gallery-row');
+                moveComplyRow(row, moveButton.classList.contains('js-comply-row-move-up') ? 'up' : 'down');
+            });
+
             pane.addEventListener('dragstart', function (event) {
                 var row = event.target.closest('.js-comply-gallery-row');
                 if (!row || !event.target.closest('.impl-row-drag-handle')) {
@@ -4295,12 +4455,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 }
 
                 var tbody = activeDraggedComplyRow.closest('tbody');
-                activeDraggedComplyRow.classList.remove('is-dragging');
+                var movedRow = activeDraggedComplyRow;
+                movedRow.classList.remove('is-dragging');
                 activeDraggedComplyRow = null;
                 Array.prototype.forEach.call(pane.querySelectorAll('.js-comply-gallery-row.is-drag-over'), function (row) {
                     row.classList.remove('is-drag-over');
                 });
                 applyComplyGalleryFilter();
+                markComplyRowMoved(tbody ? movedRow : null);
                 saveComplyRowOrder(tbody);
             });
 
@@ -4346,13 +4508,15 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
                 var tbody = manualDraggedComplyTbody;
                 var table = tbody ? tbody.closest('.impl-gallery-table') : null;
-                manualDraggedComplyRow.classList.remove('is-dragging');
+                var movedRow = manualDraggedComplyRow;
+                movedRow.classList.remove('is-dragging');
                 if (table) {
                     table.classList.remove('is-row-reordering');
                 }
                 manualDraggedComplyRow = null;
                 manualDraggedComplyTbody = null;
                 applyComplyGalleryFilter();
+                markComplyRowMoved(movedRow);
                 saveComplyRowOrder(tbody);
             });
         }
