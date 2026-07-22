@@ -527,8 +527,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
             '',
             '',
         ];
-        $csvRows[] = array_fill(0, 33, '');
-
         $no = 1;
         foreach ($rows as $row) {
             $terms = isset($row['terms']) && is_array($row['terms']) ? $row['terms'] : [];
@@ -597,11 +595,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
     {
         $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
-        $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
+        $cacheKey = 'checklist_doc_index_all_scope_' . md5($selectedCity . '|' . $selectedRegional);
         $cachedPayload = $this->getChecklistCache($cacheKey);
         if (!is_array($cachedPayload)) {
-            $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
-            $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
+            $clusterList = $this->MChecklist_Dokument_MyRep->getChecklistProjectRows($selectedCity, $selectedRegional, '', true);
+            $documentItemList = $this->MChecklist_Dokument_MyRep->getAllChecklistDocumentItemRows($selectedCity, $selectedRegional);
             $cachedPayload = [
                 'clusterList' => $clusterList,
                 'documentItemList' => $documentItemList,
@@ -677,7 +675,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
         $searchValue = strtoupper(trim((string) $this->input->get('search')));
 
-        $clusterRows = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
+        $clusterRows = $this->MChecklist_Dokument_MyRep->getChecklistProjectRows($selectedCity, $selectedRegional, '', true);
         if ($searchValue === '') {
             return $clusterRows;
         }
@@ -688,6 +686,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 (string) ($row['regional_name'] ?? ''),
                 (string) ($row['city_name'] ?? ''),
                 (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['project_type'] ?? 'CLUSTER'),
                 (string) ($row['homepass'] ?? ''),
                 (string) ($row['tanggal_rfs'] ?? ''),
                 (string) ($row['status_rfs'] ?? ''),
@@ -706,6 +705,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
     {
         $csvRows = [[
             'No',
+            'Scope',
             'Regional',
             'Kota',
             'Cluster',
@@ -760,6 +760,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         foreach ($rows as $row) {
             $csvRows[] = [
                 $no++,
+                (string) ($row['project_type'] ?? 'CLUSTER'),
                 (string) ($row['regional_name'] ?? '-'),
                 (string) ($row['city_name'] ?? '-'),
                 (string) ($row['cluster_name'] ?? '-'),

@@ -1404,6 +1404,9 @@ class MPO_MyRep extends CI_Model
         $whereSql = $this->buildPurchaseOrderRefreshWhereSql($city, $regional);
         $onTargetSql = $this->getEmrTargetOnTargetSelectSql('p');
         $planInvoiceSql = $this->getEmrTargetPlanInvoiceValueSql('t');
+        $invoiceValueSelectSql = $this->db->field_exists('invoice_value', 'tb_myrep_po_termin')
+            ? 'COALESCE(t.invoice_value, t.termin_value, 0)'
+            : 'COALESCE(t.termin_value, 0)';
         $sertifikatSelectSql = $this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')
             ? 't.sertifikat_invoice_date'
             : "''";
@@ -1454,6 +1457,7 @@ class MPO_MyRep extends CI_Model
                 t.invoice_date,
                 {$sertifikatSelectSql} AS sertifikat_invoice_date,
                 {$planInvoiceSql} AS plan_invoice_value,
+                {$invoiceValueSelectSql} AS nilai_invoice,
                 COALESCE(tm.outstanding_invoice_total, 0) AS outstanding_total,
                 COALESCE(tm.done_invoice_total, 0) AS total_invoiced
             {$fromSql}
@@ -1522,7 +1526,7 @@ class MPO_MyRep extends CI_Model
                         'sertifikat_invoice_date' => (string) ($row['sertifikat_invoice_date'] ?? ''),
                         'plan_invoice_value' => $hasSubmitInvoice ? 0 : (float) ($row['plan_invoice_value'] ?? 0),
                         'submit_invoice_date' => $submitInvoiceDate,
-                        'nilai_invoice' => $hasSubmitInvoice ? (float) ($row['termin_value'] ?? 0) : 0,
+                        'nilai_invoice' => $hasSubmitInvoice ? (float) ($row['nilai_invoice'] ?? 0) : 0,
                     ];
                 }
             }
@@ -1990,7 +1994,7 @@ class MPO_MyRep extends CI_Model
             CASE
                 WHEN COALESCE({$remarkColumn}, '') LIKE '%Plan Invoice:%'
                     THEN CAST({$normalizedValueSql} AS DECIMAL(18,2))
-                ELSE 0
+                ELSE COALESCE({$prefix}termin_value, 0)
             END
         ";
     }
