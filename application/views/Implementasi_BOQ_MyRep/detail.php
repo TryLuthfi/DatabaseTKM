@@ -1621,6 +1621,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         min-height: 28px;
     }
 
+    .js-comply-gallery-row {
+        scroll-margin-top: 96px;
+        scroll-margin-bottom: 36px;
+    }
+
     .impl-row-drag-handle {
         display: inline-flex;
         align-items: center;
@@ -4234,6 +4239,37 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
         }
 
+        function keepComplyMovedRowInView(row, direction, previousTop) {
+            if (!row) {
+                return;
+            }
+
+            window.requestAnimationFrame(function () {
+                if (typeof previousTop === 'number') {
+                    var currentTop = row.getBoundingClientRect().top;
+                    var scrollDelta = currentTop - previousTop;
+                    if (Math.abs(scrollDelta) > 1) {
+                        window.scrollBy({
+                            top: scrollDelta,
+                            left: 0,
+                            behavior: 'auto'
+                        });
+                    }
+                } else {
+                    row.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+
+                var nextButton = row.querySelector(direction === 'up' ? '.js-comply-row-move-up' : '.js-comply-row-move-down');
+                if (nextButton && !nextButton.disabled) {
+                    nextButton.focus({ preventScroll: true });
+                }
+            });
+        }
+
         function getComplyVisibleSibling(row, direction) {
             var sibling = direction === 'up' ? row.previousElementSibling : row.nextElementSibling;
             while (sibling) {
@@ -4260,6 +4296,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 return;
             }
 
+            var previousTop = row.getBoundingClientRect().top;
             if (direction === 'up') {
                 tbody.insertBefore(row, sibling);
             } else {
@@ -4268,6 +4305,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             markComplyRowMoved(row);
             applyComplyGalleryFilter();
+            keepComplyMovedRowInView(row, direction, previousTop);
             saveComplyRowOrder(tbody);
         }
 
