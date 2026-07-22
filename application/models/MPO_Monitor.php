@@ -1317,7 +1317,7 @@ class MPO_Monitor extends CI_Model
     public function getDashboardTargetInvoiceBreakdownRows()
     {
         $rows = $this->db
-            ->select('pic, bowheer, outs_2026_on_target, ny_po_on_target_2026, done_inv_2026, sort_order, has_data')
+            ->select('pic, bowheer, all_po, done_inv_2026, outs_2026_on_target, ny_po_on_target_2026, sort_order, has_data')
             ->order_by('sort_order', 'ASC')
             ->order_by('bowheer', 'ASC')
             ->get('tb_po_dashboard_cache')
@@ -1328,7 +1328,6 @@ class MPO_Monitor extends CI_Model
             $rows = $summary['rows'] ?? [];
         }
 
-        $targetAdjustments = $this->getDashboardTargetWeekClaimAdjustments();
         $result = [];
         foreach ($rows as $row) {
             $project = trim((string) ($row['bowheer'] ?? ''));
@@ -1336,8 +1335,9 @@ class MPO_Monitor extends CI_Model
                 continue;
             }
 
-            $target = (float) ($row['outs_2026_on_target'] ?? 0)
-                + (float) ($targetAdjustments[$project]['target_week_2026'] ?? 0)
+            $target = (float) ($row['all_po'] ?? 0)
+                + (float) ($row['done_inv_2026'] ?? 0)
+                + (float) ($row['outs_2026_on_target'] ?? 0)
                 + (float) ($row['ny_po_on_target_2026'] ?? 0);
             $achieved = (float) ($row['done_inv_2026'] ?? 0);
 
@@ -1353,7 +1353,7 @@ class MPO_Monitor extends CI_Model
                 'po_number' => '-',
                 'sub_po' => '-',
                 'detail_po' => 'Dashboard Target PO',
-                'remarks' => 'Target: Grandtotal Target data awal. Achieved: Done Inv 2026 live.',
+                'remarks' => 'Target: PO 2026 + Done Inv 2026 + Outs 2026 On Target + NY PO On Target 2026. Achieved: Done Inv 2026.',
                 'regional' => '-',
                 'area' => '-',
                 'month' => '-',
