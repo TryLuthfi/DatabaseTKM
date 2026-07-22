@@ -1872,6 +1872,59 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->view('Templates/99_JS');
     }
 
+    public function apiDetailByClusterCode()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->apiJsonResponse(false, 'Session habis. Silakan login ulang.', [
+                'cluster' => null,
+                'scope_tabs' => [],
+            ]);
+            return;
+        }
+
+        $clusterCode = strtoupper(trim((string) $this->requestValue('cluster_code')));
+        if ($clusterCode === '') {
+            $this->apiJsonResponse(false, 'cluster_code wajib diisi.', [
+                'cluster' => null,
+                'scope_tabs' => [],
+            ]);
+            return;
+        }
+
+        try {
+            $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge((int) date('Y'), (int) date('n'));
+
+            $cluster = $this->MChecklist_Dokument_MyRep->getClusterDetailByCode($clusterCode);
+            if (empty($cluster)) {
+                $this->apiJsonResponse(false, 'Cluster code tidak ditemukan atau tidak bisa diakses user ini.', [
+                    'cluster_code' => $clusterCode,
+                    'cluster' => null,
+                    'scope_tabs' => [],
+                ]);
+                return;
+            }
+
+            $clusterId = (int) ($cluster['id_cluster'] ?? 0);
+            $this->MChecklist_Dokument_MyRep->ensureClusterPackages($clusterId, $cluster['tanggal_rfs'] ?? null);
+            $cluster = $this->MChecklist_Dokument_MyRep->getClusterDetail($clusterId);
+            $scopeTabs = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId, false);
+
+            $this->apiJsonResponse(true, 'Data checklist dokumen berhasil diambil.', [
+                'cluster_code' => $clusterCode,
+                'cluster' => $cluster,
+                'scope_tabs' => $scopeTabs,
+                'detail_url' => base_url('Checklist_Dokument_MyRep/detail/' . $clusterId),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Checklist apiDetailByClusterCode failed: ' . $e->getMessage());
+            $this->apiJsonResponse(false, 'Gagal mengambil data checklist dokumen.', [
+                'cluster_code' => $clusterCode,
+                'cluster' => null,
+                'scope_tabs' => [],
+            ]);
+        }
+    }
+
     public function documentHistoryData($fileId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -3094,6 +3147,36 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'message' => $message,
                 'redirect_url' => $redirectUrl,
             ]));
+    }
+
+    private function apiJsonResponse($status, $message, array $payload = [])
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(array_merge([
+                'status' => (bool) $status,
+                'message' => (string) $message,
+            ], $payload)));
+    }
+
+    private function requestValue($key, $default = '')
+    {
+        $value = $this->input->post($key);
+        if ($value !== null) {
+            return $value;
+        }
+
+        $rawInput = trim((string) $this->input->raw_input_stream);
+        if ($rawInput === '') {
+            return $default;
+        }
+
+        $json = json_decode($rawInput, true);
+        if (is_array($json) && array_key_exists($key, $json)) {
+            return $json[$key];
+        }
+
+        return $default;
     }
 
     private function handleUploadError($message, $redirectPath)

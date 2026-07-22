@@ -1035,6 +1035,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 c.homepass,
                 c.status_rfs,
                 mc.id_myrep_cluster,
+                mc.cluster_code,
                 mt.id_target,
                 mt.year_num,
                 mt.month_num,
@@ -1074,6 +1075,31 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         $rows = $this->enrichClusterRows([$row]);
         return empty($rows) ? [] : $rows[0];
+    }
+
+    public function getClusterDetailByCode($clusterCode)
+    {
+        $clusterCode = strtoupper(trim((string) $clusterCode));
+        if ($clusterCode === '' || !$this->db->table_exists('tb_myrep_cluster') || !$this->db->field_exists('cluster_code', 'tb_myrep_cluster')) {
+            return [];
+        }
+
+        $row = $this->db
+            ->select('rfs_cluster_id')
+            ->from('tb_myrep_cluster')
+            ->where('rfs_cluster_id IS NOT NULL', null, false)
+            ->where('UPPER(TRIM(cluster_code))', $clusterCode)
+            ->order_by('id_myrep_cluster', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $clusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+        if ($clusterId <= 0) {
+            return [];
+        }
+
+        return $this->getClusterDetail($clusterId);
     }
 
     public function getClusterScopeTabs($clusterId, $includeHistory = true)
