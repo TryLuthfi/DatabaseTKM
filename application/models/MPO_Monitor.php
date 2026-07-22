@@ -2553,10 +2553,6 @@ class MPO_Monitor extends CI_Model
             $poTotalValue = (float) ($this->db->select('COALESCE(total_value,0) AS value', false)->get_where('tb_po', ['id_po' => (int) $term['id_po']])->row_array()['value'] ?? 0);
             $percentLimit = $poTotalValue * (float) ($term['percent'] ?? 0) / 100;
             $allocationValue = max($allocationValue, $percentLimit);
-            $allocationRemaining = max($allocationValue - (float) ($allocation['invoiced_amount'] ?? 0), 0);
-            if ($amount > $allocationRemaining + 0.000001) {
-                return ['status' => false, 'message' => 'Invoice amount exceeds sub PO remaining'];
-            }
         } else {
             $hasAllocation = $this->db
                 ->where('id_term', (int) $idTerm)
@@ -2573,10 +2569,6 @@ class MPO_Monitor extends CI_Model
                 ->row_array();
             $poTotalValue = (float) ($this->db->select('COALESCE(total_value,0) AS value', false)->get_where('tb_po', ['id_po' => (int) $term['id_po']])->row_array()['value'] ?? 0);
             $termClaimLimit = max((float) ($term['value'] ?? 0), $poTotalValue * (float) ($term['percent'] ?? 0) / 100);
-            $termRemaining = max($termClaimLimit - (float) ($claimed['amount'] ?? 0), 0);
-            if ($amount > $termRemaining + 0.000001) {
-                return ['status' => false, 'message' => 'Invoice amount exceeds term remaining'];
-            }
         }
 
         $this->db->trans_begin();
@@ -2681,10 +2673,6 @@ class MPO_Monitor extends CI_Model
         if ($idAllocation <= 0) {
             $poTotalValue = (float) ($this->db->select('COALESCE(total_value,0) AS value', false)->get_where('tb_po', ['id_po' => (int) $term['id_po']])->row_array()['value'] ?? 0);
             $claimValue = max($claimValue, $poTotalValue * (float) ($term['percent'] ?? 0) / 100);
-        }
-
-        if ($amount > $claimValue + 0.000001) {
-            return ['status' => false, 'message' => 'Invoice amount exceeds claim value'];
         }
 
         $this->db->select('COALESCE(SUM(invoice_amount),0) AS total_amount', false);

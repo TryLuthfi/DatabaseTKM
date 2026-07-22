@@ -139,8 +139,13 @@ class PO_Monitor extends CI_Controller
         }
 
         $normalized = trim((string) $value);
+        $normalized = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $normalized);
+        $isNegative = preg_match('/^\s*\(.*\)\s*$/', $normalized) === 1
+            || preg_match('/^\s*-/', $normalized) === 1
+            || preg_match('/-\s*$/', $normalized) === 1;
         $normalized = preg_replace('/\s+/', '', $normalized);
         $normalized = preg_replace('/[^\d,.\-]/', '', $normalized);
+        $normalized = trim($normalized, '-');
 
         $lastDot = strrpos($normalized, '.');
         $lastComma = strrpos($normalized, ',');
@@ -174,7 +179,8 @@ class PO_Monitor extends CI_Controller
             }
         }
 
-        return (float) preg_replace('/[^\d.\-]/', '', $normalized);
+        $amount = (float) preg_replace('/[^\d.]/', '', $normalized);
+        return $isNegative && $amount > 0 ? -1 * $amount : $amount;
     }
 
     public function create()
