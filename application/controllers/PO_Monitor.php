@@ -1904,7 +1904,14 @@ class PO_Monitor extends CI_Controller
         $termNos = $this->input->post('term_no');
         $amounts = $this->input->post('invoice_amount');
 
-        if (empty($invoiceDate) || !is_array($poNumbers) || !is_array($termNos) || !is_array($amounts)) {
+        if (empty($invoiceDate)) {
+            $this->session->set_flashdata('status', false);
+            $this->session->set_flashdata('error_log', 'Tanggal invoice general wajib diisi.');
+            redirect('PO_Monitor');
+            return;
+        }
+
+        if (!is_array($poNumbers) || !is_array($termNos) || !is_array($amounts)) {
             $this->session->set_flashdata('status', false);
             $this->session->set_flashdata('error_log', 'Data batch invoice tidak lengkap.');
             redirect('PO_Monitor');

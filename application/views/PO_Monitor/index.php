@@ -2739,7 +2739,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     <div class="po-monitor-filter-grid mb-3">
                         <div class="po-monitor-field">
                             <label>Tanggal Invoice General</label>
-                            <input type="date" name="invoice_date" id="po-monitor-batch-invoice-date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                            <input type="date" name="invoice_date" id="po-monitor-batch-invoice-date" class="form-control">
                         </div>
                     </div>
 
@@ -3729,8 +3729,16 @@ if (!function_exists('po_monitor_term_amount_link')) {
             });
 
             $('#po-monitor-batch-invoice-form').off('submit.poMonitorBatchSubmit').on('submit.poMonitorBatchSubmit', function(e) {
+                if (!String($('#po-monitor-batch-invoice-date').val() || '').trim()) {
+                    e.preventDefault();
+                    alert('Tanggal Invoice General wajib dipilih.');
+                    $('#po-monitor-batch-invoice-date').focus();
+                    return false;
+                }
+
                 if ($('#po-monitor-batch-invoice-table tbody tr.po-monitor-batch-row[data-valid="1"]').length === 0) {
                     e.preventDefault();
+                    alert('Belum ada row invoice yang valid.');
                     return false;
                 }
                 return true;

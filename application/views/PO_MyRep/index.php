@@ -1812,7 +1812,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label>Tanggal Invoice General</label>
-                                    <input type="date" name="invoice_date" id="po-batch-invoice-date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                                    <input type="date" name="invoice_date" id="po-batch-invoice-date" class="form-control">
                                 </div>
                             </div>
                         </div>
@@ -3259,9 +3259,17 @@ if (is_array($terminBreakdownRows ?? null)) {
         });
 
         $('#po-batch-invoice-form').on('submit', function (e) {
+            if (!String($('#po-batch-invoice-date').val() || '').trim()) {
+                e.preventDefault();
+                alert('Tanggal Invoice General wajib dipilih.');
+                $('#po-batch-invoice-date').focus();
+                return false;
+            }
+
             if ($('#po-batch-invoice-table tbody tr.po-batch-row[data-valid="1"]').length === 0) {
                 e.preventDefault();
                 alert('Belum ada row invoice yang valid.');
+                return false;
             }
         });
 
