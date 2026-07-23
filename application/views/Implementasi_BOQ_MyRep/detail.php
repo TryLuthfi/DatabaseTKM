@@ -1595,6 +1595,21 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         font-size: .92rem;
     }
 
+    .impl-gallery-table__action {
+        position: relative;
+        z-index: 6;
+        min-width: 90px;
+        text-align: center;
+        vertical-align: middle !important;
+        pointer-events: auto;
+    }
+
+    .impl-gallery-table__action .js-open-comply-row-edit {
+        position: relative;
+        z-index: 7;
+        pointer-events: auto;
+    }
+
     .impl-row-order-tools {
         display: inline-flex;
         flex-direction: column;
@@ -2895,7 +2910,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                 </div>
                                                             </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
-                                                            <td class="impl-gallery-table__item">
+                                                            <td class="impl-gallery-table__action">
                                                                 <span class="badge badge-<?= $galleryScope === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars(ucfirst(strtolower($galleryScope))) ?></span>
                                                             </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
@@ -4018,6 +4033,51 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return html;
         }
 
+        function openComplyRowEditModal(button) {
+            if (!button) {
+                return;
+            }
+
+            if (complyEditSeedInput) {
+                complyEditSeedInput.value = button.getAttribute('data-seed-photo-id') || '0';
+            }
+            if (complyEditItemSelect) {
+                complyEditItemSelect.value = button.getAttribute('data-baseline-item-id') || '';
+            }
+            if (complyEditScopeSelect) {
+                complyEditScopeSelect.value = button.getAttribute('data-scope-type') === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            }
+            if (complyEditLabelInput) {
+                complyEditLabelInput.value = button.getAttribute('data-comply-label') || '';
+            }
+            if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+                window.jQuery('#modal-comply-row-edit').modal('show');
+                return;
+            }
+
+            var modal = document.getElementById('modal-comply-row-edit');
+            if (modal) {
+                modal.classList.add('show');
+                modal.style.display = 'block';
+                modal.removeAttribute('aria-hidden');
+                document.body.classList.add('modal-open');
+            }
+        }
+
+        function closeComplyRowEditModalFallback() {
+            if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+                return;
+            }
+
+            var modal = document.getElementById('modal-comply-row-edit');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            document.body.classList.remove('modal-open');
+        }
+
         function syncComplyPhotoReviewCard(photo) {
             if (!photo || !photo.id_progress_photo) {
                 return;
@@ -4560,6 +4620,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             pane.dataset.dragDropReady = '1';
 
             pane.addEventListener('click', function (event) {
+                var editButton = event.target.closest('.js-open-comply-row-edit');
+                if (editButton) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openComplyRowEditModal(editButton);
+                    return;
+                }
+
                 var moveButton = event.target.closest('.js-comply-row-move-up, .js-comply-row-move-down');
                 if (!moveButton || moveButton.disabled) {
                     return;
@@ -5261,6 +5329,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         });
 
         document.addEventListener('click', function (event) {
+            var closeComplyEditButton = event.target.closest('#modal-comply-row-edit [data-dismiss="modal"]');
+            if (closeComplyEditButton) {
+                closeComplyRowEditModalFallback();
+                return;
+            }
+
             var boqBreakdownButton = event.target.closest('.js-open-boq-breakdown');
             if (boqBreakdownButton) {
                 event.preventDefault();
@@ -5513,21 +5587,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 var editComplyRowButton = event.target.closest('.js-open-comply-row-edit');
                 if (editComplyRowButton) {
                     event.preventDefault();
-                    if (complyEditSeedInput) {
-                        complyEditSeedInput.value = editComplyRowButton.getAttribute('data-seed-photo-id') || '0';
-                    }
-                    if (complyEditItemSelect) {
-                        complyEditItemSelect.value = editComplyRowButton.getAttribute('data-baseline-item-id') || '';
-                    }
-                    if (complyEditScopeSelect) {
-                        complyEditScopeSelect.value = editComplyRowButton.getAttribute('data-scope-type') === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
-                    }
-                    if (complyEditLabelInput) {
-                        complyEditLabelInput.value = editComplyRowButton.getAttribute('data-comply-label') || '';
-                    }
-                    if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
-                        window.jQuery('#modal-comply-row-edit').modal('show');
-                    }
+                    openComplyRowEditModal(editComplyRowButton);
                     return;
                 }
 
