@@ -1003,11 +1003,19 @@ class PO_MyRep extends CI_Controller
                 $saveValue = $this->MChecklist_Dokument_MyRep->normalizeCertificateValueForSave($certificateValue);
             }
 
-            $updated = $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
-                (int) ($termin['id_po_termin'] ?? 0),
-                $saveValue,
-                (int) $this->session->userdata('id_user')
-            );
+            $terminPoType = strtoupper(trim((string) ($termin['po_type'] ?? 'CLUSTER')));
+            $isStandalonePo = in_array($terminPoType, ['MAINFEEDER', 'FWA'], true);
+            $updated = $isStandalonePo
+                ? $this->MMainfeeder_MyRep->updateTerminCertificate(
+                    (int) ($termin['id_po_termin'] ?? 0),
+                    $saveValue,
+                    (int) $this->session->userdata('id_user')
+                )
+                : $this->MChecklist_Dokument_MyRep->updateTerminCertificate(
+                    (int) ($termin['id_po_termin'] ?? 0),
+                    $saveValue,
+                    (int) $this->session->userdata('id_user')
+                );
 
             if ($updated) {
                 $updatedCount++;
