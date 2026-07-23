@@ -1510,13 +1510,15 @@ if (is_array($terminBreakdownRows ?? null)) {
                                                 <th>Status Flow</th>
                                                 <th>PO</th>
                                                 <th>Nilai PO</th>
+                                                <th>Total Invoice</th>
+                                                <th>Outstanding</th>
                                                 <th>Progress Termin</th>
                                                 <th>Last PO</th>
                                                 <th>Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr><td colspan="10" class="text-center text-muted">Memuat data...</td></tr>
+                                            <tr><td colspan="12" class="text-center text-muted">Memuat data...</td></tr>
                                         </tbody>
                                         <tfoot>
                                             <tr>
@@ -1527,6 +1529,8 @@ if (is_array($terminBreakdownRows ?? null)) {
                                                     <div>Mainfeeder: <span id="po-footer-mainfeeder-count">0</span></div>
                                                 </th>
                                                 <th class="text-right" id="po-footer-nilai-po">0</th>
+                                                <th class="text-right" id="po-footer-total-invoice">0</th>
+                                                <th class="text-right" id="po-footer-outstanding">0</th>
                                                 <th colspan="3"></th>
                                             </tr>
                                         </tfoot>
@@ -3822,6 +3826,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                     var totalNilaiPo = api.column(6, { page: 'current' }).data().reduce(function (a, b) {
                         return parseLocaleNumber(a) + parseLocaleNumber(b);
                     }, 0);
+                    var totalInvoice = api.column(7, { page: 'current' }).data().reduce(function (a, b) {
+                        return parseLocaleNumber(a) + parseLocaleNumber(b);
+                    }, 0);
+                    var totalOutstanding = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
+                        return parseLocaleNumber(a) + parseLocaleNumber(b);
+                    }, 0);
                     var totalPoCluster = api.column(5, { page: 'current' }).data().reduce(function (acc, value) {
                         return acc + extractPoCount(value, 'Cluster');
                     }, 0);
@@ -3836,6 +3846,8 @@ if (is_array($terminBreakdownRows ?? null)) {
                     $('#po-footer-subfeeder-count').text(totalPoSubfeeder.toLocaleString('id-ID'));
                     $('#po-footer-mainfeeder-count').text(totalPoMainfeeder.toLocaleString('id-ID'));
                     $('#po-footer-nilai-po').text(totalNilaiPo.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('#po-footer-total-invoice').text(totalInvoice.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('#po-footer-outstanding').text(totalOutstanding.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                 }
             }) : null;
 

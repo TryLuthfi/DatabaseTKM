@@ -252,6 +252,13 @@ class MPO_MyRep extends CI_Model
                     'last_po_date' => null,
                     'po_summary_status' => 'NOT ISSUED',
                     'po_stage_status' => 'NOT ISSUED',
+                    'plan_invoice_total' => 0,
+                    'done_invoice_total' => 0,
+                    'total_invoiced' => 0,
+                    'outstanding_total' => 0,
+                    'plan_invoice_per_termin' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'done_invoice_per_termin' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'outstanding_invoice_per_termin' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
                 ];
             }
 
@@ -261,6 +268,15 @@ class MPO_MyRep extends CI_Model
             $grouped[$mainfeederId]['termin_total_count'] += (int) ($row['termin_total_count'] ?? 0);
             $grouped[$mainfeederId]['termin_progress_count'] += (int) ($row['termin_progress_count'] ?? 0);
             $grouped[$mainfeederId]['termin_paid_count'] += (int) ($row['termin_paid_count'] ?? 0);
+            $grouped[$mainfeederId]['plan_invoice_total'] += (float) ($row['plan_invoice_total'] ?? 0);
+            $grouped[$mainfeederId]['done_invoice_total'] += (float) ($row['done_invoice_total'] ?? 0);
+            $grouped[$mainfeederId]['total_invoiced'] += (float) ($row['total_invoiced'] ?? 0);
+            $grouped[$mainfeederId]['outstanding_total'] += (float) ($row['outstanding_total'] ?? 0);
+            for ($termNo = 1; $termNo <= 5; $termNo++) {
+                $grouped[$mainfeederId]['plan_invoice_per_termin'][$termNo] += (float) ($row['plan_invoice_per_termin'][$termNo] ?? 0);
+                $grouped[$mainfeederId]['done_invoice_per_termin'][$termNo] += (float) ($row['done_invoice_per_termin'][$termNo] ?? 0);
+                $grouped[$mainfeederId]['outstanding_invoice_per_termin'][$termNo] += (float) ($row['outstanding_invoice_per_termin'][$termNo] ?? 0);
+            }
             if (!empty($row['po_date']) && (empty($grouped[$mainfeederId]['last_po_date']) || $row['po_date'] > $grouped[$mainfeederId]['last_po_date'])) {
                 $grouped[$mainfeederId]['last_po_date'] = $row['po_date'];
             }
@@ -679,8 +695,12 @@ class MPO_MyRep extends CI_Model
             case 6:
                 return (float) ($row['po_total_value'] ?? 0);
             case 7:
-                return (int) ($row['termin_progress_count'] ?? 0);
+                return (float) ($row['total_invoiced'] ?? $row['done_invoice_total'] ?? 0);
             case 8:
+                return (float) ($row['outstanding_total'] ?? 0);
+            case 9:
+                return (int) ($row['termin_progress_count'] ?? 0);
+            case 10:
                 return (string) ($row['last_po_date'] ?? '');
             case 1:
             default:
@@ -2438,7 +2458,9 @@ class MPO_MyRep extends CI_Model
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
-        if ($status !== '') {
+        $status = strtoupper(trim((string) $status));
+        $isStageStatusFilter = $this->isPoStageStatusFilter($status);
+        if ($status !== '' && !$isStageStatusFilter) {
             $this->db->where('UPPER(p.status_po)', strtoupper($status));
         }
 
@@ -2457,7 +2479,7 @@ class MPO_MyRep extends CI_Model
             if ($city !== '') {
                 $this->db->where($this->collatedUpperEquals('mf.city_name', $city), null, false);
             }
-            if ($status !== '') {
+            if ($status !== '' && !$isStageStatusFilter) {
                 $this->db->where('UPPER(p.status_po)', strtoupper($status));
             }
 
@@ -2494,7 +2516,27 @@ class MPO_MyRep extends CI_Model
             $headerMeta[$headerId] = [
                 'po_type' => strtoupper(trim((string) ($headerRow['po_type'] ?? 'CLUSTER'))),
                 'po_value' => (float) ($headerRow['po_value'] ?? 0),
+                'po_stage_status' => 'NOT ISSUED',
             ];
+        }
+
+        $stageTermsByHeader = [];
+        foreach ($terminRows as $terminRow) {
+            $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+            $stageTermsByHeader[$headerId][] = [
+                'termin_no' => (int) ($terminRow['termin_no'] ?? 0),
+                'status_termin' => (string) ($terminRow['status_termin'] ?? 'NOT READY'),
+                'invoice_date' => (string) ($terminRow['invoice_date'] ?? ''),
+            ];
+        }
+        foreach ($headerMeta as $headerId => &$meta) {
+            $meta['po_stage_status'] = $this->resolveStageStatus($stageTermsByHeader[$headerId] ?? []);
+        }
+        unset($meta);
+        if ($status !== '' && $isStageStatusFilter) {
+            $headerMeta = array_filter($headerMeta, static function ($meta) use ($status) {
+                return strtoupper((string) ($meta['po_stage_status'] ?? 'NOT ISSUED')) === $status;
+            });
         }
 
         $result = [
@@ -2587,6 +2629,8 @@ class MPO_MyRep extends CI_Model
         if (!in_array($poType, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
             $poType = 'CLUSTER';
         }
+        $status = strtoupper(trim((string) $status));
+        $isStageStatusFilter = $this->isPoStageStatusFilter($status);
 
         if (in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
             if (!$this->hasMainfeederPoSupport()) {
@@ -2619,7 +2663,7 @@ class MPO_MyRep extends CI_Model
             if ($city !== '') {
                 $this->db->where($this->collatedUpperEquals('mf.city_name', $city), null, false);
             }
-            if ($status !== '') {
+            if ($status !== '' && !$isStageStatusFilter) {
                 $this->db->where('UPPER(p.status_po)', strtoupper($status));
             }
         } else {
@@ -2649,7 +2693,7 @@ class MPO_MyRep extends CI_Model
             if ($city !== '') {
                 $this->db->where('UPPER(c.city_name)', strtoupper($city));
             }
-            if ($status !== '') {
+            if ($status !== '' && !$isStageStatusFilter) {
                 $this->db->where('UPPER(p.status_po)', strtoupper($status));
             }
         }
@@ -2688,6 +2732,26 @@ class MPO_MyRep extends CI_Model
             ->order_by('termin_no', 'ASC')
             ->get()
             ->result_array();
+
+        if ($status !== '' && $isStageStatusFilter) {
+            $stageTermsByHeader = [];
+            foreach ($terminRows as $terminRow) {
+                $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+                $stageTermsByHeader[$headerId][] = [
+                    'termin_no' => (int) ($terminRow['termin_no'] ?? 0),
+                    'status_termin' => (string) ($terminRow['status_termin'] ?? 'NOT READY'),
+                    'invoice_date' => (string) ($terminRow['invoice_date'] ?? ''),
+                ];
+            }
+            foreach ($headerMap as $headerId => $headerRow) {
+                if (strtoupper($this->resolveStageStatus($stageTermsByHeader[$headerId] ?? [])) !== $status) {
+                    unset($headerMap[$headerId]);
+                }
+            }
+            $terminRows = array_values(array_filter($terminRows, static function ($terminRow) use ($headerMap) {
+                return isset($headerMap[(int) ($terminRow['id_po_header'] ?? 0)]);
+            }));
+        }
 
         $detailRows = [];
         $metric = strtolower(trim((string) $metric));
@@ -4718,6 +4782,19 @@ class MPO_MyRep extends CI_Model
         }
 
         return 'CLOSED';
+    }
+
+    private function isPoStageStatusFilter($status)
+    {
+        return in_array(strtoupper(trim((string) $status)), [
+            'NOT ISSUED',
+            'DP',
+            'ATP CW',
+            'FULL OPM',
+            'RFS',
+            'FAC',
+            'CLOSED',
+        ], true);
     }
 
     private function mergeStageStatus($current, $candidate)
