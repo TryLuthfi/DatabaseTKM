@@ -2014,6 +2014,7 @@ class MPO_Monitor extends CI_Model
                 CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS project,
                 CONVERT(COALESCE(bp.pic, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS pic,
                 CONVERT('ACHIEVED' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS row_type,
+                CONVERT(COALESCE(p.type_project, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS type_project,
                 CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
                 CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS sub_po,
                 CONVERT(COALESCE(NULLIF(a.detail_po, ''), '-') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
@@ -2055,6 +2056,15 @@ class MPO_Monitor extends CI_Model
             $row['sub_po'] = trim((string) ($row['sub_po'] ?? '-')) ?: '-';
             $row['detail_po'] = trim((string) ($row['detail_po'] ?? '-')) ?: '-';
             $row['remarks'] = trim((string) ($row['remarks'] ?? '-')) ?: '-';
+            if (strtoupper((string) ($row['row_type'] ?? '')) === 'ACHIEVED') {
+                $fallbackLocation = $this->parseRegionalAreaFromTypeProject((string) ($row['type_project'] ?? ''));
+                if (trim((string) ($row['regional'] ?? '-')) === '-') {
+                    $row['regional'] = $fallbackLocation['regional'];
+                }
+                if (trim((string) ($row['area'] ?? '-')) === '-') {
+                    $row['area'] = $fallbackLocation['area'];
+                }
+            }
             $row['regional'] = trim((string) ($row['regional'] ?? '-')) ?: '-';
             $row['area'] = trim((string) ($row['area'] ?? '-')) ?: '-';
             $row['month'] = strtoupper($monthKey);
@@ -2269,13 +2279,26 @@ class MPO_Monitor extends CI_Model
                 AND p.id_bowheer = ?
             ORDER BY tc.invoice_date ASC, p.po_number ASC, t.term_index ASC", [$idBowheer])->result_array();
 
-        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+        $rows = array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
             $rowPeriod = $groupBy === 'week'
                 ? $this->weekKeyFromDate($row['invoice_date'])
                 : $this->monthKeyFromInvoiceWeek($row['invoice_date']);
 
             return $rowPeriod === $periodKey;
         }));
+
+        foreach ($rows as &$row) {
+            $fallbackLocation = $this->parseRegionalAreaFromTypeProject((string) ($row['type_project'] ?? ''));
+            if (trim((string) ($row['regional'] ?? '')) === '') {
+                $row['regional'] = $fallbackLocation['regional'];
+            }
+            if (trim((string) ($row['kota_po'] ?? '')) === '') {
+                $row['kota_po'] = $fallbackLocation['area'];
+            }
+        }
+        unset($row);
+
+        return $rows;
     }
 
     private function resolveComparisonBounds($fromMonth, $toMonth)
@@ -2296,6 +2319,24 @@ class MPO_Monitor extends CI_Model
         }
 
         return ['from' => $from, 'to' => $to];
+    }
+
+    private function parseRegionalAreaFromTypeProject($typeProject)
+    {
+        $parts = array_values(array_filter(array_map('trim', explode('-', (string) $typeProject)), static function ($part) {
+            return $part !== '';
+        }));
+
+        $result = ['regional' => '', 'area' => ''];
+        foreach ($parts as $index => $part) {
+            if (preg_match('/^REGIONAL\s*\d+/i', $part)) {
+                $result['regional'] = strtoupper($part);
+                $result['area'] = strtoupper(trim((string) ($parts[$index + 1] ?? '')));
+                break;
+            }
+        }
+
+        return $result;
     }
 
     private function getComparisonDataBounds()
