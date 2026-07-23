@@ -1932,13 +1932,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                                         <th>Nomor PO</th>
                                         <th style="width:110px;">Term</th>
                                         <th style="width:220px;">Nilai Invoice</th>
-                                        <th style="width:190px;">Status</th>
+                                        <th style="width:190px;">Status Cek</th>
+                                        <th style="width:210px;">Current Status</th>
                                         <th style="width:90px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr class="po-batch-empty-row">
-                                        <td colspan="6" class="text-center text-muted">Belum ada row invoice.</td>
+                                        <td colspan="7" class="text-center text-muted">Belum ada row invoice.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2110,12 +2111,13 @@ if (is_array($terminBreakdownRows ?? null)) {
                                         <th style="width:110px;">Term</th>
                                         <th>Status/Tanggal</th>
                                         <th style="width:220px;">Status Cek</th>
+                                        <th style="width:210px;">Current Status</th>
                                         <th style="width:90px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr class="po-cert-empty-row">
-                                        <td colspan="9" class="text-center text-muted">Belum ada row status/tanggal sertifikat.</td>
+                                        <td colspan="10" class="text-center text-muted">Belum ada row status/tanggal sertifikat.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2302,6 +2304,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                     'po_type' => (string) ($poBatchRow['po_type'] ?? ''),
                     'regional_name' => (string) ($poBatchRow['regional_name'] ?? ''),
                     'cluster_name' => (string) ($poBatchRow['cluster_name'] ?? ''),
+                    'current_status' => (string) ($poBatchRow['status_current'] ?? ''),
                     'termin_status' => $poBatchRow['termin_status_per_termin'] ?? [],
                     'termin_invoice_date' => $poBatchRow['termin_invoice_date_per_termin'] ?? [],
                     'termin_certificate' => $poBatchRow['termin_certificate_per_termin'] ?? [],
@@ -3065,6 +3068,16 @@ if (is_array($terminBreakdownRows ?? null)) {
             return text !== '' && text !== '0000-00-00' && text !== '0000-00-00 00:00:00';
         }
 
+        function getBatchCurrentStatus(poNumber) {
+            var poKey = String(poNumber || '').trim().toUpperCase();
+            var lookup = poBatchTerminLookup[poKey] || null;
+            if (!lookup) {
+                return '-';
+            }
+
+            return String(lookup.current_status || '').trim() || '-';
+        }
+
         function getBatchInvoiceCheck(poNumber, termNo, invoiceValue) {
             var poKey = String(poNumber || '').trim().toUpperCase();
             var lookup = poBatchTerminLookup[poKey] || null;
@@ -3142,12 +3155,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                 }
             });
             if (exists) {
+                var duplicateCurrentStatus = getBatchCurrentStatus(poNumber);
                 var duplicateHtml = '<tr class="po-batch-row table-danger" data-valid="0" data-status-code="invalid" data-key="' + escapeHtml(key) + '">' +
                     '<td class="text-center po-batch-row-no"></td>' +
                     '<td>' + escapeHtml(poNumber || '-') + '</td>' +
                     '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
                     '<td class="text-right">' + escapeHtml(invoiceValue || '-') + '</td>' +
                     '<td><span class="badge badge-danger">Invalid</span><div class="small text-muted">Duplikat dalam batch.</div></td>' +
+                    '<td>' + escapeHtml(duplicateCurrentStatus) + '</td>' +
                     '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-batch-remove-row">Hapus</button></td>' +
                 '</tr>';
                 $('#po-batch-invoice-table tbody').append(duplicateHtml);
@@ -3160,6 +3175,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             var badgeClass = check.badgeClass || (check.valid ? 'badge-success' : 'badge-danger');
             var statusCode = check.statusCode || (check.valid ? 'success' : 'invalid');
             var effectivePoNumber = check.poNumber || poNumber;
+            var currentStatus = getBatchCurrentStatus(effectivePoNumber);
             var hiddenInputs = check.valid
                 ? '<input type="hidden" name="po_number[]" value="' + escapeHtml(effectivePoNumber) + '">' +
                   '<input type="hidden" name="term_no[]" value="' + escapeHtml(termNo) + '">' +
@@ -3172,6 +3188,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
                 '<td class="text-right">' + escapeHtml(invoiceValue || '-') + '</td>' +
                 '<td><span class="badge ' + badgeClass + '">' + escapeHtml(check.label) + '</span><div class="small text-muted">' + escapeHtml(check.message) + '</div></td>' +
+                '<td>' + escapeHtml(currentStatus) + '</td>' +
                 '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-batch-remove-row">Hapus</button></td>' +
             '</tr>';
 
@@ -3472,6 +3489,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             if (['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'].indexOf(projectType) === -1) {
                 projectType = 'CLUSTER';
             }
+            var currentStatus = getBatchCurrentStatus((lookup && lookup.po_number) || poNumber);
             var html = '<tr class="po-cert-row ' + rowClass + '" data-valid="' + (valid ? '1' : '0') + '" data-status-code="' + escapeHtml(statusCode) + '" data-copy-status="' + escapeHtml(copyStatus) + '" data-key="' + escapeHtml(key) + '" data-cert-type="' + escapeHtml(type) + '" data-regional="' + escapeHtml(String(regionalName || '').toUpperCase()) + '">' +
                 '<td class="text-center po-cert-row-no"></td>' +
                 '<td>' + escapeHtml((lookup && lookup.po_number) || poNumber || '-') + hiddenInputs + '</td>' +
@@ -3481,6 +3499,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 '<td class="text-center">' + escapeHtml(termNo || '-') + '</td>' +
                 '<td>' + escapeHtml(certificateValue || '-') + '</td>' +
                 '<td><span class="badge ' + badgeClass + '">' + escapeHtml(statusLabel) + '</span><div class="small text-muted">' + escapeHtml(message) + '</div></td>' +
+                '<td>' + escapeHtml(currentStatus) + '</td>' +
                 '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger po-cert-remove-row">Hapus</button></td>' +
             '</tr>';
 
@@ -3570,13 +3589,13 @@ if (is_array($terminBreakdownRows ?? null)) {
         function getVisibleCertificateTableData(copyMode) {
             var isImageMode = copyMode === 'image';
             var headers = isImageMode
-                ? ['No', 'Nomor PO', 'Project', 'Regional', 'Cluster', 'Term', 'Tanggal', 'Status Cek']
-                : ['No', 'Nomor PO', 'Project', 'Regional', 'Cluster', 'Term', 'Status/Tanggal', 'Status Cek'];
+                ? ['No', 'Nomor PO', 'Project', 'Regional', 'Cluster', 'Term', 'Tanggal', 'Status Cek', 'Current Status']
+                : ['No', 'Nomor PO', 'Project', 'Regional', 'Cluster', 'Term', 'Status/Tanggal', 'Status Cek', 'Current Status'];
             var rows = [];
             $('#po-batch-certificate-table tbody tr.po-cert-row:visible').each(function () {
                 var cells = [];
                 var $row = $(this);
-                $row.children('td').slice(0, 8).each(function (index) {
+                $row.children('td').slice(0, 9).each(function (index) {
                     if (isImageMode && index === 7) {
                         cells.push(String($row.data('copy-status') || '').replace(/\s+/g, ' ').trim());
                         return;
@@ -3617,7 +3636,7 @@ if (is_array($terminBreakdownRows ?? null)) {
         }
 
         function drawCertificateTableImage(tableData) {
-            var columnWidths = [46, 125, 90, 105, 230, 54, 135, 145];
+            var columnWidths = [46, 125, 90, 105, 220, 54, 125, 135, 145];
             var rowHeight = 34;
             var headerHeight = 38;
             var padding = 18;
