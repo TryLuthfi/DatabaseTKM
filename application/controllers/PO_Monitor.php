@@ -76,6 +76,30 @@ class PO_Monitor extends CI_Controller
         redirect('PO_Monitor');
     }
 
+    public function backfill_ny_po_reference_groups()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->canManagePoImport()) {
+            show_error('Forbidden', 403);
+            return;
+        }
+
+        $summary = $this->MPO_Monitor->backfillNyPoReferenceGroupLinks((int) $this->session->userdata('id_user'));
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => empty($summary['errors']),
+                'message' => empty($summary['errors'])
+                    ? 'Backfill NY PO reference group berhasil.'
+                    : 'Backfill selesai dengan sebagian error.',
+                'summary' => $summary,
+            ]));
+    }
+
     private function resolveSlaStatus($terms)
     {
         $sla = 'AMAN';

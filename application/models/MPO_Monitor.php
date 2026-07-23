@@ -4136,7 +4136,27 @@ class MPO_Monitor extends CI_Model
             return ['status' => false, 'message' => 'NY PO REF ' . $nyPoRef . ' tidak ditemukan.'];
         }
 
-        return $this->replaceNyPoPipelineLink($pipeline, $idPo, $poNumber, [], $userId, true);
+        $pipelines = $this->getNyPoReferencePipelineGroup($pipeline);
+        if (empty($pipelines)) {
+            $pipelines = [$pipeline];
+        }
+
+        $this->db->trans_begin();
+        foreach ($pipelines as $pipelineRow) {
+            $result = $this->replaceNyPoPipelineLink($pipelineRow, $idPo, $poNumber, [], $userId, true);
+            if (empty($result['status'])) {
+                $this->db->trans_rollback();
+                return $result;
+            }
+        }
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'NY PO REF gagal diproses.'];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => true];
     }
 
     public function unlinkNyPoReferenceFromPo($nyPoRef, $idPo = 0)
@@ -4162,19 +4182,27 @@ class MPO_Monitor extends CI_Model
             return false;
         }
 
-        if ($linkedIdPo > 0) {
-            $this->clearNyPipelineTargetFromPo($linkedIdPo, $pipeline);
+        $pipelines = $this->getNyPoReferencePipelineGroup($pipeline);
+        if (empty($pipelines)) {
+            $pipelines = [$pipeline];
         }
 
-        $this->db
-            ->where('id_pipeline', $idPipeline)
-            ->update('tb_po_target_pipeline', [
-                'linked_id_po' => null,
-                'linked_po_number' => null,
-                'pipeline_status' => 'OPEN',
-                'converted_at' => null,
-                'converted_by' => null
-            ]);
+        foreach ($pipelines as $pipelineRow) {
+            $pipelineLinkedIdPo = (int) ($pipelineRow['linked_id_po'] ?? 0);
+            if ($pipelineLinkedIdPo > 0) {
+                $this->clearNyPipelineTargetFromPo($pipelineLinkedIdPo, $pipelineRow);
+            }
+
+            $this->db
+                ->where('id_pipeline', (int) $pipelineRow['id_pipeline'])
+                ->update('tb_po_target_pipeline', [
+                    'linked_id_po' => null,
+                    'linked_po_number' => null,
+                    'pipeline_status' => 'OPEN',
+                    'converted_at' => null,
+                    'converted_by' => null
+                ]);
+        }
 
         if ($linkedIdPo > 0) {
             $this->refreshPoDashboardMetrics($linkedIdPo);
@@ -4213,6 +4241,91 @@ class MPO_Monitor extends CI_Model
         return $this->linkNyPoReferenceToPo($nyPoRef, (int) $ensure['id_po'], $poNumber, $userId);
     }
 
+    public function backfillNyPoReferenceGroupLinks($userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        $summary = [
+            'myrep_headers_checked' => 0,
+            'myrep_headers_linked' => 0,
+            'po_monitor_groups_checked' => 0,
+            'po_monitor_groups_linked' => 0,
+            'pipeline_rows_linked' => 0,
+            'errors' => [],
+        ];
+
+        if ($this->db->table_exists('tb_myrep_po_header') && $this->db->field_exists('po_monitor_ny_ref', 'tb_myrep_po_header')) {
+            $headers = $this->db
+                ->select('id_po_header, po_monitor_ny_ref')
+                ->from('tb_myrep_po_header')
+                ->where("COALESCE(po_monitor_ny_ref, '') !=", '')
+                ->order_by('id_po_header', 'ASC')
+                ->get()
+                ->result_array();
+
+            foreach ($headers as $header) {
+                $summary['myrep_headers_checked']++;
+                $result = $this->linkNyPoReferenceToMyRepHeader(
+                    (int) ($header['id_po_header'] ?? 0),
+                    (string) ($header['po_monitor_ny_ref'] ?? ''),
+                    (int) $userId
+                );
+                if (!empty($result['status'])) {
+                    $summary['myrep_headers_linked']++;
+                } else {
+                    $summary['errors'][] = 'Header #' . (int) ($header['id_po_header'] ?? 0) . ': ' . ($result['message'] ?? 'gagal relink.');
+                }
+            }
+        }
+
+        $convertedRows = $this->db
+            ->from('tb_po_target_pipeline')
+            ->where('COALESCE(linked_id_po, 0) > 0', null, false)
+            ->order_by('id_pipeline', 'ASC')
+            ->get()
+            ->result_array();
+
+        $groups = [];
+        foreach ($convertedRows as $row) {
+            $groupKey = $this->buildNyPoReferenceGroupKey($row);
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = $row;
+            }
+        }
+
+        foreach ($groups as $pipeline) {
+            $summary['po_monitor_groups_checked']++;
+            $linkedIdPo = (int) ($pipeline['linked_id_po'] ?? 0);
+            $linkedPoNumber = trim((string) ($pipeline['linked_po_number'] ?? ''));
+            if ($linkedIdPo <= 0) {
+                continue;
+            }
+            if ($linkedPoNumber === '') {
+                $poRow = $this->db
+                    ->select('po_number')
+                    ->where('id_po', $linkedIdPo)
+                    ->get('tb_po')
+                    ->row_array();
+                $linkedPoNumber = trim((string) ($poRow['po_number'] ?? ''));
+            }
+
+            $groupRows = $this->getNyPoReferencePipelineGroup($pipeline);
+            $result = $this->linkNyPoReferenceToPo(
+                'NY-' . (int) ($pipeline['id_pipeline'] ?? 0),
+                $linkedIdPo,
+                $linkedPoNumber,
+                (int) $userId
+            );
+            if (!empty($result['status'])) {
+                $summary['po_monitor_groups_linked']++;
+                $summary['pipeline_rows_linked'] += count($groupRows);
+            } else {
+                $summary['errors'][] = 'NY-' . (int) ($pipeline['id_pipeline'] ?? 0) . ': ' . ($result['message'] ?? 'gagal relink.');
+            }
+        }
+
+        return $summary;
+    }
+
     private function replaceNyPoPipelineLink(array $pipeline, $idPo, $poNumber, array $group, $userId, $applyTarget = true)
     {
         $idPo = (int) $idPo;
@@ -4245,6 +4358,48 @@ class MPO_Monitor extends CI_Model
         $this->refreshPoDashboardMetrics($idPo);
 
         return ['status' => true];
+    }
+
+    private function getNyPoReferencePipelineGroup(array $pipeline)
+    {
+        $this->ensureStandaloneSchema();
+        $sourceRowNo = (int) ($pipeline['source_row_no'] ?? 0);
+        $this->db
+            ->from('tb_po_target_pipeline')
+            ->where("CONVERT(target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where('COALESCE(id_bowheer, 0) = ' . (int) ($pipeline['id_bowheer'] ?? 0), null, false)
+            ->where("CONVERT(COALESCE(dashboard_bowheer, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['dashboard_bowheer'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("CONVERT(COALESCE(type_project, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['type_project'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("CONVERT(COALESCE(regional, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['regional'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("CONVERT(COALESCE(kota_po, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['kota_po'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("CONVERT(COALESCE(detail_po, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['detail_po'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("CONVERT(COALESCE(remarks, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['remarks'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false);
+
+        if ($sourceRowNo > 0) {
+            $this->db->where('source_row_no', $sourceRowNo);
+        }
+
+        return $this->db
+            ->order_by('term_index', 'ASC')
+            ->order_by('id_pipeline', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    private function buildNyPoReferenceGroupKey(array $row)
+    {
+        $parts = [
+            (string) ($row['source_row_no'] ?? ''),
+            (string) ($row['id_bowheer'] ?? ''),
+            $this->normalizeNyPoMatchText((string) ($row['bowheer'] ?? $row['dashboard_bowheer'] ?? '')),
+            $this->normalizeNyPoMatchText((string) ($row['type_project'] ?? '')),
+            $this->normalizeNyPoMatchText((string) ($row['regional'] ?? '')),
+            $this->normalizeNyPoMatchText((string) ($row['kota_po'] ?? '')),
+            $this->normalizeNyPoMatchText((string) ($row['detail_po'] ?? '')),
+            $this->normalizeNyPoMatchText((string) ($row['remarks'] ?? '')),
+        ];
+
+        return hash('sha256', implode('|', $parts));
     }
 
     private function clearNyPipelineTargetFromPo($idPo, array $pipeline)
@@ -4670,6 +4825,8 @@ class MPO_Monitor extends CI_Model
         }
 
         $rows = $this->db->query("SELECT
+                pl.id_pipeline,
+                pl.id_bowheer,
                 CONCAT('NY-', pl.id_pipeline) AS ny_po_ref,
                 COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
                 COALESCE(pl.linked_po_number, '') AS linked_po_number,
@@ -4678,6 +4835,8 @@ class MPO_Monitor extends CI_Model
                 COALESCE(pl.regional, '') AS regional,
                 COALESCE(pl.kota_po, '') AS kota_po,
                 COALESCE(pl.detail_po, '') AS detail_po,
+                COALESCE(pl.remarks, '') AS remarks,
+                COALESCE(pl.source_row_no, 0) AS source_row_no,
                 pl.term_index,
                 COALESCE(NULLIF(pl.ny_po_2026_amount, 0), pl.plan_amount, 0) AS amount,
                 pl.target_week_start,
@@ -4687,7 +4846,18 @@ class MPO_Monitor extends CI_Model
             WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
             ORDER BY bowheer ASC, pl.regional ASC, pl.kota_po ASC, pl.term_index ASC, pl.id_pipeline ASC")->result_array();
 
+        $refByGroup = [];
+        foreach ($rows as $row) {
+            $groupKey = $this->buildNyPoReferenceGroupKey($row);
+            $currentId = (int) ($row['id_pipeline'] ?? 0);
+            if (!isset($refByGroup[$groupKey]) || $currentId < $refByGroup[$groupKey]) {
+                $refByGroup[$groupKey] = $currentId;
+            }
+        }
+
         foreach ($rows as &$row) {
+            $groupKey = $this->buildNyPoReferenceGroupKey($row);
+            $row['ny_po_ref'] = 'NY-' . (int) ($refByGroup[$groupKey] ?? $row['id_pipeline'] ?? 0);
             $row['term_label'] = 'Term ' . (int) ($row['term_index'] ?? 0);
             $row['amount'] = $this->formatImportReportAmount((float) ($row['amount'] ?? 0));
             $row['period'] = !empty($row['target_week_start']) && !empty($row['target_week_end'])
