@@ -225,6 +225,28 @@ class MMyRepublik_Project extends CI_Model
         $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
             ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
             : "'MAINFEEDER'";
+        $cityMappingRegionalSql = "(
+                    SELECT cm_fallback.regional_name
+                    FROM tb_myrep_pic_mapping_city cm_fallback
+                    WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER(mf.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                      AND cm_fallback.regional_name IS NOT NULL
+                      AND TRIM(cm_fallback.regional_name) != ''
+                    ORDER BY cm_fallback.id DESC
+                    LIMIT 1
+                )";
+        $cityMappingProvinceSql = "(
+                    SELECT cm_fallback.province_name
+                    FROM tb_myrep_pic_mapping_city cm_fallback
+                    WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER(mf.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                      AND cm_fallback.province_name IS NOT NULL
+                      AND TRIM(cm_fallback.province_name) != ''
+                    ORDER BY cm_fallback.id DESC
+                    LIMIT 1
+                )";
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            $cityMappingRegionalSql = 'NULL';
+            $cityMappingProvinceSql = 'NULL';
+        }
         $query = $this->db
             ->select("
                 mf.id_mainfeeder,
@@ -234,8 +256,24 @@ class MMyRepublik_Project extends CI_Model
                 mf.current_status,
                 mf.year_num,
                 mf.month_num,
-                mf.regional_name,
-                mf.province_name,
+                COALESCE(NULLIF(mf.regional_name, ''), " . $cityMappingRegionalSql . ", (
+                    SELECT mt_fallback.regional_name
+                    FROM tb_rfs_myrep_monthly_target mt_fallback
+                    WHERE CONVERT(UPPER(mt_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER(mf.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                      AND mt_fallback.regional_name IS NOT NULL
+                      AND TRIM(mt_fallback.regional_name) != ''
+                    ORDER BY mt_fallback.year_num DESC, mt_fallback.month_num DESC
+                    LIMIT 1
+                ), '-') AS regional_name,
+                COALESCE(NULLIF(mf.province_name, ''), " . $cityMappingProvinceSql . ", (
+                    SELECT mt_fallback.province_name
+                    FROM tb_rfs_myrep_monthly_target mt_fallback
+                    WHERE CONVERT(UPPER(mt_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER(mf.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                      AND mt_fallback.province_name IS NOT NULL
+                      AND TRIM(mt_fallback.province_name) != ''
+                    ORDER BY mt_fallback.year_num DESC, mt_fallback.month_num DESC
+                    LIMIT 1
+                ), '-') AS province_name,
                 mf.city_name,
                 mf.team_name,
                 mf.chief,

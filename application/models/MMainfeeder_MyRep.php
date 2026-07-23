@@ -98,14 +98,16 @@ class MMainfeeder_MyRep extends CI_Model
         $poJoinTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
             ? "((COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER') = 'FWA' AND UPPER(COALESCE(po.po_type, '')) = 'FWA') OR (COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER') <> 'FWA' AND UPPER(COALESCE(po.po_type, '')) = 'MAINFEEDER'))"
             : "UPPER(COALESCE(po.po_type, '')) = 'MAINFEEDER'";
+        $regionalFallbackSql = $this->cityMappingFallbackSql('regional_name');
+        $provinceFallbackSql = $this->cityMappingFallbackSql('province_name');
 
         $query = $this->db
             ->select("
                 mf.*,
                 {$projectTypeSelect} AS project_type,
-                COALESCE(mf.city_name, mt.city_name) AS city_name,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
-                COALESCE(mf.province_name, mt.province_name) AS province_name,
+                COALESCE(NULLIF(mf.city_name, ''), mt.city_name) AS city_name,
+                COALESCE(NULLIF(mf.regional_name, ''), {$regionalFallbackSql}, mt.regional_name) AS regional_name,
+                COALESCE(NULLIF(mf.province_name, ''), {$provinceFallbackSql}, mt.province_name) AS province_name,
                 COALESCE(mf.team_name, mt.team_name) AS team_name,
                 COALESCE(mf.chief, mt.chief) AS chief,
                 COALESCE(mf.rpm, mt.rpm) AS rpm,
@@ -125,7 +127,11 @@ class MMainfeeder_MyRep extends CI_Model
             ->group_by('mf.id_mainfeeder');
 
         if ($city !== '') {
-            $query->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
+            $query->where(
+                'CONVERT(UPPER(COALESCE(NULLIF(mf.city_name, \'\'), mt.city_name)) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(' . $this->db->escape(strtoupper($city)) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci',
+                null,
+                false
+            );
         }
         if ($status !== '') {
             $query->where('UPPER(mf.current_status)', strtoupper($status));
@@ -148,13 +154,15 @@ class MMainfeeder_MyRep extends CI_Model
         if (!$this->tablesReady()) {
             return [];
         }
+        $regionalFallbackSql = $this->cityMappingFallbackSql('regional_name');
+        $provinceFallbackSql = $this->cityMappingFallbackSql('province_name');
 
         return $this->db
             ->select("
                 mf.*,
-                COALESCE(mf.city_name, mt.city_name) AS city_name,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
-                COALESCE(mf.province_name, mt.province_name) AS province_name,
+                COALESCE(NULLIF(mf.city_name, ''), mt.city_name) AS city_name,
+                COALESCE(NULLIF(mf.regional_name, ''), {$regionalFallbackSql}, mt.regional_name) AS regional_name,
+                COALESCE(NULLIF(mf.province_name, ''), {$provinceFallbackSql}, mt.province_name) AS province_name,
                 COALESCE(mf.team_name, mt.team_name) AS team_name,
                 COALESCE(mf.chief, mt.chief) AS chief,
                 COALESCE(mf.rpm, mt.rpm) AS rpm,
@@ -204,7 +212,11 @@ class MMainfeeder_MyRep extends CI_Model
         if (empty($existing)) {
             $existing = $this->db
                 ->from('tb_rfs_myrep_mainfeeder')
-                ->where('UPPER(city_name)', strtoupper(trim((string) ($payload['city_name'] ?? ''))))
+                ->where(
+                    'CONVERT(UPPER(city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(' . $this->db->escape(strtoupper(trim((string) ($payload['city_name'] ?? '')))) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci',
+                    null,
+                    false
+                )
                 ->where('UPPER(mainfeeder_name)', strtoupper($name))
                 ->get()
                 ->row_array();
@@ -215,6 +227,19 @@ class MMainfeeder_MyRep extends CI_Model
             $rowClusterCode = strtoupper(trim((string) $existing['cluster_code']));
         }
 
+        $cityName = strtoupper(trim((string) ($payload['city_name'] ?? '')));
+        $regionalName = strtoupper(trim((string) ($payload['regional_name'] ?? '')));
+        $provinceName = strtoupper(trim((string) ($payload['province_name'] ?? '')));
+        if ($cityName !== '' && ($regionalName === '' || $provinceName === '')) {
+            $locationFallback = $this->getLocationFallbackByCity($cityName);
+            if ($regionalName === '') {
+                $regionalName = strtoupper(trim((string) ($locationFallback['regional_name'] ?? '')));
+            }
+            if ($provinceName === '') {
+                $provinceName = strtoupper(trim((string) ($locationFallback['province_name'] ?? '')));
+            }
+        }
+
         $row = [
             'id_target' => !empty($payload['id_target']) ? (int) $payload['id_target'] : null,
             'cluster_code' => $rowClusterCode,
@@ -222,9 +247,9 @@ class MMainfeeder_MyRep extends CI_Model
             'current_status' => $this->normalizeStatus($payload['current_status'] ?? 'DRM'),
             'year_num' => !empty($payload['year_num']) ? (int) $payload['year_num'] : null,
             'month_num' => !empty($payload['month_num']) ? (int) $payload['month_num'] : null,
-            'regional_name' => strtoupper(trim((string) ($payload['regional_name'] ?? ''))),
-            'province_name' => strtoupper(trim((string) ($payload['province_name'] ?? ''))),
-            'city_name' => strtoupper(trim((string) ($payload['city_name'] ?? ''))),
+            'regional_name' => $regionalName,
+            'province_name' => $provinceName,
+            'city_name' => $cityName,
             'team_name' => trim((string) ($payload['team_name'] ?? '')),
             'chief' => trim((string) ($payload['chief'] ?? '')),
             'rpm' => trim((string) ($payload['rpm'] ?? '')),
@@ -250,6 +275,76 @@ class MMainfeeder_MyRep extends CI_Model
         $row['created_by'] = (int) ($payload['created_by'] ?? 0);
         $this->db->insert('tb_rfs_myrep_mainfeeder', $row);
         return (int) $this->db->insert_id();
+    }
+
+    private function cityMappingFallbackSql($columnName)
+    {
+        $columnName = (string) $columnName;
+        if (
+            !in_array($columnName, ['regional_name', 'province_name'], true)
+            || !$this->db->table_exists('tb_myrep_pic_mapping_city')
+            || !$this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')
+        ) {
+            return 'NULL';
+        }
+
+        return "(
+            SELECT cm_fallback.{$columnName}
+            FROM tb_myrep_pic_mapping_city cm_fallback
+            WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER(mf.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND cm_fallback.{$columnName} IS NOT NULL
+              AND TRIM(cm_fallback.{$columnName}) != ''
+            ORDER BY cm_fallback.id DESC
+            LIMIT 1
+        )";
+    }
+
+    private function getLocationFallbackByCity($cityName)
+    {
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '') {
+            return [];
+        }
+
+        if ($this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            $row = $this->db
+                ->select('regional_name, province_name')
+                ->from('tb_myrep_pic_mapping_city')
+                ->where(
+                    'CONVERT(UPPER(city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(' . $this->db->escape($cityName) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci',
+                    null,
+                    false
+                )
+                ->where('regional_name IS NOT NULL', null, false)
+                ->where("TRIM(regional_name) !=", '')
+                ->order_by('id', 'DESC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($row)) {
+                return $row;
+            }
+        }
+
+        if (!$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        return $this->db
+            ->select('regional_name, province_name')
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where(
+                'CONVERT(UPPER(city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(' . $this->db->escape($cityName) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci',
+                null,
+                false
+            )
+            ->where('regional_name IS NOT NULL', null, false)
+            ->where("TRIM(regional_name) !=", '')
+            ->order_by('year_num', 'DESC')
+            ->order_by('month_num', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
     }
 
     public function upsertPoHeader($mainfeederId, array $payload)

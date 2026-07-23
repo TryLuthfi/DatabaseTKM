@@ -188,8 +188,8 @@ class Mainfeeder_MyRep extends CI_Controller
         $filename = 'template_import_myrep_mainfeeder_' . date('Ymd_His') . '.csv';
         $headers = $this->getMainfeederImportHeaders();
         $examples = [
-            ['MAINFEEDER', 'DRM', 'MALANG', '', '', 'Main Feeder - OLT A to OLT B', '', '5328/FEEDER/PROCUREMENT/VII/2024', '2024-07-29', '1200', '2024-09-24', 'OLT A', 'Contoh DRM', '', '', '', '', '', '', '', 'INITIAL', 'PARTIAL PAYMENT', '0', '7400000001', '2024-10-10', '100000000', '', 'Contoh PO', '2024-10-25', '20000000', '20000000', '2024-11-25', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-            ['FWA', 'CHECKLIST DOKUMENT', 'MANADO', '', '', 'FWA Site C', 'FWA0001', '5759/FWA/PROCUREMENT/VIII/2024', '2024-08-30', '900', '2024-09-24', '', '', '2026-01-14', '2026-01-14', 'DONE', 'CLOSED', 'CLOSED', 'CLOSED', '', 'FINAL', 'PARTIAL PAYMENT', '0', '7400000002', '2024-10-10', '120000000', '110000000', '', '2024-10-25', '24000000', '24000000', '2026-04-30', '2026-04-30', '', '30000000', '2026-04-30', '2026-06-18', '', '18000000', '', 'FULL UPLOAD', '', '36000000', '', '', '', '12000000'],
+            ['MAINFEEDER', 'DRM', 'MALANG', 'REGIONAL 5', '', '', 'Main Feeder - OLT A to OLT B', '', '5328/FEEDER/PROCUREMENT/VII/2024', '2024-07-29', '1200', '2024-09-24', 'OLT A', 'Contoh DRM', '', '', '', '', '', '', '', 'INITIAL', 'PARTIAL PAYMENT', '0', '7400000001', '2024-10-10', '100000000', '', 'Contoh PO', '2024-10-25', '20000000', '20000000', '2024-11-25', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+            ['FWA', 'CHECKLIST DOKUMENT', 'MANADO', 'REGIONAL 7', '', '', 'FWA Site C', 'FWA0001', '5759/FWA/PROCUREMENT/VIII/2024', '2024-08-30', '900', '2024-09-24', '', '', '2026-01-14', '2026-01-14', 'DONE', 'CLOSED', 'CLOSED', 'CLOSED', '', 'FINAL', 'PARTIAL PAYMENT', '0', '7400000002', '2024-10-10', '120000000', '110000000', '', '2024-10-25', '24000000', '24000000', '2026-04-30', '2026-04-30', '', '30000000', '2026-04-30', '2026-06-18', '', '18000000', '', 'FULL UPLOAD', '', '36000000', '', '', '', '12000000'],
         ];
 
         $this->output
@@ -806,6 +806,7 @@ class Mainfeeder_MyRep extends CI_Controller
             'project_type',
             'status_current',
             'city_name',
+            'regional_name',
             'district_name',
             'village_name',
             'mainfeeder_name',
@@ -1155,6 +1156,7 @@ class Mainfeeder_MyRep extends CI_Controller
         $lineMap['project_type'] = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($row['project_type'] ?? 'MAINFEEDER');
         $lineMap['status_current'] = $this->exportMainfeederStatus($row['current_status'] ?? '');
         $lineMap['city_name'] = $row['city_name'] ?? '';
+        $lineMap['regional_name'] = $row['regional_name'] ?? '';
         $lineMap['mainfeeder_name'] = $row['mainfeeder_name'] ?? '';
         $lineMap['cluster_code'] = $row['cluster_code'] ?? '';
         $lineMap['homepass_drm'] = $row['length_meter'] ?? '';

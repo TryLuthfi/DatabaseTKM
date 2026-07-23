@@ -492,7 +492,7 @@ if (!empty($summaryRows)) {
                 <div class="upload-dropzone" id="myrep-mainfeeder-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
                     <input type="file" id="myrep-mainfeeder-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
                     <div><strong>Drag & drop file CSV/XLSX mainfeeder/FWA di sini</strong></div>
-                    <div class="text-muted small">Minimal header: mainfeeder_name dan city_name. Isi project_type MAINFEEDER atau FWA; PO dan termin akan diproses jika kolomnya tersedia.</div>
+                    <div class="text-muted small">Minimal header: mainfeeder_name dan city_name. Isi regional_name agar regional tampil di dashboard; PO dan termin akan diproses jika kolomnya tersedia.</div>
                     <div id="myrep-mainfeeder-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
                 </div>
                 <div class="mt-3">

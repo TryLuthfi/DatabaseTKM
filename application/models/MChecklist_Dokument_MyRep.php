@@ -663,6 +663,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
             ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
             : "'MAINFEEDER'";
+        $regionalExpr = $this->mainfeederRegionalFallbackSql('mf', 'mt');
 
         $query = $this->db
             ->select("
@@ -670,7 +671,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mf.mainfeeder_name AS cluster_name,
                 mf.current_status AS status_current,
                 COALESCE(mf.city_name, mt.city_name) AS city_name,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                {$regionalExpr} AS regional_name,
                 mt.id_user_pic_ho,
                 {$projectTypeSql} AS scope_type,
                 g.sow_type,
@@ -712,7 +713,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+            $query->where($this->collatedUpperInSql($regionalExpr, [$regional]), null, false);
         }
 
         $rows = $query
@@ -2142,6 +2143,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
             ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
             : "'MAINFEEDER'";
+        $regionalExpr = $this->mainfeederRegionalFallbackSql('mf', 'mt');
 
         $query = $this->db
             ->select('
@@ -2152,7 +2154,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mf.length_meter,
                 mf.atp_date,
                 COALESCE(mf.city_name, mt.city_name) AS city_name,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                ' . $regionalExpr . ' AS regional_name,
                 COALESCE(mf.province_name, mt.province_name) AS province_name
             ', false)
             ->from('tb_rfs_myrep_mainfeeder mf')
@@ -2171,7 +2173,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+            $query->where($this->collatedUpperInSql($regionalExpr, [$regional]), null, false);
         }
         if ($projectType !== '') {
             if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
@@ -2202,7 +2204,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mf.length_meter,
                 mf.atp_date,
                 COALESCE(mf.city_name, mt.city_name) AS city_name,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                ' . $this->mainfeederRegionalFallbackSql('mf', 'mt') . ' AS regional_name,
                 COALESCE(mf.province_name, mt.province_name) AS province_name,
                 mt.id_user_pic_ho,
                 u_ho.nama_karyawan AS ho_pic_name,
@@ -2255,6 +2257,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getMainfeederGroupRows($mainfeederId)
     {
+        $mainfeederDetail = $this->getMainfeederDetail($mainfeederId);
         $groups = $this->getMainfeederDocumentGroups();
         $items = $this->getMainfeederDocumentItems();
         $packages = $this->getMainfeederPackagesByIds([(int) $mainfeederId]);
@@ -2300,6 +2303,16 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     'id_doc_package_mainfeeder' => $packageId,
                     'id_doc_item_mainfeeder' => (int) $item['id_doc_item_mainfeeder'],
                     'doc_name' => (string) $item['doc_name'],
+                    'verification_team' => (string) ($item['verification_team'] ?? ''),
+                    'verification_by' => $this->resolveVerificationDisplayName(
+                        (string) ($item['verification_team'] ?? ''),
+                        (string) ($mainfeederDetail['ho_pic_name'] ?? ''),
+                        [
+                            'city_name' => (string) ($mainfeederDetail['city_name'] ?? ''),
+                            'province_name' => (string) ($mainfeederDetail['province_name'] ?? ''),
+                            'regional_name' => (string) ($mainfeederDetail['regional_name'] ?? ''),
+                        ]
+                    ),
                     'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
                     'file_name' => (string) ($itemFile['file_name'] ?? ''),
                     'file_path' => (string) ($itemFile['file_path'] ?? ''),
@@ -2309,9 +2322,20 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     'reviewed_at' => $this->normalizeDateTime($itemFile['reviewed_at'] ?? null),
                     'approved_at' => $this->normalizeDateTime($itemFile['approved_at'] ?? null),
                     'astri_submitted_date' => $this->normalizeDate($itemFile['astri_submitted_date'] ?? null),
-                    'astri_status' => (string) ($itemFile['astri_status'] ?? 'NY'),
+                    'astri_status' => $this->getEffectiveAstriStatus(
+                        $itemFile['astri_status'] ?? 'NY',
+                        $mainfeederDetail['atp_date'] ?? null,
+                        $mainfeederDetail['project_type'] ?? 'MAINFEEDER',
+                        $group['sow_type'] ?? '',
+                        $item['doc_name'] ?? ''
+                    ),
                     'astri_status_updated_at' => $this->normalizeDateTime($itemFile['astri_status_updated_at'] ?? null),
                     'astri_remark' => (string) ($itemFile['astri_remark'] ?? ''),
+                    'is_special_project_opname' => $this->isSpecialProjectOpname(
+                        $mainfeederDetail['project_type'] ?? 'MAINFEEDER',
+                        $group['sow_type'] ?? '',
+                        $item['doc_name'] ?? ''
+                    ) ? 1 : 0,
                     'history' => [],
                 ];
             }
@@ -2474,9 +2498,15 @@ class MChecklist_Dokument_MyRep extends CI_Model
     public function getMainfeederFileById($fileId)
     {
         $row = $this->db
-            ->select('f.*, mt.city_name')
+            ->select('
+                f.*,
+                i.doc_name,
+                p.id_mainfeeder,
+                COALESCE(NULLIF(mf.city_name, \'\'), mt.city_name) AS city_name
+            ', false)
             ->from('tb_rfs_myrep_mainfeeder_doc_file f')
             ->join('tb_rfs_myrep_mainfeeder_doc_package p', 'p.id_doc_package_mainfeeder = f.id_doc_package_mainfeeder', 'left')
+            ->join('md_rfs_myrep_mainfeeder_doc_item i', 'i.id_doc_item_mainfeeder = f.id_doc_item_mainfeeder', 'left')
             ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
             ->where('f.id_doc_file_mainfeeder', (int) $fileId)
@@ -2630,7 +2660,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         $this->db
             ->distinct()
-            ->select('COALESCE(mf.regional_name, mt.regional_name) AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
+            ->select($this->mainfeederRegionalFallbackSql('mf', 'mt') . ' AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
             ->where('COALESCE(mf.city_name, mt.city_name) IS NOT NULL', null, false)
@@ -2662,7 +2692,14 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     private function getMainfeederDocumentItems()
     {
-        $rows = $this->db->select('id_doc_item_mainfeeder, id_doc_group_mainfeeder, doc_name, sort_no')
+        $select = 'id_doc_item_mainfeeder, id_doc_group_mainfeeder, doc_name, sort_no';
+        if ($this->db->field_exists('verification_team', 'md_rfs_myrep_mainfeeder_doc_item')) {
+            $select .= ', verification_team';
+        } else {
+            $select .= ", '' AS verification_team";
+        }
+
+        $rows = $this->db->select($select, false)
             ->from('md_rfs_myrep_mainfeeder_doc_item')
             ->where('is_active', 1)
             ->where('is_required', 1)
@@ -3126,6 +3163,28 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }, $normalizedValues);
 
         return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (' . implode(',', $escapedValues) . ')';
+    }
+
+    private function mainfeederRegionalFallbackSql($mainfeederAlias = 'mf', $targetAlias = 'mt')
+    {
+        $mainfeederAlias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $mainfeederAlias) ?: 'mf';
+        $targetAlias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $targetAlias) ?: 'mt';
+        if (
+            !$this->db->table_exists('tb_myrep_pic_mapping_city')
+            || !$this->db->field_exists('regional_name', 'tb_myrep_pic_mapping_city')
+        ) {
+            return "COALESCE(NULLIF({$mainfeederAlias}.regional_name, ''), {$targetAlias}.regional_name)";
+        }
+
+        return "COALESCE(NULLIF({$mainfeederAlias}.regional_name, ''), (
+            SELECT cm_fallback.regional_name
+            FROM tb_myrep_pic_mapping_city cm_fallback
+            WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER({$mainfeederAlias}.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND cm_fallback.regional_name IS NOT NULL
+              AND TRIM(cm_fallback.regional_name) != ''
+            ORDER BY cm_fallback.id DESC
+            LIMIT 1
+        ), {$targetAlias}.regional_name)";
     }
 
     private function isCityAllowedForCurrentUser($cityName)

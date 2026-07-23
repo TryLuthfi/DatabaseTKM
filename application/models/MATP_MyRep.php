@@ -362,6 +362,7 @@ class MATP_MyRep extends CI_Model
         $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
             ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
             : "'MAINFEEDER'";
+        $regionalExpr = $this->mainfeederRegionalFallbackSql('mf', 'mt');
 
         $query = $this->db
             ->select("
@@ -374,7 +375,7 @@ class MATP_MyRep extends CI_Model
                 mf.email_atp_date,
                 mf.status_atp,
                 COALESCE(mf.city_name, mt.city_name) AS city_name,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                {$regionalExpr} AS regional_name,
                 COALESCE(mf.province_name, mt.province_name) AS province_name,
                 COALESCE(mf.chief, mt.chief) AS chief,
                 COALESCE(mf.rpm, mt.rpm) AS rpm,
@@ -395,11 +396,11 @@ class MATP_MyRep extends CI_Model
         }
 
         if ($city !== '') {
-            $query->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
+            $query->where($this->collatedUpperInSql('COALESCE(mf.city_name, mt.city_name)', [$city]), null, false);
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+            $query->where($this->collatedUpperInSql($regionalExpr, [$regional]), null, false);
         }
 
         $rows = $query
@@ -503,7 +504,7 @@ class MATP_MyRep extends CI_Model
 
         return $this->db
             ->distinct()
-            ->select('COALESCE(mf.regional_name, mt.regional_name) AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
+            ->select($this->mainfeederRegionalFallbackSql('mf', 'mt') . ' AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
             ->where('COALESCE(mf.city_name, mt.city_name) IS NOT NULL', null, false)
@@ -512,6 +513,45 @@ class MATP_MyRep extends CI_Model
             ->order_by('city_name', 'ASC')
             ->get()
             ->result_array();
+    }
+
+    private function collatedUpperInSql($expression, array $values)
+    {
+        $normalizedValues = array_values(array_unique(array_filter(array_map(static function ($value) {
+            return strtoupper(trim((string) $value));
+        }, $values))));
+
+        if (empty($normalizedValues)) {
+            return '1 = 0';
+        }
+
+        $escapedValues = array_map(function ($value) {
+            return 'CONVERT(' . $this->db->escape($value) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+        }, $normalizedValues);
+
+        return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (' . implode(',', $escapedValues) . ')';
+    }
+
+    private function mainfeederRegionalFallbackSql($mainfeederAlias = 'mf', $targetAlias = 'mt')
+    {
+        $mainfeederAlias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $mainfeederAlias) ?: 'mf';
+        $targetAlias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $targetAlias) ?: 'mt';
+        if (
+            !$this->db->table_exists('tb_myrep_pic_mapping_city')
+            || !$this->db->field_exists('regional_name', 'tb_myrep_pic_mapping_city')
+        ) {
+            return "COALESCE(NULLIF({$mainfeederAlias}.regional_name, ''), {$targetAlias}.regional_name)";
+        }
+
+        return "COALESCE(NULLIF({$mainfeederAlias}.regional_name, ''), (
+            SELECT cm_fallback.regional_name
+            FROM tb_myrep_pic_mapping_city cm_fallback
+            WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER({$mainfeederAlias}.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND cm_fallback.regional_name IS NOT NULL
+              AND TRIM(cm_fallback.regional_name) != ''
+            ORDER BY cm_fallback.id DESC
+            LIMIT 1
+        ), {$targetAlias}.regional_name)";
     }
 
     private function normalizeDate($date)

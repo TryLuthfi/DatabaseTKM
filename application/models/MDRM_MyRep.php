@@ -276,6 +276,7 @@ class MDRM_MyRep extends CI_Model
         $projectTypeSql = $this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')
             ? "COALESCE(NULLIF(UPPER(TRIM(mf.project_type)), ''), 'MAINFEEDER')"
             : "'MAINFEEDER'";
+        $regionalExpr = $this->mainfeederRegionalFallbackSql('mf', 'mt');
 
         $this->db
             ->select("
@@ -284,7 +285,7 @@ class MDRM_MyRep extends CI_Model
                 {$projectTypeSql} AS project_type,
                 mf.mainfeeder_name AS cluster_name,
                 mf.cluster_code,
-                COALESCE(mf.regional_name, mt.regional_name) AS regional_name,
+                {$regionalExpr} AS regional_name,
                 COALESCE(mf.city_name, mt.city_name) AS city_name,
                 mf.current_status AS status_current,
                 mf.current_status AS stage_atp_status,
@@ -323,7 +324,7 @@ class MDRM_MyRep extends CI_Model
             $this->db->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
         }
         if ($regional !== '') {
-            $this->db->where('UPPER(COALESCE(mf.regional_name, mt.regional_name)) = ' . $this->db->escape(strtoupper($regional)), null, false);
+            $this->db->where($this->collatedUpperInSql($regionalExpr, [$regional]), null, false);
         }
         if (!empty($cityList)) {
             $normalizedCities = array_values(array_unique(array_filter(array_map(static function ($value) {
@@ -338,7 +339,7 @@ class MDRM_MyRep extends CI_Model
                 return strtoupper(trim((string) $value));
             }, $regionalList))));
             if (!empty($normalizedRegionals)) {
-                $this->db->where($this->collatedUpperInSql('COALESCE(mf.regional_name, mt.regional_name)', $normalizedRegionals), null, false);
+                $this->db->where($this->collatedUpperInSql($regionalExpr, $normalizedRegionals), null, false);
             }
         }
         if ($drmDateStart !== '') {
@@ -423,7 +424,7 @@ class MDRM_MyRep extends CI_Model
 
         $this->db
             ->distinct()
-            ->select('COALESCE(mf.regional_name, mt.regional_name) AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
+            ->select($this->mainfeederRegionalFallbackSql('mf', 'mt') . ' AS regional_name, COALESCE(mf.city_name, mt.city_name) AS city_name', false)
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
             ->where('COALESCE(mf.city_name, mt.city_name) IS NOT NULL', null, false)
@@ -2049,6 +2050,28 @@ class MDRM_MyRep extends CI_Model
         }, $normalizedValues);
 
         return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (' . implode(',', $escapedValues) . ')';
+    }
+
+    private function mainfeederRegionalFallbackSql($mainfeederAlias = 'mf', $targetAlias = 'mt')
+    {
+        $mainfeederAlias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $mainfeederAlias) ?: 'mf';
+        $targetAlias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $targetAlias) ?: 'mt';
+        if (
+            !$this->db->table_exists('tb_myrep_pic_mapping_city')
+            || !$this->db->field_exists('regional_name', 'tb_myrep_pic_mapping_city')
+        ) {
+            return "COALESCE(NULLIF({$mainfeederAlias}.regional_name, ''), {$targetAlias}.regional_name)";
+        }
+
+        return "COALESCE(NULLIF({$mainfeederAlias}.regional_name, ''), (
+            SELECT cm_fallback.regional_name
+            FROM tb_myrep_pic_mapping_city cm_fallback
+            WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER({$mainfeederAlias}.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND cm_fallback.regional_name IS NOT NULL
+              AND TRIM(cm_fallback.regional_name) != ''
+            ORDER BY cm_fallback.id DESC
+            LIMIT 1
+        ), {$targetAlias}.regional_name)";
     }
 
     private function isCityAllowedForCurrentUser($cityName)

@@ -323,7 +323,7 @@ class MPO_MyRep extends CI_Model
 
         if ($this->hasMainfeederPoSupport()) {
             $this->db
-                ->select('
+                ->select("
                     p.id_po_header,
                     p.id_myrep_cluster,
                     p.id_mainfeeder,
@@ -336,9 +336,9 @@ class MPO_MyRep extends CI_Model
                     p.po_version_label,
                     mf.mainfeeder_name AS cluster_name,
                     mf.city_name,
-                    mf.regional_name,
+                    " . $this->mainfeederRegionalFallbackSql('mf') . " AS regional_name,
                     mf.current_status AS status_current
-                ')
+                ", false)
                 ->from('tb_myrep_po_header p')
                 ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'inner')
                 ->where("UPPER(TRIM(COALESCE(p.po_type, ''))) IN ('MAINFEEDER','FWA')", null, false);
@@ -348,7 +348,7 @@ class MPO_MyRep extends CI_Model
             }
 
             if ($city !== '') {
-                $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+                $this->db->where($this->collatedUpperEquals('mf.city_name', $city), null, false);
             }
 
             $rows = array_merge($rows, $this->db
@@ -2455,7 +2455,7 @@ class MPO_MyRep extends CI_Model
             }
 
             if ($city !== '') {
-                $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+                $this->db->where($this->collatedUpperEquals('mf.city_name', $city), null, false);
             }
             if ($status !== '') {
                 $this->db->where('UPPER(p.status_po)', strtoupper($status));
@@ -2594,7 +2594,7 @@ class MPO_MyRep extends CI_Model
             }
 
             $this->db
-                ->select('
+                ->select("
                     p.id_po_header,
                     p.po_number,
                     p.po_date,
@@ -2606,8 +2606,8 @@ class MPO_MyRep extends CI_Model
                     p.id_mainfeeder,
                     mf.mainfeeder_name AS cluster_name,
                     mf.city_name,
-                    mf.regional_name
-                ')
+                    " . $this->mainfeederRegionalFallbackSql('mf') . " AS regional_name
+                ", false)
                 ->from('tb_myrep_po_header p')
                 ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'inner')
                 ->where('UPPER(TRIM(COALESCE(p.po_type, \'\'))) = ' . $this->db->escape($poType), null, false);
@@ -2617,7 +2617,7 @@ class MPO_MyRep extends CI_Model
             }
 
             if ($city !== '') {
-                $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+                $this->db->where($this->collatedUpperEquals('mf.city_name', $city), null, false);
             }
             if ($status !== '') {
                 $this->db->where('UPPER(p.status_po)', strtoupper($status));
@@ -3303,7 +3303,7 @@ class MPO_MyRep extends CI_Model
                 p.id_mainfeeder,
                 mf.mainfeeder_name AS cluster_name,
                 mf.city_name,
-                mf.regional_name,
+                " . $this->mainfeederRegionalFallbackSql('mf') . " AS regional_name,
                 p.id_po_header,
                 p.po_type,
                 p.po_category,
@@ -3330,7 +3330,7 @@ class MPO_MyRep extends CI_Model
             return [];
         }
         if ($city !== '') {
-            $this->db->where('UPPER(mf.city_name)', strtoupper($city));
+            $this->db->where($this->collatedUpperEquals('mf.city_name', $city), null, false);
         }
         if (in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
             $this->db->where('UPPER(TRIM(COALESCE(p.po_type, \'\'))) = ' . $this->db->escape($poType), null, false);
@@ -3785,7 +3785,7 @@ class MPO_MyRep extends CI_Model
             ' . ($hasMainfeederPo ? 'p.id_mainfeeder,' : 'NULL AS id_mainfeeder,') . '
             ' . ($hasMainfeederPo ? 'COALESCE(c.cluster_name, mf.mainfeeder_name)' : 'c.cluster_name') . ' AS cluster_name,
             ' . ($hasMainfeederPo ? 'COALESCE(c.city_name, mf.city_name)' : 'c.city_name') . ' AS city_name,
-            ' . ($hasMainfeederPo ? 'COALESCE(c.regional_name, mf.regional_name)' : 'c.regional_name') . ' AS regional_name
+            ' . ($hasMainfeederPo ? 'COALESCE(c.regional_name, ' . $this->mainfeederRegionalFallbackSql('mf') . ')' : 'c.regional_name') . ' AS regional_name
         ';
 
         $this->db
@@ -4396,6 +4396,33 @@ class MPO_MyRep extends CI_Model
         return $this->db->table_exists('tb_rfs_myrep_mainfeeder')
             && $this->db->field_exists('id_mainfeeder', 'tb_rfs_myrep_mainfeeder')
             && $this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header');
+    }
+
+    private function collatedUpperEquals($expression, $value)
+    {
+        return 'CONVERT(UPPER(' . $expression . ') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(' . $this->db->escape(strtoupper(trim((string) $value))) . ' USING utf8mb4) COLLATE utf8mb4_unicode_ci';
+    }
+
+    private function mainfeederRegionalFallbackSql($alias = 'mf')
+    {
+        $alias = preg_replace('/[^A-Za-z0-9_]/', '', (string) $alias);
+        $alias = $alias !== '' ? $alias : 'mf';
+        if (
+            !$this->db->table_exists('tb_myrep_pic_mapping_city')
+            || !$this->db->field_exists('regional_name', 'tb_myrep_pic_mapping_city')
+        ) {
+            return "NULLIF({$alias}.regional_name, '')";
+        }
+
+        return "COALESCE(NULLIF({$alias}.regional_name, ''), (
+            SELECT cm_fallback.regional_name
+            FROM tb_myrep_pic_mapping_city cm_fallback
+            WHERE CONVERT(UPPER(cm_fallback.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(UPPER({$alias}.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+              AND cm_fallback.regional_name IS NOT NULL
+              AND TRIM(cm_fallback.regional_name) != ''
+            ORDER BY cm_fallback.id DESC
+            LIMIT 1
+        ))";
     }
 
     private function carryForwardTerminProgress($clusterId, $poType, $poNumber, $newPoHeaderId, $userId = 0)
