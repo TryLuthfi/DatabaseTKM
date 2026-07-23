@@ -1116,6 +1116,47 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
+    public function canUserEditComplyPhotoGroup($clusterId, $seedPhotoId, $userId)
+    {
+        $clusterId = (int) $clusterId;
+        $seedPhotoId = (int) $seedPhotoId;
+        $userId = (int) $userId;
+        if ($clusterId <= 0 || $seedPhotoId <= 0 || $userId <= 0 || !$this->tablesReady()) {
+            return false;
+        }
+
+        $seed = $this->getProgressPhotoById($seedPhotoId);
+        if (empty($seed) || (int) ($seed['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            return false;
+        }
+        if (strtoupper(trim((string) ($seed['photo_category'] ?? 'HARIAN'))) !== 'COMPLY') {
+            return false;
+        }
+
+        $oldScopeType = $this->detectComplyScope($seed['remark_progress'] ?? '', $seed['caption'] ?? '');
+        $candidateRows = $this->db
+            ->select('photo.uploaded_by, photo.caption, progress.remark_progress')
+            ->from('tb_myrep_boq_progress_photo photo')
+            ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+            ->where('progress.id_myrep_cluster', $clusterId)
+            ->where('progress.id_boq_baseline_item', (int) ($seed['id_boq_baseline_item'] ?? 0))
+            ->where("UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY'", null, false)
+            ->where('photo.comply_label', (string) ($seed['comply_label'] ?? ''))
+            ->get()
+            ->result_array();
+
+        foreach ($candidateRows as $row) {
+            if ((int) ($row['uploaded_by'] ?? 0) !== $userId) {
+                continue;
+            }
+            if ($this->detectComplyScope($row['remark_progress'] ?? '', $row['caption'] ?? '') === $oldScopeType) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function updateProgressPhotoReviewStatus($photoId, $statusPhoto, $reviewedBy, $reviewRemark = '')
     {
         $photo = $this->getProgressPhotoById($photoId);

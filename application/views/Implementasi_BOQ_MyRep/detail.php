@@ -7,6 +7,7 @@ $canApprovalDailyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPer
 $canApprovalComplyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_FOTO_COMPLY') : true;
 $canSavePhotoRotation = $canTambah;
 $currentUserId = (int) $this->session->userdata('id_user');
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 $implLazyPhotoPlaceholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="110" viewBox="0 0 160 110"%3E%3Crect width="160" height="110" fill="%23eef2f7"/%3E%3Cpath d="M30 78l26-28 19 19 14-15 41 24H30z" fill="%23cbd5e1"/%3E%3Ccircle cx="112" cy="35" r="12" fill="%23dbe3ef"/%3E%3C/svg%3E';
 
 if (!function_exists('implHistoryNumber')) {
@@ -2846,9 +2847,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         <th>Dokumentasi</th>
                                                         <th style="width:220px;">Remarks</th>
                                                         <th style="width:130px;">Tgl Upload</th>
-                                                        <?php if ($canTambah): ?>
-                                                            <th style="width:90px;">Aksi</th>
-                                                        <?php endif; ?>
+                                                        <th style="width:90px;">Aksi</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -2871,6 +2870,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             return (int) ($photoRow['id_progress_photo'] ?? 0);
                                                         }, (array) ($galleryItem['photos'] ?? []))));
                                                         $rowOrderPhotoId = (int) ($rowPhotoIds[0] ?? 0);
+                                                        $rowUploadedByCurrentUser = false;
+                                                        foreach ((array) ($galleryItem['photos'] ?? []) as $photoRowForAccess) {
+                                                            if ((int) ($photoRowForAccess['uploaded_by'] ?? 0) === $currentUserId) {
+                                                                $rowUploadedByCurrentUser = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                        $canEditThisComplyRow = $isSuperAdmin || $rowUploadedByCurrentUser;
                                                         ?>
                                                         <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-gallery-scope="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
                                                             <td class="impl-gallery-table__no">
@@ -2944,8 +2951,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             <td class="impl-gallery-table__date">
                                                                 <?= !empty($dates) ? nl2br(htmlspecialchars(implode("\n", $dates))) : '-' ?>
                                                             </td>
-                                                            <?php if ($canTambah): ?>
-                                                                <td class="impl-gallery-table__item">
+                                                            <td class="impl-gallery-table__item">
+                                                                <?php if ($canEditThisComplyRow): ?>
                                                                     <button
                                                                         type="button"
                                                                         class="btn btn-sm btn-outline-primary js-open-comply-row-edit"
@@ -2957,8 +2964,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         data-comply-label="<?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? ''), ENT_QUOTES) ?>">
                                                                         Edit
                                                                     </button>
-                                                                </td>
-                                                            <?php endif; ?>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted small">-</span>
+                                                                <?php endif; ?>
+                                                            </td>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
@@ -3153,7 +3162,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 </div>
 <?php endif; ?>
 
-<?php if ($canTambah): ?>
 <div class="modal fade" id="modal-comply-row-edit" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -3198,6 +3206,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     </div>
 </div>
 
+<?php if ($canTambah): ?>
 <div class="modal fade impl-daily-modal" id="modal-comply-builder" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">

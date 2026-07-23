@@ -18,7 +18,6 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'saveDailyActivity' => 'APPROVAL_DAILY',
                 'rotateProgressPhoto' => 'TAMBAH',
                 'saveComplyPhotoOrder' => 'TAMBAH',
-                'updateComplyPhotoGroup' => 'TAMBAH',
             ]);
         }
     }
@@ -1307,9 +1306,17 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $scopeType = strtoupper(trim((string) $this->input->post('scope_type'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
         $complyLabel = trim((string) $this->input->post('comply_label'));
         $redirectUrl = 'Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane';
+        $userId = (int) $this->session->userdata('id_user');
+        $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 
         if ($clusterId <= 0 || $seedPhotoId <= 0 || $baselineItemId <= 0 || $complyLabel === '') {
             $this->session->set_flashdata('error', 'Data edit foto comply tidak valid.');
+            redirect($redirectUrl);
+            return;
+        }
+
+        if (!$isSuperAdmin && !$this->MImplementasi_BOQ_MyRep->canUserEditComplyPhotoGroup($clusterId, $seedPhotoId, $userId)) {
+            $this->session->set_flashdata('error', 'Edit foto comply hanya bisa dilakukan oleh uploader foto atau Super Admin.');
             redirect($redirectUrl);
             return;
         }
@@ -1334,7 +1341,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $baselineItemId,
             $scopeType,
             $complyLabel,
-            (int) $this->session->userdata('id_user')
+            $userId
         );
 
         $this->session->set_flashdata(
