@@ -733,6 +733,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
                 progressPercent.text('100%');
                 if (response && response.status) {
                     $('#modalUploadMainfeeder').modal('hide');
+                    window.setTimeout(cleanupMainfeederModalBackdrop, 150);
                     form.reset();
                     refreshMainfeederChecklistStatus(response.message || 'Dokumen mainfeeder berhasil diupload.');
                     return;
@@ -788,6 +789,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
                 progressPercent.text('100%');
                 if (response && response.status) {
                     $('.modal.show').modal('hide');
+                    window.setTimeout(cleanupMainfeederModalBackdrop, 150);
                     form.reset();
                     refreshMainfeederChecklistStatus(response.message || 'Dokumen berhasil disubmit.');
                     return;
@@ -843,6 +845,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
         }).done(function(response) {
             if (response && response.status) {
                 $('.modal.show').modal('hide');
+                window.setTimeout(cleanupMainfeederModalBackdrop, 150);
                 refreshMainfeederChecklistStatus(response.message || 'Data berhasil diperbarui.');
                 return;
             }
@@ -920,11 +923,18 @@ $mainfeederProgressPercent = checklist_doc_percent(
         }
     }
 
+    function cleanupMainfeederModalBackdrop() {
+        $('body').removeClass('modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    }
+
     function refreshMainfeederChecklistStatus(message) {
         var container = $('#mf-checklist-live-content');
+        cleanupMainfeederModalBackdrop();
         container.css('opacity', 0.55);
         container.load(window.location.href + ' #mf-checklist-live-content > *', function(responseText, status) {
             container.css('opacity', 1);
+            cleanupMainfeederModalBackdrop();
             $('#mf-upload-submit').prop('disabled', false).text('Upload');
             $('#mf-upload-progress-panel').hide();
             $('#mf-upload-progress-bar').removeClass('success').addClass('warning').css('width', '0%');

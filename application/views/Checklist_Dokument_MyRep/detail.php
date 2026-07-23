@@ -1881,10 +1881,17 @@ $clusterProgressPercent = checklist_doc_percent(
         });
     }
 
+    function cleanupChecklistModalBackdrop() {
+        $('body').removeClass('modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    }
+
     function handleDetailAjaxResponse(response, successFallbackMessage, scrollTop, onFailure) {
         if (response && response.status) {
             $('.modal.show').modal('hide');
+            window.setTimeout(cleanupChecklistModalBackdrop, 150);
             alert(response.message || successFallbackMessage || 'Data berhasil diperbarui.');
+            cleanupChecklistModalBackdrop();
             softRefreshDetail(response.redirect_url || window.location.href, scrollTop);
             return true;
         }
