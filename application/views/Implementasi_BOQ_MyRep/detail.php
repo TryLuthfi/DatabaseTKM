@@ -551,11 +551,16 @@ foreach ($compareRows as $row) {
     $itemHistoryRows = $historyMap[$baselineItemId] ?? [];
     foreach ($itemHistoryRows as $entry) {
         foreach (($entry['photos'] ?? []) as $photo) {
+            $photoScope = implDetectHistoryScope(
+                $entry['scope_type'] ?? '',
+                trim((string) (($photo['caption'] ?? '') . ' ' . ($entry['remark_progress'] ?? '')))
+            );
             $isPoleExtComply = strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) === 'COMPLY'
                 && implIsPoleExtComplyPhoto($photo);
             $galleryRows[] = [
                 'item_name' => $isPoleExtComply ? 'Tiang Eksisting' : (string) ($row['item_name'] ?? '-'),
                 'item_type' => $isPoleExtComply ? 'TIANG EKSISTING' : (string) ($row['item_type'] ?? '-'),
+                'scope_type' => $photoScope,
                 'photo_type' => (string) ($row['photo_type'] ?? ''),
                 'progress_date' => (string) ($entry['progress_date'] ?? '-'),
                 'remark_progress' => (string) ($entry['remark_progress'] ?? ''),
@@ -661,7 +666,9 @@ foreach ($galleryRows as $galleryRow) {
 
     $galleryCategory = strtoupper(trim((string) ($galleryRow['photo_category'] ?? 'HARIAN')));
     $galleryBucket = $galleryCategory === 'COMPLY' ? 'comply' : 'implementation';
-    $galleryKey = $galleryType . '||' . $galleryCategory . '||' . (string) ($galleryRow['item_name'] ?? '-') . '||' . (string) ($galleryRow['comply_label'] ?? '');
+    $galleryScope = implDetectHistoryScope($galleryRow['scope_type'] ?? '', ($galleryRow['caption'] ?? '') . ' ' . ($galleryRow['remark_progress'] ?? ''));
+    $galleryKeyScope = $galleryBucket === 'comply' ? $galleryScope : '';
+    $galleryKey = $galleryType . '||' . $galleryCategory . '||' . $galleryKeyScope . '||' . (string) ($galleryRow['item_name'] ?? '-') . '||' . (string) ($galleryRow['comply_label'] ?? '');
     $targetGroups = $galleryBucket === 'comply' ? $complyGalleryGroups : $implementationGalleryGroups;
 
     if (!isset($targetGroups[$galleryType])) {
@@ -672,6 +679,7 @@ foreach ($galleryRows as $galleryRow) {
         $targetGroups[$galleryType][$galleryKey] = [
             'item_name' => (string) ($galleryRow['item_name'] ?? '-'),
             'item_type' => $galleryType,
+            'scope_type' => $galleryScope,
             'photo_category' => $galleryCategory,
             'photo_type' => (string) ($galleryRow['photo_type'] ?? ''),
             'comply_label' => (string) ($galleryRow['comply_label'] ?? ''),
@@ -698,6 +706,7 @@ foreach ($galleryRows as $galleryRow) {
         'file_name' => (string) ($galleryRow['file_name'] ?? 'Foto Progress'),
         'file_path' => (string) ($galleryRow['file_path'] ?? ''),
         'caption' => (string) ($galleryRow['caption'] ?? ''),
+        'scope_type' => $galleryScope,
         'photo_category' => $galleryCategory,
         'comply_label' => (string) ($galleryRow['comply_label'] ?? ''),
         'status_photo' => (string) ($galleryRow['status_photo'] ?? ''),
@@ -2789,9 +2798,17 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
+                                    <div class="impl-gallery-filter__group">
+                                        <label for="impl-comply-scope-filter">Scope</label>
+                                        <select class="form-control form-control-sm" id="impl-comply-scope-filter">
+                                            <option value="">Semua Scope</option>
+                                            <option value="CLUSTER">Cluster</option>
+                                            <option value="SUBFEEDER">Subfeeder</option>
+                                        </select>
+                                    </div>
                                     <div class="impl-gallery-filter__search">
                                         <label for="impl-comply-search-filter">Search Nama</label>
-                                        <input type="search" class="form-control form-control-sm" id="impl-comply-search-filter" placeholder="Cari item, nama/nomor, remark, status...">
+                                        <input type="search" class="form-control form-control-sm" id="impl-comply-search-filter" placeholder="Cari item, scope, nama/nomor, remark, status...">
                                     </div>
                                 </div>
                                 <div class="impl-gallery-empty d-none" id="impl-comply-filter-empty">Tidak ada foto comply sesuai filter.</div>
@@ -2804,6 +2821,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                     <tr>
                                                         <th style="width:60px;">No</th>
                                                         <th style="width:140px;">Item</th>
+                                                        <th style="width:120px;">Scope</th>
                                                         <th style="width:180px;">Nama / Nomor</th>
                                                         <th>Dokumentasi</th>
                                                         <th style="width:220px;">Remarks</th>
@@ -2817,8 +2835,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         $dates = array_values(array_unique($galleryItem['dates']));
                                                         sort($dates);
                                                         $remarks = array_values(array_unique($galleryItem['remarks']));
+                                                        $galleryScope = implDetectHistoryScope($galleryItem['scope_type'] ?? '', implode(' ', $remarks));
                                                         $searchText = implode(' ', [
                                                             (string) $galleryType,
+                                                            (string) $galleryScope,
                                                             (string) ($galleryItem['item_name'] ?? ''),
                                                             (string) ($galleryItem['comply_label'] ?? ''),
                                                             implode(' ', $remarks),
@@ -2829,7 +2849,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         }, (array) ($galleryItem['photos'] ?? []))));
                                                         $rowOrderPhotoId = (int) ($rowPhotoIds[0] ?? 0);
                                                         ?>
-                                                        <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
+                                                        <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-gallery-scope="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
                                                             <td class="impl-gallery-table__no">
                                                                 <div class="impl-row-order-tools">
                                                                     <button type="button" class="impl-row-order-btn js-comply-row-move-up" title="Geser ke atas" aria-label="Geser row ke atas">
@@ -2845,9 +2865,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                 </div>
                                                             </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
+                                                            <td class="impl-gallery-table__item">
+                                                                <span class="badge badge-<?= $galleryScope === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars(ucfirst(strtolower($galleryScope))) ?></span>
+                                                            </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
                                                             <td class="impl-gallery-table__photo">
-                                                                <div class="impl-gallery-photo-grid" data-lightbox-group="comply-gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . ($galleryItem['comply_label'] ?? '') . '|' . $galleryIndex)) ?>">
+                                                                <div class="impl-gallery-photo-grid" data-lightbox-group="comply-gallery-<?= md5((string) (($galleryType ?? '') . '|' . $galleryScope . '|' . ($galleryItem['item_name'] ?? '') . '|' . ($galleryItem['comply_label'] ?? '') . '|' . $galleryIndex)) ?>">
                                                                     <?php foreach (($galleryItem['photos'] ?? []) as $photo): ?>
                                                                         <?php
                                                                         $photoStatus = strtoupper(trim((string) ($photo['status_photo'] ?? 'UPLOADED')));
@@ -3849,6 +3872,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lastMovedComplyRow = null;
         var complyCategoryFilter = document.getElementById('impl-comply-category-filter');
         var complyKindFilter = document.getElementById('impl-comply-kind-filter');
+        var complyScopeFilter = document.getElementById('impl-comply-scope-filter');
         var complySearchFilter = document.getElementById('impl-comply-search-filter');
         var complyFilterEmpty = document.getElementById('impl-comply-filter-empty');
 
@@ -4312,6 +4336,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         function applyComplyGalleryFilter() {
             var selectedCategory = complyCategoryFilter ? normalizeFilterText(complyCategoryFilter.value) : '';
             var selectedKind = complyKindFilter ? normalizeFilterText(complyKindFilter.value) : '';
+            var selectedScope = complyScopeFilter ? normalizeFilterText(complyScopeFilter.value) : '';
             var keyword = complySearchFilter ? normalizeFilterText(complySearchFilter.value) : '';
             var sections = document.querySelectorAll('.js-comply-gallery-section');
             var visibleSectionCount = 0;
@@ -4326,10 +4351,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
                 Array.prototype.forEach.call(rows, function (row) {
                     var rowKind = normalizeFilterText(row.getAttribute('data-gallery-kind') || '');
+                    var rowScope = normalizeFilterText(row.getAttribute('data-gallery-scope') || '');
                     var searchable = normalizeFilterText(row.getAttribute('data-search') || row.textContent || '');
                     var kindMatch = selectedKind === '' || rowKind === selectedKind;
+                    var scopeMatch = selectedScope === '' || rowScope === selectedScope;
                     var keywordMatch = keyword === '' || searchable.indexOf(keyword) !== -1;
-                    var visible = categoryMatch && kindMatch && keywordMatch;
+                    var visible = categoryMatch && kindMatch && scopeMatch && keywordMatch;
                     row.classList.toggle('d-none', !visible);
                     if (visible) {
                         visibleRowCount++;
@@ -5671,6 +5698,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
         if (complyKindFilter) {
             complyKindFilter.addEventListener('change', applyComplyGalleryFilter);
+        }
+
+        if (complyScopeFilter) {
+            complyScopeFilter.addEventListener('change', applyComplyGalleryFilter);
         }
 
         if (complySearchFilter) {

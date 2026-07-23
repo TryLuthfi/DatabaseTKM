@@ -1364,6 +1364,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         foreach ($entries as $entryIndex => $entry) {
             $baselineItemId = (int) ($entry['baseline_item_id'] ?? 0);
             $complyLabel = trim((string) ($entry['comply_label'] ?? ''));
+            $scopeType = strtoupper(trim((string) ($entry['scope_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
             if ($baselineItemId <= 0 || $complyLabel === '') {
                 continue;
             }
@@ -1402,7 +1403,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'progress_date' => $progressDate,
                 'qty_progress' => 0,
                 'status_progress' => 'ON PROGRESS',
-                'remark_progress' => 'Upload Foto Comply - ' . $complyLabel,
+                'remark_progress' => 'Upload Foto Comply (' . $scopeType . ') - ' . $complyLabel,
                 'created_by' => (int) $this->session->userdata('id_user'),
                 'updated_by' => (int) $this->session->userdata('id_user'),
             ], $photoRows);
