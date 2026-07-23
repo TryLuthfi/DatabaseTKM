@@ -2955,9 +2955,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                 <?php if ($canEditThisComplyRow): ?>
                                                                     <button
                                                                         type="button"
-                                                                        class="btn btn-sm btn-outline-primary js-open-comply-row-edit"
-                                                                        data-toggle="modal"
-                                                                        data-target="#modal-comply-row-edit"
+                                                                        class="btn btn-sm btn-primary js-open-comply-row-edit"
                                                                         data-seed-photo-id="<?= $rowOrderPhotoId ?>"
                                                                         data-baseline-item-id="<?= (int) ($galleryItem['id_boq_baseline_item'] ?? 0) ?>"
                                                                         data-scope-type="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>"
@@ -5514,6 +5512,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
                 var editComplyRowButton = event.target.closest('.js-open-comply-row-edit');
                 if (editComplyRowButton) {
+                    event.preventDefault();
                     if (complyEditSeedInput) {
                         complyEditSeedInput.value = editComplyRowButton.getAttribute('data-seed-photo-id') || '0';
                     }
@@ -5525,6 +5524,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     }
                     if (complyEditLabelInput) {
                         complyEditLabelInput.value = editComplyRowButton.getAttribute('data-comply-label') || '';
+                    }
+                    if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+                        window.jQuery('#modal-comply-row-edit').modal('show');
                     }
                     return;
                 }
