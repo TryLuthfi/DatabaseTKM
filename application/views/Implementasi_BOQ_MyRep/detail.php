@@ -134,6 +134,23 @@ if (!function_exists('implDetectHistoryScope')) {
     }
 }
 
+if (!function_exists('implDetectComplyScope')) {
+    function implDetectComplyScope($scopeValue = '', $remarkValue = '', $captionValue = '')
+    {
+        $scope = strtoupper(trim((string) $scopeValue));
+        if ($scope === 'CLUSTER' || $scope === 'SUBFEEDER') {
+            return $scope;
+        }
+
+        $remark = strtoupper(trim((string) $remarkValue));
+        if (preg_match('/UPLOAD\s+FOTO\s+COMPLY\s*\((CLUSTER|SUBFEEDER)\)/', $remark, $matches)) {
+            return (string) $matches[1];
+        }
+
+        return implDetectHistoryScope('', trim((string) $remarkValue . ' ' . (string) $captionValue));
+    }
+}
+
 if (!function_exists('implBuildHistoryRowsByScope')) {
     function implBuildHistoryRowsByScope($historyDateRowsByScope, $historyTypeOrder, $nonBoqLabelOrder, $initialDate)
     {
@@ -551,13 +568,15 @@ foreach ($compareRows as $row) {
     $itemHistoryRows = $historyMap[$baselineItemId] ?? [];
     foreach ($itemHistoryRows as $entry) {
         foreach (($entry['photos'] ?? []) as $photo) {
-            $photoScope = implDetectHistoryScope(
+            $photoScope = implDetectComplyScope(
                 $entry['scope_type'] ?? '',
-                trim((string) (($photo['caption'] ?? '') . ' ' . ($entry['remark_progress'] ?? '')))
+                $entry['remark_progress'] ?? '',
+                $photo['caption'] ?? ''
             );
             $isPoleExtComply = strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) === 'COMPLY'
                 && implIsPoleExtComplyPhoto($photo);
             $galleryRows[] = [
+                'id_boq_baseline_item' => (int) ($row['id_boq_baseline_item'] ?? 0),
                 'item_name' => $isPoleExtComply ? 'Tiang Eksisting' : (string) ($row['item_name'] ?? '-'),
                 'item_type' => $isPoleExtComply ? 'TIANG EKSISTING' : (string) ($row['item_type'] ?? '-'),
                 'scope_type' => $photoScope,
@@ -666,7 +685,7 @@ foreach ($galleryRows as $galleryRow) {
 
     $galleryCategory = strtoupper(trim((string) ($galleryRow['photo_category'] ?? 'HARIAN')));
     $galleryBucket = $galleryCategory === 'COMPLY' ? 'comply' : 'implementation';
-    $galleryScope = implDetectHistoryScope($galleryRow['scope_type'] ?? '', ($galleryRow['caption'] ?? '') . ' ' . ($galleryRow['remark_progress'] ?? ''));
+    $galleryScope = implDetectComplyScope($galleryRow['scope_type'] ?? '', $galleryRow['remark_progress'] ?? '', $galleryRow['caption'] ?? '');
     $galleryKeyScope = $galleryBucket === 'comply' ? $galleryScope : '';
     $galleryKey = $galleryType . '||' . $galleryCategory . '||' . $galleryKeyScope . '||' . (string) ($galleryRow['item_name'] ?? '-') . '||' . (string) ($galleryRow['comply_label'] ?? '');
     $targetGroups = $galleryBucket === 'comply' ? $complyGalleryGroups : $implementationGalleryGroups;
@@ -677,6 +696,7 @@ foreach ($galleryRows as $galleryRow) {
 
     if (!isset($targetGroups[$galleryType][$galleryKey])) {
         $targetGroups[$galleryType][$galleryKey] = [
+            'id_boq_baseline_item' => (int) ($galleryRow['id_boq_baseline_item'] ?? 0),
             'item_name' => (string) ($galleryRow['item_name'] ?? '-'),
             'item_type' => $galleryType,
             'scope_type' => $galleryScope,
@@ -2826,6 +2846,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         <th>Dokumentasi</th>
                                                         <th style="width:220px;">Remarks</th>
                                                         <th style="width:130px;">Tgl Upload</th>
+                                                        <?php if ($canTambah): ?>
+                                                            <th style="width:90px;">Aksi</th>
+                                                        <?php endif; ?>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -2835,7 +2858,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         $dates = array_values(array_unique($galleryItem['dates']));
                                                         sort($dates);
                                                         $remarks = array_values(array_unique($galleryItem['remarks']));
-                                                        $galleryScope = implDetectHistoryScope($galleryItem['scope_type'] ?? '', implode(' ', $remarks));
+                                                        $galleryScope = implDetectComplyScope($galleryItem['scope_type'] ?? '', implode(' ', $remarks), '');
                                                         $searchText = implode(' ', [
                                                             (string) $galleryType,
                                                             (string) $galleryScope,
@@ -2921,6 +2944,21 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             <td class="impl-gallery-table__date">
                                                                 <?= !empty($dates) ? nl2br(htmlspecialchars(implode("\n", $dates))) : '-' ?>
                                                             </td>
+                                                            <?php if ($canTambah): ?>
+                                                                <td class="impl-gallery-table__item">
+                                                                    <button
+                                                                        type="button"
+                                                                        class="btn btn-sm btn-outline-primary js-open-comply-row-edit"
+                                                                        data-toggle="modal"
+                                                                        data-target="#modal-comply-row-edit"
+                                                                        data-seed-photo-id="<?= $rowOrderPhotoId ?>"
+                                                                        data-baseline-item-id="<?= (int) ($galleryItem['id_boq_baseline_item'] ?? 0) ?>"
+                                                                        data-scope-type="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>"
+                                                                        data-comply-label="<?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? ''), ENT_QUOTES) ?>">
+                                                                        Edit
+                                                                    </button>
+                                                                </td>
+                                                            <?php endif; ?>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
@@ -3116,6 +3154,50 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 <?php endif; ?>
 
 <?php if ($canTambah): ?>
+<div class="modal fade" id="modal-comply-row-edit" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/updateComplyPhotoGroup') ?>" id="form-comply-row-edit">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <input type="hidden" name="seed_photo_id" id="comply_edit_seed_photo_id" value="">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Edit Foto Comply</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Item</label>
+                        <select name="baseline_item_id" id="comply_edit_baseline_item_id" class="form-control" required>
+                            <option value="">Pilih Item</option>
+                            <?php foreach ((array) $complyBuilderItems as $editComplyItem): ?>
+                                <option value="<?= (int) ($editComplyItem['id_boq_baseline_item'] ?? 0) ?>">
+                                    <?= htmlspecialchars((string) (($editComplyItem['item_type'] ?? '-') . ' - ' . ($editComplyItem['item_name'] ?? '-'))) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Scope</label>
+                        <select name="scope_type" id="comply_edit_scope_type" class="form-control" required>
+                            <option value="CLUSTER">CLUSTER</option>
+                            <option value="SUBFEEDER">SUBFEEDER</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Nama / Nomor</label>
+                        <input type="text" name="comply_label" id="comply_edit_label" class="form-control" required placeholder="Contoh: FAT 001">
+                    </div>
+                    <div class="small text-muted mt-3">Perubahan berlaku untuk semua foto dalam row comply ini.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade impl-daily-modal" id="modal-comply-builder" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -3359,6 +3441,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var complyRowsBody = complyForm ? complyForm.querySelector('.js-comply-rows') : null;
         var complyAddButton = complyForm ? complyForm.querySelector('.js-add-comply-row') : null;
         var complyRowTemplate = document.getElementById('comply-row-template');
+        var complyEditSeedInput = document.getElementById('comply_edit_seed_photo_id');
+        var complyEditItemSelect = document.getElementById('comply_edit_baseline_item_id');
+        var complyEditScopeSelect = document.getElementById('comply_edit_scope_type');
+        var complyEditLabelInput = document.getElementById('comply_edit_label');
         var complyScopeSelect = complyForm ? complyForm.querySelector('.js-comply-scope') : null;
         var complyCategorySelect = complyForm ? complyForm.querySelector('.js-comply-category') : null;
         var complyKindSelect = complyForm ? complyForm.querySelector('.js-comply-kind') : null;
@@ -5414,6 +5500,23 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 if (rejectPhotoButton) {
                     document.getElementById('comply_reject_photo_id').value = rejectPhotoButton.getAttribute('data-photo-id') || '0';
                     document.getElementById('comply_reject_photo_label').textContent = rejectPhotoButton.getAttribute('data-photo-label') || '-';
+                    return;
+                }
+
+                var editComplyRowButton = event.target.closest('.js-open-comply-row-edit');
+                if (editComplyRowButton) {
+                    if (complyEditSeedInput) {
+                        complyEditSeedInput.value = editComplyRowButton.getAttribute('data-seed-photo-id') || '0';
+                    }
+                    if (complyEditItemSelect) {
+                        complyEditItemSelect.value = editComplyRowButton.getAttribute('data-baseline-item-id') || '';
+                    }
+                    if (complyEditScopeSelect) {
+                        complyEditScopeSelect.value = editComplyRowButton.getAttribute('data-scope-type') === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+                    }
+                    if (complyEditLabelInput) {
+                        complyEditLabelInput.value = editComplyRowButton.getAttribute('data-comply-label') || '';
+                    }
                     return;
                 }
 

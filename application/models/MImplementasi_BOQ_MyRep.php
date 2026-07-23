@@ -1005,7 +1005,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('photo.*, progress.id_myrep_cluster, progress.id_boq_baseline_item, boq_item.item_name, boq_item.item_type')
+            ->select('photo.*, progress.id_myrep_cluster, progress.id_boq_baseline_item, progress.remark_progress, boq_item.item_name, boq_item.item_type')
             ->from('tb_myrep_boq_progress_photo photo')
             ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
             ->join('tb_myrep_boq_baseline_item baseline_item', 'baseline_item.id_boq_baseline_item = progress.id_boq_baseline_item', 'left')
@@ -1013,6 +1013,107 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->where('photo.id_progress_photo', $photoId)
             ->get()
             ->row_array() ?: [];
+    }
+
+    private function detectComplyScope($remarkValue = '', $captionValue = '')
+    {
+        $remark = strtoupper(trim((string) $remarkValue));
+        if (preg_match('/UPLOAD\s+FOTO\s+COMPLY\s*\((CLUSTER|SUBFEEDER)\)/', $remark, $matches)) {
+            return (string) $matches[1];
+        }
+
+        $text = strtoupper(trim((string) $remarkValue . ' ' . (string) $captionValue));
+        if (strpos($text, 'SUBFEEDER') !== false) {
+            return 'SUBFEEDER';
+        }
+        if (strpos($text, 'CLUSTER') !== false) {
+            return 'CLUSTER';
+        }
+
+        return 'CLUSTER';
+    }
+
+    public function updateComplyPhotoGroup($clusterId, $seedPhotoId, $baselineItemId, $scopeType, $complyLabel, $updatedBy)
+    {
+        $clusterId = (int) $clusterId;
+        $seedPhotoId = (int) $seedPhotoId;
+        $baselineItemId = (int) $baselineItemId;
+        $updatedBy = (int) $updatedBy;
+        $scopeType = strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $complyLabel = trim((string) $complyLabel);
+
+        if ($clusterId <= 0 || $seedPhotoId <= 0 || $baselineItemId <= 0 || $complyLabel === '' || !$this->tablesReady()) {
+            return false;
+        }
+
+        $seed = $this->getProgressPhotoById($seedPhotoId);
+        if (empty($seed) || (int) ($seed['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            return false;
+        }
+        if (strtoupper(trim((string) ($seed['photo_category'] ?? 'HARIAN'))) !== 'COMPLY') {
+            return false;
+        }
+
+        $baseline = $this->db
+            ->select('bi.id_boq_baseline_item')
+            ->from('tb_myrep_boq_baseline_item bi')
+            ->join('tb_myrep_boq_baseline b', 'b.id_boq_baseline = bi.id_boq_baseline', 'inner')
+            ->where('bi.id_boq_baseline_item', $baselineItemId)
+            ->where('b.id_myrep_cluster', $clusterId)
+            ->get()
+            ->row_array();
+        if (empty($baseline)) {
+            return false;
+        }
+
+        $oldLabel = (string) ($seed['comply_label'] ?? '');
+        $oldBaselineItemId = (int) ($seed['id_boq_baseline_item'] ?? 0);
+        $oldScopeType = $this->detectComplyScope($seed['remark_progress'] ?? '', $seed['caption'] ?? '');
+
+        $candidateRows = $this->db
+            ->select('photo.id_progress_photo, photo.id_progress_item, photo.caption, progress.remark_progress')
+            ->from('tb_myrep_boq_progress_photo photo')
+            ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+            ->where('progress.id_myrep_cluster', $clusterId)
+            ->where('progress.id_boq_baseline_item', $oldBaselineItemId)
+            ->where("UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY'", null, false)
+            ->where('photo.comply_label', $oldLabel)
+            ->get()
+            ->result_array();
+
+        $photoIds = [];
+        $progressIds = [];
+        foreach ($candidateRows as $row) {
+            if ($this->detectComplyScope($row['remark_progress'] ?? '', $row['caption'] ?? '') !== $oldScopeType) {
+                continue;
+            }
+            $photoIds[] = (int) ($row['id_progress_photo'] ?? 0);
+            $progressIds[] = (int) ($row['id_progress_item'] ?? 0);
+        }
+
+        $photoIds = array_values(array_unique(array_filter($photoIds)));
+        $progressIds = array_values(array_unique(array_filter($progressIds)));
+        if (empty($photoIds) || empty($progressIds)) {
+            return false;
+        }
+
+        $this->db->trans_start();
+        $this->db
+            ->where_in('id_progress_photo', $photoIds)
+            ->update('tb_myrep_boq_progress_photo', [
+                'comply_label' => $complyLabel,
+            ]);
+
+        $this->db
+            ->where_in('id_progress_item', $progressIds)
+            ->update('tb_myrep_boq_progress_item', [
+                'id_boq_baseline_item' => $baselineItemId,
+                'remark_progress' => 'Upload Foto Comply (' . $scopeType . ') - ' . $complyLabel,
+                'updated_by' => $updatedBy,
+            ]);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
     }
 
     public function updateProgressPhotoReviewStatus($photoId, $statusPhoto, $reviewedBy, $reviewRemark = '')
@@ -1065,7 +1166,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $seedRows = $this->db
-            ->select('photo.id_progress_photo, photo.comply_label, progress.id_boq_baseline_item')
+            ->select('photo.id_progress_photo, photo.comply_label, photo.caption, progress.id_boq_baseline_item, progress.remark_progress')
             ->from('tb_myrep_boq_progress_photo photo')
             ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
             ->where('progress.id_myrep_cluster', $clusterId)
@@ -1091,12 +1192,31 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             }
 
             $row = $seedMap[$photoId];
-            $progressSubquery = $this->db->select('id_progress_item')->from('tb_myrep_boq_progress_item')->where('id_boq_baseline_item', (int) ($row['id_boq_baseline_item'] ?? 0))->where('id_myrep_cluster', $clusterId)->get_compiled_select();
+            $rowScope = $this->detectComplyScope($row['remark_progress'] ?? '', $row['caption'] ?? '');
+            $candidateRows = $this->db
+                ->select('photo.id_progress_photo, photo.caption, progress.remark_progress')
+                ->from('tb_myrep_boq_progress_photo photo')
+                ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+                ->where('progress.id_myrep_cluster', $clusterId)
+                ->where('progress.id_boq_baseline_item', (int) ($row['id_boq_baseline_item'] ?? 0))
+                ->where("UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY'", null, false)
+                ->where('photo.comply_label', (string) ($row['comply_label'] ?? ''))
+                ->get()
+                ->result_array();
+
+            $photoIds = [];
+            foreach ($candidateRows as $candidateRow) {
+                if ($this->detectComplyScope($candidateRow['remark_progress'] ?? '', $candidateRow['caption'] ?? '') === $rowScope) {
+                    $photoIds[] = (int) ($candidateRow['id_progress_photo'] ?? 0);
+                }
+            }
+            $photoIds = array_values(array_unique(array_filter($photoIds)));
+            if (empty($photoIds)) {
+                continue;
+            }
 
             $this->db
-                ->where("id_progress_item IN ($progressSubquery)", null, false)
-                ->where("UPPER(COALESCE(photo_category, 'HARIAN')) = 'COMPLY'", null, false)
-                ->where('comply_label', (string) ($row['comply_label'] ?? ''))
+                ->where_in('id_progress_photo', $photoIds)
                 ->update('tb_myrep_boq_progress_photo', [
                     'comply_print_order' => $order,
                 ]);

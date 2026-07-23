@@ -18,6 +18,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'saveDailyActivity' => 'APPROVAL_DAILY',
                 'rotateProgressPhoto' => 'TAMBAH',
                 'saveComplyPhotoOrder' => 'TAMBAH',
+                'updateComplyPhotoGroup' => 'TAMBAH',
             ]);
         }
     }
@@ -1291,6 +1292,56 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $saved = $this->MImplementasi_BOQ_MyRep->updateComplyPrintOrder($clusterId, $orderedIds);
         $this->jsonResponse((bool) $saved, $saved ? 'Urutan print foto comply berhasil disimpan.' : 'Gagal menyimpan urutan foto comply.', [], $saved ? 200 : 500);
+    }
+
+    public function updateComplyPhotoGroup()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $seedPhotoId = (int) $this->input->post('seed_photo_id');
+        $baselineItemId = (int) $this->input->post('baseline_item_id');
+        $scopeType = strtoupper(trim((string) $this->input->post('scope_type'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $complyLabel = trim((string) $this->input->post('comply_label'));
+        $redirectUrl = 'Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane';
+
+        if ($clusterId <= 0 || $seedPhotoId <= 0 || $baselineItemId <= 0 || $complyLabel === '') {
+            $this->session->set_flashdata('error', 'Data edit foto comply tidak valid.');
+            redirect($redirectUrl);
+            return;
+        }
+
+        $compareRows = $this->MImplementasi_BOQ_MyRep->getBaselineCompareRows($clusterId);
+        $targetItem = null;
+        foreach ($compareRows as $compareRow) {
+            if ((int) ($compareRow['id_boq_baseline_item'] ?? 0) === $baselineItemId) {
+                $targetItem = $compareRow;
+                break;
+            }
+        }
+        if (empty($targetItem) || (int) ($targetItem['comply_enabled'] ?? 0) !== 1) {
+            $this->session->set_flashdata('error', 'Item comply tujuan tidak valid.');
+            redirect($redirectUrl);
+            return;
+        }
+
+        $saved = $this->MImplementasi_BOQ_MyRep->updateComplyPhotoGroup(
+            $clusterId,
+            $seedPhotoId,
+            $baselineItemId,
+            $scopeType,
+            $complyLabel,
+            (int) $this->session->userdata('id_user')
+        );
+
+        $this->session->set_flashdata(
+            $saved ? 'success' : 'error',
+            $saved ? 'Data foto comply berhasil diperbarui.' : 'Gagal memperbarui data foto comply.'
+        );
+        redirect($redirectUrl);
     }
 
     public function progressPhotoPreview($photoId = 0, $size = 'thumb')
