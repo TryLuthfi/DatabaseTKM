@@ -17,7 +17,9 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'rejectComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
                 'saveDailyActivity' => 'APPROVAL_DAILY',
                 'rotateProgressPhoto' => 'TAMBAH',
+                'deleteProgressPhoto' => 'VIEW',
                 'saveComplyPhotoOrder' => 'TAMBAH',
+                'updateComplyPhotoGroup' => 'VIEW',
             ]);
         }
     }
@@ -1244,16 +1246,10 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $photoId = (int) $this->input->post('photo_id');
-        $userId = (int) $this->session->userdata('id_user');
 
         $photo = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($photoId);
         if ($clusterId <= 0 || empty($photo) || (int) ($photo['id_myrep_cluster'] ?? 0) !== $clusterId) {
             $this->jsonResponse(false, 'Foto tidak ditemukan.', [], 404);
-            return;
-        }
-
-        if ((int) ($photo['uploaded_by'] ?? 0) !== $userId) {
-            $this->jsonResponse(false, 'Foto hanya bisa dihapus oleh akun yang upload foto tersebut.', [], 403);
             return;
         }
 
@@ -1307,16 +1303,9 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $complyLabel = trim((string) $this->input->post('comply_label'));
         $redirectUrl = 'Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane';
         $userId = (int) $this->session->userdata('id_user');
-        $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 
         if ($clusterId <= 0 || $seedPhotoId <= 0 || $baselineItemId <= 0 || $complyLabel === '') {
             $this->session->set_flashdata('error', 'Data edit foto comply tidak valid.');
-            redirect($redirectUrl);
-            return;
-        }
-
-        if (!$isSuperAdmin && !$this->MImplementasi_BOQ_MyRep->canUserEditComplyPhotoGroup($clusterId, $seedPhotoId, $userId)) {
-            $this->session->set_flashdata('error', 'Edit foto comply hanya bisa dilakukan oleh uploader foto atau Super Admin.');
             redirect($redirectUrl);
             return;
         }

@@ -100,6 +100,33 @@ class PO_Monitor extends CI_Controller
             ]));
     }
 
+    public function backfill_myrep_po_monitor()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->canManagePoImport()) {
+            show_error('Forbidden', 403);
+            return;
+        }
+
+        $poNumbersRaw = (string) ($this->input->post('po_numbers') ?: $this->input->get('po_numbers'));
+        $poNumbers = preg_split('/[\s,;]+/', $poNumbersRaw, -1, PREG_SPLIT_NO_EMPTY);
+        $summary = $this->MPO_Monitor->backfillPoMonitorFromMyRepHeaders((array) $poNumbers, (int) $this->session->userdata('id_user'));
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => !empty($summary['status']),
+                'message' => !empty($summary['status'])
+                    ? 'Backfill PO MyRep ke PO Monitor berhasil.'
+                    : 'Backfill selesai dengan sebagian error.',
+                'summary' => $summary,
+            ]));
+    }
+
     private function resolveSlaStatus($terms)
     {
         $sla = 'AMAN';

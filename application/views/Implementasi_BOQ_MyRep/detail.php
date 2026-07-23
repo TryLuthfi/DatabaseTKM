@@ -6,8 +6,6 @@ $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Imple
 $canApprovalDailyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_DAILY') : true;
 $canApprovalComplyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_FOTO_COMPLY') : true;
 $canSavePhotoRotation = $canTambah;
-$currentUserId = (int) $this->session->userdata('id_user');
-$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 $implLazyPhotoPlaceholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="110" viewBox="0 0 160 110"%3E%3Crect width="160" height="110" fill="%23eef2f7"/%3E%3Cpath d="M30 78l26-28 19 19 14-15 41 24H30z" fill="%23cbd5e1"/%3E%3Ccircle cx="112" cy="35" r="12" fill="%23dbe3ef"/%3E%3C/svg%3E';
 
 if (!function_exists('implHistoryNumber')) {
@@ -2885,14 +2883,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             return (int) ($photoRow['id_progress_photo'] ?? 0);
                                                         }, (array) ($galleryItem['photos'] ?? []))));
                                                         $rowOrderPhotoId = (int) ($rowPhotoIds[0] ?? 0);
-                                                        $rowUploadedByCurrentUser = false;
-                                                        foreach ((array) ($galleryItem['photos'] ?? []) as $photoRowForAccess) {
-                                                            if ((int) ($photoRowForAccess['uploaded_by'] ?? 0) === $currentUserId) {
-                                                                $rowUploadedByCurrentUser = true;
-                                                                break;
-                                                            }
-                                                        }
-                                                        $canEditThisComplyRow = $isSuperAdmin || $rowUploadedByCurrentUser;
                                                         ?>
                                                         <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-gallery-scope="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
                                                             <td class="impl-gallery-table__no">
@@ -2910,7 +2900,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                 </div>
                                                             </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
-                                                            <td class="impl-gallery-table__action">
+                                                            <td class="impl-gallery-table__item">
                                                                 <span class="badge badge-<?= $galleryScope === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars(ucfirst(strtolower($galleryScope))) ?></span>
                                                             </td>
                                                             <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
@@ -2922,7 +2912,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoBadgeClass = $photoStatus === 'APPROVED' ? 'success' : ($photoStatus === 'REJECTED' ? 'danger' : 'warning');
                                                                         $photoCaption = (string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Comply'));
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
-                                                                        $canDeleteThisPhoto = (int) ($photo['uploaded_by'] ?? 0) === $currentUserId;
+                                                                        $canDeleteThisPhoto = true;
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>" data-can-delete-photo="<?= $canDeleteThisPhoto ? '1' : '0' ?>">
                                                                             <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
@@ -2966,20 +2956,20 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             <td class="impl-gallery-table__date">
                                                                 <?= !empty($dates) ? nl2br(htmlspecialchars(implode("\n", $dates))) : '-' ?>
                                                             </td>
-                                                            <td class="impl-gallery-table__item">
-                                                                <?php if ($canEditThisComplyRow): ?>
-                                                                    <button
-                                                                        type="button"
-                                                                        class="btn btn-sm btn-primary js-open-comply-row-edit"
-                                                                        data-seed-photo-id="<?= $rowOrderPhotoId ?>"
-                                                                        data-baseline-item-id="<?= (int) ($galleryItem['id_boq_baseline_item'] ?? 0) ?>"
-                                                                        data-scope-type="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>"
-                                                                        data-comply-label="<?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? ''), ENT_QUOTES) ?>">
-                                                                        Edit
-                                                                    </button>
-                                                                <?php else: ?>
-                                                                    <span class="text-muted small">-</span>
-                                                                <?php endif; ?>
+                                                            <td class="impl-gallery-table__action" style="position:relative;z-index:50;pointer-events:auto !important;">
+                                                                <button
+                                                                    type="button"
+                                                                    class="btn btn-sm btn-primary js-open-comply-row-edit"
+                                                                    style="position:relative;z-index:51;pointer-events:auto !important;"
+                                                                    onclick="return window.openComplyRowEditFromButton ? window.openComplyRowEditFromButton(this) : true;"
+                                                                    data-toggle="modal"
+                                                                    data-target="#modal-comply-row-edit"
+                                                                    data-seed-photo-id="<?= $rowOrderPhotoId ?>"
+                                                                    data-baseline-item-id="<?= (int) ($galleryItem['id_boq_baseline_item'] ?? 0) ?>"
+                                                                    data-scope-type="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>"
+                                                                    data-comply-label="<?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? ''), ENT_QUOTES) ?>">
+                                                                    Edit
+                                                                </button>
                                                             </td>
                                                         </tr>
                                                     <?php endforeach; ?>
@@ -4077,6 +4067,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
             document.body.classList.remove('modal-open');
         }
+
+        window.openComplyRowEditFromButton = function (button) {
+            openComplyRowEditModal(button);
+            return false;
+        };
 
         function syncComplyPhotoReviewCard(photo) {
             if (!photo || !photo.id_progress_photo) {
@@ -5644,7 +5639,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         }
                         var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
                         var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
-                        var canDeletePhoto = (parseInt(photo.uploaded_by || 0, 10) || 0) === <?= (int) $currentUserId ?>;
+                        var canDeletePhoto = isComplyPhoto;
                         var photoOriginalUrl = '<?= base_url() ?>' + (photo.file_path || '');
                         var photoPreviewUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : photoOriginalUrl;
                         var photoThumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : photoOriginalUrl;

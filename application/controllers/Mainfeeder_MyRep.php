@@ -9,6 +9,7 @@ class Mainfeeder_MyRep extends CI_Controller
         $this->load->model('MMainfeeder_MyRep');
         $this->load->model('MImplementasi_BOQ_MyRep');
         $this->load->model('MChecklist_Dokument_MyRep');
+        $this->load->model('MPO_Monitor');
         $this->load->library('upload');
     }
 
@@ -481,6 +482,9 @@ class Mainfeeder_MyRep extends CI_Controller
             'created_by' => (int) $this->session->userdata('id_user'),
             'updated_by' => (int) $this->session->userdata('id_user'),
         ]);
+        if ($poId > 0) {
+            $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poId, (int) $this->session->userdata('id_user'));
+        }
         $this->session->set_flashdata($poId > 0 ? 'success' : 'error', $poId > 0 ? 'PO mainfeeder berhasil disimpan.' : 'PO mainfeeder gagal disimpan.');
         $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
     }
@@ -1007,6 +1011,7 @@ class Mainfeeder_MyRep extends CI_Controller
             if ($poId > 0) {
                 $poSaved = 1;
                 $terminSaved = $this->saveImportTerminRows($poId, $row, $userId);
+                $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poId, $userId);
             }
         }
 

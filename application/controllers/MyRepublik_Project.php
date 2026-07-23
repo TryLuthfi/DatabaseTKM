@@ -28,6 +28,7 @@ class MyRepublik_Project extends CI_Controller
         $this->load->model('MMyRepublik_Project');
         $this->load->model('MMyRep_Cleanup');
         $this->load->model('MPO_MyRep');
+        $this->load->model('MPO_Monitor');
         $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
@@ -3896,6 +3897,7 @@ class MyRepublik_Project extends CI_Controller
             if ($poHeaderId > 0) {
                 $this->applyImportedPoTerminDataFromRow($poHeaderId, $row, (string) ($poDef['prefix'] ?? 'po_cluster'));
                 $this->MPO_MyRep->syncTerminEstimatesForCluster($clusterId, $poType, $userId);
+                $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poHeaderId, $userId);
             }
         }
     }

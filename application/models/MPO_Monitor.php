@@ -2995,6 +2995,7 @@ class MPO_Monitor extends CI_Model
         if (empty($header) || $poNumber === '') {
             return ['status' => false, 'created' => false, 'synced' => 0, 'message' => 'Nomor PO MyRep kosong'];
         }
+        $header = $this->enrichMyRepHeaderLocationForMonitorSync($header);
 
         $existing = $this->db
             ->select('id_po')
@@ -3133,6 +3134,119 @@ class MPO_Monitor extends CI_Model
         }
 
         return $inserted;
+    }
+
+    public function backfillPoMonitorFromMyRepHeaders(array $poNumbers = [], $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+        if (!$this->db->table_exists('tb_myrep_po_header')) {
+            return [
+                'status' => false,
+                'created' => 0,
+                'existing' => 0,
+                'synced' => 0,
+                'processed' => 0,
+                'errors' => ['Tabel PO MyRep belum tersedia.']
+            ];
+        }
+
+        $query = $this->db
+            ->select('id_po_header, po_number')
+            ->from('tb_myrep_po_header')
+            ->where("COALESCE(TRIM(po_number), '') !=", '');
+
+        $poNumbers = array_values(array_unique(array_filter(array_map(function ($poNumber) {
+            return strtoupper(trim((string) $poNumber));
+        }, $poNumbers))));
+        if (!empty($poNumbers)) {
+            $query->where_in('po_number', $poNumbers);
+        }
+
+        $headers = $query
+            ->order_by('po_number', 'ASC')
+            ->order_by('id_po_header', 'ASC')
+            ->get()
+            ->result_array();
+
+        $summary = [
+            'status' => true,
+            'created' => 0,
+            'existing' => 0,
+            'synced' => 0,
+            'processed' => 0,
+            'errors' => []
+        ];
+
+        foreach ($headers as $header) {
+            $summary['processed']++;
+            $result = $this->ensurePoMonitorFromMyRepPoHeader((int) ($header['id_po_header'] ?? 0), $userId);
+            if (empty($result['status'])) {
+                $summary['errors'][] = trim((string) ($header['po_number'] ?? '-')) . ': ' . ($result['message'] ?? 'gagal sync');
+                continue;
+            }
+
+            if (!empty($result['created'])) {
+                $summary['created']++;
+            } else {
+                $summary['existing']++;
+            }
+            $summary['synced'] += (int) ($result['synced'] ?? 0);
+        }
+
+        $summary['status'] = empty($summary['errors']);
+        if ($summary['processed'] > 0) {
+            $this->rebuildDashboardCache(null);
+        }
+
+        return $summary;
+    }
+
+    private function enrichMyRepHeaderLocationForMonitorSync(array $header)
+    {
+        $mainfeederId = (int) ($header['id_mainfeeder'] ?? 0);
+        if ($mainfeederId <= 0 || !$this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
+            return $header;
+        }
+
+        $mainfeeder = $this->db
+            ->select('project_type, mainfeeder_name, regional_name, province_name, city_name')
+            ->from('tb_rfs_myrep_mainfeeder')
+            ->where('id_mainfeeder', $mainfeederId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($mainfeeder)) {
+            return $header;
+        }
+
+        $cityName = trim((string) ($mainfeeder['city_name'] ?? ''));
+        $mapping = $this->resolveCityMappingForMonitorSync($cityName);
+        $header['po_type'] = trim((string) ($mainfeeder['project_type'] ?? $header['po_type'] ?? '')) ?: ($header['po_type'] ?? '');
+        $header['cluster_name'] = trim((string) ($mainfeeder['mainfeeder_name'] ?? $header['cluster_name'] ?? '')) ?: ($header['cluster_name'] ?? '');
+        $header['regional_name'] = trim((string) ($mainfeeder['regional_name'] ?? '')) ?: (trim((string) ($mapping['regional_name'] ?? '')) ?: ($header['regional_name'] ?? ''));
+        $header['province_name'] = trim((string) ($mainfeeder['province_name'] ?? '')) ?: (trim((string) ($mapping['province_name'] ?? '')) ?: ($header['province_name'] ?? ''));
+        $header['city_name'] = $cityName !== '' ? $cityName : ($header['city_name'] ?? '');
+
+        return $header;
+    }
+
+    private function resolveCityMappingForMonitorSync($cityName)
+    {
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '' || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        return (array) $this->db
+            ->select('regional_name, province_name, city_name')
+            ->from('tb_myrep_pic_mapping_city')
+            ->where("CONVERT(UPPER(TRIM(city_name)) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape($cityName) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("COALESCE(TRIM(regional_name), '') !=", '')
+            ->order_by('id', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row_array();
     }
 
     public function syncMyRepClaimsSince($cutoffDate = null, $userId = 0)
