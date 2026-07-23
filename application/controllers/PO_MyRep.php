@@ -772,7 +772,7 @@ class PO_MyRep extends CI_Controller
                 continue;
             }
 
-            $updated = $this->MPO_MyRep->updateTermin((int) ($termin['id_po_termin'] ?? 0), [
+            $terminUpdatePayload = [
                 'status_termin' => 'BILLED',
                 'invoice_number' => '',
                 'invoice_date' => $invoiceDate,
@@ -781,7 +781,12 @@ class PO_MyRep extends CI_Controller
                 'payment_date' => $termin['payment_date'] ?? null,
                 'remark_termin' => trim((string) ($termin['remark_termin'] ?? '')),
                 'updated_by' => (int) $this->session->userdata('id_user'),
-            ]);
+            ];
+            $terminPoType = strtoupper(trim((string) ($termin['po_type'] ?? 'CLUSTER')));
+            $isStandalonePo = in_array($terminPoType, ['MAINFEEDER', 'FWA'], true);
+            $updated = $isStandalonePo
+                ? $this->MMainfeeder_MyRep->updateTermin((int) ($termin['id_po_termin'] ?? 0), $terminUpdatePayload)
+                : $this->MPO_MyRep->updateTermin((int) ($termin['id_po_termin'] ?? 0), $terminUpdatePayload);
 
             if ($updated) {
                 $this->MPO_Monitor->syncMyRepTerminClaim((int) ($termin['id_po_termin'] ?? 0), (int) $this->session->userdata('id_user'));
