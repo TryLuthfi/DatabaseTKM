@@ -409,6 +409,11 @@ class MPO_MyRep extends CI_Model
             ->get()
             ->result_array();
 
+        $headerMetaMap = [];
+        foreach ($allRows as $sourceRow) {
+            $headerMetaMap[(int) ($sourceRow['id_po_header'] ?? 0)] = $sourceRow;
+        }
+
         $terminMap = [];
         $terminByHeader = [];
         foreach ($terminRows as $termin) {
@@ -477,7 +482,10 @@ class MPO_MyRep extends CI_Model
                     }
 
                     $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($terminRow['invoice_date'] ?? '')) !== '';
-                    if (!isset($groupMeta['resolved_terms'][$terminNo]) || $hasInvoiceDate) {
+                    if (
+                        !isset($groupMeta['resolved_terms'][$terminNo])
+                        || $this->isTerminRowPreferredForPoListGroup($terminRow, $groupMeta['resolved_terms'][$terminNo], $headerMetaMap)
+                    ) {
                         $groupMeta['resolved_terms'][$terminNo] = $terminRow;
                     }
                 }
@@ -3863,6 +3871,10 @@ class MPO_MyRep extends CI_Model
         $this->db
             ->where('UPPER(TRIM(p.po_number))', strtoupper($poNumber))
             ->where('t.termin_no', $terminNo)
+            ->order_by("CASE UPPER(TRIM(COALESCE(p.po_category, 'INITIAL'))) WHEN 'FINAL' THEN 1 WHEN 'AMANDMENT' THEN 2 WHEN 'AMENDMENT' THEN 2 WHEN 'INITIAL' THEN 3 ELSE 4 END", 'ASC', false)
+            ->order_by('CASE WHEN t.invoice_date IS NOT NULL THEN 0 ELSE 1 END', 'ASC', false)
+            ->order_by("CASE WHEN COALESCE(TRIM(t.sertifikat_invoice_date), '') != '' THEN 0 ELSE 1 END", 'ASC', false)
+            ->order_by('CASE WHEN COALESCE(t.termin_value, 0) != 0 THEN 0 ELSE 1 END', 'ASC', false)
             ->order_by('p.po_date', 'DESC')
             ->order_by('p.id_po_header', 'DESC')
             ->limit(1);
@@ -4437,6 +4449,37 @@ class MPO_MyRep extends CI_Model
         }
 
         return $active;
+    }
+
+    private function isTerminRowPreferredForPoListGroup(array $candidate, array $current, array $headerMetaMap)
+    {
+        return $this->scoreTerminRowForPoListGroup($candidate, $headerMetaMap)
+            > $this->scoreTerminRowForPoListGroup($current, $headerMetaMap);
+    }
+
+    private function scoreTerminRowForPoListGroup(array $terminRow, array $headerMetaMap)
+    {
+        $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+        $header = $headerMetaMap[$headerId] ?? [];
+        $category = strtoupper(trim((string) ($header['po_category'] ?? 'INITIAL')));
+        $score = 0;
+
+        if ($this->normalizeEmrTargetDateValue((string) ($terminRow['invoice_date'] ?? '')) !== '') {
+            $score += 1000;
+        }
+        if ($this->normalizeEmrTargetDateValue((string) ($terminRow['sertifikat_invoice_date'] ?? '')) !== '') {
+            $score += 500;
+        }
+        if (abs((float) ($terminRow['termin_value'] ?? 0)) > 0.000001) {
+            $score += 100;
+        }
+        if ($category === 'FINAL') {
+            $score += 50;
+        } elseif (in_array($category, ['AMANDMENT', 'AMENDMENT'], true)) {
+            $score += 40;
+        }
+
+        return ($score * 1000000) + min($headerId, 999999);
     }
 
     private function buildPoHeaderGroupKey(array $header)

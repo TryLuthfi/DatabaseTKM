@@ -3586,7 +3586,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var keys = Object.keys(map).sort();
             complyCategorySelect.innerHTML = '<option value="">Pilih Item</option>';
             keys.forEach(function (key) {
-                complyCategorySelect.innerHTML += '<option value="' + key + '">' + key + '</option>';
+                var option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                complyCategorySelect.appendChild(option);
             });
         }
 
@@ -3594,9 +3597,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (!complyKindSelect || !complyCategorySelect) return;
             var category = complyCategorySelect.value;
             complyKindSelect.innerHTML = '<option value="">Pilih Jenis</option>';
-            complyOptionSource.forEach(function (item) {
+            complyOptionSource.forEach(function (item, index) {
                 if (category && String(item.item_type).toUpperCase() !== category.toUpperCase()) return;
-                complyKindSelect.innerHTML += '<option value="' + escapeAttr(item.option_id || item.id) + '">' + escapeAttr(item.display_name || item.item_name || '-') + '</option>';
+                var option = document.createElement('option');
+                option.value = String(item.option_id || item.id);
+                option.textContent = item.display_name || item.item_name || '-';
+                option.setAttribute('data-source-index', String(index));
+                option.setAttribute('data-baseline-item-id', String(item.id || 0));
+                complyKindSelect.appendChild(option);
             });
             syncComplyBuilderDefaults();
         }
@@ -3613,12 +3621,26 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return null;
         }
 
+        function getSelectedComplyItem() {
+            if (!complyKindSelect) {
+                return null;
+            }
+
+            var selectedOption = complyKindSelect.options[complyKindSelect.selectedIndex];
+            var sourceIndex = selectedOption ? parseInt(selectedOption.getAttribute('data-source-index') || '-1', 10) : -1;
+            if (sourceIndex >= 0 && complyOptionSource[sourceIndex]) {
+                return complyOptionSource[sourceIndex];
+            }
+
+            return findComplyItemById(complyKindSelect.value || '');
+        }
+
         function syncComplyBuilderDefaults() {
             if (!complyKindSelect || !complyLabelBuilder) {
                 return;
             }
 
-            var itemData = findComplyItemById(complyKindSelect.value || '');
+            var itemData = getSelectedComplyItem();
             if (!itemData) {
                 complyLabelBuilder.placeholder = 'Contoh: FAT 01';
                 return;
@@ -3835,8 +3857,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
         function addComplyRow() {
             if (!complyRowsBody || !complyRowTemplate || !complyKindSelect) return;
-            var itemId = complyKindSelect.value || '';
-            var itemData = findComplyItemById(itemId);
+            var itemData = getSelectedComplyItem();
             if (!itemData) {
                 alert('Pilih jenis comply terlebih dahulu.');
                 return;

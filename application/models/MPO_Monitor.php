@@ -2996,6 +2996,9 @@ class MPO_Monitor extends CI_Model
         if (empty($header) || $poNumber === '') {
             return ['status' => false, 'created' => false, 'synced' => 0, 'message' => 'Nomor PO MyRep kosong'];
         }
+        $header = $this->resolveActiveMyRepPoHeaderForMonitorSync($header);
+        $poHeaderId = (int) ($header['id_po_header'] ?? $poHeaderId);
+        $poNumber = trim((string) ($header['po_number'] ?? $poNumber));
         $header = $this->enrichMyRepHeaderLocationForMonitorSync($header);
 
         $existing = $this->db
@@ -3009,6 +3012,7 @@ class MPO_Monitor extends CI_Model
 
         if (!empty($existing)) {
             $this->ensurePoMonitorTermsFromMyRepHeader((int) $existing['id_po'], $poHeaderId, $userId);
+            $this->refreshPoMonitorHeaderFromMyRepHeader((int) $existing['id_po'], $header, $userId);
             $sync = $this->syncMyRepClaimsForPoNumber($poNumber, $userId, false);
             return [
                 'status' => true,
@@ -3088,13 +3092,6 @@ class MPO_Monitor extends CI_Model
             return 0;
         }
 
-        $termCount = (int) $this->db
-            ->where('id_po', $idPo)
-            ->count_all_results('tb_po_term');
-        if ($termCount > 0) {
-            return 0;
-        }
-
         if ($idAmend <= 0) {
             $amend = $this->db
                 ->select('id_amend')
@@ -3122,19 +3119,85 @@ class MPO_Monitor extends CI_Model
                 continue;
             }
 
-            $this->db->insert('tb_po_term', [
-                'id_po' => $idPo,
+            $existing = $this->db
+                ->select('id_term')
+                ->from('tb_po_term')
+                ->where('id_po', $idPo)
+                ->where('term_index', $termIndex)
+                ->order_by('id_term', 'ASC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+
+            $payload = [
                 'id_amend' => $idAmend > 0 ? $idAmend : null,
-                'term_index' => $termIndex,
                 'percent' => (float) ($term['termin_percent'] ?? 0),
                 'value' => (float) ($term['termin_value'] ?? 0),
                 'plan_amount' => (float) ($term['termin_value'] ?? 0),
-                'target_status' => 'OPEN'
-            ]);
-            $inserted++;
+            ];
+
+            if (!empty($existing)) {
+                $this->db->where('id_term', (int) $existing['id_term'])->update('tb_po_term', $payload);
+            } else {
+                $payload['id_po'] = $idPo;
+                $payload['term_index'] = $termIndex;
+                $payload['target_status'] = 'OPEN';
+                $this->db->insert('tb_po_term', $payload);
+                $inserted++;
+            }
         }
 
         return $inserted;
+    }
+
+    private function refreshPoMonitorHeaderFromMyRepHeader($idPo, array $header, $userId = 0)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0) {
+            return false;
+        }
+
+        $poDate = $this->normalizeSyncDate($header['po_date'] ?? null);
+        $poValue = (float) ($header['po_value'] ?? 0);
+        $typeProjectParts = array_filter([
+            strtoupper(trim((string) ($header['po_type'] ?? ''))),
+            trim((string) ($header['regional_name'] ?? '')),
+            trim((string) ($header['city_name'] ?? ''))
+        ]);
+
+        $this->db
+            ->where('id_po', $idPo)
+            ->update('tb_po', [
+                'po_date' => $poDate,
+                'total_value' => $poValue,
+                'status_po' => 'ON PO',
+                'dashboard_bowheer' => 'PT EMR - NRO',
+                'type_project' => implode(' - ', $typeProjectParts) ?: 'MYREP',
+                'source_row_no' => (int) ($header['id_po_header'] ?? 0),
+                'source_hash' => hash('sha256', 'MYREP_PO_HEADER|' . (int) ($header['id_po_header'] ?? 0) . '|' . strtoupper(trim((string) ($header['po_number'] ?? '')))),
+                'created_by' => $userId ?: null,
+                'notes' => 'Auto mirror dari PO MyRep #' . (int) ($header['id_po_header'] ?? 0)
+            ]);
+
+        $amend = $this->db
+            ->select('id_amend')
+            ->from('tb_po_amend')
+            ->where('id_po', $idPo)
+            ->order_by('amend_no', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($amend)) {
+            $this->db
+                ->where('id_amend', (int) $amend['id_amend'])
+                ->update('tb_po_amend', [
+                    'release_value' => $poValue,
+                    'release_date' => $poDate,
+                    'notes' => 'Auto mirror dari PO MyRep'
+                ]);
+        }
+
+        return true;
     }
 
     public function backfillPoMonitorFromMyRepHeaders(array $poNumbers = [], $userId = 0)
@@ -3200,6 +3263,46 @@ class MPO_Monitor extends CI_Model
         }
 
         return $summary;
+    }
+
+    private function resolveActiveMyRepPoHeaderForMonitorSync(array $header)
+    {
+        $poNumber = trim((string) ($header['po_number'] ?? ''));
+        $poType = strtoupper(trim((string) ($header['po_type'] ?? '')));
+        $idCluster = (int) ($header['id_myrep_cluster'] ?? 0);
+        $idMainfeeder = (int) ($header['id_mainfeeder'] ?? 0);
+        if ($poNumber === '' || $poType === '') {
+            return $header;
+        }
+
+        $query = $this->db
+            ->select('h.*, c.cluster_name, c.cluster_code, c.regional_name, c.city_name')
+            ->from('tb_myrep_po_header h')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = h.id_myrep_cluster', 'left')
+            ->where("CONVERT(UPPER(TRIM(h.po_number)) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape(strtoupper($poNumber)) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
+            ->where("CONVERT(UPPER(TRIM(COALESCE(h.po_type, ''))) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape($poType) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false);
+
+        if (in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
+            if ($idMainfeeder <= 0 || !$this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')) {
+                return $header;
+            }
+            $query->where('h.id_mainfeeder', $idMainfeeder);
+        } else {
+            if ($idCluster <= 0) {
+                return $header;
+            }
+            $query->where('h.id_myrep_cluster', $idCluster);
+        }
+
+        $active = $query
+            ->order_by("CASE UPPER(TRIM(COALESCE(h.po_category, 'INITIAL'))) WHEN 'FINAL' THEN 1 WHEN 'AMANDMENT' THEN 2 WHEN 'AMENDMENT' THEN 2 WHEN 'INITIAL' THEN 3 ELSE 4 END", 'ASC', false)
+            ->order_by('h.po_date', 'DESC')
+            ->order_by('h.id_po_header', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return !empty($active) ? $active : $header;
     }
 
     private function enrichMyRepHeaderLocationForMonitorSync(array $header)
@@ -3368,7 +3471,19 @@ class MPO_Monitor extends CI_Model
             FROM tb_myrep_po_termin t
             JOIN tb_myrep_po_header p ON p.id_po_header = t.id_po_header
             WHERE p.po_number = ?
-            ORDER BY t.termin_no ASC, t.invoice_date IS NULL ASC, t.invoice_date DESC, t.id_po_termin DESC", [$poNumber])->result_array();
+            ORDER BY
+                t.termin_no ASC,
+                CASE UPPER(TRIM(COALESCE(p.po_category, 'INITIAL')))
+                    WHEN 'FINAL' THEN 1
+                    WHEN 'AMANDMENT' THEN 2
+                    WHEN 'AMENDMENT' THEN 2
+                    WHEN 'INITIAL' THEN 3
+                    ELSE 4
+                END ASC,
+                t.invoice_date IS NULL ASC,
+                t.invoice_date DESC,
+                CASE WHEN COALESCE(t.termin_value, 0) != 0 THEN 0 ELSE 1 END ASC,
+                t.id_po_termin DESC", [$poNumber])->result_array();
 
         $rowsByTerm = [];
         foreach ($rows as $row) {
@@ -3516,6 +3631,34 @@ class MPO_Monitor extends CI_Model
             }
 
             $term = $this->findPoMonitorTermForMyRep($poNumber, $termNo);
+            $removedSibling = false;
+            if (!empty($term)) {
+                $siblingClaims = $this->db
+                    ->from('tb_po_term_claim')
+                    ->where('id_term', (int) $term['id_term'])
+                    ->where('claim_source', 'MYREP_SYNC')
+                    ->where('source_raw !=', $sourceRaw)
+                    ->get()
+                    ->result_array();
+
+                if (!empty($siblingClaims)) {
+                    $this->db->trans_begin();
+                    foreach ($siblingClaims as $claim) {
+                        $this->applyPoMonitorClaimDelta((int) $term['id_term'], $claim['invoice_date'], -1 * (float) $claim['invoice_amount']);
+                        $this->db->where('id_claim', (int) $claim['id_claim'])->delete('tb_po_term_claim');
+                    }
+                    $this->refreshPoMonitorTermInvoiceDate((int) $term['id_term']);
+                    if ($rebuildCache) {
+                        $this->rebuildDashboardCache(null);
+                    }
+                    if ($this->db->trans_status() === false) {
+                        $this->db->trans_rollback();
+                        return ['status' => false, 'action' => 'skipped', 'message' => 'Failed to remove sibling sync claim'];
+                    }
+                    $this->db->trans_commit();
+                    $removedSibling = true;
+                }
+            }
             if (!empty($term) && abs($amount) >= 0.000001) {
                 $staleClaim = $this->db
                     ->from('tb_po_term_claim')
@@ -3545,6 +3688,10 @@ class MPO_Monitor extends CI_Model
                 }
             }
 
+            if ($removedSibling) {
+                return ['status' => true, 'action' => 'deleted', 'message' => 'Sibling sync claim removed'];
+            }
+
             return [
                 'status' => false,
                 'action' => 'skipped',
@@ -3566,6 +3713,18 @@ class MPO_Monitor extends CI_Model
         }
 
         $this->db->trans_begin();
+        $siblingClaims = $this->db
+            ->from('tb_po_term_claim')
+            ->where('id_term', (int) $term['id_term'])
+            ->where('claim_source', 'MYREP_SYNC')
+            ->where('source_raw !=', $sourceRaw)
+            ->get()
+            ->result_array();
+        foreach ($siblingClaims as $claim) {
+            $this->applyPoMonitorClaimDelta((int) $term['id_term'], $claim['invoice_date'], -1 * (float) $claim['invoice_amount']);
+            $this->db->where('id_claim', (int) $claim['id_claim'])->delete('tb_po_term_claim');
+        }
+
         if (!empty($existingClaim)) {
             $changed = (int) $existingClaim['id_term'] !== (int) $term['id_term']
                 || (string) $existingClaim['invoice_date'] !== (string) $invoiceDate
