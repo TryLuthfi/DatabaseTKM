@@ -26,7 +26,6 @@ $comparisonMatrix = $comparisonMatrix ?? [
         'deviasi_percent' => 0
     ]
 ];
-$comparisonWeekMatrix = $comparisonWeekMatrix ?? $comparisonMatrix;
 $dashboardSummary = $dashboardSummary ?? [
     'rows' => [],
     'totals' => [
@@ -41,17 +40,6 @@ $dashboardSummary = $dashboardSummary ?? [
         'total_outs' => 0
     ]
 ];
-$comparisonWeekMonthGroups = [];
-foreach ($comparisonWeekMatrix['months'] as $period) {
-    $groupKey = ($period['month_key'] ?? '') . '|' . ($period['year'] ?? '');
-    if (!isset($comparisonWeekMonthGroups[$groupKey])) {
-        $comparisonWeekMonthGroups[$groupKey] = [
-            'label' => ($period['month_label'] ?? $period['label']) . ' ' . ($period['year'] ?? ''),
-            'count' => 0
-        ];
-    }
-    $comparisonWeekMonthGroups[$groupKey]['count']++;
-}
 $comparisonIsWeek = false;
 
 if (!function_exists('po_monitor_week_month_groups')) {
@@ -2239,75 +2227,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             </table>
                         </div>
 
-                        <div id="po_compare_week_panel" class="table-responsive po-compare-panel-hidden">
-                            <table id="table_po_target_invoice_compare_week" class="table table-bordered table-striped po-compare-table">
-                                <thead>
-                                    <tr class="po-compare-month">
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">No</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">PIC</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
-                                        <?php foreach ($comparisonWeekMonthGroups as $group): ?>
-                                            <th colspan="<?= (int) $group['count'] * 3 ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label']) ?></th>
-                                        <?php endforeach; ?>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
-                                        <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
-                                    </tr>
-                                    <tr>
-                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                            <th colspan="3" class="po-compare-week-cell">
-                                                <?= htmlspecialchars($month['label']) ?><br>
-                                                <small><?= htmlspecialchars($month['period'] ?? '') ?></small>
-                                            </th>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                    <tr>
-                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                            <th class="po-compare-target">Target</th>
-                                            <th class="po-compare-achieved">Achieved</th>
-                                            <th class="po-compare-percent">%</th>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $compareWeekNo = 1; foreach ($comparisonWeekMatrix['rows'] as $row): ?>
-                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $row['total_target'] ?>">
-                                            <td><?= $compareWeekNo++ ?></td>
-                                            <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                                            <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
-                                            <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                                <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'week', 'target') ?></td>
-                                                <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'week', 'achieved') ?></td>
-                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
-                                            <?php endforeach; ?>
-                                            <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
-                                            <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
-                                            <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
-                                            <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="3" class="po-compare-footer-label">Total</th>
-                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_target'], 0, ',', '.') ?></th>
-                                        <?php foreach ($comparisonWeekMatrix['months'] as $month): ?>
-                                            <?php $monthTotal = $comparisonWeekMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
-                                            <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
-                                            <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
-                                            <th><?= po_monitor_percent($monthTotal['percent']) ?></th>
-                                        <?php endforeach; ?>
-                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
-                                        <th><?= number_format((float) $comparisonWeekMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
-                                        <th><?= po_monitor_percent($comparisonWeekMatrix['totals']['achieved_percent']) ?></th>
-                                        <th><?= po_monitor_percent($comparisonWeekMatrix['totals']['deviasi_percent']) ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <div id="po_compare_week_panel" class="table-responsive po-compare-panel-hidden" data-loaded="0">
+                            <div class="text-muted py-3">Aktifkan mode week untuk memuat data mingguan.</div>
                         </div>
                     </div>
                 </div>
@@ -4116,6 +4037,66 @@ if (!function_exists('po_monitor_term_amount_link')) {
             compareTables.month = initCompareTable('#table_po_target_invoice_compare_month');
             compareTables.week = initCompareTable('#table_po_target_invoice_compare_week');
 
+            function loadWeekCompareTable(callback) {
+                var $panel = $('#po_compare_week_panel');
+                if (!$panel.length) {
+                    if (typeof callback === 'function') {
+                        callback(false);
+                    }
+                    return;
+                }
+
+                if ($panel.data('loaded') === 1) {
+                    if (!compareTables.week) {
+                        compareTables.week = initCompareTable('#table_po_target_invoice_compare_week');
+                    }
+                    if (typeof callback === 'function') {
+                        callback(true);
+                    }
+                    return;
+                }
+
+                if ($panel.data('loading') === 1) {
+                    return;
+                }
+
+                $panel.data('loading', 1).html('<div class="text-muted py-3">Memuat data week...</div>');
+                $.ajax({
+                    url: '<?= site_url('PO_Monitor/comparison_week_table') ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        from_month: $('input[name="from_month"]').val(),
+                        to_month: $('input[name="to_month"]').val()
+                    }
+                }).done(function(response) {
+                    if (response && response.status && response.html) {
+                        $panel.html(response.html).data('loaded', 1);
+                        compareTables.week = initCompareTable('#table_po_target_invoice_compare_week');
+                        if (compareTables.week) {
+                            compareTables.week.draw();
+                        }
+                        if (typeof callback === 'function') {
+                            callback(true);
+                        }
+                        return;
+                    }
+
+                    $panel.html('<div class="alert alert-warning mb-0">Data week tidak tersedia.</div>');
+                    if (typeof callback === 'function') {
+                        callback(false);
+                    }
+                }).fail(function() {
+                    $panel.html('<div class="alert alert-danger mb-0">Gagal memuat data week.</div>');
+                    if (typeof callback === 'function') {
+                        callback(false);
+                    }
+                }).always(function() {
+                    $panel.data('loading', 0);
+                    scheduleCompareTableAdjust();
+                });
+            }
+
             function adjustCompareTables() {
                 var weekMode = $('#po_compare_week_mode').is(':checked');
                 var activeTable = weekMode ? compareTables.week : compareTables.month;
@@ -4223,6 +4204,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
                     $group.find('.js-po-regional-section-row').text(formatLocaleNumber(groupVisibleCount));
                     $group.find('.js-po-regional-section-total').text(formatLocaleNumber(groupVisibleAmount));
+                    var $footerTotals = $group.find('.po-monitor-detail-table tfoot th');
+                    if ($footerTotals.length === 2) {
+                        $footerTotals.last().text(formatLocaleNumber(groupVisibleAmount));
+                    }
                     $group.toggleClass('is-hidden', !regionalMatches || !hasVisibleRows);
                 });
 
@@ -4898,7 +4883,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     }
                 }
 
-                if (compareTables.week) {
+                if (weekMode && !compareTables.week) {
+                    loadWeekCompareTable(function(loaded) {
+                        if (loaded && compareTables.week) {
+                            compareTables.week.columns.adjust().draw(false);
+                        }
+                    });
+                } else if (compareTables.week) {
                     compareTables.week.draw();
                     if (weekMode) {
                         window.setTimeout(function() {

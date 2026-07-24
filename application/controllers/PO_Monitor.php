@@ -28,8 +28,6 @@ class PO_Monitor extends CI_Controller
 
         $filteredPoList = [];
         $bowheerSummary = $this->MPO_Monitor->getPOSummaryByBowheer();
-        $this->MPO_Monitor->syncEmrNroComparisonClaims($comparisonFromMonth, $comparisonToMonth, (int) $this->session->userdata('id_user'));
-
         $data['title'] = 'PO Monitoring';
         $data['poList'] = $filteredPoList;
         $data['bowheerSummary'] = $bowheerSummary;
@@ -37,7 +35,6 @@ class PO_Monitor extends CI_Controller
         $data['dashboardSummary'] = $this->MPO_Monitor->getDashboardSummary();
         $data['dashboardInitialTotals'] = $this->MPO_Monitor->getDashboardInitialTotals();
         $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
-        $data['comparisonWeekMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'week', false);
         $data['breakdownFilterOptions'] = [
             'projects' => [],
             'pics' => [],
@@ -1296,6 +1293,30 @@ class PO_Monitor extends CI_Controller
                 'status' => true,
                 'title' => $title,
                 'html' => $this->renderComparisonDetailHtml($rows, $type)
+            ]));
+    }
+
+    public function comparison_week_table()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            show_error('Unauthorized', 401);
+            return;
+        }
+
+        $fromMonth = $this->input->post('from_month') ?: $this->input->get('from_month') ?: date('Y-m');
+        $toMonth = $this->input->post('to_month') ?: $this->input->get('to_month') ?: date('Y-m');
+        $matrix = $this->MPO_Monitor->getComparisonMatrix($fromMonth, $toMonth, 'week', false);
+        $html = $this->load->view('PO_Monitor/_comparison_table', [
+            'matrix' => $matrix,
+            'groupBy' => 'week',
+            'tableId' => 'table_po_target_invoice_compare_week',
+        ], true);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'html' => $html,
             ]));
     }
 
