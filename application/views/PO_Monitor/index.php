@@ -1573,6 +1573,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
         gap: 1rem;
     }
 
+    #po_breakdown_filter_modal .po-breakdown-filter-grid {
+        align-items: start;
+    }
+
     .po-breakdown-filter-grid .po-monitor-field label {
         font-size: 0.68rem;
         letter-spacing: 0.07em;
@@ -1777,9 +1781,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
     }
 
     #po_breakdown_filter_modal .select2-container--bootstrap4 .select2-selection {
-        min-height: 42px;
+        min-height: 44px;
         border: 1px solid #d7e0ec;
-        border-radius: 8px;
+        border-radius: 10px;
         background: #fff;
         box-shadow: none;
     }
@@ -1830,15 +1834,17 @@ if (!function_exists('po_monitor_term_amount_link')) {
     }
 
     .select2-dropdown.po-breakdown-select2-dropdown .select2-results__options {
-        max-height: 250px;
-        padding: 0.25rem;
+        max-height: 220px;
+        padding: 0.35rem;
     }
 
     .po-breakdown-select2-dropdown .select2-results__option {
         border-radius: 7px;
-        padding: 0.48rem 0.7rem;
+        margin-bottom: 0.15rem;
+        padding: 0.52rem 0.72rem;
         color: #0f172a;
-        font-size: 0.82rem;
+        font-size: 0.8rem;
+        font-weight: 700;
     }
 
     .po-breakdown-select2-dropdown .select2-results__option--highlighted {
@@ -2336,8 +2342,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                         </select>
                                     </div>
                                     <div class="po-monitor-field">
-                                        <label>Bulan</label>
-                                        <select id="po_breakdown_filter_month" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua bulan">
+                                        <label>Tahun - Bulan</label>
+                                        <select id="po_breakdown_filter_month" class="form-control po-breakdown-filter-select" multiple="multiple" data-placeholder="Semua tahun - bulan">
                                             <?php foreach (($breakdownFilterOptions['months'] ?? []) as $option): ?>
                                                 <option value="<?= htmlspecialchars($option['value'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($option['label'], ENT_QUOTES, 'UTF-8') ?></option>
                                             <?php endforeach; ?>
@@ -3175,7 +3181,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 { id: 'pic', selector: '#po_breakdown_filter_pic', optionKey: 'pics', label: 'PIC' },
                 { id: 'regional', selector: '#po_breakdown_filter_regional', optionKey: 'regionals', label: 'Regional' },
                 { id: 'area', selector: '#po_breakdown_filter_area', optionKey: 'areas', label: 'Kota' },
-                { id: 'month', selector: '#po_breakdown_filter_month', optionKey: 'months', label: 'Bulan' },
+                { id: 'month', selector: '#po_breakdown_filter_month', optionKey: 'months', label: 'Tahun - Bulan' },
                 { id: 'week', selector: '#po_breakdown_filter_week', optionKey: 'weeks', label: 'Week' }
             ];
 

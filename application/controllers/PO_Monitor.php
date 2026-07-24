@@ -918,7 +918,7 @@ class PO_Monitor extends CI_Controller
             'pics' => ['id' => 'pic', 'field' => 'pic', 'label' => 'pic'],
             'regionals' => ['id' => 'regional', 'field' => 'regional', 'label' => 'regional'],
             'areas' => ['id' => 'area', 'field' => 'area', 'label' => 'area'],
-            'months' => ['id' => 'month', 'field' => 'month', 'label' => 'month_label'],
+            'months' => ['id' => 'month', 'field' => 'month', 'label' => 'month_year_label'],
             'weeks' => ['id' => 'week', 'field' => 'week', 'label' => 'week']
         ];
         $options = [];
@@ -934,10 +934,18 @@ class PO_Monitor extends CI_Controller
                 if ($value === '' || $value === '-') {
                     continue;
                 }
-                $map[$value] = trim((string) ($row[$item['label']] ?? $value)) ?: $value;
+                $label = trim((string) ($row[$item['label']] ?? ''));
+                if ($key === 'months' && $label === '') {
+                    $label = $this->breakdownMonthYearLabel($value, (string) ($row['month_label'] ?? ''));
+                }
+                $map[$value] = $label ?: $value;
             }
 
-            asort($map, SORT_NATURAL | SORT_FLAG_CASE);
+            if ($key === 'months') {
+                ksort($map, SORT_NATURAL | SORT_FLAG_CASE);
+            } else {
+                asort($map, SORT_NATURAL | SORT_FLAG_CASE);
+            }
             $options[$key] = [];
             foreach ($map as $value => $label) {
                 $options[$key][] = ['value' => $value, 'label' => $label];
@@ -945,6 +953,18 @@ class PO_Monitor extends CI_Controller
         }
 
         return $options;
+    }
+
+    private function breakdownMonthYearLabel($monthValue, $fallbackLabel = '')
+    {
+        $monthValue = trim((string) $monthValue);
+        $fallbackLabel = trim((string) $fallbackLabel);
+        $timestamp = preg_match('/^\d{4}-\d{2}$/', $monthValue) ? strtotime($monthValue . '-01') : false;
+        if ($timestamp) {
+            return strtoupper(date('Y - F', $timestamp));
+        }
+
+        return $fallbackLabel !== '' ? $fallbackLabel : $monthValue;
     }
 
     private function groupBreakdownRows(array $rows, $mode)

@@ -2069,6 +2069,7 @@ class MPO_Monitor extends CI_Model
             $row['area'] = trim((string) ($row['area'] ?? '-')) ?: '-';
             $row['month'] = strtoupper($monthKey);
             $row['month_label'] = $monthKey ? strtoupper(date('F', strtotime($monthKey . '-01'))) : '-';
+            $row['month_year_label'] = $monthKey ? strtoupper(date('Y - F', strtotime($monthKey . '-01'))) : '-';
             $row['week'] = strtoupper($weekKey);
             $row['date'] = $start ?: '';
             $row['date_label'] = $start && $end && $start !== $end
@@ -2099,13 +2100,13 @@ class MPO_Monitor extends CI_Model
             $this->appendBreakdownOption($options['pics'], (string) ($row['pic'] ?? ''), (string) ($row['pic'] ?? ''));
             $this->appendBreakdownOption($options['regionals'], (string) ($row['regional'] ?? ''), (string) ($row['regional'] ?? ''));
             $this->appendBreakdownOption($options['areas'], (string) ($row['area'] ?? ''), (string) ($row['area'] ?? ''));
-            $this->appendBreakdownOption($options['months'], (string) ($row['month'] ?? ''), (string) ($row['month_label'] ?? $row['month'] ?? ''));
+            $this->appendBreakdownOption($options['months'], (string) ($row['month'] ?? ''), (string) ($row['month_year_label'] ?? $row['month_label'] ?? $row['month'] ?? ''));
             $this->appendBreakdownOption($options['weeks'], (string) ($row['week'] ?? ''), (string) ($row['week'] ?? ''));
         }
 
         foreach ($options as &$items) {
             uasort($items, function ($a, $b) {
-                return strcmp($a['label'], $b['label']);
+                return strcmp($a['value'], $b['value']);
             });
             $items = array_values($items);
         }
