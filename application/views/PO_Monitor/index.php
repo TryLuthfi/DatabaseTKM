@@ -1602,6 +1602,45 @@ if (!function_exists('po_monitor_term_amount_link')) {
         flex: 1;
     }
 
+    .po-breakdown-active-filters {
+        display: none;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45rem;
+        margin: -0.25rem 0 1rem;
+    }
+
+    .po-breakdown-active-filters.has-filter {
+        display: flex;
+    }
+
+    .po-breakdown-filter-chip {
+        display: inline-flex;
+        align-items: center;
+        max-width: min(360px, 100%);
+        gap: 0.35rem;
+        padding: 0.42rem 0.68rem;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #0f172a;
+        font-size: 0.76rem;
+        font-weight: 900;
+        line-height: 1.1;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+    }
+
+    .po-breakdown-filter-chip i {
+        flex: 0 0 auto;
+        color: #1d4ed8;
+        font-size: 0.72rem;
+    }
+
+    .po-breakdown-filter-chip span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .po-breakdown-tabs {
         gap: 0.3rem;
         margin-bottom: 1rem;
@@ -2445,6 +2484,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 </div>
                             </div>
                         </div>
+                        <div class="po-breakdown-active-filters" id="po_breakdown_active_filters" aria-live="polite"></div>
 
                         <ul class="nav po-breakdown-tabs" role="tablist">
                             <li class="nav-item"><a class="nav-link active" data-toggle="pill" href="#po_breakdown_tab_project" role="tab" data-breakdown-mode="project">Project</a></li>
@@ -3210,12 +3250,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 detail: '<?= site_url('PO_Monitor/breakdown_detail') ?>'
             };
             var poBreakdownFilterConfig = [
-                { id: 'project', selector: '#po_breakdown_filter_project', optionKey: 'projects' },
-                { id: 'pic', selector: '#po_breakdown_filter_pic', optionKey: 'pics' },
-                { id: 'regional', selector: '#po_breakdown_filter_regional', optionKey: 'regionals' },
-                { id: 'area', selector: '#po_breakdown_filter_area', optionKey: 'areas' },
-                { id: 'month', selector: '#po_breakdown_filter_month', optionKey: 'months' },
-                { id: 'week', selector: '#po_breakdown_filter_week', optionKey: 'weeks' }
+                { id: 'project', selector: '#po_breakdown_filter_project', optionKey: 'projects', label: 'Project' },
+                { id: 'pic', selector: '#po_breakdown_filter_pic', optionKey: 'pics', label: 'PIC' },
+                { id: 'regional', selector: '#po_breakdown_filter_regional', optionKey: 'regionals', label: 'Regional' },
+                { id: 'area', selector: '#po_breakdown_filter_area', optionKey: 'areas', label: 'Kota' },
+                { id: 'month', selector: '#po_breakdown_filter_month', optionKey: 'months', label: 'Bulan' },
+                { id: 'week', selector: '#po_breakdown_filter_week', optionKey: 'weeks', label: 'Week' }
             ];
 
             function poBreakdownSelectValues(selector) {
@@ -3235,6 +3275,40 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     limit: parseInt($('#po_breakdown_limit').val() || '10', 10),
                     invoicedOnly: $('#po_breakdown_invoiced_only').is(':checked')
                 };
+            }
+
+            function poBreakdownSelectedLabels(selector) {
+                return $(selector).find('option:selected').map(function() {
+                    return $.trim($(this).text() || $(this).val() || '');
+                }).get().filter(function(label) {
+                    return label !== '';
+                });
+            }
+
+            function poBreakdownChipHtml(label, value) {
+                return '<span class="po-breakdown-filter-chip" title="' + escapeHtml(label + ': ' + value) + '">' +
+                    '<i class="fas fa-check-circle"></i><span>' + escapeHtml(label) + ': ' + escapeHtml(value) + '</span></span>';
+            }
+
+            function poBreakdownRenderActiveFilters() {
+                var chips = [];
+                poBreakdownFilterConfig.forEach(function(config) {
+                    poBreakdownSelectedLabels(config.selector).forEach(function(value) {
+                        chips.push(poBreakdownChipHtml(config.label, value));
+                    });
+                });
+
+                var searchText = $.trim(String($('#po_breakdown_search').val() || ''));
+                if (searchText !== '') {
+                    chips.push(poBreakdownChipHtml('Search', searchText));
+                }
+                if ($('#po_breakdown_invoiced_only').is(':checked')) {
+                    chips.push(poBreakdownChipHtml('Status', 'Invoiced Only'));
+                }
+
+                $('#po_breakdown_active_filters')
+                    .toggleClass('has-filter', chips.length > 0)
+                    .html(chips.join(''));
             }
 
             function poBreakdownColumns(mode) {
@@ -3340,6 +3414,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
             }
 
             function poBreakdownReload(activeOnly) {
+                poBreakdownRenderActiveFilters();
                 var limit = poBreakdownFilters().limit;
                 if (activeOnly) {
                     poBreakdownTable(poBreakdownState.mode).page.len(limit).draw();
@@ -3436,6 +3511,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 poBreakdownReload(false);
             });
             $('#po_breakdown_filter_project, #po_breakdown_filter_pic, #po_breakdown_filter_regional, #po_breakdown_filter_area, #po_breakdown_filter_month, #po_breakdown_filter_week').off('change.poBreakdown').on('change.poBreakdown', function(event) {
+                poBreakdownRenderActiveFilters();
                 poBreakdownUpdateOptions('#' + event.currentTarget.id);
             });
             $('#po_breakdown_limit, #po_breakdown_invoiced_only').off('change.poBreakdown').on('change.poBreakdown', function() {
@@ -3443,6 +3519,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
             });
             var poBreakdownSearchTimer = null;
             $('#po_breakdown_search').off('input.poBreakdown').on('input.poBreakdown', function() {
+                poBreakdownRenderActiveFilters();
                 window.clearTimeout(poBreakdownSearchTimer);
                 poBreakdownSearchTimer = window.setTimeout(function() {
                     poBreakdownReload(false);
@@ -3459,6 +3536,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 poBreakdownUpdateOptions('');
             });
             poBreakdownUpdateOptions('');
+            poBreakdownRenderActiveFilters();
             poBreakdownTable('project');
 
             $('.js-po-purge-form').off('submit.poPurge').on('submit.poPurge', function(e) {

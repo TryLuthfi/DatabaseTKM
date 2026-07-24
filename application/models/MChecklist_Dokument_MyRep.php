@@ -523,11 +523,11 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($city !== '') {
-            $this->db->where('UPPER(mt.city_name)', strtoupper($city));
+            $this->db->where($this->collatedUpperInSql('mt.city_name', [$city]), null, false);
         }
 
         if ($regional !== '') {
-            $this->db->where('UPPER(mt.regional_name)', strtoupper($regional));
+            $this->db->where($this->collatedUpperInSql('mt.regional_name', [$regional]), null, false);
         }
 
         return true;
@@ -709,7 +709,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($city !== '') {
-            $query->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
+            $query->where($this->collatedUpperInSql('COALESCE(mf.city_name, mt.city_name)', [$city]), null, false);
         }
 
         if ($regional !== '') {
@@ -837,11 +837,11 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($city !== '') {
-            $this->db->where('UPPER(mt.city_name)', strtoupper($city));
+            $this->db->where($this->collatedUpperInSql('mt.city_name', [$city]), null, false);
         }
 
         if ($regional !== '') {
-            $this->db->where('UPPER(mt.regional_name)', strtoupper($regional));
+            $this->db->where($this->collatedUpperInSql('mt.regional_name', [$regional]), null, false);
         }
 
         return true;
@@ -929,7 +929,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         foreach ($exactFilters as $filterKey => $column) {
             $value = strtoupper(trim((string) ($filters[$filterKey] ?? '')));
             if ($value !== '') {
-                $this->db->where('UPPER(' . $column . ')', $value);
+                $this->db->where($this->collatedUpperInSql($column, [$value]), null, false);
             }
         }
 
@@ -2097,11 +2097,11 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($city !== '') {
-            $query->where('UPPER(city_name)', strtoupper($city));
+            $query->where($this->collatedUpperInSql('city_name', [$city]), null, false);
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(regional_name)', strtoupper($regional));
+            $query->where($this->collatedUpperInSql('regional_name', [$regional]), null, false);
         }
 
         return $query
@@ -2169,7 +2169,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if ($city !== '') {
-            $query->where('UPPER(COALESCE(mf.city_name, mt.city_name)) = ' . $this->db->escape(strtoupper($city)), null, false);
+            $query->where($this->collatedUpperInSql('COALESCE(mf.city_name, mt.city_name)', [$city]), null, false);
         }
 
         if ($regional !== '') {
@@ -3367,18 +3367,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $this->db->from('tb_myrep_pic_mapping_city');
-        $this->db->where('UPPER(city_name)', $city);
+        $this->db->where($this->collatedUpperInSql('city_name', [$city]), null, false);
         if ($province !== '') {
-            $this->db->where('UPPER(province_name)', $province);
+            $this->db->where($this->collatedUpperInSql('province_name', [$province]), null, false);
         }
         if ($regional !== '') {
-            $this->db->where('UPPER(regional_name)', $regional);
+            $this->db->where($this->collatedUpperInSql('regional_name', [$regional]), null, false);
         }
         $row = $this->db->limit(1)->get()->row_array();
         if (empty($row)) {
             $row = $this->db
                 ->from('tb_myrep_pic_mapping_city')
-                ->where('UPPER(city_name)', $city)
+                ->where($this->collatedUpperInSql('city_name', [$city]), null, false)
                 ->limit(1)
                 ->get()
                 ->row_array();
