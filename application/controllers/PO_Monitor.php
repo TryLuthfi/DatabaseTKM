@@ -111,7 +111,17 @@ class PO_Monitor extends CI_Controller
 
         $poNumbersRaw = (string) ($this->input->post('po_numbers') ?: $this->input->get('po_numbers'));
         $poNumbers = preg_split('/[\s,;]+/', $poNumbersRaw, -1, PREG_SPLIT_NO_EMPTY);
-        $summary = $this->MPO_Monitor->backfillPoMonitorFromMyRepHeaders((array) $poNumbers, (int) $this->session->userdata('id_user'));
+        $limit = (int) ($this->input->post('limit') ?: $this->input->get('limit') ?: 50);
+        $offset = (int) ($this->input->post('offset') ?: $this->input->get('offset') ?: 0);
+        $allowAll = in_array(strtolower((string) ($this->input->post('all') ?: $this->input->get('all'))), ['1', 'true', 'yes'], true);
+
+        $summary = $this->MPO_Monitor->backfillPoMonitorFromMyRepHeaders(
+            (array) $poNumbers,
+            (int) $this->session->userdata('id_user'),
+            $limit,
+            $offset,
+            $allowAll
+        );
 
         $this->output
             ->set_content_type('application/json')

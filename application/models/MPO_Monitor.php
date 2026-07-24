@@ -3200,7 +3200,7 @@ class MPO_Monitor extends CI_Model
         return true;
     }
 
-    public function backfillPoMonitorFromMyRepHeaders(array $poNumbers = [], $userId = 0)
+    public function backfillPoMonitorFromMyRepHeaders(array $poNumbers = [], $userId = 0, $limit = 50, $offset = 0, $allowAll = false)
     {
         $this->ensureStandaloneSchema();
         if (!$this->db->table_exists('tb_myrep_po_header')) {
@@ -3214,21 +3214,39 @@ class MPO_Monitor extends CI_Model
             ];
         }
 
-        $query = $this->db
-            ->select('id_po_header, po_number')
-            ->from('tb_myrep_po_header')
-            ->where("COALESCE(TRIM(po_number), '') !=", '');
-
         $poNumbers = array_values(array_unique(array_filter(array_map(function ($poNumber) {
             return strtoupper(trim((string) $poNumber));
         }, $poNumbers))));
+
+        $limit = max(1, min(200, (int) $limit));
+        $offset = max(0, (int) $offset);
+        if (empty($poNumbers) && !$allowAll) {
+            return [
+                'status' => false,
+                'created' => 0,
+                'existing' => 0,
+                'synced' => 0,
+                'processed' => 0,
+                'limit' => $limit,
+                'offset' => $offset,
+                'next_offset' => $offset,
+                'errors' => ['Isi po_numbers, atau gunakan all=1 dengan limit/offset untuk backfill bertahap.']
+            ];
+        }
+
+        $query = $this->db
+            ->select('MIN(id_po_header) AS id_po_header, UPPER(TRIM(po_number)) AS po_number', false)
+            ->from('tb_myrep_po_header')
+            ->where("COALESCE(TRIM(po_number), '') !=", '');
+
         if (!empty($poNumbers)) {
-            $query->where_in('po_number', $poNumbers);
+            $query->where_in('UPPER(TRIM(po_number))', $poNumbers);
         }
 
         $headers = $query
             ->order_by('po_number', 'ASC')
-            ->order_by('id_po_header', 'ASC')
+            ->group_by('UPPER(TRIM(po_number))')
+            ->limit($limit, $offset)
             ->get()
             ->result_array();
 
@@ -3238,6 +3256,9 @@ class MPO_Monitor extends CI_Model
             'existing' => 0,
             'synced' => 0,
             'processed' => 0,
+            'limit' => $limit,
+            'offset' => $offset,
+            'next_offset' => $offset + count($headers),
             'errors' => []
         ];
 
