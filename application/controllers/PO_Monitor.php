@@ -914,7 +914,7 @@ class PO_Monitor extends CI_Controller
             }
         }
 
-        if ($except !== 'invoicedOnly' && !empty($filters['invoicedOnly']) && (float) ($row['achieved'] ?? 0) <= 0) {
+        if ($except !== 'invoicedOnly' && !empty($filters['invoicedOnly']) && strtoupper((string) ($row['row_type'] ?? '')) !== 'ACHIEVED') {
             return false;
         }
 
@@ -1255,7 +1255,7 @@ class PO_Monitor extends CI_Controller
         $html .= '</tr></thead><tbody>';
 
         foreach ($rows as $index => $row) {
-            $isAchieved = (float) ($row['achieved'] ?? 0) > 0;
+            $isAchieved = strtoupper((string) ($row['row_type'] ?? '')) === 'ACHIEVED';
             $type = $isAchieved ? 'Achieved' : 'Target';
             $typeClass = $isAchieved ? 'badge-success' : 'badge-primary';
             $amount = $isAchieved ? (float) ($row['achieved'] ?? 0) : (float) ($row['target'] ?? 0);
