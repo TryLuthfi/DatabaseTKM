@@ -9,17 +9,25 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $this->load->model('MImplementasi_BOQ_MyRep');
         $this->load->model('MMainfeeder_MyRep');
         $this->load->library('upload');
+        $this->load->helper('myrep_pic');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('Implementasi_BOQ_MyRep');
             $this->myrepAccess->enforceByMethod('Implementasi_BOQ_MyRep', (string) $this->router->fetch_method(), [
                 'approveComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
+                'approvecomplyphoto' => 'APPROVAL_FOTO_COMPLY',
                 'rejectComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
+                'rejectcomplyphoto' => 'APPROVAL_FOTO_COMPLY',
                 'saveDailyActivity' => 'APPROVAL_DAILY',
+                'savedailyactivity' => 'APPROVAL_DAILY',
                 'rotateProgressPhoto' => 'TAMBAH',
+                'rotateprogressphoto' => 'TAMBAH',
                 'deleteProgressPhoto' => 'VIEW',
+                'deleteprogressphoto' => 'VIEW',
                 'saveComplyPhotoOrder' => 'TAMBAH',
+                'savecomplyphotoorder' => 'TAMBAH',
                 'updateComplyPhotoGroup' => 'VIEW',
+                'updatecomplyphotogroup' => 'VIEW',
             ]);
         }
     }
@@ -1258,6 +1266,11 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             return;
         }
 
+        if (!$this->canCurrentUserDeleteComplyPhoto($photo)) {
+            $this->jsonResponse(false, 'Foto comply hanya bisa dihapus oleh Super Admin, uploader, atau PIC area terkait. Untuk non-Super Admin status harus UPLOADED atau REJECTED.', [], 403);
+            return;
+        }
+
         $deleted = $this->MImplementasi_BOQ_MyRep->deleteProgressPhotoById($photoId);
         if ($deleted) {
             $this->clearProgressPhotoDerivativeCache($photoId);
@@ -1301,11 +1314,25 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $baselineItemId = (int) $this->input->post('baseline_item_id');
         $scopeType = strtoupper(trim((string) $this->input->post('scope_type'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
         $complyLabel = trim((string) $this->input->post('comply_label'));
+        $complyItemDisplay = trim((string) $this->input->post('comply_item_display'));
         $redirectUrl = 'Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane';
         $userId = (int) $this->session->userdata('id_user');
 
         if ($clusterId <= 0 || $seedPhotoId <= 0 || $baselineItemId <= 0 || $complyLabel === '') {
             $this->session->set_flashdata('error', 'Data edit foto comply tidak valid.');
+            redirect($redirectUrl);
+            return;
+        }
+
+        $seedPhoto = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($seedPhotoId);
+        if (empty($seedPhoto) || (int) ($seedPhoto['id_myrep_cluster'] ?? 0) !== $clusterId || strtoupper(trim((string) ($seedPhoto['photo_category'] ?? 'HARIAN'))) !== 'COMPLY') {
+            $this->session->set_flashdata('error', 'Foto comply tidak ditemukan.');
+            redirect($redirectUrl);
+            return;
+        }
+
+        if (!$this->canCurrentUserEditComplyPhoto($seedPhoto)) {
+            $this->session->set_flashdata('error', 'Edit foto comply hanya bisa dilakukan oleh Super Admin, uploader, atau PIC area terkait.');
             redirect($redirectUrl);
             return;
         }
@@ -1330,6 +1357,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $baselineItemId,
             $scopeType,
             $complyLabel,
+            $complyItemDisplay,
             $userId
         );
 
@@ -1338,6 +1366,120 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $saved ? 'Data foto comply berhasil diperbarui.' : 'Gagal memperbarui data foto comply.'
         );
         redirect($redirectUrl);
+    }
+
+    private function canCurrentUserDeleteComplyPhoto(array $photo)
+    {
+        if ($this->isCurrentUserSuperAdmin()) {
+            return true;
+        }
+
+        $status = strtoupper(trim((string) ($photo['status_photo'] ?? 'UPLOADED')));
+        if (!in_array($status, ['UPLOADED', 'REJECTED'], true)) {
+            return false;
+        }
+
+        return $this->isCurrentUserComplyUploader($photo) || $this->isCurrentUserMappedToComplyArea($photo);
+    }
+
+    private function canCurrentUserEditComplyPhoto(array $photo)
+    {
+        if ($this->isCurrentUserSuperAdmin()) {
+            return true;
+        }
+
+        return $this->isCurrentUserComplyUploader($photo) || $this->isCurrentUserMappedToComplyArea($photo);
+    }
+
+    private function isCurrentUserSuperAdmin()
+    {
+        return (string) $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function isCurrentUserComplyUploader(array $photo)
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        return $userId > 0 && (int) ($photo['uploaded_by'] ?? 0) === $userId;
+    }
+
+    private function isCurrentUserMappedToComplyArea(array $photo)
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return false;
+        }
+
+        $cityName = strtoupper(trim((string) ($photo['city_name'] ?? '')));
+        if ($cityName === '') {
+            return false;
+        }
+
+        $user = (array) $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            return false;
+        }
+
+        $roleColumns = [
+            'rpm_area',
+            'sm_area',
+            'spv_area',
+            'snd_area',
+            'admin_area',
+            'snd_ho',
+            'atp_ho',
+            'rfs_ho',
+            'sitac_ho',
+            'dc_ho',
+            'qa_ho',
+        ];
+
+        $whereParts = [];
+        foreach ($roleColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik);
+            }
+        }
+        if (empty($whereParts)) {
+            return false;
+        }
+
+        $this->db
+            ->select('1 AS hit', false)
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(city_name)', $cityName);
+
+        $regionalName = strtoupper(trim((string) ($photo['regional_name'] ?? '')));
+        if ($regionalName !== '' && $this->db->field_exists('regional_name', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('UPPER(regional_name)', $regionalName);
+        }
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+
+        $row = (array) $this->db
+            ->where('(' . implode(' OR ', $whereParts) . ')', null, false)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return !empty($row);
+    }
+
+    private function buildComplyRemarkProgress($scopeType, $complyLabel, $itemDisplay = '')
+    {
+        $scopeType = strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $complyLabel = trim((string) $complyLabel);
+        $itemDisplay = trim((string) $itemDisplay);
+        $marker = $itemDisplay !== '' ? (' [ITEM: ' . str_replace([']', "\r", "\n"], ['', ' ', ' '], $itemDisplay) . ']') : '';
+
+        return 'Upload Foto Comply (' . $scopeType . ')' . $marker . ' - ' . $complyLabel;
     }
 
     public function progressPhotoPreview($photoId = 0, $size = 'thumb')
@@ -1411,6 +1553,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         foreach ($entries as $entryIndex => $entry) {
             $baselineItemId = (int) ($entry['baseline_item_id'] ?? 0);
             $complyLabel = trim((string) ($entry['comply_label'] ?? ''));
+            $complyItemDisplay = trim((string) ($entry['comply_item_display'] ?? ''));
             $scopeType = strtoupper(trim((string) ($entry['scope_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
             if ($baselineItemId <= 0 || $complyLabel === '') {
                 continue;
@@ -1450,7 +1593,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'progress_date' => $progressDate,
                 'qty_progress' => 0,
                 'status_progress' => 'ON PROGRESS',
-                'remark_progress' => 'Upload Foto Comply (' . $scopeType . ') - ' . $complyLabel,
+                'remark_progress' => $this->buildComplyRemarkProgress($scopeType, $complyLabel, $complyItemDisplay),
                 'created_by' => (int) $this->session->userdata('id_user'),
                 'updated_by' => (int) $this->session->userdata('id_user'),
             ], $photoRows);

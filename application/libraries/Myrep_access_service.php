@@ -195,6 +195,12 @@ class Myrep_access_service
         }
 
         $lower = strtolower($methodName);
+        foreach ($methodActionMap as $mappedMethodName => $mappedActionKey) {
+            if (strtolower((string) $mappedMethodName) === $lower) {
+                return $this->enforcePermission($pageKey, (string) $mappedActionKey);
+            }
+        }
+
         if (strpos($lower, 'approve') === 0 || strpos($lower, 'reject') === 0) {
             return $this->enforcePermission($pageKey, 'APPROVAL');
         }

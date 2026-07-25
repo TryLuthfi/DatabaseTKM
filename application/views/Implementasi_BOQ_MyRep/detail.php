@@ -6,7 +6,49 @@ $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Imple
 $canApprovalDailyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_DAILY') : true;
 $canApprovalComplyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_FOTO_COMPLY') : true;
 $canSavePhotoRotation = $canTambah;
+$currentUserId = (int) $this->session->userdata('id_user');
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 $implLazyPhotoPlaceholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="110" viewBox="0 0 160 110"%3E%3Crect width="160" height="110" fill="%23eef2f7"/%3E%3Cpath d="M30 78l26-28 19 19 14-15 41 24H30z" fill="%23cbd5e1"/%3E%3Ccircle cx="112" cy="35" r="12" fill="%23dbe3ef"/%3E%3C/svg%3E';
+
+$currentUserMappedToClusterArea = false;
+if (!$isSuperAdmin && $currentUserId > 0 && isset($this->db) && $this->db->table_exists('tb_master_user_new') && $this->db->table_exists('tb_myrep_pic_mapping_city')) {
+    $clusterCityForAccess = strtoupper(trim((string) ($cluster['city_name'] ?? '')));
+    $clusterRegionalForAccess = strtoupper(trim((string) ($cluster['regional_name'] ?? '')));
+    $currentUserRowForAccess = (array) $this->db
+        ->select('nik')
+        ->from('tb_master_user_new')
+        ->where('id', $currentUserId)
+        ->limit(1)
+        ->get()
+        ->row_array();
+    $currentNikForAccess = trim((string) ($currentUserRowForAccess['nik'] ?? ''));
+    $roleColumnsForAccess = ['rpm_area', 'sm_area', 'spv_area', 'snd_area', 'admin_area', 'snd_ho', 'atp_ho', 'rfs_ho', 'sitac_ho', 'dc_ho', 'qa_ho'];
+    $wherePartsForAccess = [];
+    if ($clusterCityForAccess !== '' && $currentNikForAccess !== '' && function_exists('myrep_pic_column_contains_sql')) {
+        foreach ($roleColumnsForAccess as $roleColumnForAccess) {
+            if ($this->db->field_exists($roleColumnForAccess, 'tb_myrep_pic_mapping_city')) {
+                $wherePartsForAccess[] = myrep_pic_column_contains_sql($this->db, '`' . $roleColumnForAccess . '`', $currentNikForAccess);
+            }
+        }
+    }
+    if (!empty($wherePartsForAccess)) {
+        $this->db
+            ->select('1 AS hit', false)
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(city_name)', $clusterCityForAccess);
+        if ($clusterRegionalForAccess !== '' && $this->db->field_exists('regional_name', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('UPPER(regional_name)', $clusterRegionalForAccess);
+        }
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+        $currentUserMappedToClusterArea = !empty($this->db
+            ->where('(' . implode(' OR ', $wherePartsForAccess) . ')', null, false)
+            ->limit(1)
+            ->get()
+            ->row_array());
+    }
+}
 
 if (!function_exists('implHistoryNumber')) {
     function implHistoryNumber($value, $zeroAsDash = true)
@@ -17,6 +59,31 @@ if (!function_exists('implHistoryNumber')) {
         }
 
         return number_format($number, 0, ',', '.');
+    }
+}
+
+if (!function_exists('implDetectComplyItemOverride')) {
+    function implDetectComplyItemOverride($remarkValue)
+    {
+        if (preg_match('/\[ITEM:\s*([^\]]+)\]/i', (string) $remarkValue, $matches)) {
+            return trim((string) $matches[1]);
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('implNormalizeComplyItemDisplay')) {
+    function implNormalizeComplyItemDisplay($itemName)
+    {
+        $display = trim((string) $itemName);
+        $normalized = strtoupper($display);
+
+        if (in_array($normalized, ['EKSISTING', 'EXISTING', 'TIANG EKSISTING'], true)) {
+            return 'Eksisting';
+        }
+
+        return $display;
     }
 }
 
@@ -574,10 +641,11 @@ foreach ($compareRows as $row) {
             );
             $isPoleExtComply = strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) === 'COMPLY'
                 && implIsPoleExtComplyPhoto($photo);
+            $complyItemOverride = implNormalizeComplyItemDisplay(implDetectComplyItemOverride($entry['remark_progress'] ?? ''));
             $galleryRows[] = [
                 'id_boq_baseline_item' => (int) ($row['id_boq_baseline_item'] ?? 0),
-                'item_name' => $isPoleExtComply ? 'Tiang Eksisting' : (string) ($row['item_name'] ?? '-'),
-                'item_type' => $isPoleExtComply ? 'TIANG EKSISTING' : (string) ($row['item_type'] ?? '-'),
+                'item_name' => $isPoleExtComply ? 'Eksisting' : ($complyItemOverride !== '' ? $complyItemOverride : implNormalizeComplyItemDisplay($row['item_name'] ?? '-')),
+                'item_type' => $isPoleExtComply ? 'TIANG' : (string) ($row['item_type'] ?? '-'),
                 'scope_type' => $photoScope,
                 'photo_type' => (string) ($row['photo_type'] ?? ''),
                 'progress_date' => (string) ($entry['progress_date'] ?? '-'),
@@ -602,6 +670,10 @@ foreach ((array) ($masterBoqItems ?? []) as $masterItem) {
     $masterItemType = strtoupper(trim((string) ($masterItem['item_type'] ?? '')));
     if ($masterItemName === '' || $masterItemType === '') {
         continue;
+    }
+    $masterItemDisplayName = implNormalizeComplyItemDisplay($masterItemName);
+    if ($masterItemDisplayName === 'Eksisting') {
+        $masterItemType = 'TIANG';
     }
 
     if ($masterItemType === 'CABLE') {
@@ -638,14 +710,15 @@ foreach ((array) ($masterBoqItems ?? []) as $masterItem) {
         continue;
     }
 
-    $catalogKey = strtoupper($masterItemType . '|' . $masterItemName);
+    $catalogKey = strtoupper($masterItemType . '|' . $masterItemDisplayName);
     if (isset($complyBuilderItems[$catalogKey])) {
         continue;
     }
     $complyBuilderItems[$catalogKey] = [
         'id_boq_baseline_item' => $baselineItemId,
-        'item_name' => $masterItemName,
+        'item_name' => $masterItemDisplayName,
         'item_type' => $masterItemType,
+        'is_exact_baseline_item' => strtoupper(trim((string) ($complySource['item_name'] ?? ''))) === strtoupper($masterItemName) ? 1 : 0,
         'comply_photo_per_label' => (int) ($complySource['comply_photo_per_label'] ?? 1),
         'comply_label_prefix' => (string) ($complySource['comply_label_prefix'] ?? $masterItemName),
         'comply_label_placeholder' => (string) ($complySource['comply_label_placeholder'] ?? 'Nama / nomor item comply'),
@@ -653,6 +726,42 @@ foreach ((array) ($masterBoqItems ?? []) as $masterItem) {
     ];
 }
 $complyBuilderItems = array_values($complyBuilderItems);
+$hasComplyEksistingItem = false;
+foreach ($complyBuilderItems as $complyBuilderItem) {
+    $builderType = strtoupper(trim((string) ($complyBuilderItem['item_type'] ?? '')));
+    $builderName = strtoupper(trim((string) ($complyBuilderItem['item_name'] ?? '')));
+    if ($builderType === 'TIANG' && in_array($builderName, ['EKSISTING', 'EXISTING', 'TIANG EKSISTING'], true)) {
+        $hasComplyEksistingItem = true;
+        break;
+    }
+}
+if (!$hasComplyEksistingItem) {
+    $tiangBaselineItemId = (int) ($baselineByType['TIANG'] ?? 0);
+    $tiangComplySource = null;
+    if ($tiangBaselineItemId > 0) {
+        foreach ($complySelectableItems as $complyItem) {
+            if ((int) ($complyItem['id_boq_baseline_item'] ?? 0) === $tiangBaselineItemId) {
+                $tiangComplySource = $complyItem;
+                break;
+            }
+        }
+    }
+    if (!empty($tiangComplySource)) {
+        $complyBuilderItems[] = [
+            'id_boq_baseline_item' => $tiangBaselineItemId,
+            'item_name' => 'Eksisting',
+            'item_type' => 'TIANG',
+            'is_exact_baseline_item' => 0,
+            'comply_photo_per_label' => 1,
+            'comply_label_prefix' => 'POLE EXT',
+            'comply_label_placeholder' => 'Contoh: POLE EXT 001',
+            'comply_requirement_text' => 'Foto comply pole existing cluster / subfeeder.',
+            'default_label_prefix' => 'POLE EXT',
+            'default_remark_prefix' => 'POLE EXT',
+            'short_requirement' => 'Wajib 1 foto POLE EXT per entry',
+        ];
+    }
+}
 
 $historyInitialDate = !empty($cluster['drm_date'])
     ? (string) $cluster['drm_date']
@@ -777,7 +886,7 @@ $complyGalleryKindOptions = [];
 foreach ((array) $complyGalleryGroups as $galleryType => $galleryItems) {
     $categoryKey = strtoupper(trim((string) $galleryType));
     foreach ((array) $galleryItems as $galleryItem) {
-        $kindName = trim((string) ($galleryItem['item_name'] ?? ''));
+        $kindName = implNormalizeComplyItemDisplay($galleryItem['item_name'] ?? '');
         if ($categoryKey === '' || $kindName === '') {
             continue;
         }
@@ -1537,7 +1646,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         position: absolute;
         top: .55rem;
         right: .65rem;
-        z-index: 3;
+        z-index: 20;
+        pointer-events: auto;
+    }
+
+    .impl-photo-action-menu {
+        position: relative;
+        z-index: 25;
+        pointer-events: auto;
     }
 
     .impl-photo-action-menu .dropdown-toggle {
@@ -1558,6 +1674,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     .impl-photo-action-menu .dropdown-menu {
         min-width: 8.5rem;
         font-size: .82rem;
+        z-index: 2055;
     }
 
     .impl-gallery-photo-card img {
@@ -2883,6 +3000,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                             return (int) ($photoRow['id_progress_photo'] ?? 0);
                                                         }, (array) ($galleryItem['photos'] ?? []))));
                                                         $rowOrderPhotoId = (int) ($rowPhotoIds[0] ?? 0);
+                                                        $rowUploadedByCurrentUser = false;
+                                                        foreach ((array) ($galleryItem['photos'] ?? []) as $photoRowForAccess) {
+                                                            if ((int) ($photoRowForAccess['uploaded_by'] ?? 0) === $currentUserId) {
+                                                                $rowUploadedByCurrentUser = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                        $canEditThisComplyRow = $isSuperAdmin || $currentUserMappedToClusterArea || $rowUploadedByCurrentUser;
                                                         ?>
                                                         <tr class="js-comply-gallery-row" data-order-photo-id="<?= $rowOrderPhotoId ?>" data-gallery-kind="<?= htmlspecialchars(strtoupper(trim((string) ($galleryItem['item_name'] ?? ''))), ENT_QUOTES) ?>" data-gallery-scope="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>" data-search="<?= htmlspecialchars(strtolower($searchText), ENT_QUOTES) ?>">
                                                             <td class="impl-gallery-table__no">
@@ -2912,7 +3037,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoBadgeClass = $photoStatus === 'APPROVED' ? 'success' : ($photoStatus === 'REJECTED' ? 'danger' : 'warning');
                                                                         $photoCaption = (string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Comply'));
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
-                                                                        $canDeleteThisPhoto = true;
+                                                                        $canDeleteThisPhoto = $isSuperAdmin || (in_array($photoStatus, ['UPLOADED', 'REJECTED'], true) && ($currentUserMappedToClusterArea || (int) ($photo['uploaded_by'] ?? 0) === $currentUserId));
                                                                         ?>
                                                                         <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>" data-can-delete-photo="<?= $canDeleteThisPhoto ? '1' : '0' ?>">
                                                                             <a href="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" class="impl-gallery-photo-card js-open-lightbox" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-image="<?= implProgressPhotoPreviewUrl((int) ($photo['id_progress_photo'] ?? 0), 'preview', (string) ($photo['file_path'] ?? '')) ?>" data-mime="<?= htmlspecialchars(implPhotoMimeFromPath((string) ($photo['file_path'] ?? '')), ENT_QUOTES) ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
@@ -2922,7 +3047,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                                 <?php if ((!empty($canApprove) && $canApprovalComplyAction) || $canDeleteThisPhoto): ?>
                                                                                     <div class="js-comply-photo-actions">
                                                                                         <div class="dropdown impl-photo-action-menu">
-                                                                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>
+                                                                                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-role-guard-exempt="1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>
                                                                                             <div class="dropdown-menu dropdown-menu-right">
                                                                                                 <?php if (!empty($canApprove) && $canApprovalComplyAction && ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED')): ?>
                                                                                                     <button type="button" class="dropdown-item text-success js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Approve</button>
@@ -2934,7 +3059,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                                                     <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
                                                                                                         <div class="dropdown-divider"></div>
                                                                                                     <?php endif; ?>
-                                                                                                    <button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Hapus</button>
+                                                                                                    <button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-role-guard-exempt="1" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">Hapus</button>
                                                                                                 <?php endif; ?>
                                                                                             </div>
                                                                                         </div>
@@ -2957,19 +3082,25 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                 <?= !empty($dates) ? nl2br(htmlspecialchars(implode("\n", $dates))) : '-' ?>
                                                             </td>
                                                             <td class="impl-gallery-table__action" style="position:relative;z-index:50;pointer-events:auto !important;">
-                                                                <button
-                                                                    type="button"
-                                                                    class="btn btn-sm btn-primary js-open-comply-row-edit"
-                                                                    style="position:relative;z-index:51;pointer-events:auto !important;"
-                                                                    onclick="return window.openComplyRowEditFromButton ? window.openComplyRowEditFromButton(this) : true;"
-                                                                    data-toggle="modal"
-                                                                    data-target="#modal-comply-row-edit"
-                                                                    data-seed-photo-id="<?= $rowOrderPhotoId ?>"
-                                                                    data-baseline-item-id="<?= (int) ($galleryItem['id_boq_baseline_item'] ?? 0) ?>"
-                                                                    data-scope-type="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>"
-                                                                    data-comply-label="<?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? ''), ENT_QUOTES) ?>">
-                                                                    Edit
-                                                                </button>
+                                                                <?php if ($canEditThisComplyRow): ?>
+                                                                    <button
+                                                                        type="button"
+                                                                        class="btn btn-sm btn-primary js-open-comply-row-edit"
+                                                                        data-role-guard-exempt="1"
+                                                                        style="position:relative;z-index:51;pointer-events:auto !important;"
+                                                                        onclick="return window.openComplyRowEditFromButton ? window.openComplyRowEditFromButton(this) : true;"
+                                                                        data-toggle="modal"
+                                                                        data-target="#modal-comply-row-edit"
+                                                                        data-seed-photo-id="<?= $rowOrderPhotoId ?>"
+                                                                        data-baseline-item-id="<?= (int) ($galleryItem['id_boq_baseline_item'] ?? 0) ?>"
+                                                                        data-item-name="<?= htmlspecialchars((string) ($galleryItem['item_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                        data-scope-type="<?= htmlspecialchars($galleryScope, ENT_QUOTES) ?>"
+                                                                        data-comply-label="<?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? ''), ENT_QUOTES) ?>">
+                                                                        Edit
+                                                                    </button>
+                                                                <?php else: ?>
+                                                                    <span class="text-muted small">-</span>
+                                                                <?php endif; ?>
                                                             </td>
                                                         </tr>
                                                     <?php endforeach; ?>
@@ -3168,9 +3299,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 <div class="modal fade" id="modal-comply-row-edit" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/updateComplyPhotoGroup') ?>" id="form-comply-row-edit">
+            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/updateComplyPhotoGroup') ?>" id="form-comply-row-edit" data-role-guard-exempt="1">
                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                 <input type="hidden" name="seed_photo_id" id="comply_edit_seed_photo_id" value="">
+                <input type="hidden" name="comply_item_display" id="comply_edit_item_display" value="">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">Edit Foto Comply</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -3181,7 +3313,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         <select name="baseline_item_id" id="comply_edit_baseline_item_id" class="form-control" required>
                             <option value="">Pilih Item</option>
                             <?php foreach ((array) $complyBuilderItems as $editComplyItem): ?>
-                                <option value="<?= (int) ($editComplyItem['id_boq_baseline_item'] ?? 0) ?>">
+                                <option value="<?= (int) ($editComplyItem['id_boq_baseline_item'] ?? 0) ?>" data-item-name="<?= htmlspecialchars((string) ($editComplyItem['item_name'] ?? ''), ENT_QUOTES) ?>">
                                     <?= htmlspecialchars((string) (($editComplyItem['item_type'] ?? '-') . ' - ' . ($editComplyItem['item_name'] ?? '-'))) ?>
                                 </option>
                             <?php endforeach; ?>
@@ -3202,7 +3334,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Simpan Perubahan</button>
+                    <button type="submit" class="btn btn-primary btn-sm" data-role-guard-exempt="1">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
@@ -3306,6 +3438,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 <tr class="js-comply-row">
                     <td>
                         <input type="hidden" class="js-comply-item-id" required>
+                        <input type="hidden" class="js-comply-item-display">
                         <input type="hidden" class="js-comply-scope-hidden">
                         <input type="text" class="form-control form-control-sm js-comply-scope-text" readonly>
                     </td>
@@ -3433,6 +3566,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     (function () {
         var canApproveComplyPhoto = <?= (!empty($canApprove) && $canApprovalComplyAction) ? 'true' : 'false' ?>;
         var canSavePhotoRotation = <?= $canSavePhotoRotation ? 'true' : 'false' ?>;
+        var currentUserId = <?= (int) $currentUserId ?>;
+        var isSuperAdmin = <?= $isSuperAdmin ? 'true' : 'false' ?>;
+        var currentUserMappedToClusterArea = <?= $currentUserMappedToClusterArea ? 'true' : 'false' ?>;
         var clusterId = <?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>;
         var rotatePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateProgressPhoto') ?>';
         var deletePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/deleteProgressPhoto') ?>';
@@ -3457,6 +3593,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var complyEditItemSelect = document.getElementById('comply_edit_baseline_item_id');
         var complyEditScopeSelect = document.getElementById('comply_edit_scope_type');
         var complyEditLabelInput = document.getElementById('comply_edit_label');
+        var complyEditItemDisplayInput = document.getElementById('comply_edit_item_display');
         var complyScopeSelect = complyForm ? complyForm.querySelector('.js-comply-scope') : null;
         var complyCategorySelect = complyForm ? complyForm.querySelector('.js-comply-category') : null;
         var complyKindSelect = complyForm ? complyForm.querySelector('.js-comply-kind') : null;
@@ -3466,9 +3603,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 'id' => (int) ($row['id_boq_baseline_item'] ?? 0),
                 'item_name' => (string) ($row['item_name'] ?? '-'),
                 'item_type' => strtoupper(trim((string) ($row['item_type'] ?? '-'))),
+                'is_exact_baseline_item' => (int) ($row['is_exact_baseline_item'] ?? 1),
                 'photo_per_label' => (int) ($row['comply_photo_per_label'] ?? 1),
                 'placeholder' => (string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'),
                 'requirement' => (string) ($row['comply_requirement_text'] ?? ''),
+                'default_label_prefix' => (string) ($row['default_label_prefix'] ?? ''),
+                'default_remark_prefix' => (string) ($row['default_remark_prefix'] ?? ''),
+                'short_requirement' => (string) ($row['short_requirement'] ?? ''),
             ];
         }, (array) $complyBuilderItems)) ?>;
         complyOptionSource = buildComplyOptionSource(complyOptionSource);
@@ -3538,32 +3679,51 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             return 'Wajib mengikuti aturan item';
         }
 
+        function normalizeComplyDisplayName(value) {
+            var display = String(value || '').trim();
+            var normalized = display.toUpperCase();
+            if (normalized === 'EKSISTING' || normalized === 'EXISTING' || normalized === 'TIANG EKSISTING') {
+                return 'Eksisting';
+            }
+            return display;
+        }
+
         function buildComplyOptionSource(source) {
             var items = Array.isArray(source) ? source.slice() : [];
             items.forEach(function (item) {
                 item.option_id = 'base:' + item.id;
-                item.display_name = item.item_name || '-';
+                item.display_name = normalizeComplyDisplayName(item.item_name || '-');
+                if (item.display_name === 'Eksisting') {
+                    item.item_name = 'Eksisting';
+                    item.item_type = 'TIANG';
+                }
             });
 
             var tiangSource = null;
+            var hasEksisting = false;
             items.forEach(function (item) {
                 var type = String(item.item_type || '').toUpperCase();
                 var name = String(item.item_name || '').toUpperCase();
+                var displayName = String(item.display_name || '').toUpperCase();
                 if (type !== 'TIANG') {
                     return;
+                }
+                if (name === 'EKSISTING' || name === 'EXISTING' || name === 'TIANG EKSISTING' || displayName === 'EKSISTING') {
+                    hasEksisting = true;
                 }
                 if (!tiangSource || name.indexOf('EKSISTING') !== -1 || name.indexOf('EXISTING') !== -1) {
                     tiangSource = item;
                 }
             });
 
-            if (tiangSource) {
+            if (tiangSource && !hasEksisting) {
                 var synthetic = {};
                 Object.keys(tiangSource).forEach(function (key) {
                     synthetic[key] = tiangSource[key];
                 });
                 synthetic.option_id = 'tiang-eksisting:' + tiangSource.id;
                 synthetic.item_type = 'TIANG';
+                synthetic.item_name = 'Eksisting';
                 synthetic.display_name = 'Eksisting';
                 synthetic.default_label_prefix = 'POLE EXT';
                 synthetic.default_remark_prefix = 'POLE EXT';
@@ -3573,7 +3733,19 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 items.push(synthetic);
             }
 
-            return items;
+            var uniqueMap = {};
+            return items.filter(function (item) {
+                var type = String(item.item_type || 'LAINNYA').toUpperCase();
+                var name = normalizeComplyDisplayName(item.display_name || item.item_name || '-');
+                var key = type + '|' + name.toUpperCase();
+                if (uniqueMap[key]) {
+                    return false;
+                }
+                uniqueMap[key] = true;
+                item.display_name = name;
+                item.item_name = name;
+                return true;
+            });
         }
 
         function populateComplyCategory() {
@@ -3604,6 +3776,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 option.textContent = item.display_name || item.item_name || '-';
                 option.setAttribute('data-source-index', String(index));
                 option.setAttribute('data-baseline-item-id', String(item.id || 0));
+                option.setAttribute('data-item-name', item.item_name || item.display_name || '');
                 complyKindSelect.appendChild(option);
             });
             syncComplyBuilderDefaults();
@@ -3843,11 +4016,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var rows = complyRowsBody.querySelectorAll('.js-comply-row');
             Array.prototype.forEach.call(rows, function (row, index) {
                 var itemInput = row.querySelector('.js-comply-item-id');
+                var itemDisplayInput = row.querySelector('.js-comply-item-display');
                 var scopeInput = row.querySelector('.js-comply-scope-hidden');
                 var labelInput = row.querySelector('.js-comply-label');
                 var photoInput = row.querySelector('.js-comply-photos');
                 var remarksInput = row.querySelector('.js-comply-remarks');
                 if (itemInput) itemInput.name = 'comply_entries[' + index + '][baseline_item_id]';
+                if (itemDisplayInput) itemDisplayInput.name = 'comply_entries[' + index + '][comply_item_display]';
                 if (scopeInput) scopeInput.name = 'comply_entries[' + index + '][scope_type]';
                 if (labelInput) labelInput.name = 'comply_entries[' + index + '][comply_label]';
                 if (remarksInput) remarksInput.name = 'comply_entries[' + index + '][comply_photo_remarks]';
@@ -3871,6 +4046,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var fragment = complyRowTemplate.content.cloneNode(true);
             var row = fragment.querySelector('.js-comply-row');
             row.querySelector('.js-comply-item-id').value = String(itemData.id);
+            row.querySelector('.js-comply-item-display').value = itemData.item_name || itemData.display_name || '';
             var scopeValue = complyScopeSelect ? complyScopeSelect.value : 'CLUSTER';
             row.querySelector('.js-comply-scope-text').value = scopeValue;
             row.querySelector('.js-comply-scope-hidden').value = scopeValue;
@@ -4023,7 +4199,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var safeId = escapeAttr(photoId);
             var safeLabel = escapeAttr(photoLabel || '-');
             var html = '<div class="dropdown impl-photo-action-menu">';
-            html += '<button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>';
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-role-guard-exempt="1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Menu aksi foto">&#8942;</button>';
             html += '<div class="dropdown-menu dropdown-menu-right">';
 
             if (canApproveComplyPhoto && (status === 'UPLOADED' || status === 'REJECTED')) {
@@ -4036,12 +4212,63 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 if (canApproveComplyPhoto) {
                     html += '<div class="dropdown-divider"></div>';
                 }
-                html += '<button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Hapus</button>';
+                html += '<button type="button" class="dropdown-item text-danger js-delete-progress-photo" data-role-guard-exempt="1" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Hapus</button>';
             }
 
             html += '</div></div>';
 
             return html;
+        }
+
+        function closeComplyPhotoActionMenus(exceptMenu) {
+            Array.prototype.forEach.call(document.querySelectorAll('.impl-photo-action-menu.show'), function (menu) {
+                if (exceptMenu && menu === exceptMenu) {
+                    return;
+                }
+                menu.classList.remove('show');
+                var toggle = menu.querySelector('.dropdown-toggle');
+                var dropdown = menu.querySelector('.dropdown-menu');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+                if (dropdown) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+
+        function toggleComplyPhotoActionMenu(toggleButton) {
+            if (!toggleButton) {
+                return;
+            }
+
+            var menu = toggleButton.closest('.impl-photo-action-menu');
+            if (!menu) {
+                return;
+            }
+
+            if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.dropdown === 'function') {
+                window.jQuery(toggleButton).dropdown('toggle');
+                return;
+            }
+
+            var dropdown = menu.querySelector('.dropdown-menu');
+            var willOpen = !menu.classList.contains('show');
+            closeComplyPhotoActionMenus(menu);
+            menu.classList.toggle('show', willOpen);
+            toggleButton.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (dropdown) {
+                dropdown.classList.toggle('show', willOpen);
+            }
+        }
+
+        function syncComplyEditItemDisplay() {
+            if (!complyEditItemSelect || !complyEditItemDisplayInput) {
+                return;
+            }
+
+            var selectedOption = complyEditItemSelect.options[complyEditItemSelect.selectedIndex];
+            complyEditItemDisplayInput.value = selectedOption ? (selectedOption.getAttribute('data-item-name') || '') : '';
         }
 
         function openComplyRowEditModal(button) {
@@ -4053,7 +4280,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 complyEditSeedInput.value = button.getAttribute('data-seed-photo-id') || '0';
             }
             if (complyEditItemSelect) {
-                complyEditItemSelect.value = button.getAttribute('data-baseline-item-id') || '';
+                var baselineItemId = button.getAttribute('data-baseline-item-id') || '';
+                var itemName = String(button.getAttribute('data-item-name') || '').toUpperCase();
+                complyEditItemSelect.value = baselineItemId;
+                if (itemName) {
+                    Array.prototype.some.call(complyEditItemSelect.options, function (option) {
+                        if (option.value === baselineItemId && String(option.getAttribute('data-item-name') || '').toUpperCase() === itemName) {
+                            option.selected = true;
+                            return true;
+                        }
+                        return false;
+                    });
+                }
             }
             if (complyEditScopeSelect) {
                 complyEditScopeSelect.value = button.getAttribute('data-scope-type') === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
@@ -4061,6 +4299,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (complyEditLabelInput) {
                 complyEditLabelInput.value = button.getAttribute('data-comply-label') || '';
             }
+            syncComplyEditItemDisplay();
             if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
                 window.jQuery('#modal-comply-row-edit').modal('show');
                 return;
@@ -4636,6 +4875,46 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             pane.dataset.dragDropReady = '1';
 
             pane.addEventListener('click', function (event) {
+                var deletePhotoButton = event.target.closest('.js-delete-progress-photo');
+                if (deletePhotoButton) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeComplyPhotoActionMenus();
+                    deleteProgressPhoto(
+                        deletePhotoButton.getAttribute('data-photo-id') || '0',
+                        deletePhotoButton.getAttribute('data-photo-label') || 'Foto'
+                    );
+                    return;
+                }
+
+                var approvePhotoButton = event.target.closest('.js-open-comply-approve');
+                if (approvePhotoButton) {
+                    closeComplyPhotoActionMenus();
+                    var approveId = document.getElementById('comply_approve_photo_id');
+                    var approveLabel = document.getElementById('comply_approve_photo_label');
+                    if (approveId) approveId.value = approvePhotoButton.getAttribute('data-photo-id') || '0';
+                    if (approveLabel) approveLabel.textContent = approvePhotoButton.getAttribute('data-photo-label') || '-';
+                    return;
+                }
+
+                var rejectPhotoButton = event.target.closest('.js-open-comply-reject');
+                if (rejectPhotoButton) {
+                    closeComplyPhotoActionMenus();
+                    var rejectId = document.getElementById('comply_reject_photo_id');
+                    var rejectLabel = document.getElementById('comply_reject_photo_label');
+                    if (rejectId) rejectId.value = rejectPhotoButton.getAttribute('data-photo-id') || '0';
+                    if (rejectLabel) rejectLabel.textContent = rejectPhotoButton.getAttribute('data-photo-label') || '-';
+                    return;
+                }
+
+                var photoActionToggle = event.target.closest('.impl-photo-action-menu .dropdown-toggle');
+                if (photoActionToggle) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleComplyPhotoActionMenu(photoActionToggle);
+                    return;
+                }
+
                 var editButton = event.target.closest('.js-open-comply-row-edit');
                 if (editButton) {
                     event.preventDefault();
@@ -5345,6 +5624,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         });
 
         document.addEventListener('click', function (event) {
+            if (!event.target.closest('.impl-photo-action-menu')) {
+                closeComplyPhotoActionMenus();
+            }
+
             var closeComplyEditButton = event.target.closest('#modal-comply-row-edit [data-dismiss="modal"]');
             if (closeComplyEditButton) {
                 closeComplyRowEditModalFallback();
@@ -5660,7 +5943,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         }
                         var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
                         var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
-                        var canDeletePhoto = isComplyPhoto;
+                        var canDeletePhoto = isComplyPhoto && (
+                            isSuperAdmin ||
+                            (['UPLOADED', 'REJECTED'].indexOf(photoStatus) !== -1 && (
+                                currentUserMappedToClusterArea ||
+                                ((parseInt(photo.uploaded_by || 0, 10) || 0) === currentUserId)
+                            ))
+                        );
                         var photoOriginalUrl = '<?= base_url() ?>' + (photo.file_path || '');
                         var photoPreviewUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : photoOriginalUrl;
                         var photoThumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : photoOriginalUrl;
@@ -5856,6 +6145,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 }
                 reindexComplyRows();
             });
+        }
+
+        if (complyEditItemSelect) {
+            complyEditItemSelect.addEventListener('change', syncComplyEditItemDisplay);
         }
 
         if (window.jQuery) {

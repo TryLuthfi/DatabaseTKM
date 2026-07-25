@@ -103,6 +103,16 @@ class ModuleAccess_hook
         $allowedActions = array_map('strtoupper', (array) ($entry['actions'] ?? []));
         $methodName = (string) $CI->router->fetch_method();
         $actionKey = resolve_user_page_access_action($methodName);
+        if ($controller === 'IMPLEMENTASI_BOQ_MYREP') {
+            $methodLower = strtolower($methodName);
+            $viewOnlyMethods = [
+                'deleteprogressphoto',
+                'updatecomplyphotogroup',
+            ];
+            if (in_array($methodLower, $viewOnlyMethods, true)) {
+                $actionKey = 'VIEW';
+            }
+        }
         if ($controller === 'MONITORING_RFS_MYREP' && strtolower($methodName) === 'updateclaimstatus') {
             $actionKey = 'VIEW';
         }

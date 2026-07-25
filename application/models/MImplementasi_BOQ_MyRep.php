@@ -798,6 +798,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
                 photo.comply_label,
                 photo.status_photo,
                 progress.progress_date,
+                progress.remark_progress,
                 baseline_item.id_boq_baseline_item,
                 boq_item.item_name,
                 boq_item.item_type,
@@ -874,10 +875,11 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             }
 
             $isPoleExt = $this->isPoleExtComplyRow($row);
+            $itemOverride = $this->normalizeComplyItemDisplay($this->detectComplyItemOverride($row['remark_progress'] ?? ''));
             $groups[$sectionTitle][] = [
                 'id_progress_photo' => (int) ($row['id_progress_photo'] ?? 0),
-                'item_name' => $isPoleExt ? 'Tiang Eksisting' : (string) ($row['item_name'] ?? '-'),
-                'item_type' => $isPoleExt ? 'TIANG EKSISTING' : (string) ($row['item_type'] ?? '-'),
+                'item_name' => $isPoleExt ? 'Eksisting' : ($itemOverride !== '' ? $itemOverride : $this->normalizeComplyItemDisplay($row['item_name'] ?? '-')),
+                'item_type' => $isPoleExt ? 'TIANG' : (string) ($row['item_type'] ?? '-'),
                 'comply_label' => (string) ($row['comply_label'] ?? ''),
                 'caption' => (string) ($row['caption'] ?? ''),
                 'file_name' => (string) ($row['file_name'] ?? 'Foto Comply'),
@@ -887,6 +889,27 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         return $groups;
+    }
+
+    private function detectComplyItemOverride($remarkValue)
+    {
+        if (preg_match('/\[ITEM:\s*([^\]]+)\]/i', (string) $remarkValue, $matches)) {
+            return trim((string) $matches[1]);
+        }
+
+        return '';
+    }
+
+    private function normalizeComplyItemDisplay($itemName)
+    {
+        $display = trim((string) $itemName);
+        $normalized = strtoupper($display);
+
+        if (in_array($normalized, ['EKSISTING', 'EXISTING', 'TIANG EKSISTING'], true)) {
+            return 'Eksisting';
+        }
+
+        return $display;
     }
 
     public function createProgressEntry($clusterId, $baselineItemId, $payload, $photoRows = [])
@@ -1005,9 +1028,10 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('photo.*, progress.id_myrep_cluster, progress.id_boq_baseline_item, progress.remark_progress, boq_item.item_name, boq_item.item_type')
+            ->select('photo.*, progress.id_myrep_cluster, progress.id_boq_baseline_item, progress.remark_progress, boq_item.item_name, boq_item.item_type, cluster.city_name, cluster.regional_name')
             ->from('tb_myrep_boq_progress_photo photo')
             ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+            ->join('tb_myrep_cluster cluster', 'cluster.id_myrep_cluster = progress.id_myrep_cluster', 'left')
             ->join('tb_myrep_boq_baseline_item baseline_item', 'baseline_item.id_boq_baseline_item = progress.id_boq_baseline_item', 'left')
             ->join('md_myrep_boq_item boq_item', 'boq_item.id_boq_item = baseline_item.id_boq_item', 'left')
             ->where('photo.id_progress_photo', $photoId)
@@ -1033,7 +1057,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return 'CLUSTER';
     }
 
-    public function updateComplyPhotoGroup($clusterId, $seedPhotoId, $baselineItemId, $scopeType, $complyLabel, $updatedBy)
+    public function updateComplyPhotoGroup($clusterId, $seedPhotoId, $baselineItemId, $scopeType, $complyLabel, $itemDisplay, $updatedBy)
     {
         $clusterId = (int) $clusterId;
         $seedPhotoId = (int) $seedPhotoId;
@@ -1041,6 +1065,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         $updatedBy = (int) $updatedBy;
         $scopeType = strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
         $complyLabel = trim((string) $complyLabel);
+        $itemDisplay = trim((string) $itemDisplay);
 
         if ($clusterId <= 0 || $seedPhotoId <= 0 || $baselineItemId <= 0 || $complyLabel === '' || !$this->tablesReady()) {
             return false;
@@ -1108,12 +1133,22 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->where_in('id_progress_item', $progressIds)
             ->update('tb_myrep_boq_progress_item', [
                 'id_boq_baseline_item' => $baselineItemId,
-                'remark_progress' => 'Upload Foto Comply (' . $scopeType . ') - ' . $complyLabel,
+                'remark_progress' => $this->buildComplyRemarkProgress($scopeType, $complyLabel, $itemDisplay),
                 'updated_by' => $updatedBy,
             ]);
         $this->db->trans_complete();
 
         return $this->db->trans_status();
+    }
+
+    private function buildComplyRemarkProgress($scopeType, $complyLabel, $itemDisplay = '')
+    {
+        $scopeType = strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $complyLabel = trim((string) $complyLabel);
+        $itemDisplay = trim((string) $itemDisplay);
+        $marker = $itemDisplay !== '' ? (' [ITEM: ' . str_replace([']', "\r", "\n"], ['', ' ', ' '], $itemDisplay) . ']') : '';
+
+        return 'Upload Foto Comply (' . $scopeType . ')' . $marker . ' - ' . $complyLabel;
     }
 
     public function canUserEditComplyPhotoGroup($clusterId, $seedPhotoId, $userId)
@@ -1805,7 +1840,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
     private function resolveComplyPrintSectionTitle($row)
     {
         if ($this->isPoleExtComplyRow($row)) {
-            return 'TIANG EKSISTING';
+            return 'TIANG';
         }
 
         $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
