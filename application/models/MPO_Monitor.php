@@ -1573,10 +1573,13 @@ class MPO_Monitor extends CI_Model
                 'months' => [],
                 'period_history' => [
                     'target' => [],
-                    'achieved' => []
+                    'achieved' => [],
+                    'target_outstanding' => []
                 ],
                 'total_target' => 0,
-                'total_achieved' => 0
+                'total_achieved' => 0,
+                'total_target_invoiced' => 0,
+                'deviasi_by_po' => 0
             ];
 
             foreach ($periods as $period) {
@@ -1587,7 +1590,10 @@ class MPO_Monitor extends CI_Model
                     'cumulative_achieved' => 0,
                     'cumulative' => 0,
                     'effective_target' => 0,
-                    'cumulative_percent' => 0
+                    'cumulative_percent' => 0,
+                    'target_invoiced' => 0,
+                    'deviasi_by_po' => 0,
+                    'deviasi_by_po_percent' => 0
                 ];
             }
         }
@@ -1596,10 +1602,22 @@ class MPO_Monitor extends CI_Model
                 p.id_bowheer,
                 a.target_week_start,
                 a.target_week_end,
-                COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount
+                COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
+                COALESCE(tc_alloc.invoice_amount, tc_term.invoice_amount, 0) AS invoiced_amount
             FROM tb_po_term_allocation a
             JOIN tb_po_term t ON t.id_term = a.id_term
             JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN (
+                SELECT id_allocation, SUM(invoice_amount) AS invoice_amount
+                FROM tb_po_term_claim
+                WHERE id_allocation IS NOT NULL
+                GROUP BY id_allocation
+            ) tc_alloc ON tc_alloc.id_allocation = a.id_allocation
+            LEFT JOIN (
+                SELECT id_term, SUM(invoice_amount) AS invoice_amount
+                FROM tb_po_term_claim
+                GROUP BY id_term
+            ) tc_term ON tc_term.id_term = t.id_term
             WHERE CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND a.target_week_start IS NOT NULL
                 AND a.target_week_end IS NOT NULL
@@ -1608,9 +1626,15 @@ class MPO_Monitor extends CI_Model
                 p.id_bowheer,
                 t.target_week_start,
                 t.target_week_end,
-                COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount
+                COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
+                COALESCE(tc.invoice_amount, 0) AS invoiced_amount
             FROM tb_po_term t
             JOIN tb_po p ON p.id_po = t.id_po
+            LEFT JOIN (
+                SELECT id_term, SUM(invoice_amount) AS invoice_amount
+                FROM tb_po_term_claim
+                GROUP BY id_term
+            ) tc ON tc.id_term = t.id_term
             WHERE CONVERT(t.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND t.target_week_start IS NOT NULL
                 AND t.target_week_end IS NOT NULL
@@ -1622,7 +1646,8 @@ class MPO_Monitor extends CI_Model
                 pl.id_bowheer,
                 pl.target_week_start,
                 pl.target_week_end,
-                pl.plan_amount AS amount
+                pl.plan_amount AS amount,
+                0 AS invoiced_amount
             FROM tb_po_target_pipeline pl
             WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND pl.linked_id_po IS NULL
@@ -1640,17 +1665,27 @@ class MPO_Monitor extends CI_Model
                 : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
 
             $amount = (float) $row['amount'];
+            $targetInvoiced = (float) ($row['invoiced_amount'] ?? 0);
+            $targetOutstanding = $targetInvoiced > 0.000001 ? 0 : $amount;
             if (!isset($projectMap[$id]['period_history']['target'][$periodKey])) {
                 $projectMap[$id]['period_history']['target'][$periodKey] = 0;
             }
             $projectMap[$id]['period_history']['target'][$periodKey] += $amount;
+            if (!isset($projectMap[$id]['period_history']['target_outstanding'][$periodKey])) {
+                $projectMap[$id]['period_history']['target_outstanding'][$periodKey] = 0;
+            }
+            $projectMap[$id]['period_history']['target_outstanding'][$periodKey] += $targetOutstanding;
 
             if (!isset($projectMap[$id]['months'][$periodKey])) {
                 continue;
             }
 
             $projectMap[$id]['months'][$periodKey]['target'] += $amount;
+            $projectMap[$id]['months'][$periodKey]['target_invoiced'] += $targetInvoiced;
+            $projectMap[$id]['months'][$periodKey]['deviasi_by_po'] += $targetOutstanding;
             $projectMap[$id]['total_target'] += $amount;
+            $projectMap[$id]['total_target_invoiced'] += $targetInvoiced;
+            $projectMap[$id]['deviasi_by_po'] += $targetOutstanding;
         }
 
         $claimRows = $this->db->query("SELECT
@@ -1687,9 +1722,10 @@ class MPO_Monitor extends CI_Model
         }
 
         $totals = [
-            'months' => [],
+            'months' => [], 
             'total_target' => 0,
-            'total_achieved' => 0
+            'total_achieved' => 0,
+            'deviasi_by_po' => 0
         ];
         foreach ($periods as $period) {
             $totals['months'][$period['key']] = [
@@ -1697,30 +1733,40 @@ class MPO_Monitor extends CI_Model
                 'achieved' => 0,
                 'cumulative' => 0,
                 'effective_target' => 0,
-                'cumulative_percent' => 0
+                'cumulative_percent' => 0,
+                'target_invoiced' => 0,
+                'deviasi_by_po' => 0,
+                'deviasi_by_po_percent' => 0
             ];
         }
 
         foreach ($projectMap as &$project) {
+            $project['deviasi_by_po'] = 0;
+            $project['total_effective_deviasi_by_po'] = 0;
             foreach ($periods as $period) {
                 $periodKey = (string) $period['key'];
                 $target = (float) $project['months'][$periodKey]['target'];
                 $achieved = (float) $project['months'][$periodKey]['achieved'];
-                $cumulative = $this->calculateComparisonCarryOver(
-                    is_array($project['period_history']['target'] ?? null) ? $project['period_history']['target'] : [],
-                    is_array($project['period_history']['achieved'] ?? null) ? $project['period_history']['achieved'] : [],
-                    $periodKey,
-                    $groupBy
-                );
+                $deviasiByPo = $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
+                $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
+                $cumulative = $previousPeriodKey !== ''
+                    ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
+                    : 0;
                 $effectiveTarget = $target + $cumulative;
                 $project['months'][$periodKey]['cumulative'] = $cumulative;
                 $project['months'][$periodKey]['effective_target'] = $effectiveTarget;
+                $project['months'][$periodKey]['deviasi_by_po'] = $deviasiByPo;
                 $project['months'][$periodKey]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
                 $project['months'][$periodKey]['cumulative_percent'] = $effectiveTarget > 0 ? ($achieved / $effectiveTarget) * 100 : ($achieved > 0 ? 100 : 0);
+                $project['months'][$periodKey]['deviasi_by_po_percent'] = $target > 0 ? ($deviasiByPo / $target) * 100 : 0;
+                $project['deviasi_by_po'] += $deviasiByPo;
+                $project['total_effective_deviasi_by_po'] += $cumulative + $deviasiByPo;
                 $totals['months'][$period['key']]['target'] += $target;
                 $totals['months'][$period['key']]['achieved'] += $achieved;
                 $totals['months'][$period['key']]['cumulative'] += $cumulative;
                 $totals['months'][$period['key']]['effective_target'] += $effectiveTarget;
+                $totals['months'][$period['key']]['target_invoiced'] += (float) $project['months'][$periodKey]['target_invoiced'];
+                $totals['months'][$period['key']]['deviasi_by_po'] += $deviasiByPo;
             }
 
             $project['total_effective_target'] = 0;
@@ -1730,6 +1776,7 @@ class MPO_Monitor extends CI_Model
             $project['deviasi'] = max($project['total_target'] - $project['total_achieved'], 0);
             $project['achieved_percent'] = $project['total_target'] > 0 ? ($project['total_achieved'] / $project['total_target']) * 100 : ($project['total_achieved'] > 0 ? 100 : 0);
             $project['deviasi_percent'] = max(100 - $project['achieved_percent'], 0);
+            $project['deviasi_by_po_percent'] = $project['total_target'] > 0 ? ($project['deviasi_by_po'] / $project['total_target']) * 100 : 0;
             $project['cumulative_deviasi'] = max($project['total_effective_target'] - $project['total_achieved'], 0);
             $project['cumulative_achieved_percent'] = $project['total_effective_target'] > 0 ? ($project['total_achieved'] / $project['total_effective_target']) * 100 : ($project['total_achieved'] > 0 ? 100 : 0);
             $project['cumulative_deviasi_percent'] = max(100 - $project['cumulative_achieved_percent'], 0);
@@ -1740,17 +1787,23 @@ class MPO_Monitor extends CI_Model
         foreach ($totals['months'] as $monthKey => &$monthTotal) {
             $monthTotal['percent'] = $monthTotal['target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
             $monthTotal['cumulative_percent'] = $monthTotal['effective_target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['effective_target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
+            $monthTotal['deviasi_by_po_percent'] = $monthTotal['target'] > 0 ? ((float) ($monthTotal['deviasi_by_po'] ?? 0) / (float) $monthTotal['target']) * 100 : 0;
             $totals['total_target'] += $monthTotal['target'];
             $totals['total_achieved'] += $monthTotal['achieved'];
+            $totals['deviasi_by_po'] += (float) ($monthTotal['deviasi_by_po'] ?? 0);
         }
         unset($monthTotal);
 
         $totals['deviasi'] = max($totals['total_target'] - $totals['total_achieved'], 0);
         $totals['achieved_percent'] = $totals['total_target'] > 0 ? ($totals['total_achieved'] / $totals['total_target']) * 100 : ($totals['total_achieved'] > 0 ? 100 : 0);
         $totals['deviasi_percent'] = max(100 - $totals['achieved_percent'], 0);
+        $totals['deviasi_by_po_percent'] = $totals['total_target'] > 0 ? ($totals['deviasi_by_po'] / $totals['total_target']) * 100 : 0;
         $totals['total_effective_target'] = 0;
+        $totals['total_effective_deviasi_by_po'] = 0;
         foreach ($totals['months'] as $monthTotal) {
             $totals['total_effective_target'] += (float) ($monthTotal['effective_target'] ?? 0);
+            $totals['total_effective_deviasi_by_po'] += (float) ($monthTotal['cumulative'] ?? 0)
+                + (float) ($monthTotal['deviasi_by_po'] ?? 0);
         }
         $totals['cumulative_deviasi'] = max($totals['total_effective_target'] - $totals['total_achieved'], 0);
         $totals['cumulative_achieved_percent'] = $totals['total_effective_target'] > 0 ? ($totals['total_achieved'] / $totals['total_effective_target']) * 100 : ($totals['total_achieved'] > 0 ? 100 : 0);
@@ -2203,17 +2256,36 @@ class MPO_Monitor extends CI_Model
         }
 
         $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
+        $targetTotal = $this->sumComparisonUninvoicedTargetAmount((int) $idBowheer, $previousPeriodKey, $groupBy);
+        $runningTotal = 0;
         foreach ($rows as &$row) {
-            $row['amount'] = (float) ($row['amount'] ?? 0) - (float) ($row['invoiced_amount'] ?? 0);
             $row['source_label'] = 'Kumulatif dari periode sebelumnya';
-            $row['invoiced_amount'] = 0;
-            $row['claim_invoice_date'] = null;
         }
         unset($row);
 
-        return array_values(array_filter($rows, static function ($row) {
-            return (float) ($row['amount'] ?? 0) > 0.000001;
+        $rows = array_values(array_filter($rows, static function ($row) {
+            return (float) ($row['invoiced_amount'] ?? 0) <= 0.000001
+                && (float) ($row['amount'] ?? 0) > 0.000001;
         }));
+
+        $result = [];
+        foreach ($rows as $row) {
+            $remaining = $targetTotal - $runningTotal;
+            if ($remaining <= 0.000001) {
+                break;
+            }
+
+            $amount = (float) ($row['amount'] ?? 0);
+            if ($amount > $remaining) {
+                $row['amount'] = $remaining;
+                $amount = $remaining;
+            }
+
+            $runningTotal += $amount;
+            $result[] = $row;
+        }
+
+        return $result;
     }
 
     private function getComparisonEffectiveTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
@@ -2349,6 +2421,44 @@ class MPO_Monitor extends CI_Model
         }));
     }
 
+    private function sumComparisonUninvoicedTargetAmount($idBowheer, $periodKey, $groupBy)
+    {
+        static $cache = [];
+        $cacheKey = (int) $idBowheer . '|' . (string) $periodKey . '|' . (string) $groupBy;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $rows = $this->getComparisonTargetDetail((int) $idBowheer, (string) $periodKey, $groupBy);
+        $total = 0;
+        foreach ($rows as $row) {
+            if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001) {
+                $total += (float) ($row['amount'] ?? 0);
+            }
+        }
+
+        $cache[$cacheKey] = $total;
+        return $total;
+    }
+
+    private function sumComparisonCumulativeDetailAmount($idBowheer, $periodKey, $groupBy)
+    {
+        static $cache = [];
+        $cacheKey = (int) $idBowheer . '|' . (string) $periodKey . '|' . (string) $groupBy;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $rows = $this->getComparisonCumulativeDetail((int) $idBowheer, (string) $periodKey, $groupBy);
+        $total = 0;
+        foreach ($rows as $row) {
+            $total += (float) ($row['amount'] ?? 0);
+        }
+
+        $cache[$cacheKey] = $total;
+        return $total;
+    }
+
     private function getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
     {
         $rows = $this->db->query("SELECT
@@ -2432,17 +2542,14 @@ class MPO_Monitor extends CI_Model
         return $keys;
     }
 
-    private function calculateComparisonCarryOver(array $targetHistory, array $achievedHistory, $activePeriodKey, $groupBy)
+    private function calculateComparisonCarryOver(array $targetHistory, array $achievedHistory, array $targetOutstandingHistory, $activePeriodKey, $groupBy)
     {
         $previousPeriodKey = $this->comparisonPreviousPeriodKey($activePeriodKey, $groupBy);
         if ($previousPeriodKey === '') {
             return 0;
         }
 
-        $target = (float) ($targetHistory[$previousPeriodKey] ?? 0);
-        $achieved = (float) ($achievedHistory[$previousPeriodKey] ?? 0);
-
-        return $target - $achieved;
+        return (float) ($targetOutstandingHistory[$previousPeriodKey] ?? 0);
     }
 
     private function comparisonPreviousPeriodKey($activePeriodKey, $groupBy)
@@ -2468,6 +2575,11 @@ class MPO_Monitor extends CI_Model
         }
 
         return date('Y-m', strtotime($activePeriodKey . '-01 -1 month'));
+    }
+
+    public function comparisonPreviousPeriodKeyPublic($activePeriodKey, $groupBy)
+    {
+        return $this->comparisonPreviousPeriodKey($activePeriodKey, $groupBy);
     }
 
     private function comparisonPeriodSortValue($periodKey, $groupBy)

@@ -1321,8 +1321,18 @@ class PO_Monitor extends CI_Controller
         }
 
         $rows = $this->MPO_Monitor->getComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth, $toMonth);
+        $periodLabel = $this->comparisonPeriodLabel($periodKey, $groupBy);
+        if ($type === 'cumulative') {
+            $previousPeriodKey = $this->MPO_Monitor->comparisonPreviousPeriodKeyPublic($periodKey, $groupBy);
+            if ($previousPeriodKey !== '') {
+                $periodLabel .= ' (sisa target ' . $this->comparisonPeriodLabel($previousPeriodKey, $groupBy) . ')';
+            }
+        } elseif ($type === 'effective_target') {
+            $periodLabel .= ' (kumulatif + target periode aktif)';
+        }
+
         $title = '<span class="po-monitor-modal-eyebrow">Detail Perbandingan</span>'
-            . htmlspecialchars($this->comparisonTypeLabel($type) . ' - ' . $project['bowheer'] . ' - ' . $this->comparisonPeriodLabel($periodKey, $groupBy));
+            . htmlspecialchars($this->comparisonTypeLabel($type) . ' - ' . $project['bowheer'] . ' - ' . $periodLabel);
 
         $this->output
             ->set_content_type('application/json')
@@ -1424,8 +1434,10 @@ class PO_Monitor extends CI_Controller
 
             foreach ($regionalRows as $index => $row) {
                 $amount = (float) ($row['amount'] ?? 0);
+                $invoicedAmount = (float) ($row['invoiced_amount'] ?? 0);
+                $remainingAmount = max($amount - $invoicedAmount, 0);
                 $termIndex = (int) ($row['term_index'] ?? 0);
-                $isInvoicedTarget = in_array($type, ['target', 'cumulative', 'effective_target'], true) && (float) ($row['invoiced_amount'] ?? 0) > 0;
+                $isInvoicedTarget = in_array($type, ['target', 'cumulative', 'effective_target'], true) && $invoicedAmount > 0;
                 if ($type === 'achieved') {
                     $period = $this->formatIndonesianDate($row['invoice_date'] ?? '');
                 } elseif ($isInvoicedTarget && !empty($row['claim_invoice_date'])) {
@@ -1434,7 +1446,7 @@ class PO_Monitor extends CI_Controller
                     $period = $this->formatIndonesianDate($row['target_week_start'] ?? '') . ' s/d ' . $this->formatIndonesianDate($row['target_week_end'] ?? '');
                 }
 
-                $html .= '<tr class="' . ($isInvoicedTarget ? 'po-monitor-detail-row-invoiced' : '') . '" data-term-index="' . $termIndex . '" data-filter-amount="' . htmlspecialchars((string) $amount) . '" data-invoiced="' . ($isInvoicedTarget ? '1' : '0') . '">';
+                $html .= '<tr class="' . ($isInvoicedTarget ? 'po-monitor-detail-row-invoiced' : '') . '" data-term-index="' . $termIndex . '" data-filter-amount="' . htmlspecialchars((string) $amount) . '" data-remaining-amount="' . htmlspecialchars((string) $remainingAmount) . '" data-invoiced="' . ($isInvoicedTarget ? '1' : '0') . '">';
                 $html .= '<td>' . ($index + 1) . '</td>';
                 $html .= '<td>' . htmlspecialchars($row['type_project'] ?: '-') . '</td>';
                 $html .= '<td>' . htmlspecialchars($row['po_number'] ?: '-') . '</td>';
@@ -1445,7 +1457,7 @@ class PO_Monitor extends CI_Controller
                 $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
                 $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
                 $html .= '<td>' . htmlspecialchars($period) . '</td>';
-                $html .= '<td class="text-right">' . number_format($amount, 0, ',', '.') . '</td>';
+                $html .= '<td class="text-right js-po-detail-row-amount">' . number_format($amount, 0, ',', '.') . '</td>';
                 $html .= '</tr>';
             }
 

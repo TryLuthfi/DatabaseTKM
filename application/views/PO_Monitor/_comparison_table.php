@@ -7,6 +7,7 @@ $matrix = $matrix ?? [
         'total_target' => 0,
         'total_achieved' => 0,
         'deviasi' => 0,
+        'deviasi_by_po' => 0,
         'achieved_percent' => 0,
         'deviasi_percent' => 0
     ]
@@ -59,7 +60,7 @@ if (!function_exists('po_monitor_compare_amount_link')) {
 }
 
 if (!function_exists('po_monitor_compare_total_amount_link')) {
-    function po_monitor_compare_total_amount_link($value, $idBowheer, $groupBy, $type, $fromMonth, $toMonth)
+    function po_monitor_compare_total_amount_link($value, $idBowheer, $groupBy, $type, $fromMonth, $toMonth, $periodKey = '__total__')
     {
         $value = (float) $value;
         if ($value <= 0) {
@@ -68,7 +69,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
 
         return '<button type="button" class="btn btn-link btn-sm p-0 po-compare-detail-link"'
             . ' data-id-bowheer="' . (int) $idBowheer . '"'
-            . ' data-period-key="__total__"'
+            . ' data-period-key="' . htmlspecialchars((string) $periodKey, ENT_QUOTES, 'UTF-8') . '"'
             . ' data-group-by="' . htmlspecialchars($groupBy, ENT_QUOTES, 'UTF-8') . '"'
             . ' data-type="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"'
             . ' data-from-month="' . htmlspecialchars((string) $fromMonth, ENT_QUOTES, 'UTF-8') . '"'
@@ -90,7 +91,8 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                     <th colspan="<?= (int) $group['count'] * 3 ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label'], ENT_QUOTES, 'UTF-8') ?></th>
                 <?php endforeach; ?>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
-                <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
+                <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi By Target</th>
+                <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi By PO</th>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
             </tr>
@@ -115,7 +117,8 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                     </th>
                 <?php endforeach; ?>
                 <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
-                <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi</th>
+                <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi By Target</th>
+                <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi By PO</th>
                 <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Achieved (%)</th>
                 <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Deviasi (%)</th>
             </tr>
@@ -143,6 +146,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 <?php endforeach; ?>
                 <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
                 <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
+                <td data-po-amount="<?= (float) ($row['deviasi_by_po'] ?? 0) ?>"><?= number_format((float) ($row['deviasi_by_po'] ?? 0), 0, ',', '.') ?></td>
                 <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
                 <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
             </tr>
@@ -160,6 +164,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
             <?php endforeach; ?>
             <th><?= number_format((float) $matrix['totals']['total_achieved'], 0, ',', '.') ?></th>
             <th><?= number_format((float) $matrix['totals']['deviasi'], 0, ',', '.') ?></th>
+            <th><?= number_format((float) ($matrix['totals']['deviasi_by_po'] ?? 0), 0, ',', '.') ?></th>
             <th><?= po_monitor_percent($matrix['totals']['achieved_percent']) ?></th>
             <th><?= po_monitor_percent($matrix['totals']['deviasi_percent']) ?></th>
         </tr>
