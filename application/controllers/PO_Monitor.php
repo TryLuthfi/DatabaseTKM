@@ -17,6 +17,7 @@ class PO_Monitor extends CI_Controller
         $selectedSla = $this->input->get('sla');
         $comparisonFromMonth = $this->input->get('from_month') ?: date('Y-m');
         $comparisonToMonth = $this->input->get('to_month') ?: date('Y-m');
+        $comparisonCumulative = in_array(strtolower((string) $this->input->get('cumulative')), ['1', 'true', 'yes'], true);
 
         if (!is_array($selectedBowheer)) {
             $selectedBowheer = empty($selectedBowheer) ? [] : [$selectedBowheer];
@@ -35,6 +36,7 @@ class PO_Monitor extends CI_Controller
         $data['dashboardSummary'] = $this->MPO_Monitor->getDashboardSummary();
         $data['dashboardInitialTotals'] = $this->MPO_Monitor->getDashboardInitialTotals();
         $data['comparisonMatrix'] = $this->MPO_Monitor->getComparisonMatrix($comparisonFromMonth, $comparisonToMonth, 'month', false);
+        $data['comparisonCumulative'] = $comparisonCumulative;
         $data['breakdownFilterOptions'] = [
             'projects' => [],
             'pics' => [],

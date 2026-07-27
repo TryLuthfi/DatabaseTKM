@@ -1578,7 +1578,12 @@ class MPO_Monitor extends CI_Model
             foreach ($periods as $period) {
                 $projectMap[$id]['months'][$period['key']] = [
                     'target' => 0,
-                    'achieved' => 0
+                    'achieved' => 0,
+                    'cumulative_target' => 0,
+                    'cumulative_achieved' => 0,
+                    'cumulative' => 0,
+                    'effective_target' => 0,
+                    'cumulative_percent' => 0
                 ];
             }
         }
@@ -1637,6 +1642,12 @@ class MPO_Monitor extends CI_Model
             $amount = (float) $row['amount'];
             $projectMap[$id]['months'][$periodKey]['target'] += $amount;
             $projectMap[$id]['total_target'] += $amount;
+
+            foreach ($periods as $period) {
+                if ($this->comparisonPeriodIsBeforeSameYear($periodKey, (string) $period['key'], $groupBy)) {
+                    $projectMap[$id]['months'][$period['key']]['cumulative_target'] += $amount;
+                }
+            }
         }
 
         $claimRows = $this->db->query("SELECT
@@ -1665,6 +1676,12 @@ class MPO_Monitor extends CI_Model
             $amount = (float) $row['invoice_amount'];
             $projectMap[$id]['months'][$periodKey]['achieved'] += $amount;
             $projectMap[$id]['total_achieved'] += $amount;
+
+            foreach ($periods as $period) {
+                if ($this->comparisonPeriodIsBeforeSameYear($periodKey, (string) $period['key'], $groupBy)) {
+                    $projectMap[$id]['months'][$period['key']]['cumulative_achieved'] += $amount;
+                }
+            }
         }
 
         $totals = [
@@ -1675,7 +1692,10 @@ class MPO_Monitor extends CI_Model
         foreach ($periods as $period) {
             $totals['months'][$period['key']] = [
                 'target' => 0,
-                'achieved' => 0
+                'achieved' => 0,
+                'cumulative' => 0,
+                'effective_target' => 0,
+                'cumulative_percent' => 0
             ];
         }
 
@@ -1683,9 +1703,20 @@ class MPO_Monitor extends CI_Model
             foreach ($periods as $period) {
                 $target = (float) $project['months'][$period['key']]['target'];
                 $achieved = (float) $project['months'][$period['key']]['achieved'];
+                $cumulative = max(
+                    (float) $project['months'][$period['key']]['cumulative_target']
+                    - (float) $project['months'][$period['key']]['cumulative_achieved'],
+                    0
+                );
+                $effectiveTarget = $target + $cumulative;
+                $project['months'][$period['key']]['cumulative'] = $cumulative;
+                $project['months'][$period['key']]['effective_target'] = $effectiveTarget;
                 $project['months'][$period['key']]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
+                $project['months'][$period['key']]['cumulative_percent'] = $effectiveTarget > 0 ? ($achieved / $effectiveTarget) * 100 : ($achieved > 0 ? 100 : 0);
                 $totals['months'][$period['key']]['target'] += $target;
                 $totals['months'][$period['key']]['achieved'] += $achieved;
+                $totals['months'][$period['key']]['cumulative'] += $cumulative;
+                $totals['months'][$period['key']]['effective_target'] += $effectiveTarget;
             }
 
             $project['deviasi'] = max($project['total_target'] - $project['total_achieved'], 0);
@@ -1696,6 +1727,7 @@ class MPO_Monitor extends CI_Model
 
         foreach ($totals['months'] as $monthKey => &$monthTotal) {
             $monthTotal['percent'] = $monthTotal['target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
+            $monthTotal['cumulative_percent'] = $monthTotal['effective_target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['effective_target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
             $totals['total_target'] += $monthTotal['target'];
             $totals['total_achieved'] += $monthTotal['achieved'];
         }
@@ -2331,6 +2363,32 @@ class MPO_Monitor extends CI_Model
         }
 
         return $keys;
+    }
+
+    private function comparisonPeriodIsBeforeSameYear($periodKey, $activePeriodKey, $groupBy)
+    {
+        $periodKey = strtoupper(trim((string) $periodKey));
+        $activePeriodKey = strtoupper(trim((string) $activePeriodKey));
+
+        if ($groupBy === 'week') {
+            if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $periodKey, $periodMatch)
+                || !preg_match('/^(\d{4})-W(\d{1,2})$/', $activePeriodKey, $activeMatch)
+            ) {
+                return false;
+            }
+
+            return (int) $periodMatch[1] === (int) $activeMatch[1]
+                && (int) $periodMatch[2] < (int) $activeMatch[2];
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{2})$/', $periodKey, $periodMatch)
+            || !preg_match('/^(\d{4})-(\d{2})$/', $activePeriodKey, $activeMatch)
+        ) {
+            return false;
+        }
+
+        return (int) $periodMatch[1] === (int) $activeMatch[1]
+            && (int) $periodMatch[2] < (int) $activeMatch[2];
     }
 
     private function resolveComparisonBounds($fromMonth, $toMonth)

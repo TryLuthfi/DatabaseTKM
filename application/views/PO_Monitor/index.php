@@ -41,6 +41,7 @@ $dashboardSummary = $dashboardSummary ?? [
     ]
 ];
 $comparisonIsWeek = false;
+$comparisonCumulative = !empty($comparisonCumulative);
 
 if (!function_exists('po_monitor_week_month_groups')) {
     function po_monitor_week_month_groups($matrix)
@@ -2178,6 +2179,11 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <span class="po-monitor-switch-slider"></span>
                                             <span>Weeks column</span>
                                         </label>
+                                        <label class="po-monitor-switch mb-0">
+                                            <input type="checkbox" id="po_compare_cumulative" name="cumulative" value="1" <?= $comparisonCumulative ? 'checked' : '' ?>>
+                                            <span class="po-monitor-switch-slider"></span>
+                                            <span>Kumulatif</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -2196,7 +2202,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                         <th rowspan="2" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
                                         <th rowspan="2" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                            <th colspan="3" class="po-compare-month-cell">
+                                            <th colspan="<?= $comparisonCumulative ? 4 : 3 ?>" class="po-compare-month-cell">
                                                 <?= htmlspecialchars($month['label']) ?><br>
                                                 <small><?= htmlspecialchars($month['year']) ?></small>
                                             </th>
@@ -2208,6 +2214,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     </tr>
                                     <tr>
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
+                                            <?php if ($comparisonCumulative): ?>
+                                                <th class="po-compare-target">Kumulatif</th>
+                                            <?php endif; ?>
                                             <th class="po-compare-target">Target</th>
                                             <th class="po-compare-achieved">Achieved</th>
                                             <th class="po-compare-percent">%</th>
@@ -2222,10 +2231,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <td><?= htmlspecialchars($row['project']) ?></td>
                                             <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], 'month', 'target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
+                                                <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
+                                                <?php if ($comparisonCumulative): ?>
+                                                    <td data-po-amount="<?= (float) $monthData['cumulative'] ?>"><?= (float) $monthData['cumulative'] > 0 ? number_format((float) $monthData['cumulative'], 0, ',', '.') : '-' ?></td>
+                                                <?php endif; ?>
                                                 <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
                                                 <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
-                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0) ? po_monitor_percent($monthData['percent']) : '-' ?></td>
+                                                <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0 || (float) ($monthData['cumulative'] ?? 0) > 0) ? po_monitor_percent($comparisonCumulative ? ($monthData['cumulative_percent'] ?? 0) : $monthData['percent']) : '-' ?></td>
                                             <?php endforeach; ?>
                                             <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
                                             <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
@@ -2239,10 +2251,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                         <th colspan="3" class="po-compare-footer-label">Total</th>
                                         <th><?= number_format((float) $comparisonMatrix['totals']['total_target'], 0, ',', '.') ?></th>
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
-                                            <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
+                                            <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
+                                            <?php if ($comparisonCumulative): ?>
+                                                <th><?= (float) $monthTotal['cumulative'] > 0 ? number_format((float) $monthTotal['cumulative'], 0, ',', '.') : '-' ?></th>
+                                            <?php endif; ?>
                                             <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
                                             <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
-                                            <th><?= po_monitor_percent($monthTotal['percent']) ?></th>
+                                            <th><?= po_monitor_percent($comparisonCumulative ? ($monthTotal['cumulative_percent'] ?? 0) : $monthTotal['percent']) ?></th>
                                         <?php endforeach; ?>
                                         <th><?= number_format((float) $comparisonMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
                                         <th><?= number_format((float) $comparisonMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
@@ -4011,14 +4026,16 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
             function updateCompareFooter(api) {
                 var columnCount = api.columns().count();
-                var periodCount = Math.max(0, Math.floor((columnCount - 8) / 3));
+                var isCumulative = api.table().node().id === 'table_po_target_invoice_compare_month' && $('#po_compare_cumulative').is(':checked');
+                var periodStride = isCumulative ? 4 : 3;
+                var periodCount = Math.max(0, Math.floor((columnCount - 8) / periodStride));
                 var monthTotals = [];
                 var totalTarget = 0;
                 var totalAchieved = 0;
                 var rowCount = 0;
 
                 for (var i = 0; i < periodCount; i++) {
-                    monthTotals.push({ target: 0, achieved: 0 });
+                    monthTotals.push({ cumulative: 0, target: 0, achieved: 0 });
                 }
 
                 api.rows({ search: 'applied' }).every(function() {
@@ -4027,13 +4044,17 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     totalTarget += compareCellAmount($cells, 3);
 
                     for (var i = 0; i < periodCount; i++) {
-                        var targetIndex = 4 + (i * 3);
+                        var baseIndex = 4 + (i * periodStride);
+                        var targetIndex = isCumulative ? baseIndex + 1 : baseIndex;
                         var achievedIndex = targetIndex + 1;
+                        if (isCumulative) {
+                            monthTotals[i].cumulative += compareCellAmount($cells, baseIndex);
+                        }
                         monthTotals[i].target += compareCellAmount($cells, targetIndex);
                         monthTotals[i].achieved += compareCellAmount($cells, achievedIndex);
                     }
 
-                    totalAchieved += compareCellAmount($cells, 4 + (periodCount * 3));
+                    totalAchieved += compareCellAmount($cells, 4 + (periodCount * periodStride));
                 });
 
                 var deviasi = Math.max(totalTarget - totalAchieved, 0);
@@ -4043,7 +4064,11 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 html += '<th>' + formatLocaleNumber(totalTarget) + '</th>';
 
                 monthTotals.forEach(function(total) {
-                    var percent = total.target > 0 ? (total.achieved / total.target) * 100 : (total.achieved > 0 ? 100 : 0);
+                    var effectiveTarget = isCumulative ? total.cumulative + total.target : total.target;
+                    var percent = effectiveTarget > 0 ? (total.achieved / effectiveTarget) * 100 : (total.achieved > 0 ? 100 : 0);
+                    if (isCumulative) {
+                        html += '<th>' + (Math.abs(total.cumulative) > 0.000001 ? formatLocaleNumber(total.cumulative) : '-') + '</th>';
+                    }
                     html += '<th>' + formatLocaleNumber(total.target) + '</th>';
                     html += '<th>' + formatLocaleNumber(total.achieved) + '</th>';
                     html += '<th>' + formatLocalePercent(percent) + '</th>';
@@ -4932,6 +4957,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
             $('#po_compare_data_only, #po_compare_week_mode')
                 .off('change.poCompareSwitch')
                 .on('change.poCompareSwitch', syncCompareSwitches);
+
+            $('#po_compare_cumulative')
+                .off('change.poCompareCumulative')
+                .on('change.poCompareCumulative', function() {
+                    this.form.submit();
+                });
 
             syncCompareSwitches();
 
