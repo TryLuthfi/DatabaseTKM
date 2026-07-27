@@ -1571,6 +1571,10 @@ class MPO_Monitor extends CI_Model
                 'project' => $project['bowheer'],
                 'pic' => $project['pic'],
                 'months' => [],
+                'period_history' => [
+                    'target' => [],
+                    'achieved' => []
+                ],
                 'total_target' => 0,
                 'total_achieved' => 0
             ];
@@ -1636,11 +1640,10 @@ class MPO_Monitor extends CI_Model
                 : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
 
             $amount = (float) $row['amount'];
-            foreach ($periods as $period) {
-                if ($this->comparisonPeriodIsBeforeSameYear($periodKey, (string) $period['key'], $groupBy)) {
-                    $projectMap[$id]['months'][$period['key']]['cumulative_target'] += $amount;
-                }
+            if (!isset($projectMap[$id]['period_history']['target'][$periodKey])) {
+                $projectMap[$id]['period_history']['target'][$periodKey] = 0;
             }
+            $projectMap[$id]['period_history']['target'][$periodKey] += $amount;
 
             if (!isset($projectMap[$id]['months'][$periodKey])) {
                 continue;
@@ -1670,11 +1673,10 @@ class MPO_Monitor extends CI_Model
                 : $this->monthKeyFromInvoiceWeek($row['invoice_date']);
 
             $amount = (float) $row['invoice_amount'];
-            foreach ($periods as $period) {
-                if ($this->comparisonPeriodIsBeforeSameYear($periodKey, (string) $period['key'], $groupBy)) {
-                    $projectMap[$id]['months'][$period['key']]['cumulative_achieved'] += $amount;
-                }
+            if (!isset($projectMap[$id]['period_history']['achieved'][$periodKey])) {
+                $projectMap[$id]['period_history']['achieved'][$periodKey] = 0;
             }
+            $projectMap[$id]['period_history']['achieved'][$periodKey] += $amount;
 
             if (!isset($projectMap[$id]['months'][$periodKey])) {
                 continue;
@@ -1701,13 +1703,24 @@ class MPO_Monitor extends CI_Model
 
         foreach ($projectMap as &$project) {
             foreach ($periods as $period) {
+                $periodKey = (string) $period['key'];
                 $target = (float) $project['months'][$period['key']]['target'];
                 $achieved = (float) $project['months'][$period['key']]['achieved'];
-                $cumulative = max(
-                    (float) $project['months'][$period['key']]['cumulative_target']
-                    - (float) $project['months'][$period['key']]['cumulative_achieved'],
-                    0
-                );
+                $historyTarget = is_array($project['period_history']['target'] ?? null) ? $project['period_history']['target'] : [];
+                $historyAchieved = is_array($project['period_history']['achieved'] ?? null) ? $project['period_history']['achieved'] : [];
+                $cumulativeTarget = 0;
+                $cumulativeAchieved = 0;
+                foreach ($historyTarget as $historyPeriod => $historyAmount) {
+                    if ($this->comparisonPeriodIsBeforeSameYear($historyPeriod, $periodKey, $groupBy)) {
+                        $cumulativeTarget += (float) $historyAmount;
+                    }
+                }
+                foreach ($historyAchieved as $historyPeriod => $historyAmount) {
+                    if ($this->comparisonPeriodIsBeforeSameYear($historyPeriod, $periodKey, $groupBy)) {
+                        $cumulativeAchieved += (float) $historyAmount;
+                    }
+                }
+                $cumulative = max($cumulativeTarget - $cumulativeAchieved, 0);
                 $effectiveTarget = $target + $cumulative;
                 $project['months'][$period['key']]['cumulative'] = $cumulative;
                 $project['months'][$period['key']]['effective_target'] = $effectiveTarget;
@@ -1722,6 +1735,7 @@ class MPO_Monitor extends CI_Model
             $project['deviasi'] = max($project['total_target'] - $project['total_achieved'], 0);
             $project['achieved_percent'] = $project['total_target'] > 0 ? ($project['total_achieved'] / $project['total_target']) * 100 : ($project['total_achieved'] > 0 ? 100 : 0);
             $project['deviasi_percent'] = max(100 - $project['achieved_percent'], 0);
+            unset($project['period_history']);
         }
         unset($project);
 
