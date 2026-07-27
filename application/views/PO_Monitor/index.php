@@ -2255,7 +2255,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <td><?= $compareNo++ ?></td>
                                             <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                                             <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td data-po-amount="<?= (float) $rowDisplayTarget ?>"><?= $comparisonCumulative ? number_format((float) $rowDisplayTarget, 0, ',', '.') : po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], 'month', 'target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
+                                            <td data-po-amount="<?= (float) $rowDisplayTarget ?>"><?= $comparisonCumulative ? po_monitor_compare_total_amount_link($rowDisplayTarget, $row['id_bowheer'], 'month', 'effective_target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') : po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], 'month', 'target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
                                                 <?php if ($comparisonCumulative): ?>

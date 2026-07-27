@@ -1295,7 +1295,7 @@ class PO_Monitor extends CI_Controller
         $periodKey = trim((string) $this->input->post('period_key'));
         $groupBy = $this->input->post('group_by') === 'week' ? 'week' : 'month';
         $typeInput = (string) $this->input->post('type');
-        $type = in_array($typeInput, ['achieved', 'cumulative'], true) ? $typeInput : 'target';
+        $type = in_array($typeInput, ['achieved', 'cumulative', 'effective_target'], true) ? $typeInput : 'target';
         $fromMonth = $this->input->post('from_month') ?: null;
         $toMonth = $this->input->post('to_month') ?: null;
 
@@ -1425,7 +1425,7 @@ class PO_Monitor extends CI_Controller
             foreach ($regionalRows as $index => $row) {
                 $amount = (float) ($row['amount'] ?? 0);
                 $termIndex = (int) ($row['term_index'] ?? 0);
-                $isInvoicedTarget = in_array($type, ['target', 'cumulative'], true) && (float) ($row['invoiced_amount'] ?? 0) > 0;
+                $isInvoicedTarget = in_array($type, ['target', 'cumulative', 'effective_target'], true) && (float) ($row['invoiced_amount'] ?? 0) > 0;
                 if ($type === 'achieved') {
                     $period = $this->formatIndonesianDate($row['invoice_date'] ?? '');
                 } elseif ($isInvoicedTarget && !empty($row['claim_invoice_date'])) {
@@ -1775,6 +1775,9 @@ class PO_Monitor extends CI_Controller
         }
         if ($type === 'cumulative') {
             return 'Kumulatif';
+        }
+        if ($type === 'effective_target') {
+            return 'Total Target';
         }
 
         return 'Target';

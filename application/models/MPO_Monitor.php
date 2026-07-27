@@ -2180,30 +2180,61 @@ class MPO_Monitor extends CI_Model
     {
         $idBowheer = (int) $idBowheer;
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
-        $type = in_array($type, ['achieved', 'cumulative'], true) ? $type : 'target';
+        $type = in_array($type, ['achieved', 'cumulative', 'effective_target'], true) ? $type : 'target';
 
         if ($type === 'achieved') {
             return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
         if ($type === 'cumulative') {
-            $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
-            if ($previousPeriodKey === '') {
-                return [];
-            }
-
-            $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
-            foreach ($rows as &$row) {
-                $row['amount'] = (float) ($row['amount'] ?? 0) - (float) ($row['invoiced_amount'] ?? 0);
-                $row['source_label'] = 'Kumulatif dari periode sebelumnya';
-            }
-            unset($row);
-
-            return array_values(array_filter($rows, static function ($row) {
-                return abs((float) ($row['amount'] ?? 0)) > 0.000001;
-            }));
+            return $this->getComparisonCumulativeDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        }
+        if ($type === 'effective_target') {
+            return $this->getComparisonEffectiveTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
 
         return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+    }
+
+    private function getComparisonCumulativeDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
+        if ($previousPeriodKey === '') {
+            return [];
+        }
+
+        $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
+        foreach ($rows as &$row) {
+            $row['amount'] = (float) ($row['amount'] ?? 0) - (float) ($row['invoiced_amount'] ?? 0);
+            $row['source_label'] = 'Kumulatif dari periode sebelumnya';
+            $row['invoiced_amount'] = 0;
+            $row['claim_invoice_date'] = null;
+        }
+        unset($row);
+
+        return array_values(array_filter($rows, static function ($row) {
+            return (float) ($row['amount'] ?? 0) > 0.000001;
+        }));
+    }
+
+    private function getComparisonEffectiveTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        $periodKeys = [];
+        if ($periodKey === '__total__') {
+            $periodKeys = array_keys($this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth));
+        } else {
+            $periodKeys = [$periodKey];
+        }
+
+        $rows = [];
+        foreach ($periodKeys as $key) {
+            $rows = array_merge(
+                $rows,
+                $this->getComparisonCumulativeDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth),
+                $this->getComparisonTargetDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth)
+            );
+        }
+
+        return $rows;
     }
 
     private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
