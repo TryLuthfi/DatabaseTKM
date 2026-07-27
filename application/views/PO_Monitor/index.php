@@ -140,6 +140,26 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
     }
 }
 
+if (!function_exists('po_monitor_compare_cumulative_link')) {
+    function po_monitor_compare_cumulative_link($value, $idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth)
+    {
+        $value = (float) $value;
+        if (abs($value) <= 0.000001) {
+            return '-';
+        }
+
+        return '<button type="button" class="btn btn-link btn-sm p-0 po-compare-detail-link"'
+            . ' data-id-bowheer="' . (int) $idBowheer . '"'
+            . ' data-period-key="' . htmlspecialchars((string) $periodKey, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-group-by="' . htmlspecialchars((string) $groupBy, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-type="cumulative"'
+            . ' data-from-month="' . htmlspecialchars((string) $fromMonth, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-to-month="' . htmlspecialchars((string) $toMonth, ENT_QUOTES, 'UTF-8') . '">'
+            . number_format($value, 0, ',', '.')
+            . '</button>';
+    }
+}
+
 if (!function_exists('po_monitor_term_amount_link')) {
     function po_monitor_term_amount_link($value, $idBowheer, $metric, $termIndex = 0)
     {
@@ -2233,7 +2253,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
                                                 <?php if ($comparisonCumulative): ?>
-                                                    <td data-po-amount="<?= (float) $monthData['cumulative'] ?>"><?= abs((float) $monthData['cumulative']) > 0.000001 ? number_format((float) $monthData['cumulative'], 0, ',', '.') : '-' ?></td>
+                                                    <td data-po-amount="<?= (float) $monthData['cumulative'] ?>"><?= po_monitor_compare_cumulative_link($monthData['cumulative'], $row['id_bowheer'], $month['key'], 'month', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
                                                 <?php endif; ?>
                                                 <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
                                                 <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>

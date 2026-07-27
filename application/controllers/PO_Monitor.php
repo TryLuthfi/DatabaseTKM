@@ -1294,7 +1294,8 @@ class PO_Monitor extends CI_Controller
         $idBowheer = (int) $this->input->post('id_bowheer');
         $periodKey = trim((string) $this->input->post('period_key'));
         $groupBy = $this->input->post('group_by') === 'week' ? 'week' : 'month';
-        $type = $this->input->post('type') === 'achieved' ? 'achieved' : 'target';
+        $typeInput = (string) $this->input->post('type');
+        $type = in_array($typeInput, ['achieved', 'cumulative'], true) ? $typeInput : 'target';
         $fromMonth = $this->input->post('from_month') ?: null;
         $toMonth = $this->input->post('to_month') ?: null;
 
@@ -1321,7 +1322,7 @@ class PO_Monitor extends CI_Controller
 
         $rows = $this->MPO_Monitor->getComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth, $toMonth);
         $title = '<span class="po-monitor-modal-eyebrow">Detail Perbandingan</span>'
-            . htmlspecialchars(ucfirst($type) . ' - ' . $project['bowheer'] . ' - ' . $this->comparisonPeriodLabel($periodKey, $groupBy));
+            . htmlspecialchars($this->comparisonTypeLabel($type) . ' - ' . $project['bowheer'] . ' - ' . $this->comparisonPeriodLabel($periodKey, $groupBy));
 
         $this->output
             ->set_content_type('application/json')
@@ -1402,7 +1403,7 @@ class PO_Monitor extends CI_Controller
         $total = $grouped['total_amount'];
         $html = '<div class="po-monitor-modal-summary">';
         $html .= '<div class="po-monitor-modal-stat"><span class="po-monitor-modal-stat__label">Total Row</span><span class="po-monitor-modal-stat__value js-po-detail-total-row">' . number_format(count($rows), 0, ',', '.') . '</span></div>';
-        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Jenis</span><span class="po-monitor-modal-stat__value">' . ($type === 'achieved' ? 'Achieved' : 'Target') . '</span></div>';
+        $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--green"><span class="po-monitor-modal-stat__label">Jenis</span><span class="po-monitor-modal-stat__value">' . htmlspecialchars($this->comparisonTypeLabel($type)) . '</span></div>';
         $html .= '<div class="po-monitor-modal-stat po-monitor-modal-stat--amber"><span class="po-monitor-modal-stat__label">Total Amount</span><span class="po-monitor-modal-stat__value js-po-detail-total-amount">' . number_format($total, 0, ',', '.') . '</span></div>';
         $html .= '</div>';
 
@@ -1424,7 +1425,7 @@ class PO_Monitor extends CI_Controller
             foreach ($regionalRows as $index => $row) {
                 $amount = (float) ($row['amount'] ?? 0);
                 $termIndex = (int) ($row['term_index'] ?? 0);
-                $isInvoicedTarget = $type === 'target' && (float) ($row['invoiced_amount'] ?? 0) > 0;
+                $isInvoicedTarget = in_array($type, ['target', 'cumulative'], true) && (float) ($row['invoiced_amount'] ?? 0) > 0;
                 if ($type === 'achieved') {
                     $period = $this->formatIndonesianDate($row['invoice_date'] ?? '');
                 } elseif ($isInvoicedTarget && !empty($row['claim_invoice_date'])) {
@@ -1765,6 +1766,18 @@ class PO_Monitor extends CI_Controller
         }
 
         return $periodKey;
+    }
+
+    private function comparisonTypeLabel($type)
+    {
+        if ($type === 'achieved') {
+            return 'Achieved';
+        }
+        if ($type === 'cumulative') {
+            return 'Kumulatif';
+        }
+
+        return 'Target';
     }
 
     private function comparisonSyncMonthKey($periodKey, $groupBy)

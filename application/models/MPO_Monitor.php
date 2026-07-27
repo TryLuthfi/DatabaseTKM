@@ -2166,10 +2166,27 @@ class MPO_Monitor extends CI_Model
     {
         $idBowheer = (int) $idBowheer;
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
-        $type = $type === 'achieved' ? 'achieved' : 'target';
+        $type = in_array($type, ['achieved', 'cumulative'], true) ? $type : 'target';
 
         if ($type === 'achieved') {
             return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        }
+        if ($type === 'cumulative') {
+            $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
+            if ($previousPeriodKey === '') {
+                return [];
+            }
+
+            $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
+            foreach ($rows as &$row) {
+                $row['amount'] = (float) ($row['amount'] ?? 0) - (float) ($row['invoiced_amount'] ?? 0);
+                $row['source_label'] = 'Kumulatif dari periode sebelumnya';
+            }
+            unset($row);
+
+            return array_values(array_filter($rows, static function ($row) {
+                return abs((float) ($row['amount'] ?? 0)) > 0.000001;
+            }));
         }
 
         return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
@@ -2372,29 +2389,40 @@ class MPO_Monitor extends CI_Model
 
     private function calculateComparisonCarryOver(array $targetHistory, array $achievedHistory, $activePeriodKey, $groupBy)
     {
-        $activeSort = $this->comparisonPeriodSortValue($activePeriodKey, $groupBy);
-        if ($activeSort === null) {
+        $previousPeriodKey = $this->comparisonPreviousPeriodKey($activePeriodKey, $groupBy);
+        if ($previousPeriodKey === '') {
             return 0;
         }
 
-        $activeYear = (int) floor($activeSort / 100);
-        $target = 0;
-        foreach ($targetHistory as $periodKey => $amount) {
-            $sort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
-            if ($sort !== null && (int) floor($sort / 100) === $activeYear && $sort < $activeSort) {
-                $target += (float) $amount;
-            }
-        }
-
-        $achieved = 0;
-        foreach ($achievedHistory as $periodKey => $amount) {
-            $sort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
-            if ($sort !== null && (int) floor($sort / 100) === $activeYear && $sort < $activeSort) {
-                $achieved += (float) $amount;
-            }
-        }
+        $target = (float) ($targetHistory[$previousPeriodKey] ?? 0);
+        $achieved = (float) ($achievedHistory[$previousPeriodKey] ?? 0);
 
         return $target - $achieved;
+    }
+
+    private function comparisonPreviousPeriodKey($activePeriodKey, $groupBy)
+    {
+        $activePeriodKey = strtoupper(trim((string) $activePeriodKey));
+        if ($groupBy === 'week') {
+            if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $activePeriodKey, $match)) {
+                return '';
+            }
+
+            $year = (int) $match[1];
+            $week = (int) $match[2] - 1;
+            if ($week <= 0) {
+                $year--;
+                $week = 53;
+            }
+
+            return $this->weekKey($year, $week);
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{1,2})$/', $activePeriodKey)) {
+            return '';
+        }
+
+        return date('Y-m', strtotime($activePeriodKey . '-01 -1 month'));
     }
 
     private function comparisonPeriodSortValue($periodKey, $groupBy)
