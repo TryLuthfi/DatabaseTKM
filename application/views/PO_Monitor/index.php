@@ -2233,7 +2233,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
                                                 <?php if ($comparisonCumulative): ?>
-                                                    <td data-po-amount="<?= (float) $monthData['cumulative'] ?>"><?= (float) $monthData['cumulative'] > 0 ? number_format((float) $monthData['cumulative'], 0, ',', '.') : '-' ?></td>
+                                                    <td data-po-amount="<?= (float) $monthData['cumulative'] ?>"><?= abs((float) $monthData['cumulative']) > 0.000001 ? number_format((float) $monthData['cumulative'], 0, ',', '.') : '-' ?></td>
                                                 <?php endif; ?>
                                                 <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
                                                 <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
@@ -2253,7 +2253,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                             <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
                                             <?php if ($comparisonCumulative): ?>
-                                                <th><?= (float) $monthTotal['cumulative'] > 0 ? number_format((float) $monthTotal['cumulative'], 0, ',', '.') : '-' ?></th>
+                                                <th><?= abs((float) $monthTotal['cumulative']) > 0.000001 ? number_format((float) $monthTotal['cumulative'], 0, ',', '.') : '-' ?></th>
                                             <?php endif; ?>
                                             <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
                                             <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>

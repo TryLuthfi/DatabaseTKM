@@ -2394,7 +2394,7 @@ class MPO_Monitor extends CI_Model
             }
         }
 
-        return max($target - $achieved, 0);
+        return $target - $achieved;
     }
 
     private function comparisonPeriodSortValue($periodKey, $groupBy)
