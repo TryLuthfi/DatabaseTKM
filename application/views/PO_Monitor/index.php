@@ -119,6 +119,26 @@ if (!function_exists('po_monitor_compare_amount_link')) {
     }
 }
 
+if (!function_exists('po_monitor_compare_total_amount_link')) {
+    function po_monitor_compare_total_amount_link($value, $idBowheer, $groupBy, $type, $fromMonth, $toMonth)
+    {
+        $value = (float) $value;
+        if ($value <= 0) {
+            return '-';
+        }
+
+        return '<button type="button" class="btn btn-link btn-sm p-0 po-compare-detail-link"'
+            . ' data-id-bowheer="' . (int) $idBowheer . '"'
+            . ' data-period-key="__total__"'
+            . ' data-group-by="' . htmlspecialchars($groupBy, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-type="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-from-month="' . htmlspecialchars((string) $fromMonth, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-to-month="' . htmlspecialchars((string) $toMonth, ENT_QUOTES, 'UTF-8') . '">'
+            . number_format($value, 0, ',', '.')
+            . '</button>';
+    }
+}
+
 if (!function_exists('po_monitor_term_amount_link')) {
     function po_monitor_term_amount_link($value, $idBowheer, $metric, $termIndex = 0)
     {
@@ -2200,7 +2220,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <td><?= $compareNo++ ?></td>
                                             <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                                             <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
+                                            <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], 'month', 'target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
                                                 <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], 'month', 'target') ?></td>
@@ -4819,7 +4839,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             id_bowheer: $button.data('id-bowheer'),
                             period_key: $button.data('period-key'),
                             group_by: $button.data('group-by'),
-                            type: $button.data('type')
+                            type: $button.data('type'),
+                            from_month: $button.data('from-month') || $('input[name="from_month"]').val(),
+                            to_month: $button.data('to-month') || $('input[name="to_month"]').val()
                         }
                     }).done(function(response) {
                         $modal.find('.modal-title').html(response && response.title ? response.title : '<span class="po-monitor-modal-eyebrow">Detail Perbandingan</span>Detail PO');

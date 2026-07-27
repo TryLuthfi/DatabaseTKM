@@ -2125,20 +2125,20 @@ class MPO_Monitor extends CI_Model
         $options[$value] = ['value' => $value, 'label' => $label ?: $value];
     }
 
-    public function getComparisonDetail($idBowheer, $periodKey, $groupBy, $type)
+    public function getComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth = null, $toMonth = null)
     {
         $idBowheer = (int) $idBowheer;
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
         $type = $type === 'achieved' ? 'achieved' : 'target';
 
         if ($type === 'achieved') {
-            return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy);
+            return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
 
-        return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy);
+        return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
     }
 
-    private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy)
+    private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
     {
         $rows = $this->db->query("SELECT *
             FROM (
@@ -2236,16 +2236,21 @@ class MPO_Monitor extends CI_Model
             ) x
             ORDER BY target_week_start ASC, po_number ASC, term_index ASC", [$idBowheer, $idBowheer, $idBowheer])->result_array();
 
-        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+        $totalPeriodKeys = $this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth);
+        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy, $totalPeriodKeys) {
             $rowPeriod = $groupBy === 'week'
                 ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
                 : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
+
+            if (!empty($totalPeriodKeys)) {
+                return isset($totalPeriodKeys[$rowPeriod]);
+            }
 
             return $rowPeriod === $periodKey;
         }));
     }
 
-    private function getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy)
+    private function getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
     {
         $rows = $this->db->query("SELECT
                 p.id_bowheer,
@@ -2280,10 +2285,15 @@ class MPO_Monitor extends CI_Model
                 AND p.id_bowheer = ?
             ORDER BY tc.invoice_date ASC, p.po_number ASC, t.term_index ASC", [$idBowheer])->result_array();
 
-        $rows = array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+        $totalPeriodKeys = $this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth);
+        $rows = array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy, $totalPeriodKeys) {
             $rowPeriod = $groupBy === 'week'
                 ? $this->weekKeyFromDate($row['invoice_date'])
                 : $this->monthKeyFromInvoiceWeek($row['invoice_date']);
+
+            if (!empty($totalPeriodKeys)) {
+                return isset($totalPeriodKeys[$rowPeriod]);
+            }
 
             return $rowPeriod === $periodKey;
         }));
@@ -2300,6 +2310,27 @@ class MPO_Monitor extends CI_Model
         unset($row);
 
         return $rows;
+    }
+
+    private function comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        if ((string) $periodKey !== '__total__') {
+            return [];
+        }
+
+        $bounds = $this->resolveComparisonBounds($fromMonth, $toMonth);
+        $periods = $groupBy === 'week'
+            ? $this->buildWeekList($bounds['from'], $bounds['to'])
+            : $this->buildMonthList($bounds['from'], $bounds['to']);
+
+        $keys = [];
+        foreach ($periods as $period) {
+            if (!empty($period['key'])) {
+                $keys[(string) $period['key']] = true;
+            }
+        }
+
+        return $keys;
     }
 
     private function resolveComparisonBounds($fromMonth, $toMonth)

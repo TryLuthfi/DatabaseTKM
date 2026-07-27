@@ -1293,6 +1293,8 @@ class PO_Monitor extends CI_Controller
         $periodKey = trim((string) $this->input->post('period_key'));
         $groupBy = $this->input->post('group_by') === 'week' ? 'week' : 'month';
         $type = $this->input->post('type') === 'achieved' ? 'achieved' : 'target';
+        $fromMonth = $this->input->post('from_month') ?: null;
+        $toMonth = $this->input->post('to_month') ?: null;
 
         $project = $this->db->select('bowheer')->get_where('tb_bowheer_po', ['id_bowheer' => $idBowheer])->row_array();
         if (!$project || $periodKey === '') {
@@ -1308,12 +1310,14 @@ class PO_Monitor extends CI_Controller
 
         if (strtoupper(trim((string) $project['bowheer'])) === 'PT EMR - NRO') {
             $syncMonth = $this->comparisonSyncMonthKey($periodKey, $groupBy);
-            if ($syncMonth !== '') {
+            if ($periodKey === '__total__') {
+                $this->MPO_Monitor->syncEmrNroComparisonClaims($fromMonth, $toMonth, (int) $this->session->userdata('id_user'));
+            } elseif ($syncMonth !== '') {
                 $this->MPO_Monitor->syncEmrNroComparisonClaims($syncMonth, $syncMonth, (int) $this->session->userdata('id_user'));
             }
         }
 
-        $rows = $this->MPO_Monitor->getComparisonDetail($idBowheer, $periodKey, $groupBy, $type);
+        $rows = $this->MPO_Monitor->getComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth, $toMonth);
         $title = '<span class="po-monitor-modal-eyebrow">Detail Perbandingan</span>'
             . htmlspecialchars(ucfirst($type) . ' - ' . $project['bowheer'] . ' - ' . $this->comparisonPeriodLabel($periodKey, $groupBy));
 
@@ -1746,6 +1750,10 @@ class PO_Monitor extends CI_Controller
 
     private function comparisonPeriodLabel($periodKey, $groupBy)
     {
+        if ((string) $periodKey === '__total__') {
+            return 'Total Target';
+        }
+
         if ($groupBy === 'week' && preg_match('/^(\d{4})-W(\d{2})$/', $periodKey, $match)) {
             return 'Week ' . (int) $match[2] . ' ' . $match[1];
         }

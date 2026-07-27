@@ -57,6 +57,26 @@ if (!function_exists('po_monitor_compare_amount_link')) {
             . '</button>';
     }
 }
+
+if (!function_exists('po_monitor_compare_total_amount_link')) {
+    function po_monitor_compare_total_amount_link($value, $idBowheer, $groupBy, $type, $fromMonth, $toMonth)
+    {
+        $value = (float) $value;
+        if ($value <= 0) {
+            return '-';
+        }
+
+        return '<button type="button" class="btn btn-link btn-sm p-0 po-compare-detail-link"'
+            . ' data-id-bowheer="' . (int) $idBowheer . '"'
+            . ' data-period-key="__total__"'
+            . ' data-group-by="' . htmlspecialchars($groupBy, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-type="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-from-month="' . htmlspecialchars((string) $fromMonth, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-to-month="' . htmlspecialchars((string) $toMonth, ENT_QUOTES, 'UTF-8') . '">'
+            . number_format($value, 0, ',', '.')
+            . '</button>';
+    }
+}
 ?>
 <table id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>" class="table table-bordered table-striped po-compare-table">
     <thead>
@@ -114,7 +134,7 @@ if (!function_exists('po_monitor_compare_amount_link')) {
                 <td><?= $compareNo++ ?></td>
                 <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars($row['project'], ENT_QUOTES, 'UTF-8') ?></td>
-                <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= number_format((float) $row['total_target'], 0, ',', '.') ?></td>
+                <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], $groupBy, 'target', $matrix['from'] ?? '', $matrix['to'] ?? '') ?></td>
                 <?php foreach ($matrix['months'] as $month): ?>
                     <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0]; ?>
                     <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], $groupBy, 'target') ?></td>
