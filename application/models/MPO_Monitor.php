@@ -1723,9 +1723,16 @@ class MPO_Monitor extends CI_Model
                 $totals['months'][$period['key']]['effective_target'] += $effectiveTarget;
             }
 
+            $project['total_effective_target'] = 0;
+            foreach ($periods as $period) {
+                $project['total_effective_target'] += (float) ($project['months'][$period['key']]['effective_target'] ?? 0);
+            }
             $project['deviasi'] = max($project['total_target'] - $project['total_achieved'], 0);
             $project['achieved_percent'] = $project['total_target'] > 0 ? ($project['total_achieved'] / $project['total_target']) * 100 : ($project['total_achieved'] > 0 ? 100 : 0);
             $project['deviasi_percent'] = max(100 - $project['achieved_percent'], 0);
+            $project['cumulative_deviasi'] = max($project['total_effective_target'] - $project['total_achieved'], 0);
+            $project['cumulative_achieved_percent'] = $project['total_effective_target'] > 0 ? ($project['total_achieved'] / $project['total_effective_target']) * 100 : ($project['total_achieved'] > 0 ? 100 : 0);
+            $project['cumulative_deviasi_percent'] = max(100 - $project['cumulative_achieved_percent'], 0);
             unset($project['period_history']);
         }
         unset($project);
@@ -1741,6 +1748,13 @@ class MPO_Monitor extends CI_Model
         $totals['deviasi'] = max($totals['total_target'] - $totals['total_achieved'], 0);
         $totals['achieved_percent'] = $totals['total_target'] > 0 ? ($totals['total_achieved'] / $totals['total_target']) * 100 : ($totals['total_achieved'] > 0 ? 100 : 0);
         $totals['deviasi_percent'] = max(100 - $totals['achieved_percent'], 0);
+        $totals['total_effective_target'] = 0;
+        foreach ($totals['months'] as $monthTotal) {
+            $totals['total_effective_target'] += (float) ($monthTotal['effective_target'] ?? 0);
+        }
+        $totals['cumulative_deviasi'] = max($totals['total_effective_target'] - $totals['total_achieved'], 0);
+        $totals['cumulative_achieved_percent'] = $totals['total_effective_target'] > 0 ? ($totals['total_achieved'] / $totals['total_effective_target']) * 100 : ($totals['total_achieved'] > 0 ? 100 : 0);
+        $totals['cumulative_deviasi_percent'] = max(100 - $totals['cumulative_achieved_percent'], 0);
 
         $rows = array_values($projectMap);
         if ($invoiceOnly) {

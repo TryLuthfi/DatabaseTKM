@@ -2245,11 +2245,17 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 </thead>
                                 <tbody>
                                     <?php $compareNo = 1; foreach ($comparisonMatrix['rows'] as $row): ?>
-                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $row['total_target'] ?>">
+                                        <?php
+                                            $rowDisplayTarget = $comparisonCumulative ? (float) ($row['total_effective_target'] ?? $row['total_target']) : (float) $row['total_target'];
+                                            $rowDisplayDeviasi = $comparisonCumulative ? (float) ($row['cumulative_deviasi'] ?? $row['deviasi']) : (float) $row['deviasi'];
+                                            $rowDisplayAchievedPercent = $comparisonCumulative ? (float) ($row['cumulative_achieved_percent'] ?? $row['achieved_percent']) : (float) $row['achieved_percent'];
+                                            $rowDisplayDeviasiPercent = $comparisonCumulative ? (float) ($row['cumulative_deviasi_percent'] ?? $row['deviasi_percent']) : (float) $row['deviasi_percent'];
+                                        ?>
+                                        <tr data-achieved="<?= (float) $row['total_achieved'] ?>" data-target="<?= (float) $rowDisplayTarget ?>">
                                             <td><?= $compareNo++ ?></td>
                                             <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                                             <td><?= htmlspecialchars($row['project']) ?></td>
-                                            <td data-po-amount="<?= (float) $row['total_target'] ?>"><?= po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], 'month', 'target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
+                                            <td data-po-amount="<?= (float) $rowDisplayTarget ?>"><?= $comparisonCumulative ? number_format((float) $rowDisplayTarget, 0, ',', '.') : po_monitor_compare_total_amount_link($row['total_target'], $row['id_bowheer'], 'month', 'target', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
                                             <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                                 <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
                                                 <?php if ($comparisonCumulative): ?>
@@ -2260,16 +2266,16 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                                 <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0 || (float) ($monthData['cumulative'] ?? 0) > 0) ? po_monitor_percent($comparisonCumulative ? ($monthData['cumulative_percent'] ?? 0) : $monthData['percent']) : '-' ?></td>
                                             <?php endforeach; ?>
                                             <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
-                                            <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
-                                            <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
-                                            <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
+                                            <td data-po-amount="<?= (float) $rowDisplayDeviasi ?>"><?= number_format((float) $rowDisplayDeviasi, 0, ',', '.') ?></td>
+                                            <td><?= po_monitor_percent($rowDisplayAchievedPercent) ?></td>
+                                            <td><?= po_monitor_percent($rowDisplayDeviasiPercent) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                                 <tfoot>
                                     <tr>
                                         <th colspan="3" class="po-compare-footer-label">Total</th>
-                                        <th><?= number_format((float) $comparisonMatrix['totals']['total_target'], 0, ',', '.') ?></th>
+                                        <th><?= number_format((float) ($comparisonCumulative ? ($comparisonMatrix['totals']['total_effective_target'] ?? $comparisonMatrix['totals']['total_target']) : $comparisonMatrix['totals']['total_target']), 0, ',', '.') ?></th>
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                             <?php $monthTotal = $comparisonMatrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
                                             <?php if ($comparisonCumulative): ?>
@@ -2280,9 +2286,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <th><?= po_monitor_percent($comparisonCumulative ? ($monthTotal['cumulative_percent'] ?? 0) : $monthTotal['percent']) ?></th>
                                         <?php endforeach; ?>
                                         <th><?= number_format((float) $comparisonMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
-                                        <th><?= number_format((float) $comparisonMatrix['totals']['deviasi'], 0, ',', '.') ?></th>
-                                        <th><?= po_monitor_percent($comparisonMatrix['totals']['achieved_percent']) ?></th>
-                                        <th><?= po_monitor_percent($comparisonMatrix['totals']['deviasi_percent']) ?></th>
+                                        <th><?= number_format((float) ($comparisonCumulative ? ($comparisonMatrix['totals']['cumulative_deviasi'] ?? $comparisonMatrix['totals']['deviasi']) : $comparisonMatrix['totals']['deviasi']), 0, ',', '.') ?></th>
+                                        <th><?= po_monitor_percent($comparisonCumulative ? ($comparisonMatrix['totals']['cumulative_achieved_percent'] ?? $comparisonMatrix['totals']['achieved_percent']) : $comparisonMatrix['totals']['achieved_percent']) ?></th>
+                                        <th><?= po_monitor_percent($comparisonCumulative ? ($comparisonMatrix['totals']['cumulative_deviasi_percent'] ?? $comparisonMatrix['totals']['deviasi_percent']) : $comparisonMatrix['totals']['deviasi_percent']) ?></th>
                                     </tr>
                                 </tfoot>
                             </table>
