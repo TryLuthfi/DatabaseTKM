@@ -1704,28 +1704,19 @@ class MPO_Monitor extends CI_Model
         foreach ($projectMap as &$project) {
             foreach ($periods as $period) {
                 $periodKey = (string) $period['key'];
-                $target = (float) $project['months'][$period['key']]['target'];
-                $achieved = (float) $project['months'][$period['key']]['achieved'];
-                $historyTarget = is_array($project['period_history']['target'] ?? null) ? $project['period_history']['target'] : [];
-                $historyAchieved = is_array($project['period_history']['achieved'] ?? null) ? $project['period_history']['achieved'] : [];
-                $cumulativeTarget = 0;
-                $cumulativeAchieved = 0;
-                foreach ($historyTarget as $historyPeriod => $historyAmount) {
-                    if ($this->comparisonPeriodIsBeforeSameYear($historyPeriod, $periodKey, $groupBy)) {
-                        $cumulativeTarget += (float) $historyAmount;
-                    }
-                }
-                foreach ($historyAchieved as $historyPeriod => $historyAmount) {
-                    if ($this->comparisonPeriodIsBeforeSameYear($historyPeriod, $periodKey, $groupBy)) {
-                        $cumulativeAchieved += (float) $historyAmount;
-                    }
-                }
-                $cumulative = max($cumulativeTarget - $cumulativeAchieved, 0);
+                $target = (float) $project['months'][$periodKey]['target'];
+                $achieved = (float) $project['months'][$periodKey]['achieved'];
+                $cumulative = $this->calculateComparisonCarryOver(
+                    is_array($project['period_history']['target'] ?? null) ? $project['period_history']['target'] : [],
+                    is_array($project['period_history']['achieved'] ?? null) ? $project['period_history']['achieved'] : [],
+                    $periodKey,
+                    $groupBy
+                );
                 $effectiveTarget = $target + $cumulative;
-                $project['months'][$period['key']]['cumulative'] = $cumulative;
-                $project['months'][$period['key']]['effective_target'] = $effectiveTarget;
-                $project['months'][$period['key']]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
-                $project['months'][$period['key']]['cumulative_percent'] = $effectiveTarget > 0 ? ($achieved / $effectiveTarget) * 100 : ($achieved > 0 ? 100 : 0);
+                $project['months'][$periodKey]['cumulative'] = $cumulative;
+                $project['months'][$periodKey]['effective_target'] = $effectiveTarget;
+                $project['months'][$periodKey]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
+                $project['months'][$periodKey]['cumulative_percent'] = $effectiveTarget > 0 ? ($achieved / $effectiveTarget) * 100 : ($achieved > 0 ? 100 : 0);
                 $totals['months'][$period['key']]['target'] += $target;
                 $totals['months'][$period['key']]['achieved'] += $achieved;
                 $totals['months'][$period['key']]['cumulative'] += $cumulative;
@@ -2377,6 +2368,51 @@ class MPO_Monitor extends CI_Model
         }
 
         return $keys;
+    }
+
+    private function calculateComparisonCarryOver(array $targetHistory, array $achievedHistory, $activePeriodKey, $groupBy)
+    {
+        $activeSort = $this->comparisonPeriodSortValue($activePeriodKey, $groupBy);
+        if ($activeSort === null) {
+            return 0;
+        }
+
+        $activeYear = (int) floor($activeSort / 100);
+        $target = 0;
+        foreach ($targetHistory as $periodKey => $amount) {
+            $sort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+            if ($sort !== null && (int) floor($sort / 100) === $activeYear && $sort < $activeSort) {
+                $target += (float) $amount;
+            }
+        }
+
+        $achieved = 0;
+        foreach ($achievedHistory as $periodKey => $amount) {
+            $sort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+            if ($sort !== null && (int) floor($sort / 100) === $activeYear && $sort < $activeSort) {
+                $achieved += (float) $amount;
+            }
+        }
+
+        return max($target - $achieved, 0);
+    }
+
+    private function comparisonPeriodSortValue($periodKey, $groupBy)
+    {
+        $periodKey = strtoupper(trim((string) $periodKey));
+        if ($groupBy === 'week') {
+            if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $periodKey, $match)) {
+                return null;
+            }
+
+            return ((int) $match[1] * 100) + (int) $match[2];
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{1,2})$/', $periodKey, $match)) {
+            return null;
+        }
+
+        return ((int) $match[1] * 100) + (int) $match[2];
     }
 
     private function comparisonPeriodIsBeforeSameYear($periodKey, $activePeriodKey, $groupBy)
