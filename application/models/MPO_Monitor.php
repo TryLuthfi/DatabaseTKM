@@ -1635,19 +1635,19 @@ class MPO_Monitor extends CI_Model
                 ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
                 : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
 
-            if (!isset($projectMap[$id]['months'][$periodKey])) {
-                continue;
-            }
-
             $amount = (float) $row['amount'];
-            $projectMap[$id]['months'][$periodKey]['target'] += $amount;
-            $projectMap[$id]['total_target'] += $amount;
-
             foreach ($periods as $period) {
                 if ($this->comparisonPeriodIsBeforeSameYear($periodKey, (string) $period['key'], $groupBy)) {
                     $projectMap[$id]['months'][$period['key']]['cumulative_target'] += $amount;
                 }
             }
+
+            if (!isset($projectMap[$id]['months'][$periodKey])) {
+                continue;
+            }
+
+            $projectMap[$id]['months'][$periodKey]['target'] += $amount;
+            $projectMap[$id]['total_target'] += $amount;
         }
 
         $claimRows = $this->db->query("SELECT
@@ -1669,19 +1669,19 @@ class MPO_Monitor extends CI_Model
                 ? $this->weekKeyFromDate($row['invoice_date'])
                 : $this->monthKeyFromInvoiceWeek($row['invoice_date']);
 
-            if (!isset($projectMap[$id]['months'][$periodKey])) {
-                continue;
-            }
-
             $amount = (float) $row['invoice_amount'];
-            $projectMap[$id]['months'][$periodKey]['achieved'] += $amount;
-            $projectMap[$id]['total_achieved'] += $amount;
-
             foreach ($periods as $period) {
                 if ($this->comparisonPeriodIsBeforeSameYear($periodKey, (string) $period['key'], $groupBy)) {
                     $projectMap[$id]['months'][$period['key']]['cumulative_achieved'] += $amount;
                 }
             }
+
+            if (!isset($projectMap[$id]['months'][$periodKey])) {
+                continue;
+            }
+
+            $projectMap[$id]['months'][$periodKey]['achieved'] += $amount;
+            $projectMap[$id]['total_achieved'] += $amount;
         }
 
         $totals = [
