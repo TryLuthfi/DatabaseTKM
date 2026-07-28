@@ -417,10 +417,32 @@ if (!function_exists('poMyRepStatusBadge')) {
                         <?php else: ?>
                             <?php foreach ($groupRows as $header): ?>
                                 <div class="po-header-box">
-                                    <div class="po-header-box__title">
-                                        <?= htmlspecialchars((string) ($header['po_number'] ?? '-')) ?>
-                                        <span class="badge badge-primary ml-2"><?= htmlspecialchars((string) ($header['po_category'] ?? '-')) ?></span>
-                                        <span class="badge badge-info ml-1"><?= htmlspecialchars((string) ($header['status_po'] ?? '-')) ?></span>
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                                        <div class="po-header-box__title mb-0">
+                                            <?= htmlspecialchars((string) ($header['po_number'] ?? '-')) ?>
+                                            <span class="badge badge-primary ml-2"><?= htmlspecialchars((string) ($header['po_category'] ?? '-')) ?></span>
+                                            <span class="badge badge-info ml-1"><?= htmlspecialchars((string) ($header['status_po'] ?? '-')) ?></span>
+                                        </div>
+                                        <?php if ($canEdit): ?>
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-primary js-open-po-header-modal"
+                                                data-toggle="modal"
+                                                data-target="#modal-edit-po-header"
+                                                data-po-header-id="<?= (int) ($header['id_po_header'] ?? 0) ?>"
+                                                data-parent-po-header-id="<?= (int) ($header['parent_po_header_id'] ?? 0) ?>"
+                                                data-po-type="<?= htmlspecialchars((string) ($header['po_type'] ?? 'CLUSTER'), ENT_QUOTES) ?>"
+                                                data-po-category="<?= htmlspecialchars((string) ($header['po_category'] ?? 'INITIAL'), ENT_QUOTES) ?>"
+                                                data-status-po="<?= htmlspecialchars((string) ($header['status_po'] ?? 'ISSUED'), ENT_QUOTES) ?>"
+                                                data-po-number="<?= htmlspecialchars((string) ($header['po_number'] ?? ''), ENT_QUOTES) ?>"
+                                                data-po-date="<?= htmlspecialchars((string) ($header['po_date'] ?? ''), ENT_QUOTES) ?>"
+                                                data-po-value="<?= htmlspecialchars((string) ($header['po_value'] ?? ''), ENT_QUOTES) ?>"
+                                                data-ny-po-ref="<?= htmlspecialchars((string) ($header['po_monitor_ny_ref'] ?? ''), ENT_QUOTES) ?>"
+                                                data-po-version-label="<?= htmlspecialchars((string) ($header['po_version_label'] ?? ''), ENT_QUOTES) ?>"
+                                                data-remark-po="<?= htmlspecialchars((string) ($header['remark_po'] ?? ''), ENT_QUOTES) ?>">
+                                                Edit Header
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-3"><strong>Tanggal PO</strong><div><?= !empty($header['po_date']) ? htmlspecialchars((string) $header['po_date']) : '-' ?></div></div>
@@ -590,6 +612,40 @@ if (!function_exists('poMyRepStatusBadge')) {
 <?php endif; ?>
 
 <?php if ($canEdit): ?>
+<div class="modal fade" id="modal-edit-po-header" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('PO_MyRep/updatePoHeader') ?>">
+                <input type="hidden" name="id_po_header" id="edit_po_header_id">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Edit Header PO MyRep</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>Cluster</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Status Flow</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['status_current'] ?? '-')) ?>" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tipe PO</label><select name="po_type" id="edit_po_type" class="form-control"><?php foreach ($poTypeOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kategori PO</label><select name="po_category" id="edit_po_category" class="form-control"><?php foreach ($poCategoryOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Status PO</label><select name="status_po" id="edit_status_po" class="form-control"><?php foreach ($poStatusOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" id="edit_po_number" class="form-control" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" id="edit_po_date" class="form-control" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" id="edit_po_value" class="form-control" required></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>NY PO REF</label><input type="text" name="ny_po_ref" id="edit_ny_po_ref" class="form-control" placeholder="NY-123 (opsional)"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" id="edit_po_version_label" class="form-control"></div></div>
+                        <div class="col-md-8"><div class="form-group"><label>Parent PO</label><select name="parent_po_header_id" id="edit_parent_po_header_id" class="form-control"><option value="">PO Baru</option><?php foreach (array_merge($poGroups['CLUSTER'], $poGroups['SUBFEEDER']) as $existingPo): ?><option value="<?= (int) ($existingPo['id_po_header'] ?? 0) ?>"><?= htmlspecialchars((string) ($existingPo['po_number'] ?? '-')) ?> - <?= htmlspecialchars((string) ($existingPo['po_category'] ?? '-')) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_po" id="edit_remark_po" class="form-control" rows="3"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Header</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modal-termin" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -659,6 +715,26 @@ if (!function_exists('poMyRepStatusBadge')) {
 
 <script>
     (function () {
+        $(document).on('click', '.js-open-po-header-modal', function () {
+            var $button = $(this);
+            var headerId = String($button.data('po-header-id') || '');
+            var parentHeaderId = String($button.data('parent-po-header-id') || '');
+
+            $('#edit_po_header_id').val(headerId);
+            $('#edit_po_type').val($button.data('po-type') || 'CLUSTER');
+            $('#edit_po_category').val($button.data('po-category') || 'INITIAL');
+            $('#edit_status_po').val($button.data('status-po') || 'ISSUED');
+            $('#edit_po_number').val($button.data('po-number') || '');
+            $('#edit_po_date').val($button.data('po-date') || '');
+            $('#edit_po_value').val($button.data('po-value') || '');
+            $('#edit_ny_po_ref').val($button.data('ny-po-ref') || '');
+            $('#edit_po_version_label').val($button.data('po-version-label') || '');
+            $('#edit_remark_po').val($button.data('remark-po') || '');
+            $('#edit_parent_po_header_id option').prop('disabled', false);
+            $('#edit_parent_po_header_id option[value="' + headerId + '"]').prop('disabled', true);
+            $('#edit_parent_po_header_id').val(parentHeaderId !== '0' && parentHeaderId !== headerId ? parentHeaderId : '');
+        });
+
         $(document).on('click', '.js-open-termin-modal', function () {
             var $button = $(this);
             $('#po_termin_id').val($button.data('termin-id') || '');

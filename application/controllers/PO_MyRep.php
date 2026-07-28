@@ -19,6 +19,7 @@ class PO_MyRep extends CI_Controller
                 'batchTerminCertificate' => 'EDIT',
                 'batchSavePo' => 'EDIT',
                 'setPoNyRef' => 'EDIT',
+                'updatePoHeader' => 'EDIT',
             ]);
         }
     }
@@ -435,6 +436,108 @@ class PO_MyRep extends CI_Controller
         }
 
         $this->session->set_flashdata($result > 0 ? 'success' : 'error', $result > 0 ? 'PO berhasil disimpan.' : 'PO gagal disimpan.');
+        redirect('PO_MyRep/detail/' . $clusterId);
+    }
+
+    public function updatePoHeader()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $poHeaderId = (int) $this->input->post('id_po_header');
+        $header = $this->MPO_MyRep->getPoHeaderById($poHeaderId);
+        if (empty($header)) {
+            $this->session->set_flashdata('error', 'Header PO tidak ditemukan.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+        $poType = strtoupper(trim((string) $this->input->post('po_type')));
+        $poCategory = strtoupper(trim((string) $this->input->post('po_category')));
+        $poNumber = trim((string) $this->input->post('po_number'));
+        $poDate = $this->normalizeDate($this->input->post('po_date'));
+        $poValue = $this->normalizeNumber($this->input->post('po_value'));
+        $statusPo = strtoupper(trim((string) $this->input->post('status_po')));
+        $poVersionLabel = trim((string) $this->input->post('po_version_label'));
+        $remarkPo = trim((string) $this->input->post('remark_po'));
+        $parentPoHeaderId = (int) $this->input->post('parent_po_header_id');
+        $nyPoRef = strtoupper(trim((string) $this->input->post('ny_po_ref')));
+
+        if ($poNumber === '' || $poDate === null || $poValue <= 0) {
+            $this->session->set_flashdata('error', 'Nomor PO, tanggal PO, dan nilai PO wajib diisi.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+            $poType = 'CLUSTER';
+        }
+
+        if (!in_array($poCategory, ['INITIAL', 'FINAL', 'AMANDMENT'], true)) {
+            $poCategory = 'INITIAL';
+        }
+
+        if (!in_array($statusPo, ['NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED'], true)) {
+            $statusPo = 'ISSUED';
+        }
+
+        if ($nyPoRef !== '' && !preg_match('/^NY-\d+$/', $nyPoRef)) {
+            $this->session->set_flashdata('error', 'NY PO REF tidak valid. Gunakan format NY-123.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if ($this->MPO_MyRep->poHeaderExists($clusterId, $poType, $poCategory, $poNumber, $poHeaderId)) {
+            $this->session->set_flashdata('error', 'PO dengan tipe, kategori, dan nomor yang sama sudah ada.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        $oldNyPoRef = strtoupper(trim((string) ($header['po_monitor_ny_ref'] ?? '')));
+        $result = $this->MPO_MyRep->updatePoHeader($poHeaderId, [
+            'parent_po_header_id' => $parentPoHeaderId > 0 ? $parentPoHeaderId : null,
+            'po_type' => $poType,
+            'po_category' => $poCategory,
+            'po_number' => $poNumber,
+            'po_date' => $poDate,
+            'po_value' => $poValue,
+            'status_po' => $statusPo,
+            'po_version_label' => $poVersionLabel,
+            'remark_po' => $remarkPo,
+            'po_monitor_ny_ref' => $nyPoRef,
+            'updated_by' => $userId,
+        ]);
+
+        if (!$result) {
+            $this->session->set_flashdata('error', 'Header PO gagal diupdate.');
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $ensure = $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poHeaderId, $userId);
+        if ($nyPoRef !== '') {
+            $linkResult = $this->MPO_Monitor->linkNyPoReferenceToMyRepHeader($poHeaderId, $nyPoRef, $userId);
+            if (empty($linkResult['status'])) {
+                $this->session->set_flashdata('error', 'Header PO terupdate, tapi NY PO REF gagal link: ' . ($linkResult['message'] ?? 'unknown error'));
+                redirect('PO_MyRep/detail/' . $clusterId);
+                return;
+            }
+        }
+        if ($oldNyPoRef !== '' && $oldNyPoRef !== $nyPoRef) {
+            $this->MPO_Monitor->unlinkNyPoReferenceFromPo($oldNyPoRef, (int) ($ensure['id_po'] ?? 0));
+        }
+
+        $this->session->set_flashdata('success', 'Header PO berhasil diupdate.');
         redirect('PO_MyRep/detail/' . $clusterId);
     }
 

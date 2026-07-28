@@ -3947,7 +3947,7 @@ class MPO_MyRep extends CI_Model
         return array_values($dedupedRows);
     }
 
-    public function poHeaderExists($clusterId, $poType, $poCategory, $poNumber)
+    public function poHeaderExists($clusterId, $poType, $poCategory, $poNumber, $excludePoHeaderId = 0)
     {
         if (!$this->tablesReady()) {
             return false;
@@ -3962,14 +3962,93 @@ class MPO_MyRep extends CI_Model
             return false;
         }
 
-        return $this->db
+        $query = $this->db
             ->from('tb_myrep_po_header')
             ->where('id_myrep_cluster', $clusterId)
             ->where('UPPER(TRIM(po_type))', $poType)
             ->where("UPPER(TRIM(COALESCE(po_category, 'INITIAL'))) = " . $this->db->escape($poCategory), null, false)
-            ->where('UPPER(TRIM(po_number))', strtoupper($poNumber))
-            ->limit(1)
-            ->count_all_results() > 0;
+            ->where('UPPER(TRIM(po_number))', strtoupper($poNumber));
+        if ((int) $excludePoHeaderId > 0) {
+            $query->where('id_po_header !=', (int) $excludePoHeaderId);
+        }
+
+        return $query->limit(1)->count_all_results() > 0;
+    }
+
+    public function getPoHeaderById($poHeaderId)
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->select('p.*, c.city_name')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('p.id_po_header', (int) $poHeaderId);
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        return $this->db->get()->row_array();
+    }
+
+    public function updatePoHeader($poHeaderId, array $payload)
+    {
+        if (!$this->tablesReady()) {
+            return false;
+        }
+
+        $poHeaderId = (int) $poHeaderId;
+        $header = $this->getPoHeaderById($poHeaderId);
+        if (empty($header)) {
+            return false;
+        }
+
+        $parentPoHeaderId = !empty($payload['parent_po_header_id']) ? (int) $payload['parent_po_header_id'] : null;
+        if ($parentPoHeaderId === $poHeaderId) {
+            $parentPoHeaderId = null;
+        }
+
+        $headerPayload = [
+            'parent_po_header_id' => $parentPoHeaderId,
+            'po_type' => (string) $payload['po_type'],
+            'po_category' => (string) $payload['po_category'],
+            'po_number' => (string) $payload['po_number'],
+            'po_date' => $payload['po_date'],
+            'po_value' => (float) $payload['po_value'],
+            'status_po' => (string) $payload['status_po'],
+            'po_version_label' => trim((string) ($payload['po_version_label'] ?? '')) !== '' ? (string) $payload['po_version_label'] : null,
+            'remark_po' => trim((string) ($payload['remark_po'] ?? '')) !== '' ? (string) $payload['remark_po'] : null,
+            'updated_by' => (int) ($payload['updated_by'] ?? 0),
+        ];
+        if ($this->ensurePoHeaderNyRefColumn()) {
+            $nyRef = strtoupper(trim((string) ($payload['po_monitor_ny_ref'] ?? '')));
+            $headerPayload['po_monitor_ny_ref'] = $nyRef !== '' ? $nyRef : null;
+        }
+        if ($this->db->field_exists('updated_at', 'tb_myrep_po_header')) {
+            $headerPayload['updated_at'] = date('Y-m-d H:i:s');
+        }
+
+        $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+        $oldPoType = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
+        $newPoType = strtoupper(trim((string) ($payload['po_type'] ?? 'CLUSTER')));
+
+        $this->db->trans_start();
+        $this->db->where('id_po_header', $poHeaderId)->update('tb_myrep_po_header', $headerPayload);
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return false;
+        }
+
+        $this->syncTerminEstimatesForCluster($clusterId, $oldPoType, (int) ($payload['updated_by'] ?? 0));
+        if ($newPoType !== $oldPoType) {
+            $this->syncTerminEstimatesForCluster($clusterId, $newPoType, (int) ($payload['updated_by'] ?? 0));
+        }
+
+        return true;
     }
 
     public function updatePoHeaderNyRef($poHeaderId, $nyPoRef, $userId = 0)
