@@ -1295,7 +1295,7 @@ class PO_Monitor extends CI_Controller
         $periodKey = trim((string) $this->input->post('period_key'));
         $groupBy = $this->input->post('group_by') === 'week' ? 'week' : 'month';
         $typeInput = (string) $this->input->post('type');
-        $type = in_array($typeInput, ['achieved', 'cumulative', 'effective_target'], true) ? $typeInput : 'target';
+        $type = in_array($typeInput, ['achieved', 'cumulative', 'effective_target', 'deviasi_by_po', 'actual_target'], true) ? $typeInput : 'target';
         $fromMonth = $this->input->post('from_month') ?: null;
         $toMonth = $this->input->post('to_month') ?: null;
 
@@ -1790,6 +1790,12 @@ class PO_Monitor extends CI_Controller
         }
         if ($type === 'effective_target') {
             return 'Total Target';
+        }
+        if ($type === 'deviasi_by_po') {
+            return 'Deviasi By PO';
+        }
+        if ($type === 'actual_target') {
+            return 'Target Aktual';
         }
 
         return 'Target';

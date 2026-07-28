@@ -146,7 +146,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 <?php endforeach; ?>
                 <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
                 <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
-                <td data-po-amount="<?= (float) ($row['deviasi_by_po'] ?? 0) ?>"><?= number_format((float) ($row['deviasi_by_po'] ?? 0), 0, ',', '.') ?></td>
+                <td data-po-amount="<?= (float) ($row['deviasi_by_po'] ?? 0) ?>"><?= po_monitor_compare_total_amount_link($row['deviasi_by_po'] ?? 0, $row['id_bowheer'], $groupBy, 'deviasi_by_po', $matrix['from'] ?? '', $matrix['to'] ?? '') ?></td>
                 <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
                 <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
             </tr>

@@ -1745,14 +1745,16 @@ class MPO_Monitor extends CI_Model
             $project['total_effective_deviasi_by_po'] = 0;
             foreach ($periods as $period) {
                 $periodKey = (string) $period['key'];
-                $target = (float) $project['months'][$periodKey]['target'];
+                $rawTarget = (float) $project['months'][$periodKey]['target'];
                 $achieved = (float) $project['months'][$periodKey]['achieved'];
                 $deviasiByPo = $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
                 $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
                 $cumulative = $previousPeriodKey !== ''
                     ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
                     : 0;
+                $target = $rawTarget;
                 $effectiveTarget = $target + $cumulative;
+                $project['months'][$periodKey]['raw_target'] = $rawTarget;
                 $project['months'][$periodKey]['cumulative'] = $cumulative;
                 $project['months'][$periodKey]['effective_target'] = $effectiveTarget;
                 $project['months'][$periodKey]['deviasi_by_po'] = $deviasiByPo;
@@ -2233,10 +2235,13 @@ class MPO_Monitor extends CI_Model
     {
         $idBowheer = (int) $idBowheer;
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
-        $type = in_array($type, ['achieved', 'cumulative', 'effective_target'], true) ? $type : 'target';
+        $type = in_array($type, ['achieved', 'cumulative', 'effective_target', 'deviasi_by_po', 'actual_target'], true) ? $type : 'target';
 
         if ($type === 'achieved') {
             return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        }
+        if ($type === 'deviasi_by_po' || $type === 'actual_target') {
+            return $this->getComparisonDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
         if ($type === 'cumulative') {
             return $this->getComparisonCumulativeDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
@@ -2246,6 +2251,29 @@ class MPO_Monitor extends CI_Model
         }
 
         return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+    }
+
+    private function getComparisonDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        if ((string) $periodKey === '__total__') {
+            $rows = [];
+            foreach (array_keys($this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth)) as $key) {
+                $rows = array_merge($rows, $this->getComparisonDeviasiByPoDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth));
+            }
+
+            return $rows;
+        }
+
+        $rows = $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        foreach ($rows as &$row) {
+            $row['source_label'] = 'Target belum invoice';
+        }
+        unset($row);
+
+        return array_values(array_filter($rows, static function ($row) {
+            return (float) ($row['invoiced_amount'] ?? 0) <= 0.000001
+                && (float) ($row['amount'] ?? 0) > 0.000001;
+        }));
     }
 
     private function getComparisonCumulativeDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
@@ -2302,7 +2330,7 @@ class MPO_Monitor extends CI_Model
             $rows = array_merge(
                 $rows,
                 $this->getComparisonCumulativeDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth),
-                $this->getComparisonTargetDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth)
+                $this->getComparisonDeviasiByPoDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth)
             );
         }
 
