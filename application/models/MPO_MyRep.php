@@ -3966,7 +3966,7 @@ class MPO_MyRep extends CI_Model
             ->from('tb_myrep_po_header')
             ->where('id_myrep_cluster', $clusterId)
             ->where('UPPER(TRIM(po_type))', $poType)
-            ->where("UPPER(TRIM(COALESCE(po_category, 'INITIAL')))", $poCategory)
+            ->where("UPPER(TRIM(COALESCE(po_category, 'INITIAL'))) = " . $this->db->escape($poCategory), null, false)
             ->where('UPPER(TRIM(po_number))', strtoupper($poNumber))
             ->limit(1)
             ->count_all_results() > 0;
