@@ -1275,6 +1275,39 @@ class PO_MyRep extends CI_Controller
             return null;
         }
 
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $value, $matches)) {
+            $year = (int) $matches[1];
+            $month = (int) $matches[2];
+            $day = (int) $matches[3];
+            return checkdate($month, $day, $year)
+                ? sprintf('%04d-%02d-%02d', $year, $month, $day)
+                : null;
+        }
+
+        if (preg_match('/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/', $value, $matches)) {
+            $first = (int) $matches[1];
+            $second = (int) $matches[2];
+            $year = (int) $matches[3];
+            if ($year < 100) {
+                $year += 2000;
+            }
+
+            if ($first > 12 && $second <= 12) {
+                $day = $first;
+                $month = $second;
+            } elseif ($second > 12 && $first <= 12) {
+                $month = $first;
+                $day = $second;
+            } else {
+                $day = $first;
+                $month = $second;
+            }
+
+            return checkdate($month, $day, $year)
+                ? sprintf('%04d-%02d-%02d', $year, $month, $day)
+                : null;
+        }
+
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : null;
     }

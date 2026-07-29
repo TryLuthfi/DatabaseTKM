@@ -2592,10 +2592,31 @@ if (is_array($terminBreakdownRows ?? null)) {
             if (!match) {
                 return '';
             }
-            var day = match[1].padStart(2, '0');
-            var month = match[2].padStart(2, '0');
-            var year = match[3].length === 2 ? ('20' + match[3]) : match[3];
-            return year + '-' + month + '-' + day;
+            var first = parseInt(match[1], 10);
+            var second = parseInt(match[2], 10);
+            var year = parseInt(match[3], 10);
+            if (year < 100) {
+                year += 2000;
+            }
+
+            var day;
+            var month;
+            if (first > 12 && second <= 12) {
+                day = first;
+                month = second;
+            } else if (second > 12 && first <= 12) {
+                month = first;
+                day = second;
+            } else {
+                day = first;
+                month = second;
+            }
+
+            var date = new Date(year, month - 1, day);
+            if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+                return '';
+            }
+            return String(year).padStart(4, '0') + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
         }
 
         function resolveBatchCluster(value) {
