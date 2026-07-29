@@ -1086,6 +1086,16 @@ $forceVisibleControllerMap = [
                             </p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('PO_Breakdown') ?>" class="nav-link<?= $disabledDatabaseAllPoLinkClass ?> <?php if ($id_menu == 'PO_Breakdown') {
+                              echo " active";
+                          } ?>"<?= $disabledDatabaseAllPoLinkAttr ?>>
+                            <i class="nav-icon fas fa-layer-group"></i>
+                            <p>
+                                PO Breakdown
+                            </p>
+                        </a>
+                    </li>
 
                 </ul>
             </nav>

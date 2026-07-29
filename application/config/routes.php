@@ -99,6 +99,7 @@ $route['checklist_dokument_myrep/refreshitemdata'] = 'Checklist_Dokument_MyRep/r
 $route['checklist_dokument_myrep/refreshpurchaseorderdata'] = 'Checklist_Dokument_MyRep/refreshPurchaseOrderData';
 $route['PO_EMR_MyRep'] = 'PO_EMR_Myrep/index';
 $route['PO_EMR_MyRep/(:any)'] = 'PO_EMR_Myrep/$1';
+$route['PO_Breakdown'] = 'PO_Breakdown/index';
 $route['po_emr_myrep'] = 'PO_EMR_Myrep/index';
 $route['po_emr_myrep/(:any)'] = 'PO_EMR_Myrep/$1';
 $route['MyRepublik_Project/refreshListClusterData'] = 'MyRepublik_Project/refreshListClusterData';

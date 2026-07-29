@@ -1418,6 +1418,144 @@ if (!function_exists('po_monitor_term_amount_link')) {
         overflow-wrap: anywhere;
     }
 
+    .po-monitor-insight-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.9rem;
+        margin-top: 1rem;
+    }
+
+    .po-monitor-insight-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 330px;
+        padding: 1rem;
+        border: 1px solid rgba(203, 213, 225, 0.75);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+    }
+
+    .po-monitor-insight-card__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0.62rem;
+        padding: 0.32rem 0.58rem;
+        border-radius: 999px;
+        background: #eaf0ff;
+        color: #1d4ed8;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .po-monitor-insight-card__title {
+        margin: 0;
+        color: var(--po-monitor-ink);
+        font-size: 1rem;
+        font-weight: 900;
+    }
+
+    .po-monitor-insight-card__subtitle {
+        margin: 0.25rem 0 0.85rem;
+        color: var(--po-monitor-muted);
+        font-size: 0.86rem;
+    }
+
+    .po-monitor-mini-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        flex: 0 0 auto;
+    }
+
+    .po-monitor-mini-list__item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: center;
+        min-height: 54px;
+        padding: 0.72rem 0;
+        border-bottom: 1px solid rgba(203, 213, 225, 0.75);
+    }
+
+    .po-monitor-mini-list__item:last-child {
+        border-bottom: 0;
+    }
+
+    .po-monitor-mini-list__item.is-hidden {
+        display: none;
+    }
+
+    .po-monitor-mini-list__name {
+        display: block;
+        color: #001335;
+        font-size: 0.9rem;
+        font-weight: 900;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .po-monitor-mini-list__meta {
+        display: block;
+        margin-top: 0.32rem;
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .po-monitor-mini-list__value {
+        color: #001335;
+        font-size: 0.9rem;
+        font-weight: 900;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .po-monitor-insight-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-top: auto;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(203, 213, 225, 0.75);
+    }
+
+    .po-monitor-insight-pagination__info {
+        color: #64748b;
+        font-size: 0.74rem;
+        font-weight: 800;
+    }
+
+    .po-monitor-insight-pagination__actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .po-monitor-insight-page-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        border-radius: 8px;
+        background: rgba(37, 99, 235, 0.08);
+        color: #1d4ed8;
+        cursor: pointer;
+    }
+
+    .po-monitor-insight-page-btn:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+    }
+
     .po-monitor-table-actions {
         display: flex;
         flex-wrap: wrap;
@@ -1928,6 +2066,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
         .po-monitor-hero__grid,
         .po-monitor-filter-grid,
         .po-monitor-import-grid,
+        .po-monitor-insight-grid,
         .po-breakdown-filter-grid,
         .po-monitor-batch-toolbar {
             grid-template-columns: 1fr;
@@ -1945,6 +2084,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
         .po-monitor-hero__stats,
         .po-monitor-kpi-grid,
+        .po-monitor-insight-grid,
         .po-monitor-batch-summary {
             grid-template-columns: 1fr;
         }
@@ -2009,6 +2149,26 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     $summaryTotals['total_invoiced'] += (float) $summary['total_invoiced'];
                     $summaryTotals['remaining'] += (float) $summary['remaining'];
                 }
+
+                $dashboardPicMap = [];
+                foreach (($dashboardSummary['rows'] ?? []) as $dashboardRow) {
+                    $dashboardBowheerName = trim((string) ($dashboardRow['bowheer'] ?? ''));
+                    if ($dashboardBowheerName === '') {
+                        continue;
+                    }
+                    $dashboardPicMap[$dashboardBowheerName] = trim((string) ($dashboardRow['pic'] ?? ''));
+                    $dashboardPicMap[preg_replace('/[^A-Z0-9]+/', '', strtoupper($dashboardBowheerName))] = trim((string) ($dashboardRow['pic'] ?? ''));
+                }
+
+                $topOutstandingRows = $bowheerSummary;
+                usort($topOutstandingRows, function ($a, $b) {
+                    return (float) ($b['remaining'] ?? 0) <=> (float) ($a['remaining'] ?? 0);
+                });
+
+                $topInvoiceRows = (array) ($dashboardSummary['rows'] ?? []);
+                usort($topInvoiceRows, function ($a, $b) {
+                    return (float) ($b['done_inv_2026'] ?? 0) <=> (float) ($a['done_inv_2026'] ?? 0);
+                });
 
                 $matrixTotals = [
                     'total_po' => 0,
@@ -2177,6 +2337,81 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         <div>
                             <span class="po-monitor-kpi-card__label">Outstanding NY PO</span>
                             <span class="po-monitor-kpi-card__value" id="summary_carry_over"><?= number_format($dashboardNyPoTarget, 0, ',', '.') ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="po-monitor-insight-grid">
+                    <div class="po-monitor-insight-card">
+                        <span class="po-monitor-insight-card__badge">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Prioritas
+                        </span>
+                        <h3 class="po-monitor-insight-card__title">Top Outstanding Project ( ON PO )</h3>
+                        <p class="po-monitor-insight-card__subtitle">Project dengan sisa invoice terbesar.</p>
+                        <ul class="po-monitor-mini-list" data-po-insight-list="outstanding" data-page-size="5">
+                            <?php foreach ($topOutstandingRows as $row): ?>
+                                <?php
+                                    $outstandingBowheerName = trim((string) ($row['nama_bowheer'] ?? ''));
+                                    $outstandingPic = trim((string) ($row['pic_bowheer'] ?? ''));
+                                    if ($outstandingPic === '') {
+                                        $outstandingPic = $dashboardPicMap[$outstandingBowheerName]
+                                            ?? $dashboardPicMap[preg_replace('/[^A-Z0-9]+/', '', strtoupper($outstandingBowheerName))]
+                                            ?? '';
+                                    }
+                                ?>
+                                <li class="po-monitor-mini-list__item" data-po-insight-item>
+                                    <div>
+                                        <span class="po-monitor-mini-list__name"><?= htmlspecialchars($row['nama_bowheer'] ?? '-', ENT_QUOTES, 'UTF-8') ?></span>
+                                        <span class="po-monitor-mini-list__meta"><?= htmlspecialchars($outstandingPic !== '' ? $outstandingPic : '-', ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                    <span class="po-monitor-mini-list__value">RP. <?= number_format((float) ($row['remaining'] ?? 0), 0, ',', '.') ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <div class="po-monitor-insight-pagination" data-po-insight-pagination="outstanding">
+                            <span class="po-monitor-insight-pagination__info" data-po-insight-info>1-5 dari <?= count($topOutstandingRows) ?></span>
+                            <div class="po-monitor-insight-pagination__actions">
+                                <button type="button" class="po-monitor-insight-page-btn" data-po-insight-prev aria-label="Previous Top Outstanding">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button type="button" class="po-monitor-insight-page-btn" data-po-insight-next aria-label="Next Top Outstanding">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="po-monitor-insight-card">
+                        <span class="po-monitor-insight-card__badge">
+                            <i class="fas fa-chart-line"></i>
+                            Nominal Tertinggi
+                        </span>
+                        <h3 class="po-monitor-insight-card__title">Top Invoice Project 2026</h3>
+                        <p class="po-monitor-insight-card__subtitle">Project dengan achieved invoice 2026 terbesar.</p>
+                        <ul class="po-monitor-mini-list" data-po-insight-list="invoice" data-page-size="5">
+                            <?php foreach ($topInvoiceRows as $row): ?>
+                                <?php
+                                    $invoicedValue = (float) ($row['done_inv_2026'] ?? 0);
+                                ?>
+                                <li class="po-monitor-mini-list__item" data-po-insight-item>
+                                    <div>
+                                        <span class="po-monitor-mini-list__name"><?= htmlspecialchars($row['bowheer'] ?? '-', ENT_QUOTES, 'UTF-8') ?></span>
+                                        <span class="po-monitor-mini-list__meta"><?= htmlspecialchars(($row['pic'] ?? '') !== '' ? $row['pic'] : '-', ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                    <span class="po-monitor-mini-list__value">RP. <?= number_format($invoicedValue, 0, ',', '.') ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <div class="po-monitor-insight-pagination" data-po-insight-pagination="invoice">
+                            <span class="po-monitor-insight-pagination__info" data-po-insight-info>1-5 dari <?= count($topInvoiceRows) ?></span>
+                            <div class="po-monitor-insight-pagination__actions">
+                                <button type="button" class="po-monitor-insight-page-btn" data-po-insight-prev aria-label="Previous Top Invoice">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button type="button" class="po-monitor-insight-page-btn" data-po-insight-next aria-label="Next Top Invoice">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2527,41 +2762,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     </div>
                 </div>
 
-                <div class="po-monitor-panel po-monitor-list-panel">
-                    <div class="po-monitor-panel__head">
-                        <div>
-                            <span class="po-monitor-list-eyebrow"><i class="fas fa-database"></i> Report Detail</span>
-                            <h3 class="po-monitor-panel__title">List PO Monitor</h3>
-                            <p class="po-monitor-panel__subtitle">Daftar PO standalone yang digunakan halaman PO Monitor.</p>
-                        </div>
-                    </div>
-                    <div class="po-monitor-panel__body table-responsive">
-                        <table id="table_po_monitor_list" class="table po-monitor-list-table">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>PO Number</th>
-                                    <th>PO Date</th>
-                                    <th>Current Release</th>
-                                    <th>Total Invoiced</th>
-                                    <th>Remaining</th>
-                                    <th>SLA Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="3" class="text-center">TOTAL</th>
-                                    <th><?= number_format($poTableTotals['current_release_value'], 0, ',', '.') ?></th>
-                                    <th><?= number_format($poTableTotals['total_invoiced'], 0, ',', '.') ?></th>
-                                    <th><?= number_format($poTableTotals['remaining'], 0, ',', '.') ?></th>
-                                    <th colspan="2"></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
             </div>
         </section>
     </div>
@@ -2918,6 +3118,64 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
 <script>
     (function() {
+        function initPOMonitorInsightPagination() {
+            var lists = document.querySelectorAll('[data-po-insight-list]');
+            lists.forEach(function(list) {
+                var key = list.getAttribute('data-po-insight-list');
+                var items = Array.prototype.slice.call(list.querySelectorAll('[data-po-insight-item]'));
+                var pageSize = parseInt(list.getAttribute('data-page-size') || '5', 10);
+                var pagination = document.querySelector('[data-po-insight-pagination="' + key + '"]');
+                var info = pagination ? pagination.querySelector('[data-po-insight-info]') : null;
+                var prev = pagination ? pagination.querySelector('[data-po-insight-prev]') : null;
+                var next = pagination ? pagination.querySelector('[data-po-insight-next]') : null;
+                var page = 0;
+                var totalPages = Math.max(Math.ceil(items.length / pageSize), 1);
+
+                function render() {
+                    var start = page * pageSize;
+                    var end = Math.min(start + pageSize, items.length);
+
+                    items.forEach(function(item, index) {
+                        item.classList.toggle('is-hidden', index < start || index >= end);
+                    });
+
+                    if (info) {
+                        info.textContent = items.length
+                            ? (start + 1) + '-' + end + ' dari ' + items.length
+                            : '0 dari 0';
+                    }
+
+                    if (prev) {
+                        prev.disabled = page <= 0;
+                    }
+                    if (next) {
+                        next.disabled = page >= totalPages - 1;
+                    }
+                    if (pagination) {
+                        pagination.style.display = items.length > pageSize ? 'flex' : 'none';
+                    }
+                }
+
+                if (prev) {
+                    prev.addEventListener('click', function() {
+                        page = Math.max(page - 1, 0);
+                        render();
+                    });
+                }
+
+                if (next) {
+                    next.addEventListener('click', function() {
+                        page = Math.min(page + 1, totalPages - 1);
+                        render();
+                    });
+                }
+
+                render();
+            });
+        }
+
+        initPOMonitorInsightPagination();
+
         var poMonitorBatchTerminLookup = {};
         var poMonitorBatchLookupUrl = <?= json_encode(site_url('PO_Monitor/batch_invoice_lookup'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
         var poMonitorBatchInvoiceExampleText = <?php
@@ -3905,7 +4163,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 var fields = ['ny_po_ref', 'bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
                 var hiddenInputs = '';
                 if (isValid) {
-                    fields.forEach(function(field) {s
+                    fields.forEach(function(field) {
                         hiddenInputs += '<input type="hidden" name="' + field + '[]" value="' + escapeHtml(row[field] || '') + '">';
                     });
                 }
@@ -5023,8 +5281,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 });
 
             syncCompareSwitches();
-
-            initServerSideTable($, '#table_po_monitor_list', '<?= site_url('PO_Monitor/po_datatable') ?>', [[2, 'desc']], 25);
 
         }
 
