@@ -1659,6 +1659,20 @@ if (is_array($terminBreakdownRows ?? null)) {
                             ?>
                                 <option value="<?= htmlspecialchars(trim($poBatchClusterCode . ' | ' . $poBatchClusterName . ' | ' . $poBatchClusterCity), ENT_QUOTES) ?>"></option>
                             <?php endforeach; ?>
+                            <?php
+                            $poBatchMainfeederSeen = [];
+                            foreach (($mainfeederRows ?? []) as $poBatchMainfeederRow):
+                                $poBatchMainfeederId = (int) ($poBatchMainfeederRow['id_mainfeeder'] ?? 0);
+                                if ($poBatchMainfeederId <= 0 || isset($poBatchMainfeederSeen[$poBatchMainfeederId])) {
+                                    continue;
+                                }
+                                $poBatchMainfeederSeen[$poBatchMainfeederId] = true;
+                                $poBatchMainfeederCode = trim((string) ($poBatchMainfeederRow['cluster_code'] ?? ''));
+                                $poBatchMainfeederName = trim((string) ($poBatchMainfeederRow['mainfeeder_name'] ?? ''));
+                                $poBatchMainfeederCity = trim((string) ($poBatchMainfeederRow['city_name'] ?? ''));
+                            ?>
+                                <option value="<?= htmlspecialchars(trim($poBatchMainfeederCode . ' | ' . $poBatchMainfeederName . ' | ' . $poBatchMainfeederCity), ENT_QUOTES) ?>"></option>
+                            <?php endforeach; ?>
                         </datalist>
 
                         <ul class="nav nav-tabs" id="po-batch-header-tabs" role="tablist">
@@ -1674,14 +1688,16 @@ if (is_array($terminBreakdownRows ?? null)) {
                             <div class="tab-pane fade show active" id="po-batch-header-manual-pane" role="tabpanel" aria-labelledby="po-batch-header-manual-tab">
                                 <div class="po-batch-invoice__toolbar">
                                     <div>
-                                        <label class="mb-1">Cluster</label>
-                                        <input type="text" id="po-header-cluster-input" class="form-control" list="po-batch-cluster-options" placeholder="Cluster Code | Cluster | Kota">
+                                        <label class="mb-1">Cluster/Mainfeeder</label>
+                                        <input type="text" id="po-header-cluster-input" class="form-control" list="po-batch-cluster-options" placeholder="Code | Nama | Kota">
                                     </div>
                                     <div>
                                         <label class="mb-1">Tipe PO</label>
                                         <select id="po-header-type-input" class="form-control">
                                             <option value="CLUSTER">CLUSTER</option>
                                             <option value="SUBFEEDER">SUBFEEDER</option>
+                                            <option value="MAINFEEDER">MAINFEEDER</option>
+                                            <option value="FWA">FWA</option>
                                         </select>
                                     </div>
                                     <div>
@@ -1726,8 +1742,8 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             <button type="button" class="btn btn-sm btn-outline-info" id="po-header-copy-example">Copy Contoh</button>
                                         </div>
                                     </div>
-                                    <textarea id="po-header-paste" class="form-control po-batch-invoice__paste" placeholder="NY PO REF[TAB]Cluster[TAB]Tipe PO[TAB]Kategori[TAB]Nomor PO[TAB]Tanggal PO[TAB]Nilai PO&#10;NY-123[TAB]CL001 | Cluster A | BANDUNG[TAB]CLUSTER[TAB]INITIAL[TAB]7400123456[TAB]2026-06-29[TAB]100000000"></textarea>
-                                    <small class="form-text text-muted">Format baru: NY PO REF, Cluster, Tipe PO, Kategori, Nomor PO, Tanggal PO, Nilai PO. Kolom NY PO REF boleh kosong.</small>
+                                    <textarea id="po-header-paste" class="form-control po-batch-invoice__paste" placeholder="NY PO REF[TAB]Cluster/Mainfeeder[TAB]Tipe PO[TAB]Kategori[TAB]Nomor PO[TAB]Tanggal PO[TAB]Nilai PO&#10;NY-123[TAB]CL001 | Cluster A | BANDUNG[TAB]CLUSTER[TAB]INITIAL[TAB]7400123456[TAB]2026-06-29[TAB]100000000"></textarea>
+                                    <small class="form-text text-muted">Format baru: NY PO REF, Cluster/Mainfeeder, Tipe PO, Kategori, Nomor PO, Tanggal PO, Nilai PO. Kolom NY PO REF boleh kosong.</small>
                                 </div>
                                 <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
                                     <button type="button" class="btn btn-outline-secondary" id="po-header-parse-paste">Cek PO</button>
@@ -1770,7 +1786,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                                 <thead class="thead-light">
                                     <tr>
                                         <th style="width:60px;">No</th>
-                                        <th>Cluster</th>
+                                        <th>Cluster/Mainfeeder</th>
                                         <th style="width:110px;">Tipe</th>
                                         <th style="width:110px;">Kategori</th>
                                         <th>Nomor PO</th>
@@ -2402,12 +2418,50 @@ if (is_array($terminBreakdownRows ?? null)) {
 
                 foreach ($aliases as $alias) {
                     $poBatchClusterLookup[$alias] = [
+                        'entity_type' => 'CLUSTER',
                         'id_myrep_cluster' => $clusterId,
+                        'id_mainfeeder' => 0,
+                        'project_type' => '',
                         'cluster_code' => $clusterCode,
                         'cluster_name' => $clusterName,
                         'city_name' => $cityName,
                         'regional_name' => $regionalName,
                         'display_label' => $clusterLabel,
+                    ];
+                }
+            }
+            foreach (($mainfeederRows ?? []) as $poBatchMainfeederRow) {
+                $mainfeederId = (int) ($poBatchMainfeederRow['id_mainfeeder'] ?? 0);
+                if ($mainfeederId <= 0) {
+                    continue;
+                }
+
+                $mainfeederCode = trim((string) ($poBatchMainfeederRow['cluster_code'] ?? ''));
+                $mainfeederName = trim((string) ($poBatchMainfeederRow['mainfeeder_name'] ?? ''));
+                $cityName = trim((string) ($poBatchMainfeederRow['city_name'] ?? ''));
+                $regionalName = trim((string) ($poBatchMainfeederRow['regional_name'] ?? ''));
+                $projectType = strtoupper(trim((string) ($poBatchMainfeederRow['project_type'] ?? 'MAINFEEDER')));
+                $mainfeederLabel = trim(($mainfeederCode !== '' ? $mainfeederCode . ' - ' : '') . $mainfeederName . ($cityName !== '' ? ' (' . $cityName . ')' : ''));
+                $aliases = array_values(array_unique(array_filter([
+                    strtoupper(trim($mainfeederCode)),
+                    strtoupper(trim($mainfeederName)),
+                    strtoupper(trim($mainfeederCode . ' | ' . $mainfeederName)),
+                    strtoupper(trim($mainfeederCode . ' | ' . $mainfeederName . ' | ' . $cityName)),
+                    strtoupper(trim($mainfeederName . ' | ' . $cityName)),
+                    strtoupper(trim($mainfeederLabel)),
+                ])));
+
+                foreach ($aliases as $alias) {
+                    $poBatchClusterLookup[$alias] = [
+                        'entity_type' => 'MAINFEEDER',
+                        'id_myrep_cluster' => 0,
+                        'id_mainfeeder' => $mainfeederId,
+                        'project_type' => in_array($projectType, ['MAINFEEDER', 'FWA'], true) ? $projectType : 'MAINFEEDER',
+                        'cluster_code' => $mainfeederCode,
+                        'cluster_name' => $mainfeederName,
+                        'city_name' => $cityName,
+                        'regional_name' => $regionalName,
+                        'display_label' => $mainfeederLabel,
                     ];
                 }
             }
@@ -2417,13 +2471,15 @@ if (is_array($terminBreakdownRows ?? null)) {
             $poExistingHeaderLookup = [];
             foreach (($poListRows ?? []) as $poExistingRow) {
                 $existingClusterId = (int) ($poExistingRow['id_myrep_cluster'] ?? 0);
+                $existingMainfeederId = (int) ($poExistingRow['id_mainfeeder'] ?? 0);
                 $existingPoType = strtoupper(trim((string) ($poExistingRow['po_type'] ?? 'CLUSTER')));
                 $existingPoCategory = strtoupper(trim((string) ($poExistingRow['po_category'] ?? 'INITIAL')));
                 $existingPoNumber = strtoupper(trim((string) ($poExistingRow['po_number'] ?? '')));
-                if ($existingClusterId <= 0 || $existingPoNumber === '') {
+                $existingEntityId = in_array($existingPoType, ['MAINFEEDER', 'FWA'], true) ? $existingMainfeederId : $existingClusterId;
+                if ($existingEntityId <= 0 || $existingPoNumber === '') {
                     continue;
                 }
-                $poExistingHeaderLookup[$existingClusterId . '|' . $existingPoType . '|' . $existingPoCategory . '|' . $existingPoNumber] = true;
+                $poExistingHeaderLookup[$existingEntityId . '|' . $existingPoType . '|' . $existingPoCategory . '|' . $existingPoNumber] = true;
             }
             echo json_encode($poExistingHeaderLookup, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         ?>;
@@ -2554,7 +2610,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             }).join('\n');
         }
 
-        var poHeaderPasteExample = buildTsvExample(['NY PO REF', 'Cluster', 'Tipe PO', 'Kategori', 'Nomor PO', 'Tanggal PO', 'Nilai PO'], poHeaderPasteExampleRows, [
+        var poHeaderPasteExample = buildTsvExample(['NY PO REF', 'Cluster/Mainfeeder', 'Tipe PO', 'Kategori', 'Nomor PO', 'Tanggal PO', 'Nilai PO'], poHeaderPasteExampleRows, [
             ['', 'CL001 | Cluster A | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO001', '<?= date('Y-m-d') ?>', '100000000'],
             ['NY-123', 'CL002 | Cluster B | BANDUNG', 'SUBFEEDER', 'FINAL', 'CONTOHPO002', '<?= date('Y-m-d') ?>', '101000000'],
             ['', 'CL003 | Cluster C | BANDUNG', 'CLUSTER', 'INITIAL', 'CONTOHPO003', '<?= date('Y-m-d') ?>', '102000000'],
@@ -2635,22 +2691,49 @@ if (is_array($terminBreakdownRows ?? null)) {
             var normalizedDate = normalizeDateInputValue(poDate);
             var parsedValue = parseLocaleNumber(poValue);
 
-            if (!cluster || !cluster.id_myrep_cluster) {
+            var isStandaloneType = ['MAINFEEDER', 'FWA'].indexOf(normalizedType) !== -1;
+            var entityId = isStandaloneType
+                ? Number(cluster && cluster.id_mainfeeder || 0)
+                : Number(cluster && cluster.id_myrep_cluster || 0);
+
+            if (!cluster || !entityId) {
                 return {
                     valid: false,
                     label: 'Invalid',
                     statusCode: 'invalid',
-                    message: 'Cluster tidak ditemukan.',
+                    message: 'Cluster/mainfeeder tidak ditemukan.',
                     cluster: null,
                     poDate: normalizedDate
                 };
             }
-            if (['CLUSTER', 'SUBFEEDER'].indexOf(normalizedType) === -1) {
+            if (['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'].indexOf(normalizedType) === -1) {
                 return {
                     valid: false,
                     label: 'Invalid',
                     statusCode: 'invalid',
-                    message: 'Tipe PO harus CLUSTER atau SUBFEEDER.',
+                    message: 'Tipe PO harus CLUSTER, SUBFEEDER, MAINFEEDER, atau FWA.',
+                    cluster: cluster,
+                    poDate: normalizedDate
+                };
+            }
+            if (isStandaloneType) {
+                var projectType = String(cluster.project_type || 'MAINFEEDER').toUpperCase();
+                if (normalizedType !== projectType) {
+                    return {
+                        valid: false,
+                        label: 'Invalid',
+                        statusCode: 'invalid',
+                        message: 'Tipe PO tidak sesuai dengan tipe project ' + projectType + '.',
+                        cluster: cluster,
+                        poDate: normalizedDate
+                    };
+                }
+            } else if (String(cluster.entity_type || 'CLUSTER').toUpperCase() === 'MAINFEEDER') {
+                return {
+                    valid: false,
+                    label: 'Invalid',
+                    statusCode: 'invalid',
+                    message: 'Data yang dipilih adalah mainfeeder. Gunakan tipe MAINFEEDER/FWA.',
                     cluster: cluster,
                     poDate: normalizedDate
                 };
@@ -2677,7 +2760,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
 
             var existingKey = [
-                cluster.id_myrep_cluster,
+                entityId,
                 normalizedType,
                 normalizedCategory,
                 normalizedNumber
@@ -2792,9 +2875,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                 check.message = 'NY PO REF harus format NY-123.';
             }
 
-            if (cluster && cluster.id_myrep_cluster) {
+            var isStandaloneType = ['MAINFEEDER', 'FWA'].indexOf(normalizedType) !== -1;
+            var entityId = isStandaloneType
+                ? Number(cluster && cluster.id_mainfeeder || 0)
+                : Number(cluster && cluster.id_myrep_cluster || 0);
+
+            if (cluster && entityId) {
                 var duplicateBatchKey = [
-                    cluster.id_myrep_cluster,
+                    entityId,
                     normalizedType,
                     normalizedCategory,
                     normalizedNumber.toUpperCase()
@@ -2817,7 +2905,7 @@ if (is_array($terminBreakdownRows ?? null)) {
             }
 
             var statusClass = check.valid ? 'table-success' : (check.statusCode === 'duplicate' ? 'table-warning' : 'table-danger');
-            var clusterId = cluster && cluster.id_myrep_cluster ? cluster.id_myrep_cluster : '';
+            var clusterId = entityId || '';
             var clusterLabel = cluster && cluster.display_label ? cluster.display_label : String(clusterInput || '').trim();
             var batchKey = clusterId ? [clusterId, normalizedType, normalizedCategory, normalizedNumber.toUpperCase()].join('|') : '';
             var formattedValue = parsedValue > 0 ? parsedValue.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '';
@@ -2907,6 +2995,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 var normalizedFifthColumn = String(columns[4] || '').trim().toUpperCase();
                 if (
                     (normalizedFirstColumn === 'CLUSTER' && normalizedFourthColumn === 'NOMOR PO')
+                    || (normalizedFirstColumn === 'CLUSTER/MAINFEEDER' && normalizedFifthColumn === 'NOMOR PO')
                     || (normalizedFirstColumn === 'NY PO REF' && normalizedFifthColumn === 'NOMOR PO')
                 ) {
                     return;
@@ -2921,7 +3010,7 @@ if (is_array($terminBreakdownRows ?? null)) {
                 var poValue = columns.slice(5).join(' ');
                 var looksLikeNewFormat = columns.length >= 7
                     && (normalizedFirstColumn === '' || /^NY[\s-]*\d+$/i.test(normalizedFirstColumn))
-                    && ['CLUSTER', 'SUBFEEDER'].indexOf(String(columns[2] || '').trim().toUpperCase()) !== -1;
+                    && ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'].indexOf(String(columns[2] || '').trim().toUpperCase()) !== -1;
 
                 if (looksLikeNewFormat) {
                     nyPoRef = columns[0];

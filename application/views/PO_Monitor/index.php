@@ -3905,7 +3905,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 var fields = ['ny_po_ref', 'bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
                 var hiddenInputs = '';
                 if (isValid) {
-                    fields.forEach(function(field) {
+                    fields.forEach(function(field) {s
                         hiddenInputs += '<input type="hidden" name="' + field + '[]" value="' + escapeHtml(row[field] || '') + '">';
                     });
                 }

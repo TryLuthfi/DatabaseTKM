@@ -95,6 +95,9 @@ class PO_MyRep extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MPO_MyRep->getRows($selectedCity, $selectedStatus)
             : [];
+        $data['mainfeederRows'] = $data['isReady'] && $this->MMainfeeder_MyRep->tablesReady()
+            ? $this->MMainfeeder_MyRep->getRows($selectedCity, '')
+            : [];
         $data['poListRows'] = $data['isReady']
             ? $this->MPO_MyRep->getPoListRows($selectedCity, $selectedStatus)
             : [];
@@ -569,7 +572,7 @@ class PO_MyRep extends CI_Controller
         $userId = (int) $this->session->userdata('id_user');
 
         foreach ($poNumbers as $index => $poNumberRaw) {
-            $clusterId = (int) ($clusterIds[$index] ?? 0);
+            $entityId = (int) ($clusterIds[$index] ?? 0);
             $poType = strtoupper(trim((string) ($poTypes[$index] ?? 'CLUSTER')));
             $poCategory = strtoupper(trim((string) ($poCategories[$index] ?? 'INITIAL')));
             $poNumber = trim((string) $poNumberRaw);
@@ -577,29 +580,42 @@ class PO_MyRep extends CI_Controller
             $poValue = $this->normalizeNumber($poValues[$index] ?? '');
             $nyPoRef = strtoupper(trim((string) ($nyPoRefs[$index] ?? '')));
 
-            if ($clusterId <= 0 && $poNumber === '' && $poDate === null && $poValue <= 0) {
+            if ($entityId <= 0 && $poNumber === '' && $poDate === null && $poValue <= 0) {
                 continue;
             }
 
-            if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+            if (!in_array($poType, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
                 $poType = 'CLUSTER';
             }
+            $isStandalonePo = in_array($poType, ['MAINFEEDER', 'FWA'], true);
             if (!in_array($poCategory, ['INITIAL', 'FINAL'], true)) {
                 $poCategory = 'INITIAL';
             }
 
-            if (!isset($clusterCache[$clusterId])) {
-                $clusterCache[$clusterId] = $clusterId > 0 ? $this->MPO_MyRep->getClusterById($clusterId) : [];
+            $cacheKey = ($isStandalonePo ? 'MF' : 'CL') . '|' . $entityId;
+            if (!isset($clusterCache[$cacheKey])) {
+                $clusterCache[$cacheKey] = $entityId > 0
+                    ? ($isStandalonePo ? $this->MMainfeeder_MyRep->getById($entityId) : $this->MPO_MyRep->getClusterById($entityId))
+                    : [];
             }
-            $cluster = $clusterCache[$clusterId];
+            $cluster = $clusterCache[$cacheKey];
             $clusterLabel = !empty($cluster['cluster_name'])
                 ? (string) $cluster['cluster_name']
-                : 'Baris ' . ($index + 1);
+                : (!empty($cluster['mainfeeder_name'])
+                    ? (string) $cluster['mainfeeder_name']
+                    : 'Baris ' . ($index + 1));
             $rowLabel = $clusterLabel . ' / ' . ($poNumber !== '' ? $poNumber : ('PO ' . $poCategory));
 
-            if ($clusterId <= 0 || empty($cluster)) {
-                $skippedMessages[] = $rowLabel . ': cluster tidak valid.';
+            if ($entityId <= 0 || empty($cluster)) {
+                $skippedMessages[] = $rowLabel . ': cluster/mainfeeder tidak valid.';
                 continue;
+            }
+            if ($isStandalonePo) {
+                $projectType = $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($cluster['project_type'] ?? 'MAINFEEDER');
+                if ($poType !== $projectType) {
+                    $skippedMessages[] = $rowLabel . ': tipe PO tidak sesuai dengan tipe project ' . $projectType . '.';
+                    continue;
+                }
             }
             if ($poNumber === '' || $poDate === null || $poValue <= 0) {
                 $skippedMessages[] = $rowLabel . ': nomor PO, tanggal PO, dan nilai PO wajib valid.';
@@ -610,19 +626,22 @@ class PO_MyRep extends CI_Controller
                 continue;
             }
 
-            $dedupeKey = $clusterId . '|' . $poType . '|' . $poCategory . '|' . strtoupper($poNumber);
+            $dedupeKey = ($isStandalonePo ? 'MF' : 'CL') . '|' . $entityId . '|' . $poType . '|' . $poCategory . '|' . strtoupper($poNumber);
             if (isset($seenKeys[$dedupeKey])) {
                 $skippedMessages[] = $rowLabel . ': duplikat dalam batch.';
                 continue;
             }
             $seenKeys[$dedupeKey] = true;
 
-            if ($this->MPO_MyRep->poHeaderExists($clusterId, $poType, $poCategory, $poNumber)) {
+            $exists = $isStandalonePo
+                ? $this->MMainfeeder_MyRep->poHeaderExists($entityId, $poType, $poCategory, $poNumber)
+                : $this->MPO_MyRep->poHeaderExists($entityId, $poType, $poCategory, $poNumber);
+            if ($exists) {
                 $skippedMessages[] = $rowLabel . ': PO dengan tipe dan kategori yang sama sudah ada.';
                 continue;
             }
 
-            $result = $this->MPO_MyRep->createPoHeader($clusterId, [
+            $payload = [
                 'parent_po_header_id' => null,
                 'po_type' => $poType,
                 'po_category' => $poCategory,
@@ -635,11 +654,17 @@ class PO_MyRep extends CI_Controller
                 'po_monitor_ny_ref' => $nyPoRef,
                 'created_by' => $userId,
                 'updated_by' => $userId,
-            ]);
+            ];
+            $result = $isStandalonePo
+                ? $this->MMainfeeder_MyRep->createPoHeader($entityId, $payload)
+                : $this->MPO_MyRep->createPoHeader($entityId, $payload);
 
             if ($result > 0) {
                 $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader((int) $result, $userId);
                 if ($nyPoRef !== '') {
+                    if ($isStandalonePo) {
+                        $this->MPO_MyRep->updatePoHeaderNyRef((int) $result, $nyPoRef, $userId);
+                    }
                     $linkResult = $this->MPO_Monitor->linkNyPoReferenceToMyRepHeader((int) $result, $nyPoRef, $userId);
                     if (empty($linkResult['status'])) {
                         $skippedMessages[] = $rowLabel . ': PO tersimpan tapi NY PO REF gagal link (' . ($linkResult['message'] ?? 'unknown error') . ').';

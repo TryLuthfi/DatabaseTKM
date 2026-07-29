@@ -340,9 +340,9 @@ if (!function_exists('poMyRepStatusBadge')) {
                                                             <div>BJT <?= !empty($term['fac_due_date']) ? poMyRepDate($term['fac_due_date']) : '-' ?></div>
                                                             <?php if (!empty($term['fac_rfs_certificate_date'])): ?>
                                                                 <div>Umur <?= (int) ($term['fac_age_days'] ?? 0) ?> hari</div>
-                                                                <?php if ($isReady): ?>
+                                                                <?php if ($isReady && !$isReleased): ?>
                                                                     <div>Lewat BJT <?= (int) ($term['fac_days_since_due'] ?? 0) ?> hari</div>
-                                                                <?php else: ?>
+                                                                <?php elseif (!$isReleased): ?>
                                                                     <div>Sisa <?= (int) ($term['fac_days_remaining'] ?? 0) ?> hari</div>
                                                                 <?php endif; ?>
                                                             <?php endif; ?>

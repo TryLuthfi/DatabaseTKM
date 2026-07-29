@@ -906,6 +906,29 @@ class MMainfeeder_MyRep extends CI_Model
             ->result_array();
     }
 
+    public function poHeaderExists($mainfeederId, $poType, $poCategory, $poNumber, $excludePoHeaderId = 0)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        $poType = $this->normalizeStandaloneProjectType($poType);
+        $poCategory = strtoupper(trim((string) $poCategory));
+        $poNumber = strtoupper(trim((string) $poNumber));
+        if ($mainfeederId <= 0 || $poNumber === '') {
+            return false;
+        }
+
+        $query = $this->db
+            ->from('tb_myrep_po_header')
+            ->where('id_mainfeeder', $mainfeederId)
+            ->where('UPPER(TRIM(po_type))', $poType)
+            ->where("UPPER(TRIM(COALESCE(po_category, 'INITIAL'))) = " . $this->db->escape($poCategory), null, false)
+            ->where('UPPER(TRIM(po_number))', $poNumber);
+        if ((int) $excludePoHeaderId > 0) {
+            $query->where('id_po_header !=', (int) $excludePoHeaderId);
+        }
+
+        return $query->limit(1)->count_all_results() > 0;
+    }
+
     public function createPoHeader($mainfeederId, array $payload)
     {
         $mainfeederId = (int) $mainfeederId;

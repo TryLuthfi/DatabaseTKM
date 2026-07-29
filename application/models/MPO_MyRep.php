@@ -3236,7 +3236,8 @@ class MPO_MyRep extends CI_Model
             ->join('tb_myrep_po_termin t', 't.id_po_header = p.id_po_header', 'inner')
             ->where("UPPER(TRIM(COALESCE(p.po_type, 'CLUSTER'))) IN ('CLUSTER','SUBFEEDER')", null, false)
             ->where('t.termin_no >=', 2)
-            ->where('t.termin_no <=', 5);
+            ->where('t.termin_no <=', 5)
+            ->where('COALESCE(t.termin_value, 0) != 0', null, false);
 
         if (!$this->applyAllowedCityRestriction('c.city_name')) {
             return [];
@@ -3293,6 +3294,9 @@ class MPO_MyRep extends CI_Model
             if ((int) ($row['termin_no'] ?? 0) === 4) {
                 $term4CertificateByHeader[(int) ($row['id_po_header'] ?? 0)] = (string) ($row['sertifikat_invoice_date'] ?? '');
             }
+        }
+        if ($termNo === 5) {
+            $term4CertificateByHeader = $this->getTerm4CertificateMapForDashboard(array_column($filteredRows, 'id_po_header'));
         }
 
         $result = [];
@@ -3396,7 +3400,8 @@ class MPO_MyRep extends CI_Model
             ->join('tb_myrep_po_termin t', 't.id_po_header = p.id_po_header', 'inner')
             ->where("UPPER(TRIM(COALESCE(p.po_type, ''))) IN ('MAINFEEDER','FWA')", null, false)
             ->where('t.termin_no >=', 2)
-            ->where('t.termin_no <=', 5);
+            ->where('t.termin_no <=', 5)
+            ->where('COALESCE(t.termin_value, 0) != 0', null, false);
 
         if (!$this->applyAllowedCityRestriction('mf.city_name')) {
             return [];
@@ -3448,6 +3453,10 @@ class MPO_MyRep extends CI_Model
             if ((int) ($row['termin_no'] ?? 0) === 4) {
                 $term4CertificateByHeader[(int) ($row['id_po_header'] ?? 0)] = (string) ($row['sertifikat_invoice_date'] ?? '');
             }
+        }
+
+        if ($termNo === 5) {
+            $term4CertificateByHeader = $this->getTerm4CertificateMapForDashboard(array_column($filteredRows, 'id_po_header'));
         }
 
         $result = [];
@@ -3523,6 +3532,34 @@ class MPO_MyRep extends CI_Model
         $map = [];
         foreach ($headerIds as $headerId) {
             $map[$headerId] = $this->resolveStageStatus($termsByHeader[$headerId] ?? []);
+        }
+
+        return $map;
+    }
+
+    private function getTerm4CertificateMapForDashboard(array $headerIds)
+    {
+        $headerIds = array_values(array_unique(array_filter(array_map('intval', $headerIds))));
+        if (empty($headerIds) || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return [];
+        }
+        if (!$this->db->field_exists('sertifikat_invoice_date', 'tb_myrep_po_termin')) {
+            return [];
+        }
+
+        $this->db
+            ->select('id_po_header, sertifikat_invoice_date')
+            ->from('tb_myrep_po_termin')
+            ->where('termin_no', 4);
+        $this->applyIntWhereInChunks('id_po_header', $headerIds);
+
+        $rows = $this->db->get()->result_array();
+        $map = [];
+        foreach ($rows as $row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            if ($headerId > 0) {
+                $map[$headerId] = (string) ($row['sertifikat_invoice_date'] ?? '');
+            }
         }
 
         return $map;
@@ -3751,6 +3788,11 @@ class MPO_MyRep extends CI_Model
     private function buildCertificateReleaseNoteForDashboard($terminNo, array $row)
     {
         $terminNo = (int) $terminNo;
+        if (!empty($row['is_certificate_released'])) {
+            $releaseDate = $this->formatCertificateDateForDashboard((string) ($row['sertifikat_release_date'] ?? $row['sertifikat_invoice_date'] ?? ''));
+            return 'Released pada ' . $releaseDate . '.';
+        }
+
         if ($terminNo === 5) {
             if ((string) ($row['fac_rfs_certificate_date'] ?? '') === '') {
                 return 'NY FAC. Menunggu tanggal sertifikat RFS term 4 yang valid.';
