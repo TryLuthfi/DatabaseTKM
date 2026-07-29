@@ -3571,6 +3571,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var currentUserMappedToClusterArea = <?= $currentUserMappedToClusterArea ? 'true' : 'false' ?>;
         var clusterId = <?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>;
         var rotatePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateProgressPhoto') ?>';
+        var rotateDailyPhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/rotateDailyActivityPhoto') ?>';
         var deletePhotoUrl = '<?= base_url('Implementasi_BOQ_MyRep/deleteProgressPhoto') ?>';
         var saveComplyPhotoOrderUrl = '<?= base_url('Implementasi_BOQ_MyRep/saveComplyPhotoOrder') ?>';
         var photoPreviewBaseUrl = '<?= base_url('Implementasi_BOQ_MyRep/progressPhotoPreview') ?>';
@@ -5049,7 +5050,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             var activeItem = lightboxItems[lightboxIndex] || {};
             var photoId = parseInt(activeItem.photoId || 0, 10) || 0;
-            lightboxSaveRotation.disabled = !canSavePhotoRotation || lightboxIsSavingRotation || photoId <= 0 || lightboxRotation === 0;
+            var dailyPhotoId = parseInt(activeItem.dailyPhotoId || 0, 10) || 0;
+            var targetPhotoId = activeItem.photoSource === 'daily' ? dailyPhotoId : photoId;
+            lightboxSaveRotation.disabled = !canSavePhotoRotation || lightboxIsSavingRotation || targetPhotoId <= 0 || lightboxRotation === 0;
             lightboxSaveRotation.textContent = lightboxIsSavingRotation ? 'Menyimpan...' : 'Simpan';
         }
 
@@ -5298,6 +5301,34 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             });
         }
 
+        function refreshDailyPhotoImageUrl(photoId, imageUrl, thumbUrl) {
+            photoId = parseInt(photoId || 0, 10) || 0;
+            if (photoId <= 0 || !imageUrl) {
+                return;
+            }
+            thumbUrl = thumbUrl || imageUrl;
+
+            Array.prototype.forEach.call(document.querySelectorAll('.js-open-lightbox[data-photo-source="daily"][data-daily-photo-id="' + photoId + '"]'), function (node) {
+                node.setAttribute('href', imageUrl);
+                node.setAttribute('data-image', imageUrl);
+                var img = node.querySelector('img');
+                if (img) {
+                    if (img.classList.contains('is-loaded')) {
+                        img.src = thumbUrl;
+                    } else {
+                        img.setAttribute('data-src', thumbUrl);
+                        img.src = lazyPhotoPlaceholder;
+                    }
+                }
+            });
+
+            lightboxItems.forEach(function (item) {
+                if (item.photoSource === 'daily' && (parseInt(item.dailyPhotoId || 0, 10) || 0) === photoId) {
+                    item.image = imageUrl;
+                }
+            });
+        }
+
         function getImageMimeFromUrl(url) {
             var cleanUrl = stripCacheQuery(url).toLowerCase();
             if (cleanUrl.indexOf('.png') !== -1) {
@@ -5359,13 +5390,16 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             var activeItem = lightboxItems[lightboxIndex] || {};
             var photoId = parseInt(activeItem.photoId || 0, 10) || 0;
-            if (photoId <= 0 || lightboxRotation === 0) {
+            var dailyPhotoId = parseInt(activeItem.dailyPhotoId || 0, 10) || 0;
+            var isDailyPhoto = activeItem.photoSource === 'daily';
+            var targetPhotoId = isDailyPhoto ? dailyPhotoId : photoId;
+            if (targetPhotoId <= 0 || lightboxRotation === 0) {
                 return;
             }
 
             var formData = new FormData();
             formData.append('cluster_id', clusterId);
-            formData.append('photo_id', photoId);
+            formData.append('photo_id', targetPhotoId);
             formData.append('rotation', lightboxRotation);
             var pendingRotation = lightboxRotation;
             lightboxIsSavingRotation = true;
@@ -5374,7 +5408,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             buildRotatedPhotoBlob(pendingRotation, getImageMimeForLightboxItem(activeItem))
                 .then(function (blob) {
                     formData.append('rotated_photo', blob, 'rotated_photo');
-                    return fetch(rotatePhotoUrl, {
+                    return fetch(isDailyPhoto ? rotateDailyPhotoUrl : rotatePhotoUrl, {
                         method: 'POST',
                         body: formData,
                         credentials: 'same-origin',
@@ -5404,7 +5438,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         return;
                     }
 
-                    refreshPhotoImageUrl(photoId, data.image_url || activeItem.image, data.thumb_url || data.image_url || activeItem.image);
+                    if (isDailyPhoto) {
+                        refreshDailyPhotoImageUrl(targetPhotoId, data.image_url || activeItem.image, data.thumb_url || data.image_url || activeItem.image);
+                    } else {
+                        refreshPhotoImageUrl(targetPhotoId, data.image_url || activeItem.image, data.thumb_url || data.image_url || activeItem.image);
+                    }
                     lightboxRotation = 0;
                     lightboxImage.src = data.image_url || activeItem.image;
                 })
@@ -5470,6 +5508,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             Array.prototype.forEach.call(groupedTriggers, function (node) {
                 lightboxItems.push({
                     photoId: node.getAttribute('data-photo-id') || '0',
+                    dailyPhotoId: node.getAttribute('data-daily-photo-id') || '0',
+                    photoSource: node.getAttribute('data-photo-source') || 'progress',
                     image: node.getAttribute('data-image') || '',
                     mime: node.getAttribute('data-mime') || '',
                     title: node.getAttribute('data-title') || 'Preview Foto',
@@ -5480,6 +5520,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (!lightboxItems.length) {
                 lightboxItems.push({
                     photoId: triggerElement ? (triggerElement.getAttribute('data-photo-id') || '0') : '0',
+                    dailyPhotoId: triggerElement ? (triggerElement.getAttribute('data-daily-photo-id') || '0') : '0',
+                    photoSource: triggerElement ? (triggerElement.getAttribute('data-photo-source') || 'progress') : 'progress',
                     image: imageUrl || '',
                     mime: triggerElement ? (triggerElement.getAttribute('data-mime') || '') : '',
                     title: title || 'Preview Foto',
@@ -5811,11 +5853,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                             htmlDaily += '<div class="d-flex flex-wrap" data-lightbox-group="daily-detail-' + escapeAttr(activity.id_daily_activity || 0) + '">';
                             photos.forEach(function (photo) {
                                 var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
+                                var dailyPhotoId = parseInt(photo.id_activity_photo || 0, 10) || 0;
                                 var imagePath = (photo.file_path || '').replace(/^\/+/, '');
                                 var imageUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : ('<?= base_url() ?>' + imagePath);
                                 var thumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : imageUrl;
                                 var photoCaption = photo.caption || photo.file_name || 'Foto';
-                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + imageUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
+                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-photo-source="' + (photoId > 0 ? 'progress' : 'daily') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-daily-photo-id="' + escapeAttr(dailyPhotoId) + '" data-image="' + imageUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                                 htmlDaily += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + thumbUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto') + '" loading="lazy" decoding="async" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
                                 htmlDaily += '</a>';
                             });

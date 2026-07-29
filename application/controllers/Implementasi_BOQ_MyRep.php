@@ -20,6 +20,8 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'rejectcomplyphoto' => 'APPROVAL_FOTO_COMPLY',
                 'saveDailyActivity' => 'APPROVAL_DAILY',
                 'savedailyactivity' => 'APPROVAL_DAILY',
+                'rotateDailyActivityPhoto' => 'APPROVAL_DAILY',
+                'rotatedailyactivityphoto' => 'APPROVAL_DAILY',
                 'rotateProgressPhoto' => 'TAMBAH',
                 'rotateprogressphoto' => 'TAMBAH',
                 'deleteProgressPhoto' => 'VIEW',
@@ -1245,6 +1247,54 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         ]);
     }
 
+    public function rotateDailyActivityPhoto()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session habis. Silakan login ulang.', ['redirect_url' => base_url('Auth')], 401);
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $photoId = (int) $this->input->post('photo_id');
+        $rotation = (int) $this->input->post('rotation');
+        $rotation = (($rotation % 360) + 360) % 360;
+
+        if ($clusterId <= 0 || $photoId <= 0 || !in_array($rotation, [90, 180, 270], true)) {
+            $this->jsonResponse(false, 'Data rotasi foto daily tidak valid.', [], 422);
+            return;
+        }
+
+        $photo = $this->MImplementasi_BOQ_MyRep->getDailyActivityPhotoById($photoId);
+        if (empty($photo) || (int) ($photo['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            $this->jsonResponse(false, 'Foto daily tidak ditemukan.', [], 404);
+            return;
+        }
+
+        $fullPath = $this->resolveActivityPhotoFullPath((string) ($photo['file_path'] ?? ''));
+        if ($fullPath === '' || !is_file($fullPath)) {
+            $this->jsonResponse(false, 'File foto daily tidak ditemukan di server.', [], 404);
+            return;
+        }
+
+        $result = !empty($_FILES['rotated_photo']['tmp_name'])
+            ? $this->replaceProgressPhotoFromUpload($fullPath, $_FILES['rotated_photo'])
+            : $this->rotateImageFile($fullPath, $rotation);
+        if (!$result) {
+            $this->jsonResponse(false, 'Gagal menyimpan rotasi foto daily. Format gambar belum didukung server.', [], 500);
+            return;
+        }
+
+        clearstatcache(true, $fullPath);
+        $version = str_replace('.', '', uniqid('', true));
+        $imageUrl = base_url(ltrim((string) ($photo['file_path'] ?? ''), '/')) . '?v=' . rawurlencode($version);
+
+        $this->jsonResponse(true, 'Rotasi foto daily berhasil disimpan.', [
+            'photo_id' => $photoId,
+            'image_url' => $imageUrl,
+            'thumb_url' => $imageUrl,
+        ]);
+    }
+
     public function deleteProgressPhoto()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -1869,6 +1919,28 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $fullPath = FCPATH . $relativePath;
         $realBase = realpath(FCPATH . 'uploads/myrep_boq_progress');
+        $realFileDir = realpath(dirname($fullPath));
+        if ($realBase === false || $realFileDir === false || strpos($realFileDir, $realBase) !== 0) {
+            return '';
+        }
+
+        return $fullPath;
+    }
+
+    private function resolveActivityPhotoFullPath($filePath)
+    {
+        $relativePath = trim(str_replace('\\', '/', (string) $filePath));
+        $relativePath = ltrim($relativePath, '/');
+        if ($relativePath === '' || strpos($relativePath, '..') !== false) {
+            return '';
+        }
+
+        if (strpos($relativePath, 'uploads/myrep_boq_activity/') !== 0) {
+            return '';
+        }
+
+        $fullPath = FCPATH . $relativePath;
+        $realBase = realpath(FCPATH . 'uploads/myrep_boq_activity');
         $realFileDir = realpath(dirname($fullPath));
         if ($realBase === false || $realFileDir === false || strpos($realFileDir, $realBase) !== 0) {
             return '';

@@ -1039,6 +1039,22 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->row_array() ?: [];
     }
 
+    public function getDailyActivityPhotoById($photoId)
+    {
+        $photoId = (int) $photoId;
+        if ($photoId <= 0 || !$this->activityTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('photo.*, activity.id_myrep_cluster, activity.activity_date, activity.activity_code, activity.activity_name')
+            ->from('tb_myrep_impl_daily_activity_photo photo')
+            ->join('tb_myrep_impl_daily_activity activity', 'activity.id_daily_activity = photo.id_daily_activity', 'inner')
+            ->where('photo.id_activity_photo', $photoId)
+            ->get()
+            ->row_array() ?: [];
+    }
+
     private function detectComplyScope($remarkValue = '', $captionValue = '')
     {
         $remark = strtoupper(trim((string) $remarkValue));
