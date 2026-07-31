@@ -580,11 +580,6 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
-        if (!$this->canManagePoImport()) {
-            show_error('Fitur download report PO hanya tersedia untuk user khusus.', 403);
-            return;
-        }
-
         $headers = $this->MPO_Monitor->getImportReportHeaders();
         $rows = $this->MPO_Monitor->getImportReportRows();
         $generatedAt = date('Y-m-d H:i:s');

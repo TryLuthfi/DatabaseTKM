@@ -2217,11 +2217,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 <button type="button" class="btn btn-light btn-sm font-weight-bold" data-toggle="modal" data-target="#po_monitor_batch_invoice_modal">
                                     <i class="fas fa-file-invoice-dollar mr-1"></i> Batch Input Invoice Termin
                                 </button>
-                                <?php if ($canManagePoImport): ?>
-                                    <a href="<?= site_url('PO_Monitor/download_import_report') ?>" class="btn btn-success btn-sm font-weight-bold">
-                                        <i class="fas fa-file-excel mr-1"></i> Download Excel Report
-                                    </a>
-                                <?php endif; ?>
+                                <a href="<?= site_url('PO_Monitor/download_import_report') ?>" class="btn btn-success btn-sm font-weight-bold">
+                                    <i class="fas fa-file-excel mr-1"></i> Download Excel Report
+                                </a>
                             </div>
                         </div>
                         <div class="po-monitor-hero__stats">
