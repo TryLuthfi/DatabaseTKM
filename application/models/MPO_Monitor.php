@@ -393,6 +393,47 @@ class MPO_Monitor extends CI_Model
         return array_values($result);
     }
 
+    public function getNyOutstandingTermBreakdown()
+    {
+        if (!$this->db->table_exists('tb_po_target_pipeline')) {
+            return [];
+        }
+
+        $rows = $this->db->query("SELECT
+                COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
+                pl.term_index,
+                SUM(COALESCE(NULLIF(pl.ny_po_2026_amount, 0), pl.plan_amount, 0)) AS outstanding_amount
+            FROM tb_po_target_pipeline pl
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = pl.id_bowheer
+            WHERE pl.linked_id_po IS NULL
+            GROUP BY COALESCE(NULLIF(pl.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer'), pl.term_index
+            HAVING outstanding_amount > 0
+            ORDER BY bowheer ASC, pl.term_index ASC")->result_array();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $bowheer = (string) ($row['bowheer'] ?? 'Tanpa Bowheer');
+            if (!isset($result[$bowheer])) {
+                $result[$bowheer] = [
+                    'bowheer' => $bowheer,
+                    'terms' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'total' => 0
+                ];
+            }
+
+            $term = (int) ($row['term_index'] ?? 0);
+            if ($term < 1 || $term > 5) {
+                continue;
+            }
+
+            $amount = (float) ($row['outstanding_amount'] ?? 0);
+            $result[$bowheer]['terms'][$term] += $amount;
+            $result[$bowheer]['total'] += $amount;
+        }
+
+        return array_values($result);
+    }
+
     public function getBatchInvoiceTerminRows()
     {
         return $this->db->query("SELECT *
@@ -2361,6 +2402,7 @@ class MPO_Monitor extends CI_Model
                     CONVERT(a.kota_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
                     CONVERT(a.detail_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     CONVERT(a.remarks USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                    a.target_week,
                     a.target_week_start,
                     a.target_week_end,
                     COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
@@ -2397,6 +2439,7 @@ class MPO_Monitor extends CI_Model
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                    t.target_week,
                     t.target_week_start,
                     t.target_week_end,
                     COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
@@ -2429,6 +2472,7 @@ class MPO_Monitor extends CI_Model
                     CONVERT(pl.kota_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
                     CONVERT(pl.detail_po USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     CONVERT(pl.remarks USING utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
+                    pl.target_week,
                     pl.target_week_start,
                     pl.target_week_end,
                     pl.plan_amount AS amount,

@@ -14,11 +14,13 @@ class PO_Breakdown extends CI_Controller
     public function index()
     {
         $termBreakdown = $this->MPO_Monitor->getBowheerTermBreakdown();
+        $nyTermBreakdown = $this->MPO_Monitor->getNyOutstandingTermBreakdown();
         $summary = $this->buildSummary($termBreakdown);
 
         $data = [
             'title' => 'PO Breakdown',
             'termBreakdown' => $termBreakdown,
+            'nyTermBreakdown' => $nyTermBreakdown,
             'summary' => $summary,
         ];
 

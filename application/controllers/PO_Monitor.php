@@ -1424,7 +1424,7 @@ class PO_Monitor extends CI_Controller
             $html .= $this->renderRegionalSectionHeader($regional, count($regionalRows), $regionalTotal);
             $html .= '<div class="table-responsive"><table class="table table-bordered table-sm table-striped mb-0 po-monitor-detail-table">';
             $html .= '<thead><tr>';
-            $html .= '<th>No</th><th>Type Project</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Period / Claim Date') . '</th><th class="text-right">Amount</th>';
+            $html .= '<th>No</th><th>Type Project</th><th>No PO</th><th>Tgl PO</th><th>Sub PO</th><th>Kota</th><th>Detail</th><th>Remarks</th><th>Term</th><th>Status</th><th>' . ($type === 'achieved' ? 'Invoice Date' : 'Period / Claim Date') . '</th><th>Week Target</th><th class="text-right">Amount</th>';
             $html .= '</tr></thead><tbody>';
 
             foreach ($regionalRows as $index => $row) {
@@ -1433,6 +1433,9 @@ class PO_Monitor extends CI_Controller
                 $remainingAmount = max($amount - $invoicedAmount, 0);
                 $termIndex = (int) ($row['term_index'] ?? 0);
                 $isInvoicedTarget = in_array($type, ['target', 'cumulative', 'effective_target'], true) && $invoicedAmount > 0;
+                $isOutstandingTarget = $type !== 'achieved' && !$isInvoicedTarget;
+                $statusLabel = ($type === 'achieved' || $isInvoicedTarget) ? 'Invoiced' : 'On Target';
+                $weekTargetLabel = $this->comparisonDetailWeekTargetLabel($row, $isOutstandingTarget);
                 if ($type === 'achieved') {
                     $period = $this->formatIndonesianDate($row['invoice_date'] ?? '');
                 } elseif ($isInvoicedTarget && !empty($row['claim_invoice_date'])) {
@@ -1451,17 +1454,67 @@ class PO_Monitor extends CI_Controller
                 $html .= '<td>' . htmlspecialchars($row['detail_po'] ?: '-') . '</td>';
                 $html .= '<td>' . htmlspecialchars($row['remarks'] ?: '-') . '</td>';
                 $html .= '<td>' . ($termIndex > 0 ? 'Term ' . $termIndex : '-') . '</td>';
+                $html .= '<td>' . htmlspecialchars($statusLabel) . '</td>';
                 $html .= '<td>' . htmlspecialchars($period) . '</td>';
+                $html .= '<td>' . htmlspecialchars($weekTargetLabel) . '</td>';
                 $html .= '<td class="text-right js-po-detail-row-amount">' . number_format($amount, 0, ',', '.') . '</td>';
                 $html .= '</tr>';
             }
 
-            $html .= '</tbody><tfoot><tr><th colspan="10" class="text-right">TOTAL ' . htmlspecialchars($regional) . '</th><th class="text-right">' . number_format($regionalTotal, 0, ',', '.') . '</th></tr></tfoot>';
+            $html .= '</tbody><tfoot><tr><th colspan="12" class="text-right">TOTAL ' . htmlspecialchars($regional) . '</th><th class="text-right">' . number_format($regionalTotal, 0, ',', '.') . '</th></tr></tfoot>';
             $html .= '</table></div>';
             $html .= $this->closeRegionalSection();
         }
 
         return $html;
+    }
+
+    private function comparisonDetailWeekTargetLabel(array $row, $isOutstandingTarget)
+    {
+        if (!$isOutstandingTarget) {
+            return '';
+        }
+
+        $week = (int) ($row['target_week'] ?? 0);
+        if ($week <= 0) {
+            $week = $this->weekNumberFromTargetPeriod($row['target_week_start'] ?? '', $row['target_week_end'] ?? '');
+        }
+
+        return $week > 0 ? 'W' . $week : '';
+    }
+
+    private function weekNumberFromTargetPeriod($startDate, $endDate)
+    {
+        $start = strtotime((string) $startDate);
+        $end = strtotime((string) $endDate);
+        if (!$start || !$end) {
+            return 0;
+        }
+
+        $year = (int) date('Y', $start);
+        for ($week = 1; $week <= 53; $week++) {
+            $period = $this->comparisonWeekPeriod($year, $week);
+            if (strtotime($period['start']) === $start && strtotime($period['end']) === $end) {
+                return $week;
+            }
+        }
+
+        return (int) date('W', $start);
+    }
+
+    private function comparisonWeekPeriod($year, $week)
+    {
+        $jan1 = new DateTime($year . '-01-01');
+        $start = clone $jan1;
+        $start->modify('-' . (int) $jan1->format('w') . ' days');
+        $start->modify('+' . (($week - 1) * 7) . ' days');
+        $end = clone $start;
+        $end->modify('+6 days');
+
+        return [
+            'start' => $start->format('Y-m-d'),
+            'end' => $end->format('Y-m-d')
+        ];
     }
 
     private function renderTermDetailHtml($rows, $metric)

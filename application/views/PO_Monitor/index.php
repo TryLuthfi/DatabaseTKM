@@ -2350,7 +2350,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <i class="fas fa-exclamation-circle"></i>
                             Prioritas
                         </span>
-                        <h3 class="po-monitor-insight-card__title">Top Outstanding Project ( ON PO )</h3>
+                        <h3 class="po-monitor-insight-card__title">Top Outstanding Project ( ON PO & NY PO )</h3>
                         <p class="po-monitor-insight-card__subtitle">Project dengan sisa invoice terbesar.</p>
                         <ul class="po-monitor-mini-list" data-po-insight-list="outstanding" data-page-size="5">
                             <?php foreach ($topOutstandingRows as $row): ?>
@@ -5028,6 +5028,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 var activeTerm = detailActiveLabel($modal, '.po-monitor-term-card', 'All Term') || 'All Term';
                 var html = '';
                 var textCellStyle = ' style="mso-number-format:\\@;"';
+                var summaryColspan = 13;
 
                 html += '<html><head><meta charset="utf-8"><style>';
                 html += 'body{font-family:Arial,sans-serif;}';
@@ -5039,22 +5040,23 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 html += '.summary-value{font-weight:bold;}';
                 html += '.section{background:#163d66;color:#fff;font-weight:bold;font-size:12pt;}';
                 html += '.head{background:#d9e2f3;font-weight:bold;text-align:center;}';
+                html += '.invoiced td{background:#86efac;color:#052e16;font-weight:bold;}';
                 html += '.total{background:#00b050;color:#000;font-weight:bold;}';
                 html += '.right{text-align:right;}';
                 html += '.center{text-align:center;}';
                 html += '</style></head><body>';
 
                 html += '<table>';
-                html += '<tr><td colspan="11" class="title">' + escapeHtml(title) + '</td></tr>';
-                html += '<tr><td colspan="11" class="subtitle">' + escapeHtml(generatedAt) + '</td></tr>';
+                html += '<tr><td colspan="' + summaryColspan + '" class="title">' + escapeHtml(title) + '</td></tr>';
+                html += '<tr><td colspan="' + summaryColspan + '" class="subtitle">' + escapeHtml(generatedAt) + '</td></tr>';
                 html += '<tr>';
                 html += '<td class="summary-label">Total Row</td><td class="summary-value right"' + textCellStyle + '>' + escapeHtml(totalRow) + '</td>';
                 html += '<td class="summary-label">Total Amount</td><td class="summary-value right"' + textCellStyle + '>' + escapeHtml(totalAmount) + '</td>';
                 html += '<td class="summary-label">Regional</td><td class="summary-value">' + escapeHtml(activeRegional) + '</td>';
                 html += '<td class="summary-label">Term</td><td class="summary-value">' + escapeHtml(activeTerm) + '</td>';
-                html += '<td colspan="3"></td>';
+                html += '<td colspan="' + Math.max(1, summaryColspan - 8) + '"></td>';
                 html += '</tr>';
-                html += '<tr><td colspan="11" style="border:0;height:10px;"></td></tr>';
+                html += '<tr><td colspan="' + summaryColspan + '" style="border:0;height:10px;"></td></tr>';
 
                 $modal.find('.po-monitor-regional-group:not(.is-hidden)').each(function() {
                     var $group = $(this);
@@ -5081,7 +5083,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         $(this).children('td').each(function() {
                             row.push(cleanDetailText($(this).text()));
                         });
-                        rows.push(row);
+                        rows.push({
+                            cells: row,
+                            invoiced: String($(this).data('invoiced') || '') === '1'
+                        });
                     });
 
                     $table.find('tfoot th').each(function() {
@@ -5100,9 +5105,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     html += '</tr>';
 
                     rows.forEach(function(row) {
-                        html += '<tr>';
+                        var cells = row.cells || [];
+                        html += '<tr' + (row.invoiced ? ' class="invoiced"' : '') + '>';
                         headers.forEach(function(header, index) {
-                            var value = row[index] || '';
+                            var value = cells[index] || '';
                             var className = index === headers.length - 1 ? ' class="right"' : '';
                             html += '<td' + className + textCellStyle + '>' + escapeHtml(value) + '</td>';
                         });

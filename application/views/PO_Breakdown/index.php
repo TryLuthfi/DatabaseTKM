@@ -1,5 +1,6 @@
 <?php
 $termBreakdown = is_array($termBreakdown ?? null) ? $termBreakdown : [];
+$nyTermBreakdown = is_array($nyTermBreakdown ?? null) ? $nyTermBreakdown : [];
 $summary = is_array($summary ?? null) ? $summary : [];
 
 if (!function_exists('po_breakdown_money')) {
@@ -387,6 +388,63 @@ if (!function_exists('po_breakdown_percent')) {
                 <div class="po-breakdown-panel">
                     <div class="po-breakdown-panel__head">
                         <div>
+                            <h3 class="po-breakdown-panel__title">TERM NY INVOICE</h3>
+                            <p class="po-breakdown-panel__subtitle">Outstanding NY PO yang belum menjadi ON PO, dikelompokkan per bowheer dan term.</p>
+                        </div>
+                    </div>
+                    <div class="po-breakdown-panel__body table-responsive">
+                        <table id="table_po_breakdown_ny_term" class="table po-breakdown-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Bowheer</th>
+                                    <th>Term 1</th>
+                                    <th>Term 2</th>
+                                    <th>Term 3</th>
+                                    <th>Term 4</th>
+                                    <th>Term 5</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $nyRowNumber = 1; ?>
+                                <?php foreach ($nyTermBreakdown as $row): ?>
+                                    <tr>
+                                        <td class="text-center"><?= $nyRowNumber++ ?></td>
+                                        <td><?= htmlspecialchars($row['bowheer'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                        <?php for ($nyTerm = 1; $nyTerm <= 5; $nyTerm++): ?>
+                                            <td class="text-right"><span class="po-breakdown-money"><?= po_breakdown_money($row['terms'][$nyTerm] ?? 0) ?></span></td>
+                                        <?php endfor; ?>
+                                        <td class="text-right"><span class="po-breakdown-money"><?= po_breakdown_money($row['total'] ?? 0) ?></span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="2" class="text-center">TOTAL</th>
+                                    <?php
+                                    $nyTermTotals = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+                                    $nyGrandTotal = 0;
+                                    foreach ($nyTermBreakdown as $row) {
+                                        for ($nyTerm = 1; $nyTerm <= 5; $nyTerm++) {
+                                            $nyTermTotals[$nyTerm] += (float) ($row['terms'][$nyTerm] ?? 0);
+                                        }
+                                        $nyGrandTotal += (float) ($row['total'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php for ($nyTerm = 1; $nyTerm <= 5; $nyTerm++): ?>
+                                        <th class="text-right"><?= po_breakdown_money($nyTermTotals[$nyTerm] ?? 0) ?></th>
+                                    <?php endfor; ?>
+                                    <th class="text-right"><?= po_breakdown_money($nyGrandTotal) ?></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="po-breakdown-panel">
+                    <div class="po-breakdown-panel__head">
+                        <div>
                             <h3 class="po-breakdown-panel__title">Breakdown per Term</h3>
                             <p class="po-breakdown-panel__subtitle">Ringkasan nilai term, invoice, dan outstanding per project.</p>
                         </div>
@@ -449,6 +507,7 @@ if (!function_exists('po_breakdown_percent')) {
 
             var $ = window.jQuery;
             var monitorSelector = '#table_po_breakdown_monitor_list';
+            var nyTermSelector = '#table_po_breakdown_ny_term';
             var termSelector = '#table_po_breakdown_term';
 
             if ($(monitorSelector).length && !$.fn.DataTable.isDataTable(monitorSelector)) {
@@ -485,6 +544,35 @@ if (!function_exists('po_breakdown_percent')) {
                             next: 'Next'
                         },
                         processing: 'Loading...'
+                    }
+                });
+            }
+
+            if ($(nyTermSelector).length && !$.fn.DataTable.isDataTable(nyTermSelector)) {
+                $(nyTermSelector).DataTable({
+                    paging: true,
+                    pageLength: 10,
+                    searching: true,
+                    info: true,
+                    lengthChange: true,
+                    autoWidth: false,
+                    responsive: false,
+                    scrollX: true,
+                    ordering: true,
+                    order: [[1, 'asc']],
+                    columnDefs: [
+                        { targets: [0], className: 'text-center' },
+                        { targets: [2, 3, 4, 5, 6, 7], className: 'text-right' }
+                    ],
+                    language: {
+                        search: '',
+                        searchPlaceholder: 'Cari term NY invoice',
+                        lengthMenu: '_MENU_ row',
+                        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                        paginate: {
+                            previous: 'Previous',
+                            next: 'Next'
+                        }
                     }
                 });
             }
