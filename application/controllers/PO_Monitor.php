@@ -180,6 +180,7 @@ class PO_Monitor extends CI_Controller
         $data['po'] = $po;
         $data['terms'] = $this->MPO_Monitor->getPOTerms((int) $id_po);
         $data['allocationMap'] = $this->MPO_Monitor->getPOAllocations((int) $id_po);
+        $data['bowheerOptions'] = $this->MPO_Monitor->getBowheerOptionsForHeaderEdit();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -241,6 +242,53 @@ class PO_Monitor extends CI_Controller
 
         $amount = (float) preg_replace('/[^\d.]/', '', $normalized);
         return $isNegative && $amount > 0 ? -1 * $amount : $amount;
+    }
+
+    public function update_header($id_po = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $id_po = (int) $id_po;
+        $po = $this->MPO_Monitor->getPOById($id_po);
+        if (!$po) {
+            show_404();
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method()) !== 'POST') {
+            redirect('PO_Monitor/detail/' . $id_po);
+            return;
+        }
+
+        $poNumber = trim((string) $this->input->post('po_number'));
+        $poDateRaw = trim((string) $this->input->post('po_date'));
+        $poDate = $poDateRaw !== '' ? date('Y-m-d', strtotime($poDateRaw)) : null;
+
+        if ($poNumber === '') {
+            $this->session->set_flashdata('status', false);
+            $this->session->set_flashdata('error_log', 'Nomor PO wajib diisi.');
+            redirect('PO_Monitor/detail/' . $id_po);
+            return;
+        }
+
+        $payload = [
+            'po_number' => $poNumber,
+            'po_date' => $poDate,
+            'id_bowheer' => (int) $this->input->post('id_bowheer'),
+            'dashboard_bowheer' => trim((string) $this->input->post('dashboard_bowheer')),
+            'pic_bowheer' => trim((string) $this->input->post('pic_bowheer')),
+            'type_project' => trim((string) $this->input->post('type_project')),
+            'status_po' => trim((string) $this->input->post('status_po')),
+        ];
+
+        $result = $this->MPO_Monitor->updatePOHeader($id_po, $payload, (int) $this->session->userdata('id_user'));
+        $this->session->set_flashdata('status', (bool) ($result['status'] ?? false));
+        $this->session->set_flashdata('error_log', $result['message'] ?? 'Header PO gagal diperbarui.');
+
+        redirect('PO_Monitor/detail/' . $id_po);
     }
 
     public function create()

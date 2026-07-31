@@ -769,6 +769,129 @@ class MPO_Monitor extends CI_Model
             ->row_array();
     }
 
+    public function getBowheerOptionsForHeaderEdit()
+    {
+        if (!$this->db->table_exists('tb_bowheer_po')) {
+            return [];
+        }
+
+        return $this->db
+            ->select('id_bowheer, bowheer, pic')
+            ->from('tb_bowheer_po')
+            ->order_by('no_urut', 'ASC')
+            ->order_by('bowheer', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function updatePOHeader($idPo, array $payload, $userId = 0)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0) {
+            return ['status' => false, 'message' => 'PO tidak valid.'];
+        }
+
+        $existing = $this->getPOById($idPo);
+        if (!$existing) {
+            return ['status' => false, 'message' => 'PO tidak ditemukan.'];
+        }
+
+        $poNumber = trim((string) ($payload['po_number'] ?? ''));
+        if ($poNumber === '') {
+            return ['status' => false, 'message' => 'Nomor PO wajib diisi.'];
+        }
+
+        $duplicate = $this->db
+            ->select('id_po')
+            ->from('tb_po')
+            ->where('po_number', $poNumber)
+            ->where('id_po !=', $idPo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($duplicate)) {
+            return ['status' => false, 'message' => 'Nomor PO sudah dipakai oleh data lain.'];
+        }
+
+        $idBowheer = (int) ($payload['id_bowheer'] ?? 0);
+        $bowheerRow = [];
+        if ($idBowheer > 0 && $this->db->table_exists('tb_bowheer_po')) {
+            $bowheerRow = $this->db
+                ->select('id_bowheer, bowheer, pic')
+                ->from('tb_bowheer_po')
+                ->where('id_bowheer', $idBowheer)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $dashboardBowheer = trim((string) ($payload['dashboard_bowheer'] ?? ''));
+        if ($dashboardBowheer === '' && !empty($bowheerRow['bowheer'])) {
+            $dashboardBowheer = trim((string) $bowheerRow['bowheer']);
+        }
+        if ($dashboardBowheer === '') {
+            $dashboardBowheer = trim((string) ($existing['dashboard_bowheer'] ?? ''));
+        }
+
+        $statusPo = strtoupper(trim((string) ($payload['status_po'] ?? '')));
+        if ($statusPo === '') {
+            $statusPo = strtoupper(trim((string) ($existing['status_po'] ?? 'ON PO')));
+        }
+
+        $poDate = trim((string) ($payload['po_date'] ?? ''));
+        $poDate = $poDate !== '' ? date('Y-m-d', strtotime($poDate)) : null;
+
+        $update = [
+            'po_number' => $poNumber,
+            'po_date' => $poDate,
+            'id_bowheer' => $idBowheer > 0 ? $idBowheer : null,
+            'dashboard_bowheer' => $dashboardBowheer !== '' ? $dashboardBowheer : null,
+            'type_project' => trim((string) ($payload['type_project'] ?? '')) ?: null,
+            'status_po' => $statusPo,
+        ];
+
+        $this->db->trans_begin();
+        $this->db->where('id_po', $idPo)->update('tb_po', $update);
+
+        $amend = $this->db
+            ->select('id_amend')
+            ->from('tb_po_amend')
+            ->where('id_po', $idPo)
+            ->order_by('amend_no', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($amend)) {
+            $this->db
+                ->where('id_amend', (int) $amend['id_amend'])
+                ->update('tb_po_amend', ['release_date' => $poDate]);
+        }
+
+        $picBowheer = trim((string) ($payload['pic_bowheer'] ?? ''));
+        if ($idBowheer > 0 && $this->db->table_exists('tb_bowheer_po')) {
+            $this->db
+                ->where('id_bowheer', $idBowheer)
+                ->update('tb_bowheer_po', ['pic' => $picBowheer !== '' ? $picBowheer : null]);
+        }
+
+        if ((string) ($existing['po_number'] ?? '') !== $poNumber && $this->db->table_exists('tb_pipeline_project')) {
+            $this->db
+                ->where('linked_id_po', $idPo)
+                ->update('tb_pipeline_project', ['linked_po_number' => $poNumber]);
+        }
+
+        $this->refreshPoDashboardMetrics($idPo);
+        $this->rebuildDashboardCache(null);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Header PO gagal diperbarui.'];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => true, 'message' => 'Header PO berhasil diperbarui.'];
+    }
+
     public function getPOTerms($id_po)
     {
         $latestAmend = $this->db
@@ -900,15 +1023,19 @@ class MPO_Monitor extends CI_Model
         return $rows;
     }
 
-    public function getDashboardSummary()
+    public function getDashboardSummary($useCache = false)
     {
-        $cachedRows = $this->db
-            ->order_by('sort_order', 'ASC')
-            ->order_by('bowheer', 'ASC')
-            ->get('tb_po_dashboard_cache')
-            ->result_array();
+        if ($useCache) {
+            $cachedRows = $this->db
+                ->order_by('sort_order', 'ASC')
+                ->order_by('bowheer', 'ASC')
+                ->get('tb_po_dashboard_cache')
+                ->result_array();
 
-        if (!empty($cachedRows)) {
+            if (empty($cachedRows)) {
+                return $this->calculateDashboardSummary();
+            }
+
             $rows = [];
             $totals = [
                 'data_count' => 0,
@@ -1194,16 +1321,13 @@ class MPO_Monitor extends CI_Model
             $length = 10;
         }
 
-        $recordsTotal = (int) $this->db->count_all('tb_po_dashboard_cache');
-
-        $rows = $this->db
-            ->select('*')
-            ->order_by('sort_order', 'ASC')
-            ->order_by('bowheer', 'ASC')
-            ->get('tb_po_dashboard_cache')
-            ->result_array();
-
         if ($mode === 'initial') {
+            $rows = $this->db
+                ->select('*')
+                ->order_by('sort_order', 'ASC')
+                ->order_by('bowheer', 'ASC')
+                ->get('tb_po_dashboard_cache')
+                ->result_array();
             $adjustments = $this->getDashboardManualClaimAdjustments();
             $initialPipeline = $this->getDashboardInitialPipelineAmounts();
             foreach ($rows as &$row) {
@@ -1221,7 +1345,31 @@ class MPO_Monitor extends CI_Model
                 $row['total_outs'] = (float) $row['grandtotal_target'] + (float) $row['co_to_2027'];
             }
             unset($row);
+        } else {
+            $summary = $this->calculateDashboardSummary();
+            $order = array_keys($this->dashboardBowheerOrder());
+            $rows = [];
+            foreach ($summary['rows'] as $row) {
+                $sortOrder = array_search($row['bowheer'], $order, true);
+                if ($sortOrder === false) {
+                    $sortOrder = 999;
+                }
+
+                $hasData = 0;
+                foreach (['all_po', 'done_inv_2026', 'outs_2026_on_target', 'ny_po_on_target_2026', 'co_to_2027'] as $key) {
+                    if ((float) ($row[$key] ?? 0) != 0.0) {
+                        $hasData = 1;
+                        break;
+                    }
+                }
+
+                $row['sort_order'] = $sortOrder + 1;
+                $row['has_data'] = $hasData;
+                $rows[] = $row;
+            }
         }
+
+        $recordsTotal = count($rows);
 
         if ($search !== '') {
             $rows = array_values(array_filter($rows, function ($row) use ($search) {

@@ -73,9 +73,11 @@ if (!function_exists('poMonitorSlaMeta')) {
 
 $terms = is_array($terms ?? null) ? $terms : [];
 $allocationMap = is_array($allocationMap ?? null) ? $allocationMap : [];
+$bowheerOptions = is_array($bowheerOptions ?? null) ? $bowheerOptions : [];
 $poValue = (float) ($po['total_value'] ?? 0);
 $poBowheer = trim((string) (($po['nama_bowheer'] ?? '') ?: ($po['dashboard_bowheer'] ?? '')));
 $poPic = trim((string) ($po['pic_bowheer'] ?? ''));
+$poDateInput = !empty($po['po_date']) && $po['po_date'] !== '0000-00-00' ? date('Y-m-d', strtotime($po['po_date'])) : '';
 $totalTermValue = 0;
 $totalInvoiced = 0;
 $totalRemaining = 0;
@@ -368,6 +370,9 @@ $flashMessage = $this->session->flashdata('error_log');
                         </div>
                     </div>
                     <div class="po-monitor-hero__actions">
+                        <button type="button" class="btn btn-outline-light btn-sm" data-toggle="modal" data-target="#po_monitor_edit_header_modal">
+                            <i class="fas fa-edit mr-1"></i> Edit Header
+                        </button>
                         <a href="<?= site_url('PO_Monitor') ?>" class="btn btn-light btn-sm"><i class="fas fa-arrow-left mr-1"></i> Back</a>
                     </div>
                 </div>
@@ -576,6 +581,87 @@ $flashMessage = $this->session->flashdata('error_log');
     </section>
 </div>
 
+<div class="modal fade" id="po_monitor_edit_header_modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= site_url('PO_Monitor/update_header/' . (int) ($po['id_po'] ?? 0)) ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Header PO</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="po-monitor-header-po-number">No PO</label>
+                                <input type="text" name="po_number" id="po-monitor-header-po-number" class="form-control" value="<?= poMonitorDetailHtml($po['po_number'] ?? '') ?>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="po-monitor-header-po-date">Tanggal PO</label>
+                                <input type="date" name="po_date" id="po-monitor-header-po-date" class="form-control" value="<?= poMonitorDetailHtml($poDateInput) ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="po-monitor-header-bowheer">Project / Bowheer</label>
+                                <select name="id_bowheer" id="po-monitor-header-bowheer" class="form-control">
+                                    <option value="">Tanpa master bowheer</option>
+                                    <?php foreach ($bowheerOptions as $bowheer): ?>
+                                        <?php
+                                        $bowheerId = (int) ($bowheer['id_bowheer'] ?? 0);
+                                        $selected = $bowheerId === (int) ($po['id_bowheer'] ?? 0) ? 'selected' : '';
+                                        ?>
+                                        <option value="<?= $bowheerId ?>"
+                                            data-bowheer="<?= poMonitorDetailHtml($bowheer['bowheer'] ?? '') ?>"
+                                            data-pic="<?= poMonitorDetailHtml($bowheer['pic'] ?? '') ?>"
+                                            <?= $selected ?>>
+                                            <?= poMonitorDetailHtml($bowheer['bowheer'] ?? '-') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="hidden" name="dashboard_bowheer" id="po-monitor-header-dashboard-bowheer" value="<?= poMonitorDetailHtml($poBowheer) ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="po-monitor-header-pic">PIC</label>
+                                <input type="text" name="pic_bowheer" id="po-monitor-header-pic" class="form-control" value="<?= poMonitorDetailHtml($poPic) ?>">
+                                <small class="form-text text-muted">PIC mengikuti master bowheer, jadi perubahan ini ikut tampil di PO lain dengan bowheer yang sama.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group mb-md-0">
+                                <label for="po-monitor-header-type-project">Type Project</label>
+                                <input type="text" name="type_project" id="po-monitor-header-type-project" class="form-control" value="<?= poMonitorDetailHtml($po['type_project'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-0">
+                                <label for="po-monitor-header-status">Status PO</label>
+                                <select name="status_po" id="po-monitor-header-status" class="form-control">
+                                    <?php foreach (['ON PO', 'NY PO', 'CLOSED', 'CANCELLED'] as $statusOption): ?>
+                                        <option value="<?= poMonitorDetailHtml($statusOption) ?>" <?= strtoupper((string) ($po['status_po'] ?? 'ON PO')) === $statusOption ? 'selected' : '' ?>>
+                                            <?= poMonitorDetailHtml($statusOption) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Header</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="po_monitor_edit_invoice_modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -633,6 +719,12 @@ $flashMessage = $this->session->flashdata('error_log');
             $('#po-monitor-edit-id-allocation').val($button.data('id-allocation') || 0);
             $('#po-monitor-edit-invoice-date').val($button.data('invoice-date') || '<?= date('Y-m-d') ?>');
             $('#po-monitor-edit-invoice-amount').val(formatPOMonitorDetailNumber($button.data('invoice-amount') || 0));
+        });
+
+        $('#po-monitor-header-bowheer').on('change', function() {
+            var $option = $(this).find('option:selected');
+            $('#po-monitor-header-dashboard-bowheer').val($option.data('bowheer') || '');
+            $('#po-monitor-header-pic').val($option.data('pic') || '');
         });
     })();
 </script>
