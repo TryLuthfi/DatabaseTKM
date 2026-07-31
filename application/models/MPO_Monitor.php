@@ -4581,15 +4581,31 @@ class MPO_Monitor extends CI_Model
             }
 
             $linkedPipeline = !empty($pipelineMatch['row']) ? $pipelineMatch['row'] : null;
-            $autoTarget2026 = !$linkedPipeline;
+            $linkedPipelines = [];
+            if ($linkedPipeline) {
+                $linkedPipelines = $this->getNyPoReferencePipelineGroup($linkedPipeline);
+                if (empty($linkedPipelines)) {
+                    $linkedPipelines = [$linkedPipeline];
+                }
+            }
+            $linkedPipelineByTerm = [];
+            foreach ($linkedPipelines as $pipelineRow) {
+                $pipelineTermIndex = (int) ($pipelineRow['term_index'] ?? 0);
+                if ($pipelineTermIndex > 0 && !isset($linkedPipelineByTerm[$pipelineTermIndex])) {
+                    $linkedPipelineByTerm[$pipelineTermIndex] = $pipelineRow;
+                }
+            }
+            $autoTarget2026 = empty($linkedPipelines);
             $existingPo = $this->getPoByNumberInsensitive($poNumber);
             if ($existingPo) {
-                if ($linkedPipeline && trim((string) ($group['ny_po_ref'] ?? '')) !== '') {
-                    $replace = $this->replaceNyPoPipelineLink($linkedPipeline, (int) $existingPo['id_po'], $poNumber, $group, $userId);
-                    if (empty($replace['status'])) {
-                        $summary['skipped']++;
-                        $summary['errors'][] = 'PO ' . $poNumber . ': ' . ($replace['message'] ?? 'gagal replace NY PO REF.');
-                        continue;
+                if (!empty($linkedPipelines) && trim((string) ($group['ny_po_ref'] ?? '')) !== '') {
+                    foreach ($linkedPipelines as $pipelineRow) {
+                        $replace = $this->replaceNyPoPipelineLink($pipelineRow, (int) $existingPo['id_po'], $poNumber, $group, $userId);
+                        if (empty($replace['status'])) {
+                            $summary['skipped']++;
+                            $summary['errors'][] = 'PO ' . $poNumber . ': ' . ($replace['message'] ?? 'gagal replace NY PO REF.');
+                            continue 2;
+                        }
                     }
 
                     $summary['replaced']++;
@@ -4641,15 +4657,16 @@ class MPO_Monitor extends CI_Model
             $splits = $this->buildTermSplitsFromPoTerm((string) ($row['po_term'] ?? ''), $effectiveValue);
 
             foreach ($splits as $split) {
-                $termIsLinked = $linkedPipeline && (int) ($linkedPipeline['term_index'] ?? 0) === (int) $split['term_index'];
+                $termPipeline = $linkedPipelineByTerm[(int) $split['term_index']] ?? null;
+                $termIsLinked = !empty($termPipeline);
                 $targetPayload = $termIsLinked ? [
                     'plan_amount' => (float) $split['value'],
                     'target_status' => 'TARGET_WEEK',
-                    'target_year' => (int) ($linkedPipeline['target_year'] ?? 0) ?: null,
-                    'target_week' => (int) ($linkedPipeline['target_week'] ?? 0) ?: null,
-                    'target_week_start' => $linkedPipeline['target_week_start'] ?? null,
-                    'target_week_end' => $linkedPipeline['target_week_end'] ?? null,
-                    'submit_raw' => $linkedPipeline['submit_raw'] ?? null
+                    'target_year' => (int) ($termPipeline['target_year'] ?? 0) ?: null,
+                    'target_week' => (int) ($termPipeline['target_week'] ?? 0) ?: null,
+                    'target_week_start' => $termPipeline['target_week_start'] ?? null,
+                    'target_week_end' => $termPipeline['target_week_end'] ?? null,
+                    'submit_raw' => $termPipeline['submit_raw'] ?? null
                 ] : [
                     'plan_amount' => (float) $split['value'],
                     'target_status' => $autoTarget2026 ? 'TARGET_WEEK' : 'OPEN',
@@ -4678,7 +4695,7 @@ class MPO_Monitor extends CI_Model
                         }
 
                         $allocationIsLinked = $termIsLinked
-                            && ($this->batchAllocationMatchesPipeline($allocation, $linkedPipeline, $allocationValue)
+                            && ($this->batchAllocationMatchesPipeline($allocation, $termPipeline, $allocationValue)
                                 || (trim((string) ($group['ny_po_ref'] ?? '')) !== '' && $allocationIndex === 0));
                         $allocationIsAutoTarget2026 = $autoTarget2026 && !$allocationIsLinked;
 
@@ -4692,11 +4709,11 @@ class MPO_Monitor extends CI_Model
                             'allocation_value' => $allocationValue,
                             'plan_amount' => $allocationValue,
                             'target_status' => ($allocationIsLinked || $allocationIsAutoTarget2026) ? 'TARGET_WEEK' : 'OPEN',
-                            'target_year' => $allocationIsLinked ? ((int) ($linkedPipeline['target_year'] ?? 0) ?: null) : ($allocationIsAutoTarget2026 ? 2026 : null),
-                            'target_week' => $allocationIsLinked ? ((int) ($linkedPipeline['target_week'] ?? 0) ?: null) : null,
-                            'target_week_start' => $allocationIsLinked ? ($linkedPipeline['target_week_start'] ?? null) : null,
-                            'target_week_end' => $allocationIsLinked ? ($linkedPipeline['target_week_end'] ?? null) : null,
-                            'submit_raw' => $allocationIsLinked ? ($linkedPipeline['submit_raw'] ?? null) : null,
+                            'target_year' => $allocationIsLinked ? ((int) ($termPipeline['target_year'] ?? 0) ?: null) : ($allocationIsAutoTarget2026 ? 2026 : null),
+                            'target_week' => $allocationIsLinked ? ((int) ($termPipeline['target_week'] ?? 0) ?: null) : null,
+                            'target_week_start' => $allocationIsLinked ? ($termPipeline['target_week_start'] ?? null) : null,
+                            'target_week_end' => $allocationIsLinked ? ($termPipeline['target_week_end'] ?? null) : null,
+                            'submit_raw' => $allocationIsLinked ? ($termPipeline['submit_raw'] ?? null) : null,
                             'source_row_no' => $allocation['row_no']
                         ]);
                         $summary['allocations']++;
@@ -4704,8 +4721,10 @@ class MPO_Monitor extends CI_Model
                 }
             }
 
-            if ($linkedPipeline) {
-                $this->replaceNyPoPipelineLink($linkedPipeline, $idPo, $poNumber, $group, $userId, false);
+            if (!empty($linkedPipelines)) {
+                foreach ($linkedPipelines as $pipelineRow) {
+                    $this->replaceNyPoPipelineLink($pipelineRow, $idPo, $poNumber, $group, $userId, false);
+                }
             }
 
             $summary['inserted']++;
