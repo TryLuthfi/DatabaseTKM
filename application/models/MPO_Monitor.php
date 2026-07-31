@@ -4523,6 +4523,11 @@ class MPO_Monitor extends CI_Model
             return null;
         }
 
+        $legacyDate = $this->normalizeLegacyJulyImportDate($date);
+        if ($legacyDate !== null) {
+            return $legacyDate;
+        }
+
         $timestamp = strtotime((string) $date);
         if (!$timestamp) {
             return null;
@@ -5785,9 +5790,15 @@ class MPO_Monitor extends CI_Model
 
         $plan = (float) ($item['plan_amount'] ?? 0);
         $invoice = (float) ($item['invoice_amount'] ?? 0);
-        $row['PLAN ' . $term] = $this->formatImportReportAmount($plan);
-        $row['SUBMIT ' . $term] = $this->importReportSubmitValue($item);
-        $row['NILAI ' . $term] = $invoice > 0 ? $this->formatImportReportAmount($invoice) : '';
+        $submitValue = $this->importReportSubmitValue($item);
+        $submitIsDate = $this->isImportReportSubmitDate($submitValue);
+        $percent = (float) ($item['percent'] ?? 0);
+        if ($percent > 0) {
+            $row['_PO_TERM_PARTS'][$term] = rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+        }
+        $row['PLAN ' . $term] = $submitIsDate ? '' : $this->formatImportReportAmount($plan);
+        $row['SUBMIT ' . $term] = $submitValue;
+        $row['NILAI ' . $term] = $submitIsDate ? $this->formatImportReportAmount($invoice > 0 ? $invoice : $plan) : '';
         $row['PO VALUE'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['PO VALUE']) + $plan);
         $row['INVOICE ALL'] = $this->formatImportReportAmount($this->parseImportReportAmount($row['INVOICE ALL']) + $invoice);
 
@@ -5802,6 +5813,16 @@ class MPO_Monitor extends CI_Model
         }
     }
 
+    private function isImportReportSubmitDate($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || preg_match('/^W\d{1,2}$/i', $value) || preg_match('/^\d{4}$/', $value)) {
+            return false;
+        }
+
+        return strtotime($value) !== false;
+    }
+
     private function finalizedImportReportRows($groups)
     {
         $rows = [];
@@ -5811,15 +5832,21 @@ class MPO_Monitor extends CI_Model
             $row['OUTSTANDING TOTAL'] = $this->formatImportReportAmount(max($poValue - $invoiceAll, 0));
             if ($row['PO TERM'] === '') {
                 $percents = [];
-                for ($term = 1; $term <= 5; $term++) {
-                    $plan = $this->parseImportReportAmount($row['PLAN ' . $term]);
-                    if ($plan > 0 && $poValue > 0) {
-                        $percent = round(($plan / $poValue) * 100, 2);
-                        $percents[] = rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+                if (!empty($row['_PO_TERM_PARTS']) && is_array($row['_PO_TERM_PARTS'])) {
+                    ksort($row['_PO_TERM_PARTS']);
+                    $percents = array_values($row['_PO_TERM_PARTS']);
+                } else {
+                    for ($term = 1; $term <= 5; $term++) {
+                        $plan = $this->parseImportReportAmount($row['PLAN ' . $term]);
+                        if ($plan > 0 && $poValue > 0) {
+                            $percent = round(($plan / $poValue) * 100, 2);
+                            $percents[] = rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+                        }
                     }
                 }
                 $row['PO TERM'] = !empty($percents) ? implode(':', $percents) : '';
             }
+            unset($row['_PO_TERM_PARTS']);
             $rows[] = $row;
         }
         return $rows;
@@ -6497,6 +6524,11 @@ class MPO_Monitor extends CI_Model
             return null;
         }
 
+        $legacyDate = $this->normalizeLegacyJulyImportDate($value);
+        if ($legacyDate !== null) {
+            return $legacyDate;
+        }
+
         if (is_numeric($value) && (float) $value > 30000) {
             $timestamp = ((float) $value - 25569) * 86400;
             return gmdate('Y-m-d', (int) $timestamp);
@@ -6504,6 +6536,19 @@ class MPO_Monitor extends CI_Model
 
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function normalizeLegacyJulyImportDate($value)
+    {
+        $value = trim((string) $value);
+        if (preg_match('/^7[\/-]26[\/-]200([1-9])$/', $value, $match)) {
+            return sprintf('2026-07-%02d', (int) $match[1]);
+        }
+        if (preg_match('/^200([1-9])-07-26$/', $value, $match)) {
+            return sprintf('2026-07-%02d', (int) $match[1]);
+        }
+
+        return null;
     }
 
     private function parseTermPercents($term)

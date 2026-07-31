@@ -21,6 +21,10 @@ if (!function_exists('poMonitorDetailDate')) {
             return '-';
         }
 
+        if (preg_match('/^200(\d)-07-26$/', $value, $match)) {
+            return sprintf('%02d/07/2026', (int) $match[1]);
+        }
+
         return date('d/m/Y', strtotime($value));
     }
 }

@@ -588,8 +588,11 @@ class PO_Monitor extends CI_Controller
         $html = '<html><head><meta charset="utf-8"><style>';
         $html .= 'body{font-family:Arial,sans-serif;}';
         $html .= 'table{border-collapse:collapse;}';
-        $html .= 'th,td{border:1px solid #999;padding:5px 7px;font-size:10pt;mso-number-format:\@;vertical-align:top;}';
+        $html .= 'th,td{border:1px solid #999;padding:5px 7px;font-size:10pt;vertical-align:top;}';
         $html .= 'th{background:#d9e2f3;font-weight:bold;text-align:center;white-space:nowrap;}';
+        $html .= '.text{mso-number-format:"\@";}';
+        $html .= '.date{mso-number-format:"dd\\/mm\\/yyyy";}';
+        $html .= '.number{mso-number-format:"#,##0";text-align:right;}';
         $html .= '.meta td{border:0;font-size:9pt;color:#666;padding:0 0 8px 0;}';
         $html .= '</style></head><body><table>';
         $html .= '<tr class="meta"><td colspan="' . count($headers) . '">Report Database PO Monitor - ' . htmlspecialchars($generatedAt, ENT_QUOTES, 'UTF-8') . '</td></tr>';
@@ -602,7 +605,7 @@ class PO_Monitor extends CI_Controller
         foreach ($rows as $row) {
             $html .= '<tr>';
             foreach ($headers as $header) {
-                $html .= '<td>' . htmlspecialchars((string) ($row[$header] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+                $html .= $this->importReportExcelCell($header, $row[$header] ?? '');
             }
             $html .= '</tr>';
         }
@@ -614,6 +617,89 @@ class PO_Monitor extends CI_Controller
             ->set_header('Content-Disposition: attachment; filename="' . $fileName . '"')
             ->set_header('Cache-Control: max-age=0')
             ->set_output($html);
+    }
+
+    private function importReportExcelCell($header, $value)
+    {
+        $header = (string) $header;
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '<td></td>';
+        }
+
+        if ($this->isImportReportForcedTextColumn($header)) {
+            return '<td class="text" style="mso-number-format:\'\\@\';" x:str>' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</td>';
+        }
+
+        if ($this->isImportReportAmountColumn($header)) {
+            $numeric = str_replace(',', '', $value);
+            if (is_numeric($numeric)) {
+                return '<td class="number">' . htmlspecialchars($numeric, ENT_QUOTES, 'UTF-8') . '</td>';
+            }
+        }
+
+        if ($this->isImportReportDateColumn($header) && $this->isImportReportDateValue($value)) {
+            $value = $this->normalizePoMonitorLegacyJulyDate($value) ?: $value;
+        }
+
+        if ($this->isImportReportDateColumn($header) && $this->isImportReportDateValue($value)) {
+            return '<td class="date">' . htmlspecialchars(date('Y-m-d', strtotime($value)), ENT_QUOTES, 'UTF-8') . '</td>';
+        }
+
+        return '<td class="text">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</td>';
+    }
+
+    private function isImportReportDateColumn($header)
+    {
+        return (string) $header === 'TGL PO' || preg_match('/^SUBMIT [1-5]$/', (string) $header);
+    }
+
+    private function isImportReportForcedTextColumn($header)
+    {
+        return in_array((string) $header, ['PO TERM'], true);
+    }
+
+    private function isImportReportDateValue($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || preg_match('/^W\d{1,2}$/i', $value) || preg_match('/^\d{4}$/', $value)) {
+            return false;
+        }
+
+        $value = $this->normalizePoMonitorLegacyJulyDate($value) ?: $value;
+        return strtotime($value) !== false;
+    }
+
+    private function isImportReportAmountColumn($header)
+    {
+        if (preg_match('/^(PLAN|NILAI) [1-5]$/', (string) $header)) {
+            return true;
+        }
+
+        return in_array((string) $header, [
+            'PO VALUE',
+            'PO FINAL VALUE',
+            'OUTSTANDING TOTAL',
+            'OUTSTANDING ON TARGET 2026',
+            'OUTSTANDING CO 2027',
+            'INVOICE ALL',
+            'INVOICE 2026',
+            'NY PO 2026',
+            'NY PO 2027'
+        ], true);
+    }
+
+    private function normalizePoMonitorLegacyJulyDate($value)
+    {
+        $value = trim((string) $value);
+        if (preg_match('/^7[\/-]26[\/-]200([1-9])$/', $value, $match)) {
+            return sprintf('2026-07-%02d', (int) $match[1]);
+        }
+        if (preg_match('/^200([1-9])-07-26$/', $value, $match)) {
+            return sprintf('2026-07-%02d', (int) $match[1]);
+        }
+
+        return null;
     }
 
     public function download_ny_po_reference()
@@ -2004,7 +2090,7 @@ class PO_Monitor extends CI_Controller
             $data[] = [
                 $start + $index + 1,
                 htmlspecialchars($row['po_number'] ?: '-'),
-                htmlspecialchars($row['po_date'] ?: '-'),
+                htmlspecialchars($this->formatPoMonitorTableDate($row['po_date'] ?? '')),
                 '<span class="po-monitor-money">RP. ' . number_format((float) $row['current_release_value'], 0, ',', '.') . '</span>',
                 '<span class="po-monitor-money">RP. ' . number_format((float) $row['total_invoiced'], 0, ',', '.') . '</span>',
                 '<span class="po-monitor-money">RP. ' . number_format((float) $row['remaining'], 0, ',', '.') . '</span>',
@@ -2021,6 +2107,12 @@ class PO_Monitor extends CI_Controller
                 'recordsFiltered' => $result['recordsFiltered'],
                 'data' => $data
             ]));
+    }
+
+    private function formatPoMonitorTableDate($date)
+    {
+        $date = $this->normalizePoMonitorLegacyJulyDate($date) ?: trim((string) $date);
+        return $date !== '' ? $date : '-';
     }
 
     public function claim_term()
