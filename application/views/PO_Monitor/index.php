@@ -69,6 +69,21 @@ if (!function_exists('po_monitor_percent')) {
     }
 }
 
+if (!function_exists('po_monitor_achieved_percent_badge')) {
+    function po_monitor_achieved_percent_badge($value)
+    {
+        $value = (float) $value;
+        $isGood = $value >= 100;
+        $className = $isGood ? 'po-compare-achieved-percent--good' : 'po-compare-achieved-percent--bad';
+        $icon = $isGood ? 'fa-arrow-up' : 'fa-arrow-down';
+
+        return '<span class="po-compare-achieved-percent ' . $className . '">'
+            . htmlspecialchars(po_monitor_percent($value), ENT_QUOTES, 'UTF-8')
+            . '<i class="fas ' . $icon . '"></i>'
+            . '</span>';
+    }
+}
+
 if (!function_exists('po_monitor_compare_effective_target_total')) {
     function po_monitor_compare_effective_target_total(array $months)
     {
@@ -386,6 +401,27 @@ if (!function_exists('po_monitor_term_amount_link')) {
         color: #fff;
         text-align: center;
         font-weight: 900;
+    }
+
+    .po-compare-achieved-percent {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .po-compare-achieved-percent--good {
+        color: #00c853;
+    }
+
+    .po-compare-achieved-percent--bad {
+        color: #ff1744;
+    }
+
+    .po-compare-achieved-percent i {
+        font-size: 12px;
+        line-height: 1;
     }
 
     .po-compare-panel-hidden {
@@ -2526,7 +2562,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
                                             <td data-po-amount="<?= (float) $rowDisplayDeviasi ?>"><?= number_format((float) $rowDisplayDeviasi, 0, ',', '.') ?></td>
                                             <td data-po-amount="<?= (float) $rowDisplayDeviasiByPo ?>"><?= po_monitor_compare_total_amount_link($rowDisplayDeviasiByPo, $row['id_bowheer'], 'month', 'deviasi_by_po', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '', $singleComparePeriodKey) ?></td>
-                                            <td><?= po_monitor_percent($rowDisplayAchievedPercent) ?></td>
+                                            <td data-order="<?= (float) $rowDisplayAchievedPercent ?>"><?= po_monitor_achieved_percent_badge($rowDisplayAchievedPercent) ?></td>
                                             <td><?= po_monitor_percent($rowDisplayDeviasiPercent) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -2553,7 +2589,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                         <th><?= number_format((float) $comparisonMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
                                         <th><?= number_format((float) $footerDisplayDeviasi, 0, ',', '.') ?></th>
                                         <th><?= number_format((float) ($comparisonCumulative ? ($comparisonMatrix['totals']['total_effective_deviasi_by_po'] ?? $comparisonMatrix['totals']['deviasi_by_po'] ?? 0) : ($comparisonMatrix['totals']['deviasi_by_po'] ?? 0)), 0, ',', '.') ?></th>
-                                        <th><?= po_monitor_percent($footerDisplayAchievedPercent) ?></th>
+                                        <th><?= po_monitor_achieved_percent_badge($footerDisplayAchievedPercent) ?></th>
                                         <th><?= po_monitor_percent($footerDisplayDeviasiPercent) ?></th>
                                     </tr>
                                 </tfoot>
@@ -3274,6 +3310,15 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
         function formatLocalePercent(value) {
             return formatLocaleNumber(value) + '%';
+        }
+
+        function formatAchievedPercentBadge(value) {
+            var numericValue = Number(value || 0);
+            var isGood = numericValue >= 100;
+            return '<span class="po-compare-achieved-percent po-compare-achieved-percent--' + (isGood ? 'good' : 'bad') + '">'
+                + formatLocalePercent(numericValue)
+                + '<i class="fas ' + (isGood ? 'fa-arrow-up' : 'fa-arrow-down') + '"></i>'
+                + '</span>';
         }
 
         function escapeHtml(value) {
@@ -4394,7 +4439,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 html += '<th>' + formatLocaleNumber(totalAchieved) + '</th>';
                 html += '<th>' + formatLocaleNumber(deviasi) + '</th>';
                 html += '<th>' + formatLocaleNumber(totalDeviasiByPo) + '</th>';
-                html += '<th>' + formatLocalePercent(achievedPercent) + '</th>';
+                html += '<th>' + formatAchievedPercentBadge(achievedPercent) + '</th>';
                 html += '<th>' + formatLocalePercent(deviasiPercent) + '</th>';
 
                 var $wrapper = $(api.table().container());

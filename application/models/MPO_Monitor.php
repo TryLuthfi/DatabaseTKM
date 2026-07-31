@@ -2435,9 +2435,13 @@ class MPO_Monitor extends CI_Model
                     p.po_date,
                     t.term_index,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS no_po_sub,
-                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
-                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
-                    CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
+                    CONVERT(COALESCE(myrep_cluster.regional_name, myrep_mainfeeder.regional_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                    CONVERT(COALESCE(myrep_cluster.city_name, myrep_mainfeeder.city_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS kota_po,
+                    CONVERT(CASE
+                        WHEN TRIM(COALESCE(myrep_cluster.cluster_name, '')) <> '' THEN CONCAT(COALESCE(myrep_header.po_type, 'CLUSTER'), ' - ', myrep_cluster.cluster_name)
+                        WHEN TRIM(COALESCE(myrep_mainfeeder.mainfeeder_name, '')) <> '' THEN CONCAT(COALESCE(myrep_header.po_type, 'MAINFEEDER'), ' - ', myrep_mainfeeder.mainfeeder_name)
+                        ELSE NULL
+                    END USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail_po,
                     CAST(NULL AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS remarks,
                     t.target_week,
                     t.target_week_start,
@@ -2448,6 +2452,9 @@ class MPO_Monitor extends CI_Model
                     CONVERT('Target Term' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS source_label
                 FROM tb_po_term t
                 JOIN tb_po p ON p.id_po = t.id_po
+                LEFT JOIN tb_myrep_po_header myrep_header ON CONVERT(TRIM(myrep_header.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(TRIM(p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                LEFT JOIN tb_myrep_cluster myrep_cluster ON myrep_cluster.id_myrep_cluster = myrep_header.id_myrep_cluster
+                LEFT JOIN tb_rfs_myrep_mainfeeder myrep_mainfeeder ON myrep_mainfeeder.id_mainfeeder = myrep_header.id_mainfeeder
                 LEFT JOIN (
                     SELECT id_term, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
                     FROM tb_po_term_claim

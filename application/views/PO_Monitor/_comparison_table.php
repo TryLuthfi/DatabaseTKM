@@ -41,6 +41,21 @@ if (!function_exists('po_monitor_percent')) {
     }
 }
 
+if (!function_exists('po_monitor_achieved_percent_badge')) {
+    function po_monitor_achieved_percent_badge($value)
+    {
+        $value = (float) $value;
+        $isGood = $value >= 100;
+        $className = $isGood ? 'po-compare-achieved-percent--good' : 'po-compare-achieved-percent--bad';
+        $icon = $isGood ? 'fa-arrow-up' : 'fa-arrow-down';
+
+        return '<span class="po-compare-achieved-percent ' . $className . '">'
+            . htmlspecialchars(po_monitor_percent($value), ENT_QUOTES, 'UTF-8')
+            . '<i class="fas ' . $icon . '"></i>'
+            . '</span>';
+    }
+}
+
 if (!function_exists('po_monitor_compare_amount_link')) {
     function po_monitor_compare_amount_link($value, $idBowheer, $periodKey, $groupBy, $type)
     {
@@ -147,7 +162,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
                 <td data-po-amount="<?= (float) $row['deviasi'] ?>"><?= number_format((float) $row['deviasi'], 0, ',', '.') ?></td>
                 <td data-po-amount="<?= (float) ($row['deviasi_by_po'] ?? 0) ?>"><?= po_monitor_compare_total_amount_link($row['deviasi_by_po'] ?? 0, $row['id_bowheer'], $groupBy, 'deviasi_by_po', $matrix['from'] ?? '', $matrix['to'] ?? '') ?></td>
-                <td><?= po_monitor_percent($row['achieved_percent']) ?></td>
+                <td data-order="<?= (float) $row['achieved_percent'] ?>"><?= po_monitor_achieved_percent_badge($row['achieved_percent']) ?></td>
                 <td><?= po_monitor_percent($row['deviasi_percent']) ?></td>
             </tr>
         <?php endforeach; ?>
@@ -165,7 +180,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
             <th><?= number_format((float) $matrix['totals']['total_achieved'], 0, ',', '.') ?></th>
             <th><?= number_format((float) $matrix['totals']['deviasi'], 0, ',', '.') ?></th>
             <th><?= number_format((float) ($matrix['totals']['deviasi_by_po'] ?? 0), 0, ',', '.') ?></th>
-            <th><?= po_monitor_percent($matrix['totals']['achieved_percent']) ?></th>
+            <th><?= po_monitor_achieved_percent_badge($matrix['totals']['achieved_percent']) ?></th>
             <th><?= po_monitor_percent($matrix['totals']['deviasi_percent']) ?></th>
         </tr>
     </tfoot>

@@ -105,12 +105,17 @@ if (!function_exists('poMyRepNormalizeNumber')) {
 if (!function_exists('poMyRepTerminPlanInvoiceValue')) {
     function poMyRepTerminPlanInvoiceValue($termin)
     {
+        $terminValue = (float) ($termin['termin_value'] ?? 0);
+        if ($terminValue > 0) {
+            return $terminValue;
+        }
+
         $remark = (string) ($termin['remark_termin'] ?? '');
         if (preg_match('/Plan\s+Invoice\s*:\s*([^\r\n;]+)/i', $remark, $matches)) {
             return (float) poMyRepNormalizeNumber($matches[1]);
         }
 
-        return (float) ($termin['termin_value'] ?? 0);
+        return 0;
     }
 }
 if (!function_exists('poMyRepStatusBadge')) {
