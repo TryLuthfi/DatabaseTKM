@@ -5659,23 +5659,23 @@ class MPO_Monitor extends CI_Model
 
         $sqlParts = [
             "SELECT
-                c.regional_name AS regional,
-                c.city_name AS city,
-                CONCAT(COALESCE(NULLIF(p.po_type, ''), 'CLUSTER'), ' - ', c.cluster_name) AS detail
+                CONVERT(COALESCE(c.regional_name, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                CONVERT(COALESCE(c.city_name, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS city,
+                CONVERT(CONCAT(COALESCE(NULLIF(p.po_type, ''), 'CLUSTER'), ' - ', c.cluster_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail
             FROM tb_myrep_po_header p
             JOIN tb_myrep_cluster c ON c.id_myrep_cluster = p.id_myrep_cluster
-            WHERE UPPER(TRIM(p.po_number)) = UPPER(TRIM(?))"
+            WHERE UPPER(TRIM(CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci)) = UPPER(TRIM(CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci))"
         ];
         $params = [$poNumber];
 
         if ($this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
             $sqlParts[] = "SELECT
-                COALESCE(NULLIF(mf.regional_name, ''), '') AS regional,
-                mf.city_name AS city,
-                CONCAT(COALESCE(NULLIF(p.po_type, ''), 'MAINFEEDER'), ' - ', mf.mainfeeder_name) AS detail
+                CONVERT(COALESCE(NULLIF(mf.regional_name, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                CONVERT(COALESCE(mf.city_name, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS city,
+                CONVERT(CONCAT(COALESCE(NULLIF(p.po_type, ''), 'MAINFEEDER'), ' - ', mf.mainfeeder_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail
             FROM tb_myrep_po_header p
             JOIN tb_rfs_myrep_mainfeeder mf ON mf.id_mainfeeder = p.id_mainfeeder
-            WHERE UPPER(TRIM(p.po_number)) = UPPER(TRIM(?))";
+            WHERE UPPER(TRIM(CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci)) = UPPER(TRIM(CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci))";
             $params[] = $poNumber;
         }
 
