@@ -4530,6 +4530,7 @@ class MPO_Monitor extends CI_Model
             }
 
             $linkedPipeline = !empty($pipelineMatch['row']) ? $pipelineMatch['row'] : null;
+            $autoTarget2026 = !$linkedPipeline;
             $existingPo = $this->getPoByNumberInsensitive($poNumber);
             if ($existingPo) {
                 if ($linkedPipeline && trim((string) ($group['ny_po_ref'] ?? '')) !== '') {
@@ -4566,7 +4567,7 @@ class MPO_Monitor extends CI_Model
                 'type_project' => trim((string) ($row['type_project'] ?? '')),
                 'dashboard_all_invoice' => 0,
                 'dashboard_invoice_2026' => 0,
-                'dashboard_outs_2026' => 0,
+                'dashboard_outs_2026' => $autoTarget2026 ? $effectiveValue : 0,
                 'dashboard_co_2027' => 0,
                 'created_at' => date('Y-m-d H:i:s'),
                 'created_by' => $userId ?: null,
@@ -4600,7 +4601,8 @@ class MPO_Monitor extends CI_Model
                     'submit_raw' => $linkedPipeline['submit_raw'] ?? null
                 ] : [
                     'plan_amount' => (float) $split['value'],
-                    'target_status' => 'OPEN'
+                    'target_status' => $autoTarget2026 ? 'TARGET_WEEK' : 'OPEN',
+                    'target_year' => $autoTarget2026 ? 2026 : null
                 ];
 
                 $this->db->insert('tb_po_term', [
@@ -4627,6 +4629,7 @@ class MPO_Monitor extends CI_Model
                         $allocationIsLinked = $termIsLinked
                             && ($this->batchAllocationMatchesPipeline($allocation, $linkedPipeline, $allocationValue)
                                 || (trim((string) ($group['ny_po_ref'] ?? '')) !== '' && $allocationIndex === 0));
+                        $allocationIsAutoTarget2026 = $autoTarget2026 && !$allocationIsLinked;
 
                         $this->db->insert('tb_po_term_allocation', [
                             'id_term' => $idTerm,
@@ -4637,8 +4640,8 @@ class MPO_Monitor extends CI_Model
                             'remarks' => $allocation['remarks'],
                             'allocation_value' => $allocationValue,
                             'plan_amount' => $allocationValue,
-                            'target_status' => $allocationIsLinked ? 'TARGET_WEEK' : 'OPEN',
-                            'target_year' => $allocationIsLinked ? ((int) ($linkedPipeline['target_year'] ?? 0) ?: null) : null,
+                            'target_status' => ($allocationIsLinked || $allocationIsAutoTarget2026) ? 'TARGET_WEEK' : 'OPEN',
+                            'target_year' => $allocationIsLinked ? ((int) ($linkedPipeline['target_year'] ?? 0) ?: null) : ($allocationIsAutoTarget2026 ? 2026 : null),
                             'target_week' => $allocationIsLinked ? ((int) ($linkedPipeline['target_week'] ?? 0) ?: null) : null,
                             'target_week_start' => $allocationIsLinked ? ($linkedPipeline['target_week_start'] ?? null) : null,
                             'target_week_end' => $allocationIsLinked ? ($linkedPipeline['target_week_end'] ?? null) : null,
