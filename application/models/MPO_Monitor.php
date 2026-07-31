@@ -716,7 +716,16 @@ class MPO_Monitor extends CI_Model
 
     public function getPOById($id_po)
     {
-        return $this->db->get_where('tb_po', ['id_po' => (int) $id_po])->row_array();
+        return $this->db
+            ->select('p.*')
+            ->select("COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer", false)
+            ->select("COALESCE(bp.pic, '') AS pic_bowheer", false)
+            ->from('tb_po p')
+            ->join('tb_bowheer_po bp', 'bp.id_bowheer = p.id_bowheer', 'left')
+            ->join('tb_master_bowheer_bilco b', 'b.id_bowheer = p.id_bowheer', 'left')
+            ->where('p.id_po', (int) $id_po)
+            ->get()
+            ->row_array();
     }
 
     public function getPOTerms($id_po)
@@ -5323,7 +5332,7 @@ class MPO_Monitor extends CI_Model
     public function getImportReportHeaders()
     {
         $headers = [
-            'BOWHEER', 'STATUS PO', 'NO PO', 'NO PO SUB', 'REGIONAL', 'KOTA PO',
+            'NY PO REF', 'BOWHEER', 'STATUS PO', 'NO PO', 'NO PO SUB', 'REGIONAL', 'KOTA PO',
             'DETAIL PO', 'REMARKS', 'TYPE PROJECT', 'TGL PO', 'PO VALUE',
             'PO FINAL VALUE', 'PO TERM', 'OUTSTANDING TOTAL',
             'OUTSTANDING ON TARGET 2026', 'OUTSTANDING CO 2027', 'INVOICE ALL',
@@ -5371,6 +5380,9 @@ class MPO_Monitor extends CI_Model
                 COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
                 COALESCE(p.status_po, 'ON PO') AS status_po,
                 p.po_number,
+                (SELECT GROUP_CONCAT(DISTINCT CONCAT('NY-', pl.id_pipeline) ORDER BY pl.id_pipeline SEPARATOR ', ')
+                    FROM tb_po_target_pipeline pl
+                    WHERE pl.linked_id_po = p.id_po) AS ny_po_ref,
                 p.po_date,
                 p.total_value,
                 COALESCE((SELECT release_value FROM tb_po_amend am WHERE am.id_po = p.id_po ORDER BY am.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
@@ -5418,6 +5430,9 @@ class MPO_Monitor extends CI_Model
                 COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
                 COALESCE(p.status_po, 'ON PO') AS status_po,
                 p.po_number,
+                (SELECT GROUP_CONCAT(DISTINCT CONCAT('NY-', pl.id_pipeline) ORDER BY pl.id_pipeline SEPARATOR ', ')
+                    FROM tb_po_target_pipeline pl
+                    WHERE pl.linked_id_po = p.id_po) AS ny_po_ref,
                 p.po_date,
                 p.total_value,
                 COALESCE((SELECT release_value FROM tb_po_amend am WHERE am.id_po = p.id_po ORDER BY am.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
@@ -5469,6 +5484,19 @@ class MPO_Monitor extends CI_Model
             ORDER BY bowheer ASC, pl.source_row_no ASC, pl.term_index ASC")->result_array();
 
         $groups = [];
+        $refByGroup = [];
+        foreach ($queryRows as $item) {
+            $groupKey = 'pipeline|' . (
+                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
+                    ? (string) $item['source_row_no']
+                    : md5(implode('|', [(string) $item['dashboard_bowheer'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks'], (string) $item['type_project']]))
+            );
+            $idPipeline = (int) ($item['id_pipeline'] ?? 0);
+            if ($idPipeline > 0 && (!isset($refByGroup[$groupKey]) || $idPipeline < $refByGroup[$groupKey])) {
+                $refByGroup[$groupKey] = $idPipeline;
+            }
+        }
+
         foreach ($queryRows as $item) {
             $groupKey = 'pipeline|' . (
                 $item['source_row_no'] !== null && $item['source_row_no'] !== ''
@@ -5477,6 +5505,7 @@ class MPO_Monitor extends CI_Model
             );
             if (!isset($groups[$groupKey])) {
                 $row = $this->getEmptyImportReportRow();
+                $row['NY PO REF'] = 'NY-' . (int) ($refByGroup[$groupKey] ?? $item['id_pipeline'] ?? 0);
                 $row['BOWHEER'] = (string) ($item['dashboard_bowheer'] ?: $item['bowheer']);
                 $row['STATUS PO'] = 'NY PO';
                 $row['REGIONAL'] = (string) ($item['regional'] ?? '');
@@ -5560,6 +5589,7 @@ class MPO_Monitor extends CI_Model
     private function baseOnPoImportReportRow($item)
     {
         $row = $this->getEmptyImportReportRow();
+        $row['NY PO REF'] = (string) ($item['ny_po_ref'] ?? '');
         $row['BOWHEER'] = (string) ($item['bowheer'] ?? '');
         $row['STATUS PO'] = (string) ($item['status_po'] ?: 'ON PO');
         $row['NO PO'] = (string) ($item['po_number'] ?? '');

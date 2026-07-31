@@ -70,6 +70,8 @@ if (!function_exists('poMonitorSlaMeta')) {
 $terms = is_array($terms ?? null) ? $terms : [];
 $allocationMap = is_array($allocationMap ?? null) ? $allocationMap : [];
 $poValue = (float) ($po['total_value'] ?? 0);
+$poBowheer = trim((string) (($po['nama_bowheer'] ?? '') ?: ($po['dashboard_bowheer'] ?? '')));
+$poPic = trim((string) ($po['pic_bowheer'] ?? ''));
 $totalTermValue = 0;
 $totalInvoiced = 0;
 $totalRemaining = 0;
@@ -140,6 +142,24 @@ $flashMessage = $this->session->flashdata('error_log');
         margin-top: 0.45rem;
         color: rgba(226, 232, 240, 0.86);
         font-size: 0.86rem;
+    }
+    .po-monitor-hero__project {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        align-items: center;
+        margin-top: 0.62rem;
+    }
+    .po-monitor-hero__project span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.34rem 0.62rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 850;
     }
     .po-monitor-hero__actions {
         display: flex;
@@ -335,6 +355,12 @@ $flashMessage = $this->session->flashdata('error_log');
                         <h1><?= poMonitorDetailHtml($po['po_number'] ?? '-') ?></h1>
                         <div class="po-monitor-hero__meta">
                             <?= poMonitorDetailHtml($po['type_project'] ?? '-') ?> &middot; <?= poMonitorDetailDate($po['po_date'] ?? '') ?>
+                        </div>
+                        <div class="po-monitor-hero__project">
+                            <span><i class="fas fa-building"></i> <?= poMonitorDetailHtml($poBowheer !== '' ? $poBowheer : '-') ?></span>
+                            <?php if ($poPic !== ''): ?>
+                                <span><i class="fas fa-user"></i> <?= poMonitorDetailHtml($poPic) ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="po-monitor-hero__actions">
