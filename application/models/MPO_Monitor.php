@@ -5603,7 +5603,104 @@ class MPO_Monitor extends CI_Model
         $row['PO FINAL VALUE'] = (float) ($item['current_release_value'] ?? 0) !== (float) ($item['total_value'] ?? 0)
             ? $this->formatImportReportAmount($item['current_release_value'])
             : '';
+
+        $this->applyMyRepImportReportFallback($row);
+
         return $row;
+    }
+
+    private function applyMyRepImportReportFallback(&$row)
+    {
+        $poNumber = trim((string) ($row['NO PO'] ?? ''));
+        if ($poNumber === '') {
+            return;
+        }
+
+        if (
+            trim((string) ($row['REGIONAL'] ?? '')) !== ''
+            && trim((string) ($row['KOTA PO'] ?? '')) !== ''
+            && trim((string) ($row['DETAIL PO'] ?? '')) !== ''
+        ) {
+            return;
+        }
+
+        $meta = $this->getMyRepImportReportMetaByPoNumber($poNumber);
+        if (empty($meta)) {
+            return;
+        }
+
+        if (trim((string) ($row['REGIONAL'] ?? '')) === '') {
+            $row['REGIONAL'] = (string) ($meta['regional'] ?? '');
+        }
+        if (trim((string) ($row['KOTA PO'] ?? '')) === '') {
+            $row['KOTA PO'] = (string) ($meta['city'] ?? '');
+        }
+        if (trim((string) ($row['DETAIL PO'] ?? '')) === '') {
+            $row['DETAIL PO'] = (string) ($meta['detail'] ?? '');
+        }
+    }
+
+    private function getMyRepImportReportMetaByPoNumber($poNumber)
+    {
+        static $cache = [];
+
+        $cacheKey = strtoupper(trim((string) $poNumber));
+        if ($cacheKey === '') {
+            return [];
+        }
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        if (!$this->db->table_exists('tb_myrep_po_header') || !$this->db->table_exists('tb_myrep_cluster')) {
+            $cache[$cacheKey] = [];
+            return [];
+        }
+
+        $sqlParts = [
+            "SELECT
+                c.regional_name AS regional,
+                c.city_name AS city,
+                CONCAT(COALESCE(NULLIF(p.po_type, ''), 'CLUSTER'), ' - ', c.cluster_name) AS detail
+            FROM tb_myrep_po_header p
+            JOIN tb_myrep_cluster c ON c.id_myrep_cluster = p.id_myrep_cluster
+            WHERE UPPER(TRIM(p.po_number)) = UPPER(TRIM(?))"
+        ];
+        $params = [$poNumber];
+
+        if ($this->db->table_exists('tb_rfs_myrep_mainfeeder')) {
+            $sqlParts[] = "SELECT
+                COALESCE(NULLIF(mf.regional_name, ''), '') AS regional,
+                mf.city_name AS city,
+                CONCAT(COALESCE(NULLIF(p.po_type, ''), 'MAINFEEDER'), ' - ', mf.mainfeeder_name) AS detail
+            FROM tb_myrep_po_header p
+            JOIN tb_rfs_myrep_mainfeeder mf ON mf.id_mainfeeder = p.id_mainfeeder
+            WHERE UPPER(TRIM(p.po_number)) = UPPER(TRIM(?))";
+            $params[] = $poNumber;
+        }
+
+        $rows = $this->db->query(implode(' UNION ALL ', $sqlParts), $params)->result_array();
+        $regional = [];
+        $city = [];
+        $detail = [];
+
+        foreach ($rows as $row) {
+            foreach (['regional' => &$regional, 'city' => &$city, 'detail' => &$detail] as $field => &$bucket) {
+                $value = trim((string) ($row[$field] ?? ''));
+                if ($value !== '') {
+                    $bucket[$value] = $value;
+                }
+            }
+            unset($bucket);
+        }
+
+        $cache[$cacheKey] = [
+            'regional' => implode(', ', array_values($regional)),
+            'city' => implode(', ', array_values($city)),
+            'detail' => implode(', ', array_values($detail)),
+        ];
+
+        return $cache[$cacheKey];
     }
 
     private function applyImportReportTerm(&$row, $item)
