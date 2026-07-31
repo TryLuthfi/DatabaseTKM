@@ -1878,7 +1878,7 @@ class PO_Monitor extends CI_Controller
             'done_inv_2026' => $this->dashboardNumber($totals['done_inv_2026'] ?? 0),
             'outs_2026_on_target' => $this->dashboardNumber($totals['outs_2026_on_target'] ?? 0),
             'ny_po_on_target_2026' => $this->dashboardNumber($totals['ny_po_on_target_2026'] ?? 0),
-            'acceleration_target_2026' => $this->dashboardNumber(($totals['all_po'] ?? 0) + ($totals['done_inv_2026'] ?? 0) + ($totals['outs_2026_on_target'] ?? 0) + ($totals['ny_po_on_target_2026'] ?? 0)),
+            'acceleration_target_2026' => $this->dashboardNumber(($totals['done_inv_2026'] ?? 0) + ($totals['outs_2026_on_target'] ?? 0) + ($totals['ny_po_on_target_2026'] ?? 0)),
             'done_outs_ny_2026' => $this->dashboardNumber(($totals['done_inv_2026'] ?? 0) + ($totals['outs_2026_on_target'] ?? 0) + ($totals['ny_po_on_target_2026'] ?? 0)),
             'grandtotal_target' => $this->dashboardNumber($totals['grandtotal_target'] ?? 0),
             'ny_po_total' => $this->dashboardNumber($totals['ny_po_total'] ?? 0),

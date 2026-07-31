@@ -2134,7 +2134,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $dashboardOutsOnTarget = (float) ($dashboardTotals['outs_2026_on_target'] ?? 0);
                 $dashboardNyPoTarget = (float) ($dashboardTotals['ny_po_on_target_2026'] ?? 0);
                 $dashboardPo2026 = (float) ($dashboardTotals['all_po'] ?? 0);
-                $dashboardAccelerationTarget = $dashboardPo2026 + $dashboardDoneInvoice + $dashboardOutsOnTarget + $dashboardNyPoTarget;
+                $dashboardAccelerationTarget = $dashboardDoneInvoice + $dashboardOutsOnTarget + $dashboardNyPoTarget;
 
                 $summaryTotals = [
                     'total_po_count' => 0,
@@ -2223,7 +2223,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Target Akselerasi 2026</span>
                                 <span class="po-monitor-hero-stat__value" id="summary_total_po_hero"><?= number_format($dashboardAccelerationTarget, 0, ',', '.') ?></span>
-                                <span class="po-monitor-hero-stat__hint">PO 2026 + done invoice + outs target + NY PO target</span>
+                                <span class="po-monitor-hero-stat__hint">Done invoice + outs target + NY PO target</span>
                             </div>
                             <div class="po-monitor-hero-stat">
                                 <span class="po-monitor-hero-stat__label">Done Invoice</span>

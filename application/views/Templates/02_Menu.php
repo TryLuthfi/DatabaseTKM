@@ -1082,7 +1082,7 @@ $forceVisibleControllerMap = [
                           } ?>"<?= $disabledDatabaseAllPoLinkAttr ?>>
                             <i class="nav-icon fas fa-clipboard-list"></i>
                             <p>
-                                PO Monitor
+                                Target 250 M
                             </p>
                         </a>
                     </li>
