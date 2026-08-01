@@ -892,6 +892,146 @@ class MPO_Monitor extends CI_Model
         return ['status' => true, 'message' => 'Header PO berhasil diperbarui.'];
     }
 
+    public function createManualNyPoTarget(array $payload, $userId = 0)
+    {
+        $this->ensureStandaloneSchema();
+
+        $idBowheer = (int) ($payload['id_bowheer'] ?? 0);
+        $totalValue = (float) ($payload['total_value'] ?? 0);
+        if ($idBowheer <= 0) {
+            return ['status' => false, 'message' => 'Bowheer wajib dipilih untuk NY PO.'];
+        }
+        if ($totalValue <= 0) {
+            return ['status' => false, 'message' => 'PO Value wajib lebih dari 0.'];
+        }
+
+        $bowheer = $this->db
+            ->select('bowheer')
+            ->from('tb_bowheer_po')
+            ->where('id_bowheer', $idBowheer)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $dashboardBowheer = trim((string) ($bowheer['bowheer'] ?? ''));
+        if ($dashboardBowheer === '') {
+            return ['status' => false, 'message' => 'Bowheer tidak ditemukan.'];
+        }
+
+        $masterId = (int) ($payload['master_id'] ?? 0);
+        $splits = [];
+        if ($masterId > 0) {
+            $splits = $this->db
+                ->select('term_index, percent')
+                ->from('tb_term_master_split')
+                ->where('id_master', $masterId)
+                ->order_by('term_index', 'ASC')
+                ->get()
+                ->result_array();
+        }
+        if (empty($splits)) {
+            $splits = [['term_index' => 1, 'percent' => 100.00]];
+        }
+
+        $targetWeekRaw = strtoupper(trim((string) ($payload['target_week'] ?? '')));
+        $meta = $targetWeekRaw !== '' ? $this->resolveSubmitMeta($targetWeekRaw) : [
+            'submit_raw' => '',
+            'target_status' => 'TARGET_WEEK',
+            'target_year' => 2026,
+            'target_week' => null,
+            'target_week_start' => null,
+            'target_week_end' => null,
+            'invoice_date' => null
+        ];
+        if ($targetWeekRaw !== '' && strtoupper((string) ($meta['target_status'] ?? '')) !== 'TARGET_WEEK') {
+            return ['status' => false, 'message' => 'Week target tidak valid. Gunakan format seperti W34.'];
+        }
+
+        $sourceRowNo = (int) $this->db
+            ->select('COALESCE(MAX(source_row_no), 0) + 1 AS next_row_no', false)
+            ->from('tb_po_target_pipeline')
+            ->get()
+            ->row_array()['next_row_no'];
+        if ($sourceRowNo <= 0) {
+            $sourceRowNo = time();
+        }
+
+        $typeProject = trim((string) ($payload['type_project'] ?? ''));
+        $regional = trim((string) ($payload['regional'] ?? ''));
+        $kotaPo = trim((string) ($payload['kota_po'] ?? ''));
+        $detailPo = trim((string) ($payload['detail_po'] ?? ''));
+        $remarks = trim((string) ($payload['remarks'] ?? ''));
+        $notes = trim((string) ($payload['notes'] ?? ''));
+        if ($remarks === '' && $notes !== '') {
+            $remarks = $notes;
+        }
+
+        $poTerm = implode(':', array_map(function ($split) {
+            $percent = (float) ($split['percent'] ?? 0);
+            return rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+        }, $splits));
+
+        $this->db->trans_begin();
+        $remaining = $totalValue;
+        $count = count($splits);
+        foreach ($splits as $index => $split) {
+            $termIndex = (int) ($split['term_index'] ?? ($index + 1));
+            $percent = (float) ($split['percent'] ?? 0);
+            if ($index === $count - 1) {
+                $planAmount = $remaining;
+            } else {
+                $planAmount = round($totalValue * ($percent / 100), 2);
+                $remaining -= $planAmount;
+            }
+
+            $sourceHash = hash('sha256', implode('|', [
+                'MANUAL_NY_PO',
+                $sourceRowNo,
+                $dashboardBowheer,
+                $termIndex,
+                number_format($planAmount, 2, '.', ''),
+                $targetWeekRaw
+            ]));
+
+            $this->db->insert('tb_po_target_pipeline', [
+                'id_bowheer' => $idBowheer,
+                'dashboard_bowheer' => $dashboardBowheer,
+                'status_po' => 'NY PO',
+                'regional' => $regional !== '' ? $regional : null,
+                'kota_po' => $kotaPo !== '' ? $kotaPo : null,
+                'detail_po' => $detailPo !== '' ? $detailPo : null,
+                'remarks' => $remarks !== '' ? $remarks : null,
+                'type_project' => $typeProject !== '' ? $typeProject : null,
+                'po_date' => null,
+                'po_term' => $poTerm,
+                'term_index' => $termIndex,
+                'plan_amount' => $planAmount,
+                'submit_raw' => $meta['submit_raw'],
+                'target_year' => 2026,
+                'target_week' => $meta['target_week'],
+                'target_week_start' => $meta['target_week_start'],
+                'target_week_end' => $meta['target_week_end'],
+                'target_status' => 'TARGET_WEEK',
+                'ny_po_2026_amount' => $planAmount,
+                'ny_po_2027_amount' => 0,
+                'source_file' => 'MANUAL_NY_PO',
+                'source_row_no' => $sourceRowNo,
+                'source_hash' => $sourceHash,
+                'pipeline_status' => 'OPEN',
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        $this->rebuildDashboardCache(null);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'NY PO gagal dibuat.'];
+        }
+
+        $this->db->trans_commit();
+        return ['status' => true, 'message' => 'NY PO berhasil dibuat dan masuk NY PO On Target 2026.'];
+    }
+
     public function getPOTerms($id_po)
     {
         $latestAmend = $this->db
@@ -4726,6 +4866,18 @@ class MPO_Monitor extends CI_Model
                 $group['allocation_hash']
             ]));
 
+            if ($statusPo === 'NY PO') {
+                $nyResult = $this->insertManualBatchNyPoPipeline($group, $idBowheer, $bowheer, $userId);
+                if (empty($nyResult['status'])) {
+                    $summary['skipped']++;
+                    $summary['errors'][] = 'NY PO row ' . (int) ($group['first_row_no'] ?? ($groupIndex + 1)) . ': ' . ($nyResult['message'] ?? 'gagal disimpan.');
+                    continue;
+                }
+
+                $summary['inserted']++;
+                continue;
+            }
+
             $pipelineMatch = $this->resolveNyPoPipelineForBatchGroup($group);
             if (!empty($pipelineMatch['error'])) {
                 $summary['skipped']++;
@@ -4907,15 +5059,15 @@ class MPO_Monitor extends CI_Model
             $effectiveValue = $poFinalValue > 0 ? $poFinalValue : $poValue;
             $statusPo = strtoupper(trim((string) ($row['status_po'] ?? 'ON PO'))) ?: 'ON PO';
 
-            if ($poNumber === '' || $bowheer === '' || $effectiveValue <= 0) {
+            if ($bowheer === '' || $effectiveValue <= 0 || ($statusPo !== 'NY PO' && $poNumber === '')) {
                 $summary['skipped']++;
-                $summary['errors'][] = 'Row ' . ($index + 1) . ' wajib isi NO PO, BOWHEER, dan nilai PO.';
+                $summary['errors'][] = 'Row ' . ($index + 1) . ($statusPo === 'NY PO' ? ' wajib isi BOWHEER dan nilai PO.' : ' wajib isi NO PO, BOWHEER, dan nilai PO.');
                 continue;
             }
 
             $groupKey = hash('sha256', implode('|', [
                 $bowheer,
-                $poNumber,
+                $poNumber !== '' ? $poNumber : ('NY_PO_ROW_' . ($index + 1)),
                 $poDate,
                 trim((string) ($row['po_term'] ?? '')),
                 trim((string) ($row['type_project'] ?? '')),
@@ -4984,6 +5136,103 @@ class MPO_Monitor extends CI_Model
         unset($group);
 
         return array_values($groups);
+    }
+
+    private function insertManualBatchNyPoPipeline(array $group, $idBowheer, $dashboardBowheer, $userId = 0)
+    {
+        $effectiveValue = (float) ($group['effective_value'] ?? 0);
+        if ((int) $idBowheer <= 0 || trim((string) $dashboardBowheer) === '' || $effectiveValue <= 0) {
+            return ['status' => false, 'message' => 'BOWHEER dan nilai PO wajib valid.'];
+        }
+
+        $row = (array) ($group['base'] ?? []);
+        $splits = $this->buildTermSplitsFromPoTerm((string) ($row['po_term'] ?? ''), $effectiveValue);
+        $sourceRowNo = (int) ($group['first_row_no'] ?? 0);
+        if ($sourceRowNo <= 0) {
+            $sourceRowNo = time();
+        }
+
+        $typeProject = trim((string) ($row['type_project'] ?? ''));
+        $regional = '';
+        $kotaPo = '';
+        $detailPo = '';
+        $remarks = '';
+        if (!empty($group['allocations'][0])) {
+            $regional = trim((string) ($group['allocations'][0]['regional'] ?? ''));
+            $kotaPo = trim((string) ($group['allocations'][0]['kota_po'] ?? ''));
+            $detailPo = trim((string) ($group['allocations'][0]['detail_po'] ?? ''));
+            $remarks = trim((string) ($group['allocations'][0]['remarks'] ?? ''));
+        } else {
+            $regional = trim((string) ($row['regional'] ?? ''));
+            $kotaPo = trim((string) ($row['kota_po'] ?? ''));
+            $detailPo = trim((string) ($row['detail_po'] ?? ''));
+            $remarks = trim((string) ($row['remarks'] ?? ''));
+        }
+
+        $poTerm = trim((string) ($row['po_term'] ?? ''));
+        if ($poTerm === '') {
+            $poTerm = implode(':', array_map(function ($split) {
+                $percent = (float) ($split['percent'] ?? 0);
+                return rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+            }, $splits));
+        }
+
+        $inserted = 0;
+        foreach ($splits as $split) {
+            $termIndex = (int) ($split['term_index'] ?? 0);
+            if ($termIndex <= 0) {
+                continue;
+            }
+
+            $planAmount = (float) ($split['value'] ?? 0);
+            if ($planAmount <= 0) {
+                continue;
+            }
+
+            $sourceHash = hash('sha256', implode('|', [
+                'MANUAL_BATCH_NY_PO',
+                $sourceRowNo,
+                $dashboardBowheer,
+                $termIndex,
+                number_format($planAmount, 2, '.', ''),
+                $typeProject,
+                $regional,
+                $kotaPo,
+                $detailPo,
+                $remarks
+            ]));
+
+            $this->db->insert('tb_po_target_pipeline', [
+                'id_bowheer' => (int) $idBowheer,
+                'dashboard_bowheer' => $dashboardBowheer,
+                'status_po' => 'NY PO',
+                'regional' => $regional !== '' ? $regional : null,
+                'kota_po' => $kotaPo !== '' ? $kotaPo : null,
+                'detail_po' => $detailPo !== '' ? $detailPo : null,
+                'remarks' => $remarks !== '' ? $remarks : null,
+                'type_project' => $typeProject !== '' ? $typeProject : null,
+                'po_date' => null,
+                'po_term' => $poTerm,
+                'term_index' => $termIndex,
+                'plan_amount' => $planAmount,
+                'submit_raw' => '',
+                'target_year' => 2026,
+                'target_week' => null,
+                'target_week_start' => null,
+                'target_week_end' => null,
+                'target_status' => 'TARGET_WEEK',
+                'ny_po_2026_amount' => $planAmount,
+                'ny_po_2027_amount' => 0,
+                'source_file' => 'MANUAL_BATCH_NY_PO',
+                'source_row_no' => $sourceRowNo,
+                'source_hash' => $sourceHash,
+                'pipeline_status' => 'OPEN',
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+            $inserted++;
+        }
+
+        return ['status' => $inserted > 0, 'inserted' => $inserted, 'message' => $inserted > 0 ? 'NY PO berhasil disimpan.' : 'Tidak ada nilai term NY PO.'];
     }
 
     private function poNumberExists($poNumber)
@@ -6108,6 +6357,7 @@ class MPO_Monitor extends CI_Model
                 $row['submit_' . $i] = trim($this->csvValue($line, $headerMap, 'SUBMIT ' . $i));
                 $row['nilai_' . $i] = $this->normalizeAmountLocal($this->csvValue($line, $headerMap, 'NILAI ' . $i));
             }
+            $this->autoFillNyPoTarget2026FromValue($row);
             $row['dashboard_metrics'] = $this->computeDashboardMetrics($row);
 
             if ($row['status_po'] === 'NY PO') {
@@ -6308,7 +6558,8 @@ class MPO_Monitor extends CI_Model
                 }
 
                 $meta = $this->resolveSubmitMeta($submit);
-                $hasWeek = stripos($submit, 'W') !== false;
+                $hasWeek = stripos($submit, 'W') !== false
+                    || (strtoupper(trim((string) ($pipelineRow['status_po'] ?? ''))) === 'NY PO' && $plan > 0 && $submit === '');
                 $sourceHash = hash('sha256', implode('|', [
                     'NY',
                     $pipelineRow['dashboard_bowheer'],
@@ -6372,6 +6623,40 @@ class MPO_Monitor extends CI_Model
         $this->db->trans_commit();
         $summary['batch_id'] = $batchId;
         return ['status' => true, 'message' => 'CSV imported', 'summary' => $summary];
+    }
+
+    private function autoFillNyPoTarget2026FromValue(array &$row)
+    {
+        if (strtoupper(trim((string) ($row['status_po'] ?? ''))) !== 'NY PO') {
+            return;
+        }
+
+        $hasPlan = false;
+        for ($i = 1; $i <= 5; $i++) {
+            if ((float) ($row['plan_' . $i] ?? 0) > 0 || trim((string) ($row['submit_' . $i] ?? '')) !== '') {
+                $hasPlan = true;
+                break;
+            }
+        }
+        if ($hasPlan) {
+            return;
+        }
+
+        $totalValue = (float) (($row['po_final_value'] ?? 0) > 0 ? $row['po_final_value'] : ($row['po_value'] ?? 0));
+        if ($totalValue <= 0) {
+            return;
+        }
+
+        $splits = $this->buildTermSplitsFromPoTerm((string) ($row['po_term'] ?? ''), $totalValue);
+        foreach ($splits as $split) {
+            $termIndex = (int) ($split['term_index'] ?? 0);
+            if ($termIndex < 1 || $termIndex > 5) {
+                continue;
+            }
+            $row['plan_' . $termIndex] = (float) ($split['value'] ?? 0);
+            $row['submit_' . $termIndex] = '';
+            $row['nilai_' . $termIndex] = 0;
+        }
     }
 
     private function buildImportGroups($rows)

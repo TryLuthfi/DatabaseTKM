@@ -4206,7 +4206,9 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 var effectiveValue = poFinalValue > 0 ? poFinalValue : poValue;
                 var term = String(row.po_term || '').trim() || '100';
                 var termCount = normalizeBatchPoTerm(term).length;
-                var isValid = bowheer !== '' && poNumber !== '' && effectiveValue > 0;
+                var statusPo = String(row.status_po || 'ON PO').trim().toUpperCase() === 'NY PO' ? 'NY PO' : 'ON PO';
+                var isValid = bowheer !== '' && effectiveValue > 0 && (statusPo === 'NY PO' || poNumber !== '');
+                var invalidLabel = statusPo === 'NY PO' ? 'Wajib Bowheer, Value' : 'Wajib Bowheer, No PO, Value';
 
                 var fields = ['ny_po_ref', 'bowheer', 'status_po', 'po_number', 'no_po_sub', 'regional', 'kota_po', 'detail_po', 'remarks', 'type_project', 'po_date', 'po_value', 'po_final_value', 'po_term'];
                 var hiddenInputs = '';
@@ -4226,7 +4228,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     '<td>' + escapeHtml(term) + '</td>' +
                     '<td>' + buildBatchPoTermPreview(term, effectiveValue) + '</td>' +
                     '<td>' + escapeHtml([row.no_po_sub, row.regional, row.kota_po, row.detail_po, row.remarks].filter(Boolean).join(' | ') || '-') + '</td>' +
-                    '<td><span class="badge badge-' + (isValid ? 'success' : 'danger') + '">' + (isValid ? 'Valid' : 'Wajib Bowheer, No PO, Value') + '</span></td>' +
+                    '<td><span class="badge badge-' + (isValid ? 'success' : 'danger') + '">' + (isValid ? 'Valid' : invalidLabel) + '</span></td>' +
                     '<td><button type="button" class="btn btn-sm btn-outline-danger po-monitor-batch-po-remove-row">Hapus</button></td>' +
                     '</tr>';
 

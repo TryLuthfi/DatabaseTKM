@@ -328,6 +328,27 @@ class PO_Monitor extends CI_Controller
         $id_bowheer = (int) $this->input->post('id_bowheer');
         $total_value = $this->normalizeAmount($this->input->post('total_value'));
         $master_id = (int) $this->input->post('master_id');
+        $status_po = strtoupper(trim((string) $this->input->post('status_po'))) === 'NY PO' ? 'NY PO' : 'ON PO';
+
+        if ($status_po === 'NY PO') {
+            $result = $this->MPO_Monitor->createManualNyPoTarget([
+                'id_bowheer' => $id_bowheer,
+                'total_value' => $total_value,
+                'master_id' => $master_id,
+                'target_week' => trim((string) $this->input->post('target_week')),
+                'type_project' => trim((string) $this->input->post('type_project')),
+                'regional' => trim((string) $this->input->post('regional')),
+                'kota_po' => trim((string) $this->input->post('kota_po')),
+                'detail_po' => trim((string) $this->input->post('detail_po')),
+                'remarks' => trim((string) $this->input->post('remarks')),
+                'notes' => trim((string) $this->input->post('notes')),
+            ], (int) $this->session->userdata('id_user'));
+
+            $this->session->set_flashdata('status', (bool) ($result['status'] ?? false));
+            $this->session->set_flashdata('error_log', $result['message'] ?? 'NY PO gagal dibuat.');
+            redirect(!empty($result['status']) ? 'PO_Monitor' : 'PO_Monitor/create');
+            return;
+        }
 
         if ($po_number === '' || $total_value <= 0) {
             $this->session->set_flashdata('status', false);
@@ -344,6 +365,8 @@ class PO_Monitor extends CI_Controller
             'po_date' => $po_date,
             'id_bowheer' => $id_bowheer > 0 ? $id_bowheer : null,
             'total_value' => $total_value,
+            'status_po' => $status_po,
+            'type_project' => trim((string) $this->input->post('type_project')) ?: null,
             'created_at' => date('Y-m-d H:i:s'),
             'created_by' => $this->session->userdata('id_user'),
             'notes' => $this->input->post('notes'),

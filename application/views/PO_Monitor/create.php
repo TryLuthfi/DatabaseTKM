@@ -20,13 +20,23 @@ defined('BASEPATH') or exit('No direct script access allowed');
                     <div class="card-body">
                         <form method="post" action="<?= site_url('PO_Monitor/store') ?>">
                             <div class="form-group">
+                                <label>Status PO</label>
+                                <select name="status_po" id="po_monitor_create_status" class="form-control">
+                                    <option value="ON PO">ON PO</option>
+                                    <option value="NY PO">NY PO</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label>PO Number</label>
-                                <input type="text" name="po_number" class="form-control" required />
+                                <input type="text" name="po_number" id="po_monitor_create_po_number" class="form-control" required />
+                                <small class="form-text text-muted po-monitor-ny-help d-none">Boleh kosong untuk status NY PO.</small>
                             </div>
 
                             <div class="form-group">
                                 <label>PO Date</label>
                                 <input type="date" name="po_date" class="form-control" />
+                                <small class="form-text text-muted po-monitor-ny-help d-none">Boleh kosong untuk status NY PO.</small>
                             </div>
 
                             <div class="form-group">
@@ -42,6 +52,37 @@ defined('BASEPATH') or exit('No direct script access allowed');
                                         <option value="<?= $b['id_bowheer'] ?>"><?= htmlspecialchars($b['nama_bowheer'] . (!empty($b['pic']) ? ' - ' . $b['pic'] : '')) ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Type Project</label>
+                                <input type="text" name="type_project" class="form-control" />
+                            </div>
+
+                            <div class="form-group po-monitor-ny-field d-none">
+                                <label>Week Target NY PO 2026 (optional, contoh: W34)</label>
+                                <input type="text" name="target_week" class="form-control" placeholder="W34" />
+                            </div>
+
+                            <div class="form-row po-monitor-ny-field d-none">
+                                <div class="form-group col-md-6">
+                                    <label>Regional</label>
+                                    <input type="text" name="regional" class="form-control" />
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Kota PO</label>
+                                    <input type="text" name="kota_po" class="form-control" />
+                                </div>
+                            </div>
+
+                            <div class="form-group po-monitor-ny-field d-none">
+                                <label>Detail PO</label>
+                                <textarea name="detail_po" class="form-control"></textarea>
+                            </div>
+
+                            <div class="form-group po-monitor-ny-field d-none">
+                                <label>Remarks</label>
+                                <textarea name="remarks" class="form-control"></textarea>
                             </div>
 
                             <div class="form-group">
@@ -68,3 +109,16 @@ defined('BASEPATH') or exit('No direct script access allowed');
         </section>
     </div>
 </div>
+
+<script>
+    (function() {
+        function syncPoMonitorCreateStatus() {
+            var isNyPo = $('#po_monitor_create_status').val() === 'NY PO';
+            $('#po_monitor_create_po_number').prop('required', !isNyPo);
+            $('.po-monitor-ny-field, .po-monitor-ny-help').toggleClass('d-none', !isNyPo);
+        }
+
+        $(document).on('change', '#po_monitor_create_status', syncPoMonitorCreateStatus);
+        syncPoMonitorCreateStatus();
+    })();
+</script>
