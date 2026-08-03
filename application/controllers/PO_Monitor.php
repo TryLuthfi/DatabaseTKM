@@ -181,6 +181,8 @@ class PO_Monitor extends CI_Controller
         $data['terms'] = $this->MPO_Monitor->getPOTerms((int) $id_po);
         $data['allocationMap'] = $this->MPO_Monitor->getPOAllocations((int) $id_po);
         $data['bowheerOptions'] = $this->MPO_Monitor->getBowheerOptionsForHeaderEdit();
+        $data['picOptions'] = $this->MPO_Monitor->getPicOptionsForHeaderEdit();
+        $data['termMasterOptions'] = $this->MPO_Monitor->getTermMasterOptionsForHeaderEdit();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -282,6 +284,8 @@ class PO_Monitor extends CI_Controller
             'pic_bowheer' => trim((string) $this->input->post('pic_bowheer')),
             'type_project' => trim((string) $this->input->post('type_project')),
             'status_po' => trim((string) $this->input->post('status_po')),
+            'total_value' => $this->normalizeAmount($this->input->post('total_value')),
+            'term_master_id' => (int) $this->input->post('term_master_id'),
         ];
 
         $result = $this->MPO_Monitor->updatePOHeader($id_po, $payload, (int) $this->session->userdata('id_user'));

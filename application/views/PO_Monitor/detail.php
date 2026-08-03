@@ -74,6 +74,8 @@ if (!function_exists('poMonitorSlaMeta')) {
 $terms = is_array($terms ?? null) ? $terms : [];
 $allocationMap = is_array($allocationMap ?? null) ? $allocationMap : [];
 $bowheerOptions = is_array($bowheerOptions ?? null) ? $bowheerOptions : [];
+$picOptions = is_array($picOptions ?? null) ? $picOptions : [];
+$termMasterOptions = is_array($termMasterOptions ?? null) ? $termMasterOptions : [];
 $poValue = (float) ($po['total_value'] ?? 0);
 $poBowheer = trim((string) (($po['nama_bowheer'] ?? '') ?: ($po['dashboard_bowheer'] ?? '')));
 $poPic = trim((string) ($po['pic_bowheer'] ?? ''));
@@ -607,6 +609,26 @@ $flashMessage = $this->session->flashdata('error_log');
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label for="po-monitor-header-total-value">PO Value</label>
+                                <input type="text" name="total_value" id="po-monitor-header-total-value" class="form-control" value="<?= poMonitorDetailHtml(poMonitorDetailNum($poValue)) ?>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="po-monitor-header-term-master">PO Term</label>
+                                <select name="term_master_id" id="po-monitor-header-term-master" class="form-control">
+                                    <option value="0">Tetap term saat ini</option>
+                                    <?php foreach ($termMasterOptions as $termMaster): ?>
+                                        <option value="<?= (int) ($termMaster['id_master'] ?? 0) ?>">
+                                            <?= poMonitorDetailHtml($termMaster['label'] ?? '-') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="form-text text-muted">Ubah PO term hanya bisa kalau belum ada invoice claim.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label for="po-monitor-header-bowheer">Project / Bowheer</label>
                                 <select name="id_bowheer" id="po-monitor-header-bowheer" class="form-control">
                                     <option value="">Tanpa master bowheer</option>
@@ -629,7 +651,17 @@ $flashMessage = $this->session->flashdata('error_log');
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="po-monitor-header-pic">PIC</label>
-                                <input type="text" name="pic_bowheer" id="po-monitor-header-pic" class="form-control" value="<?= poMonitorDetailHtml($poPic) ?>">
+                                <select name="pic_bowheer" id="po-monitor-header-pic" class="form-control">
+                                    <option value="">Tanpa PIC</option>
+                                    <?php if ($poPic !== '' && !in_array($poPic, $picOptions, true)): ?>
+                                        <option value="<?= poMonitorDetailHtml($poPic) ?>" selected><?= poMonitorDetailHtml($poPic) ?></option>
+                                    <?php endif; ?>
+                                    <?php foreach ($picOptions as $picOption): ?>
+                                        <option value="<?= poMonitorDetailHtml($picOption) ?>" <?= $poPic === $picOption ? 'selected' : '' ?>>
+                                            <?= poMonitorDetailHtml($picOption) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                                 <small class="form-text text-muted">PIC mengikuti master bowheer, jadi perubahan ini ikut tampil di PO lain dengan bowheer yang sama.</small>
                             </div>
                         </div>
@@ -725,6 +757,15 @@ $flashMessage = $this->session->flashdata('error_log');
             var $option = $(this).find('option:selected');
             $('#po-monitor-header-dashboard-bowheer').val($option.data('bowheer') || '');
             $('#po-monitor-header-pic').val($option.data('pic') || '');
+        });
+
+        $('#po-monitor-header-total-value').on('input', function() {
+            var value = String($(this).val() || '').replace(/[^\d,.-]/g, '');
+            var parsed = value.replace(/\./g, '').replace(',', '.');
+            var number = Number(parsed || 0);
+            if (!isNaN(number) && number > 0) {
+                $(this).val(formatPOMonitorDetailNumber(number));
+            }
         });
     })();
 </script>

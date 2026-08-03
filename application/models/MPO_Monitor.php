@@ -784,6 +784,68 @@ class MPO_Monitor extends CI_Model
             ->result_array();
     }
 
+    public function getPicOptionsForHeaderEdit()
+    {
+        if (!$this->db->table_exists('tb_bowheer_po')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('pic')
+            ->from('tb_bowheer_po')
+            ->where("COALESCE(pic, '') !=", '')
+            ->group_by('pic')
+            ->order_by('pic', 'ASC')
+            ->get()
+            ->result_array();
+
+        return array_values(array_filter(array_map(static function ($row) {
+            return trim((string) ($row['pic'] ?? ''));
+        }, $rows)));
+    }
+
+    public function getTermMasterOptionsForHeaderEdit()
+    {
+        if (!$this->db->table_exists('tb_term_master') || !$this->db->table_exists('tb_term_master_split')) {
+            return [];
+        }
+
+        $masters = $this->db
+            ->select('id_master, name')
+            ->from('tb_term_master')
+            ->order_by('id_master', 'ASC')
+            ->get()
+            ->result_array();
+
+        $options = [];
+        $seen = [];
+        foreach ($masters as $master) {
+            $splits = $this->getDistinctTermMasterSplits((int) ($master['id_master'] ?? 0));
+            if (empty($splits)) {
+                continue;
+            }
+
+            $parts = array_map(static function ($split) {
+                $percent = (float) ($split['percent'] ?? 0);
+                return rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
+            }, $splits);
+            $signature = implode(':', $parts);
+            if (isset($seen[$signature])) {
+                continue;
+            }
+            $seen[$signature] = true;
+
+            $options[] = [
+                'id_master' => (int) ($master['id_master'] ?? 0),
+                'name' => trim((string) ($master['name'] ?? 'PO Term')),
+                'label' => trim((string) ($master['name'] ?? 'PO Term')) . ' (' . $signature . ')',
+                'signature' => $signature,
+            ];
+        }
+
+        return $options;
+    }
+
     public function updatePOHeader($idPo, array $payload, $userId = 0)
     {
         $idPo = (int) $idPo;
@@ -840,11 +902,16 @@ class MPO_Monitor extends CI_Model
 
         $poDate = trim((string) ($payload['po_date'] ?? ''));
         $poDate = $poDate !== '' ? date('Y-m-d', strtotime($poDate)) : null;
+        $totalValue = (float) ($payload['total_value'] ?? 0);
+        if ($totalValue <= 0) {
+            $totalValue = (float) ($existing['total_value'] ?? 0);
+        }
 
         $update = [
             'po_number' => $poNumber,
             'po_date' => $poDate,
             'id_bowheer' => $idBowheer > 0 ? $idBowheer : null,
+            'total_value' => $totalValue,
             'dashboard_bowheer' => $dashboardBowheer !== '' ? $dashboardBowheer : null,
             'type_project' => trim((string) ($payload['type_project'] ?? '')) ?: null,
             'status_po' => $statusPo,
@@ -864,7 +931,34 @@ class MPO_Monitor extends CI_Model
         if (!empty($amend)) {
             $this->db
                 ->where('id_amend', (int) $amend['id_amend'])
-                ->update('tb_po_amend', ['release_date' => $poDate]);
+                ->update('tb_po_amend', [
+                    'release_value' => $totalValue,
+                    'release_date' => $poDate
+                ]);
+        } else {
+            $this->db->insert('tb_po_amend', [
+                'id_po' => $idPo,
+                'amend_no' => 1,
+                'release_value' => $totalValue,
+                'release_date' => $poDate,
+                'notes' => 'Header edit initial release'
+            ]);
+            $amend = ['id_amend' => (int) $this->db->insert_id()];
+        }
+
+        $termMasterId = (int) ($payload['term_master_id'] ?? 0);
+        if ($termMasterId > 0) {
+            $termResult = $this->applyPoHeaderTermMaster($idPo, $termMasterId, $totalValue, (int) ($amend['id_amend'] ?? 0));
+            if (empty($termResult['status'])) {
+                $this->db->trans_rollback();
+                return $termResult;
+            }
+        } elseif (abs($totalValue - (float) ($existing['total_value'] ?? 0)) > 0.001) {
+            $termResult = $this->applyPoHeaderCurrentTermScale($idPo, $totalValue, (int) ($amend['id_amend'] ?? 0), (float) ($existing['total_value'] ?? 0));
+            if (empty($termResult['status'])) {
+                $this->db->trans_rollback();
+                return $termResult;
+            }
         }
 
         $picBowheer = trim((string) ($payload['pic_bowheer'] ?? ''));
@@ -890,6 +984,267 @@ class MPO_Monitor extends CI_Model
 
         $this->db->trans_commit();
         return ['status' => true, 'message' => 'Header PO berhasil diperbarui.'];
+    }
+
+    private function getDistinctTermMasterSplits($masterId)
+    {
+        $masterId = (int) $masterId;
+        if ($masterId <= 0 || !$this->db->table_exists('tb_term_master_split')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('term_index, percent')
+            ->from('tb_term_master_split')
+            ->where('id_master', $masterId)
+            ->order_by('term_index', 'ASC')
+            ->order_by('id_split', 'ASC')
+            ->get()
+            ->result_array();
+
+        $splits = [];
+        foreach ($rows as $row) {
+            $termIndex = (int) ($row['term_index'] ?? 0);
+            $percent = (float) ($row['percent'] ?? 0);
+            if ($termIndex <= 0 || $percent <= 0 || isset($splits[$termIndex])) {
+                continue;
+            }
+            $splits[$termIndex] = ['term_index' => $termIndex, 'percent' => $percent];
+        }
+
+        ksort($splits);
+        return array_values($splits);
+    }
+
+    private function applyPoHeaderTermMaster($idPo, $masterId, $totalValue, $idAmend)
+    {
+        $idPo = (int) $idPo;
+        $totalValue = (float) $totalValue;
+        $splits = $this->getDistinctTermMasterSplits($masterId);
+        if ($idPo <= 0 || $totalValue <= 0 || empty($splits)) {
+            return ['status' => false, 'message' => 'PO term tidak valid.'];
+        }
+
+        $claim = $this->db
+            ->select('COUNT(*) AS total')
+            ->from('tb_po_term_claim tc')
+            ->join('tb_po_term t', 't.id_term = tc.id_term')
+            ->where('t.id_po', $idPo)
+            ->get()
+            ->row_array();
+        if ((int) ($claim['total'] ?? 0) > 0) {
+            return ['status' => false, 'message' => 'PO term tidak bisa diubah karena sudah ada invoice claim.'];
+        }
+
+        $existingTerms = $this->db
+            ->from('tb_po_term')
+            ->where('id_po', $idPo)
+            ->order_by('term_index', 'ASC')
+            ->get()
+            ->result_array();
+        $existingByIndex = [];
+        foreach ($existingTerms as $term) {
+            $existingByIndex[(int) ($term['term_index'] ?? 0)] = $term;
+        }
+
+        $firstAllocation = $this->db
+            ->from('tb_po_term_allocation a')
+            ->join('tb_po_term t', 't.id_term = a.id_term')
+            ->where('t.id_po', $idPo)
+            ->order_by('a.id_allocation', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $sumPercent = array_sum(array_map(static function ($split) {
+            return (float) ($split['percent'] ?? 0);
+        }, $splits));
+        $remaining = $totalValue;
+        $keepTermIds = [];
+        $count = count($splits);
+
+        foreach ($splits as $index => $split) {
+            $termIndex = (int) ($split['term_index'] ?? ($index + 1));
+            $percent = $sumPercent > 0 ? (((float) ($split['percent'] ?? 0) / $sumPercent) * 100) : 0;
+            if ($index === $count - 1) {
+                $value = $remaining;
+            } else {
+                $value = round(($totalValue * $percent) / 100, 2);
+                $remaining -= $value;
+            }
+
+            $payload = [
+                'id_amend' => $idAmend > 0 ? $idAmend : null,
+                'term_index' => $termIndex,
+                'percent' => round($percent, 2),
+                'value' => $value,
+                'plan_amount' => $value
+            ];
+
+            if (!empty($existingByIndex[$termIndex])) {
+                $idTerm = (int) $existingByIndex[$termIndex]['id_term'];
+                $this->db->where('id_term', $idTerm)->update('tb_po_term', $payload);
+            } else {
+                $payload += [
+                    'id_po' => $idPo,
+                    'target_status' => 'OPEN'
+                ];
+                $this->db->insert('tb_po_term', $payload);
+                $idTerm = (int) $this->db->insert_id();
+            }
+            $keepTermIds[] = $idTerm;
+
+            $allocations = $this->db
+                ->from('tb_po_term_allocation')
+                ->where('id_term', $idTerm)
+                ->order_by('id_allocation', 'ASC')
+                ->get()
+                ->result_array();
+
+            if (!empty($allocations)) {
+                $totalAllocation = 0;
+                foreach ($allocations as $allocation) {
+                    $totalAllocation += (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
+                }
+                $allocationRemaining = $value;
+                $allocationCount = count($allocations);
+                foreach ($allocations as $allocationIndex => $allocation) {
+                    $allocationValue = $allocationIndex === $allocationCount - 1
+                        ? $allocationRemaining
+                        : ($totalAllocation > 0 ? round(($value * (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0))) / $totalAllocation, 2) : 0);
+                    $allocationRemaining -= $allocationValue;
+                    $this->db
+                        ->where('id_allocation', (int) $allocation['id_allocation'])
+                        ->update('tb_po_term_allocation', [
+                            'allocation_value' => $allocationValue,
+                            'plan_amount' => $allocationValue
+                        ]);
+                }
+            } elseif (!empty($firstAllocation)) {
+                $this->db->insert('tb_po_term_allocation', [
+                    'id_term' => $idTerm,
+                    'no_po_sub' => $firstAllocation['no_po_sub'] ?? null,
+                    'regional' => $firstAllocation['regional'] ?? null,
+                    'kota_po' => $firstAllocation['kota_po'] ?? null,
+                    'detail_po' => $firstAllocation['detail_po'] ?? null,
+                    'remarks' => $firstAllocation['remarks'] ?? null,
+                    'allocation_value' => $value,
+                    'plan_amount' => $value,
+                    'target_status' => 'OPEN',
+                    'source_row_no' => $firstAllocation['source_row_no'] ?? null
+                ]);
+            }
+        }
+
+        $deleteIds = [];
+        foreach ($existingTerms as $term) {
+            $idTerm = (int) ($term['id_term'] ?? 0);
+            if ($idTerm > 0 && !in_array($idTerm, $keepTermIds, true)) {
+                $deleteIds[] = $idTerm;
+            }
+        }
+        if (!empty($deleteIds)) {
+            $this->db->where_in('id_term', $deleteIds)->delete('tb_po_term_allocation');
+            $this->db->where_in('id_term', $deleteIds)->delete('tb_po_term');
+        }
+
+        return ['status' => true];
+    }
+
+    private function applyPoHeaderCurrentTermScale($idPo, $totalValue, $idAmend, $oldTotalValue = 0)
+    {
+        $idPo = (int) $idPo;
+        $totalValue = (float) $totalValue;
+        $oldTotalValue = (float) $oldTotalValue;
+        if ($idPo <= 0 || $totalValue <= 0) {
+            return ['status' => false, 'message' => 'PO value tidak valid.'];
+        }
+
+        $terms = $this->db
+            ->from('tb_po_term')
+            ->where('id_po', $idPo)
+            ->order_by('term_index', 'ASC')
+            ->get()
+            ->result_array();
+        if (empty($terms)) {
+            return ['status' => true];
+        }
+
+        $claim = $this->db
+            ->select('COUNT(*) AS total')
+            ->from('tb_po_term_claim tc')
+            ->join('tb_po_term t', 't.id_term = tc.id_term')
+            ->where('t.id_po', $idPo)
+            ->get()
+            ->row_array();
+        if ((int) ($claim['total'] ?? 0) > 0) {
+            return ['status' => false, 'message' => 'PO value tidak bisa diubah karena sudah ada invoice claim.'];
+        }
+
+        $sumPercent = 0;
+        foreach ($terms as $term) {
+            $sumPercent += (float) ($term['percent'] ?? 0);
+        }
+        if ($sumPercent <= 0 && $oldTotalValue <= 0) {
+            return ['status' => false, 'message' => 'Komposisi term lama tidak valid untuk scaling PO value.'];
+        }
+
+        $remaining = $totalValue;
+        $count = count($terms);
+        foreach ($terms as $index => $term) {
+            $idTerm = (int) ($term['id_term'] ?? 0);
+            if ($idTerm <= 0) {
+                continue;
+            }
+
+            $percent = $sumPercent > 0
+                ? (((float) ($term['percent'] ?? 0) / $sumPercent) * 100)
+                : (((float) (($term['plan_amount'] ?? 0) ?: ($term['value'] ?? 0)) / $oldTotalValue) * 100);
+            if ($index === $count - 1) {
+                $value = $remaining;
+            } else {
+                $value = round(($totalValue * $percent) / 100, 2);
+                $remaining -= $value;
+            }
+
+            $this->db->where('id_term', $idTerm)->update('tb_po_term', [
+                'id_amend' => $idAmend > 0 ? $idAmend : null,
+                'percent' => round($percent, 2),
+                'value' => $value,
+                'plan_amount' => $value
+            ]);
+
+            $allocations = $this->db
+                ->from('tb_po_term_allocation')
+                ->where('id_term', $idTerm)
+                ->order_by('id_allocation', 'ASC')
+                ->get()
+                ->result_array();
+            if (empty($allocations)) {
+                continue;
+            }
+
+            $totalAllocation = 0;
+            foreach ($allocations as $allocation) {
+                $totalAllocation += (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0));
+            }
+            $allocationRemaining = $value;
+            $allocationCount = count($allocations);
+            foreach ($allocations as $allocationIndex => $allocation) {
+                $allocationValue = $allocationIndex === $allocationCount - 1
+                    ? $allocationRemaining
+                    : ($totalAllocation > 0 ? round(($value * (float) (($allocation['plan_amount'] ?? 0) ?: ($allocation['allocation_value'] ?? 0))) / $totalAllocation, 2) : 0);
+                $allocationRemaining -= $allocationValue;
+                $this->db
+                    ->where('id_allocation', (int) $allocation['id_allocation'])
+                    ->update('tb_po_term_allocation', [
+                        'allocation_value' => $allocationValue,
+                        'plan_amount' => $allocationValue
+                    ]);
+            }
+        }
+
+        return ['status' => true];
     }
 
     public function createManualNyPoTarget(array $payload, $userId = 0)
