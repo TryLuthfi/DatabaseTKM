@@ -2443,7 +2443,7 @@ class MPO_Monitor extends CI_Model
                 $deviasiByPo = $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
                 $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
                 $cumulative = $previousPeriodKey !== ''
-                    ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
+                    ? $this->sumComparisonTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
                     : 0;
                 $target = $rawTarget;
                 $effectiveTarget = $target + $cumulative;
@@ -2977,7 +2977,7 @@ class MPO_Monitor extends CI_Model
         }
 
         $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
-        $targetTotal = $this->sumComparisonUninvoicedTargetAmount((int) $idBowheer, $previousPeriodKey, $groupBy);
+        $targetTotal = $this->sumComparisonTargetAmount((int) $idBowheer, $previousPeriodKey, $groupBy);
         $runningTotal = 0;
         foreach ($rows as &$row) {
             $row['source_label'] = 'Kumulatif dari periode sebelumnya';
@@ -2985,8 +2985,7 @@ class MPO_Monitor extends CI_Model
         unset($row);
 
         $rows = array_values(array_filter($rows, static function ($row) {
-            return (float) ($row['invoiced_amount'] ?? 0) <= 0.000001
-                && (float) ($row['amount'] ?? 0) > 0.000001;
+            return (float) ($row['amount'] ?? 0) > 0.000001;
         }));
 
         $result = [];
@@ -3166,6 +3165,24 @@ class MPO_Monitor extends CI_Model
             if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001) {
                 $total += (float) ($row['amount'] ?? 0);
             }
+        }
+
+        $cache[$cacheKey] = $total;
+        return $total;
+    }
+
+    private function sumComparisonTargetAmount($idBowheer, $periodKey, $groupBy)
+    {
+        static $cache = [];
+        $cacheKey = (int) $idBowheer . '|' . (string) $periodKey . '|' . (string) $groupBy;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $rows = $this->getComparisonTargetDetail((int) $idBowheer, (string) $periodKey, $groupBy);
+        $total = 0;
+        foreach ($rows as $row) {
+            $total += (float) ($row['amount'] ?? 0);
         }
 
         $cache[$cacheKey] = $total;

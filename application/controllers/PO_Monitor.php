@@ -1481,7 +1481,7 @@ class PO_Monitor extends CI_Controller
         if ($type === 'cumulative') {
             $previousPeriodKey = $this->MPO_Monitor->comparisonPreviousPeriodKeyPublic($periodKey, $groupBy);
             if ($previousPeriodKey !== '') {
-                $periodLabel .= ' (sisa target ' . $this->comparisonPeriodLabel($previousPeriodKey, $groupBy) . ')';
+                $periodLabel .= ' (target ' . $this->comparisonPeriodLabel($previousPeriodKey, $groupBy) . ')';
             }
         } elseif ($type === 'effective_target') {
             $periodLabel .= ' (kumulatif + target periode aktif)';
