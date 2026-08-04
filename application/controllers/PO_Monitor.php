@@ -295,6 +295,34 @@ class PO_Monitor extends CI_Controller
         redirect('PO_Monitor/detail/' . $id_po);
     }
 
+    public function delete_po($id_po = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $id_po = (int) $id_po;
+        $po = $this->MPO_Monitor->getPOById($id_po);
+        if (!$po) {
+            $this->session->set_flashdata('status', false);
+            $this->session->set_flashdata('error_log', 'PO tidak ditemukan.');
+            redirect('PO_Monitor');
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method()) !== 'POST') {
+            redirect('PO_Monitor/detail/' . $id_po);
+            return;
+        }
+
+        $result = $this->MPO_Monitor->deletePO($id_po);
+        $this->session->set_flashdata('status', (bool) ($result['status'] ?? false));
+        $this->session->set_flashdata('error_log', $result['message'] ?? 'PO gagal dihapus.');
+
+        redirect('PO_Monitor');
+    }
+
     public function create()
     {
         if (empty($this->session->userdata('id_user'))) {

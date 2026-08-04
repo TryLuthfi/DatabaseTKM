@@ -986,6 +986,45 @@ class MPO_Monitor extends CI_Model
         return ['status' => true, 'message' => 'Header PO berhasil diperbarui.'];
     }
 
+    public function deletePO($idPo)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0) {
+            return ['status' => false, 'message' => 'PO tidak valid.'];
+        }
+
+        $po = $this->getPOById($idPo);
+        if (!$po) {
+            return ['status' => false, 'message' => 'PO tidak ditemukan.'];
+        }
+
+        $this->db->trans_begin();
+        if ($this->db->table_exists('tb_po_target_pipeline')) {
+            $this->db
+                ->where('linked_id_po', $idPo)
+                ->update('tb_po_target_pipeline', [
+                    'linked_id_po' => null,
+                    'linked_po_number' => null,
+                    'pipeline_status' => 'OPEN',
+                    'converted_at' => null,
+                    'converted_by' => null,
+                ]);
+        }
+
+        $this->deletePoChildren($idPo);
+        $this->db->delete('tb_po', ['id_po' => $idPo]);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'PO gagal dihapus.'];
+        }
+
+        $this->db->trans_commit();
+        $this->rebuildDashboardCache(null);
+
+        return ['status' => true, 'message' => 'PO berhasil dihapus.'];
+    }
+
     private function getDistinctTermMasterSplits($masterId)
     {
         $masterId = (int) $masterId;

@@ -686,6 +686,7 @@ $flashMessage = $this->session->flashdata('error_log');
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger mr-auto" id="po-monitor-delete-po-button">Hapus PO</button>
                     <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan Header</button>
                 </div>
@@ -693,6 +694,7 @@ $flashMessage = $this->session->flashdata('error_log');
         </div>
     </div>
 </div>
+<form method="post" action="<?= site_url('PO_Monitor/delete_po/' . (int) ($po['id_po'] ?? 0)) ?>" id="po-monitor-delete-po-form" class="d-none"></form>
 
 <div class="modal fade" id="po_monitor_edit_invoice_modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -765,6 +767,35 @@ $flashMessage = $this->session->flashdata('error_log');
             var number = Number(parsed || 0);
             if (!isNaN(number) && number > 0) {
                 $(this).val(formatPOMonitorDetailNumber(number));
+            }
+        });
+
+        $('#po-monitor-delete-po-button').on('click', function() {
+            var poNumber = String($('#po-monitor-header-po-number').val() || '<?= poMonitorDetailHtml($po['po_number'] ?? '-') ?>');
+            var submitDelete = function() {
+                $('#po-monitor-delete-po-form').trigger('submit');
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                Swal.fire({
+                    title: 'Hapus PO?',
+                    text: 'PO ' + poNumber + ' akan dihapus beserta term, allocation, dan claim invoice terkait.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        submitDelete();
+                    }
+                });
+                return;
+            }
+
+            if (window.confirm('Hapus PO ' + poNumber + '?')) {
+                submitDelete();
             }
         });
     })();
