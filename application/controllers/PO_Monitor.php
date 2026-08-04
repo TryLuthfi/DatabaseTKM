@@ -197,7 +197,7 @@ class PO_Monitor extends CI_Controller
             return 0;
         }
 
-        if (is_numeric($value)) {
+        if (is_numeric($value) && !is_string($value)) {
             return (float) $value;
         }
 
@@ -229,7 +229,7 @@ class PO_Monitor extends CI_Controller
         } elseif ($lastComma !== false) {
             $parts = explode(',', $normalized);
             $lastPart = end($parts);
-            if (count($parts) > 2 || strlen($lastPart) === 3) {
+            if (count($parts) > 2 || strlen($lastPart) === 3 || strlen($lastPart) > 2) {
                 $normalized = str_replace(',', '', $normalized);
             } else {
                 $normalized = str_replace(',', '.', $normalized);
@@ -237,7 +237,7 @@ class PO_Monitor extends CI_Controller
         } else {
             $parts = explode('.', $normalized);
             $lastPart = end($parts);
-            if (count($parts) > 2 || strlen($lastPart) === 3) {
+            if (count($parts) > 2 || strlen($lastPart) === 3 || strlen($lastPart) > 2) {
                 $normalized = str_replace('.', '', $normalized);
             }
         }

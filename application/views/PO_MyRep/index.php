@@ -2529,9 +2529,45 @@ if (is_array($terminBreakdownRows ?? null)) {
             if (typeof value === 'number') {
                 return isNaN(value) ? 0 : value;
             }
-            var cleaned = $('<div>').html(value || '').text();
-            cleaned = String(cleaned).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.-]/g, '');
-            var parsed = parseFloat(cleaned);
+
+            if (value === null || value === undefined) {
+                return 0;
+            }
+
+            var normalized = $('<div>').html(value || '').text();
+            normalized = String(normalized).trim();
+            if (normalized === '' || normalized === '-') {
+                return 0;
+            }
+
+            normalized = normalized.replace(/\s+/g, '').replace(/[^\d,.-]/g, '');
+            var lastDot = normalized.lastIndexOf('.');
+            var lastComma = normalized.lastIndexOf(',');
+            if (lastDot >= 0 && lastComma >= 0) {
+                var lastSeparator = Math.max(lastDot, lastComma);
+                var decimalDigits = normalized.length - lastSeparator - 1;
+                if (decimalDigits > 0 && decimalDigits <= 2) {
+                    normalized = lastDot > lastComma
+                        ? normalized.replace(/,/g, '')
+                        : normalized.replace(/\./g, '').replace(/,/g, '.');
+                } else {
+                    normalized = normalized.replace(/[,.]/g, '');
+                }
+            } else if (lastComma >= 0) {
+                var commaParts = normalized.split(',');
+                var commaLast = commaParts[commaParts.length - 1] || '';
+                normalized = commaParts.length > 2 || commaLast.length >= 3
+                    ? normalized.replace(/,/g, '')
+                    : normalized.replace(/,/g, '.');
+            } else if (lastDot >= 0) {
+                var dotParts = normalized.split('.');
+                var dotLast = dotParts[dotParts.length - 1] || '';
+                if (dotParts.length > 2 || dotLast.length >= 3) {
+                    normalized = normalized.replace(/\./g, '');
+                }
+            }
+            normalized = normalized.replace(/[^\d.-]/g, '');
+            var parsed = parseFloat(normalized);
             return isNaN(parsed) ? 0 : parsed;
         }
 

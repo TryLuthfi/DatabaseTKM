@@ -1495,22 +1495,61 @@ class PO_MyRep extends CI_Controller
 
     private function normalizeNumber($value)
     {
-        $normalized = preg_replace('/[^0-9.,-]/', '', (string) $value);
-        if ($normalized === '' || $normalized === null) {
+        if ($value === null || $value === '') {
             return 0;
         }
 
-        $hasComma = strpos($normalized, ',') !== false;
-        $dotCount = substr_count($normalized, '.');
-
-        if ($hasComma) {
-            $normalized = str_replace('.', '', $normalized);
-            $normalized = str_replace(',', '.', $normalized);
-        } elseif ($dotCount > 1) {
-            $normalized = str_replace('.', '', $normalized);
+        if (is_numeric($value) && !is_string($value)) {
+            return (float) $value;
         }
 
-        return (float) $normalized;
+        $normalized = trim((string) $value);
+        $normalized = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $normalized);
+        $isNegative = preg_match('/^\s*\(.*\)\s*$/', $normalized) === 1
+            || preg_match('/^\s*-/', $normalized) === 1
+            || preg_match('/-\s*$/', $normalized) === 1;
+        $normalized = preg_replace('/\s+/', '', $normalized);
+        $normalized = preg_replace('/[^\d,.\-]/', '', $normalized);
+        $normalized = trim($normalized, '-');
+
+        if ($normalized === '') {
+            return 0;
+        }
+
+        $lastDot = strrpos($normalized, '.');
+        $lastComma = strrpos($normalized, ',');
+
+        if ($lastDot !== false && $lastComma !== false) {
+            $lastSeparator = max($lastDot, $lastComma);
+            $decimalDigits = strlen($normalized) - $lastSeparator - 1;
+            if ($decimalDigits > 0 && $decimalDigits <= 2) {
+                if ($lastDot > $lastComma) {
+                    $normalized = str_replace(',', '', $normalized);
+                } else {
+                    $normalized = str_replace('.', '', $normalized);
+                    $normalized = str_replace(',', '.', $normalized);
+                }
+            } else {
+                $normalized = str_replace([',', '.'], '', $normalized);
+            }
+        } elseif ($lastComma !== false) {
+            $parts = explode(',', $normalized);
+            $lastPart = end($parts);
+            if (count($parts) > 2 || strlen($lastPart) === 3 || strlen($lastPart) > 2) {
+                $normalized = str_replace(',', '', $normalized);
+            } else {
+                $normalized = str_replace(',', '.', $normalized);
+            }
+        } elseif ($lastDot !== false) {
+            $parts = explode('.', $normalized);
+            $lastPart = end($parts);
+            if (count($parts) > 2 || strlen($lastPart) === 3 || strlen($lastPart) > 2) {
+                $normalized = str_replace('.', '', $normalized);
+            }
+        }
+
+        $amount = (float) preg_replace('/[^\d.]/', '', $normalized);
+        return $isNegative && $amount > 0 ? -1 * $amount : $amount;
     }
 
     private function normalizeTerminNoInput($value)
