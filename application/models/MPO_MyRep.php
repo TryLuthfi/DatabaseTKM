@@ -4093,6 +4093,41 @@ class MPO_MyRep extends CI_Model
         return true;
     }
 
+    public function deletePoHeader($poHeaderId, $userId = 0)
+    {
+        if (!$this->tablesReady()) {
+            return false;
+        }
+
+        $poHeaderId = (int) $poHeaderId;
+        $header = $this->getPoHeaderById($poHeaderId);
+        if (empty($header)) {
+            return false;
+        }
+
+        $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+        $poType = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER'))) ?: 'CLUSTER';
+
+        $this->db->trans_begin();
+        $this->db
+            ->where('parent_po_header_id', $poHeaderId)
+            ->update('tb_myrep_po_header', [
+                'parent_po_header_id' => null,
+                'updated_by' => (int) $userId,
+            ]);
+        $this->db->where('id_po_header', $poHeaderId)->delete('tb_myrep_po_header');
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        $this->syncTerminEstimatesForCluster($clusterId, $poType, (int) $userId);
+
+        return true;
+    }
+
     public function updatePoHeaderNyRef($poHeaderId, $nyPoRef, $userId = 0)
     {
         if (!$this->tablesReady() || !$this->ensurePoHeaderNyRefColumn()) {
@@ -4815,12 +4850,13 @@ class MPO_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('id_po_header, id_myrep_cluster, po_type, po_value, status_po, po_date')
+            ->select('id_po_header, id_myrep_cluster, NULL AS id_mainfeeder, po_type, po_category, po_number, po_value, status_po, po_date', false)
             ->from('tb_myrep_po_header');
         $this->applyIntWhereInChunks('id_myrep_cluster', $clusterIds);
         $headerRows = $this->db
             ->get()
             ->result_array();
+        $headerRows = $this->pickActivePoHeadersByClusterType($headerRows);
 
         $headerIds = array_column($headerRows, 'id_po_header');
         $terminRows = [];

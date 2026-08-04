@@ -89,7 +89,9 @@ if (!function_exists('po_monitor_compare_effective_target_total')) {
     {
         $total = 0;
         foreach ($months as $month) {
-            $total += (float) ($month['cumulative'] ?? 0) + (float) ($month['deviasi_by_po'] ?? $month['target'] ?? 0);
+            $total += array_key_exists('effective_target', $month)
+                ? (float) $month['effective_target']
+                : (float) ($month['cumulative'] ?? 0) + (float) ($month['target'] ?? 0);
         }
 
         return $total;
@@ -2554,7 +2556,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                                 <?php if ($comparisonCumulative): ?>
                                                     <td data-po-amount="<?= (float) $monthData['cumulative'] ?>"><?= po_monitor_compare_cumulative_link($monthData['cumulative'], $row['id_bowheer'], $month['key'], 'month', $comparisonMatrix['from'] ?? '', $comparisonMatrix['to'] ?? '') ?></td>
                                                 <?php endif; ?>
-                                                <?php $monthDisplayTarget = $comparisonCumulative ? (float) ($monthData['deviasi_by_po'] ?? $monthData['target']) : (float) $monthData['target']; ?>
+                                                <?php $monthDisplayTarget = (float) $monthData['target']; ?>
                                                 <td data-po-amount="<?= (float) $monthDisplayTarget ?>"><?= po_monitor_compare_amount_link($monthDisplayTarget, $row['id_bowheer'], $month['key'], 'month', $comparisonCumulative ? 'actual_target' : 'target') ?></td>
                                                 <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], 'month', 'achieved') ?></td>
                                                 <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0 || (float) ($monthData['cumulative'] ?? 0) > 0) ? po_monitor_percent($comparisonCumulative ? ($monthData['cumulative_percent'] ?? 0) : $monthData['percent']) : '-' ?></td>
@@ -2582,7 +2584,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <?php if ($comparisonCumulative): ?>
                                                 <th><?= abs((float) $monthTotal['cumulative']) > 0.000001 ? number_format((float) $monthTotal['cumulative'], 0, ',', '.') : '-' ?></th>
                                             <?php endif; ?>
-                                            <th><?= number_format((float) ($comparisonCumulative ? ($monthTotal['deviasi_by_po'] ?? $monthTotal['target']) : $monthTotal['target']), 0, ',', '.') ?></th>
+                                            <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
                                             <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
                                             <th><?= po_monitor_percent($comparisonCumulative ? ($monthTotal['cumulative_percent'] ?? 0) : $monthTotal['percent']) ?></th>
                                         <?php endforeach; ?>

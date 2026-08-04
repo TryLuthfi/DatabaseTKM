@@ -20,6 +20,7 @@ class PO_MyRep extends CI_Controller
                 'batchSavePo' => 'EDIT',
                 'setPoNyRef' => 'EDIT',
                 'updatePoHeader' => 'EDIT',
+                'deletePoHeader' => 'EDIT',
             ]);
         }
     }
@@ -541,6 +542,40 @@ class PO_MyRep extends CI_Controller
         }
 
         $this->session->set_flashdata('success', 'Header PO berhasil diupdate.');
+        redirect('PO_MyRep/detail/' . $clusterId);
+    }
+
+    public function deletePoHeader()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $poHeaderId = (int) $this->input->post('id_po_header');
+        $header = $this->MPO_MyRep->getPoHeaderById($poHeaderId);
+        if (empty($header)) {
+            $this->session->set_flashdata('error', 'Header PO tidak ditemukan.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+        $mirrorResult = $this->MPO_Monitor->deletePoMonitorMirrorFromMyRepHeader($poHeaderId);
+        if (empty($mirrorResult['status'])) {
+            $this->session->set_flashdata('error', 'Mirror PO Monitor gagal dihapus: ' . ($mirrorResult['message'] ?? 'unknown error'));
+            redirect('PO_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $deleted = $this->MPO_MyRep->deletePoHeader($poHeaderId, (int) $this->session->userdata('id_user'));
+        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'PO berhasil dihapus.' : 'PO gagal dihapus.');
         redirect('PO_MyRep/detail/' . $clusterId);
     }
 

@@ -2296,18 +2296,19 @@ class MPO_Monitor extends CI_Model
                 a.target_week_start,
                 a.target_week_end,
                 COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS amount,
-                COALESCE(tc_alloc.invoice_amount, tc_term.invoice_amount, 0) AS invoiced_amount
+                COALESCE(tc_alloc.invoice_amount, tc_term.invoice_amount, 0) AS invoiced_amount,
+                COALESCE(tc_alloc.invoice_date, tc_term.invoice_date) AS claim_invoice_date
             FROM tb_po_term_allocation a
             JOIN tb_po_term t ON t.id_term = a.id_term
             JOIN tb_po p ON p.id_po = t.id_po
             LEFT JOIN (
-                SELECT id_allocation, SUM(invoice_amount) AS invoice_amount
+                SELECT id_allocation, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
                 FROM tb_po_term_claim
                 WHERE id_allocation IS NOT NULL
                 GROUP BY id_allocation
             ) tc_alloc ON tc_alloc.id_allocation = a.id_allocation
             LEFT JOIN (
-                SELECT id_term, SUM(invoice_amount) AS invoice_amount
+                SELECT id_term, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
                 FROM tb_po_term_claim
                 GROUP BY id_term
             ) tc_term ON tc_term.id_term = t.id_term
@@ -2320,11 +2321,12 @@ class MPO_Monitor extends CI_Model
                 t.target_week_start,
                 t.target_week_end,
                 COALESCE(NULLIF(t.plan_amount, 0), t.value) AS amount,
-                COALESCE(tc.invoice_amount, 0) AS invoiced_amount
+                COALESCE(tc.invoice_amount, 0) AS invoiced_amount,
+                tc.invoice_date AS claim_invoice_date
             FROM tb_po_term t
             JOIN tb_po p ON p.id_po = t.id_po
             LEFT JOIN (
-                SELECT id_term, SUM(invoice_amount) AS invoice_amount
+                SELECT id_term, SUM(invoice_amount) AS invoice_amount, MAX(invoice_date) AS invoice_date
                 FROM tb_po_term_claim
                 GROUP BY id_term
             ) tc ON tc.id_term = t.id_term
@@ -2340,7 +2342,8 @@ class MPO_Monitor extends CI_Model
                 pl.target_week_start,
                 pl.target_week_end,
                 pl.plan_amount AS amount,
-                0 AS invoiced_amount
+                0 AS invoiced_amount,
+                CAST(NULL AS DATE) AS claim_invoice_date
             FROM tb_po_target_pipeline pl
             WHERE CONVERT(pl.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 AND pl.linked_id_po IS NULL
@@ -2434,6 +2437,7 @@ class MPO_Monitor extends CI_Model
         }
 
         foreach ($projectMap as &$project) {
+            $project['total_target'] = 0;
             $project['deviasi_by_po'] = 0;
             $project['total_effective_deviasi_by_po'] = 0;
             foreach ($periods as $period) {
@@ -2443,17 +2447,19 @@ class MPO_Monitor extends CI_Model
                 $deviasiByPo = $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
                 $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
                 $cumulative = $previousPeriodKey !== ''
-                    ? $this->sumComparisonTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
+                    ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
                     : 0;
-                $target = $rawTarget;
+                $target = $this->comparisonPeriodIsBeforeCurrentPeriod($periodKey, $groupBy) ? $rawTarget : $deviasiByPo;
                 $effectiveTarget = $target + $cumulative;
                 $project['months'][$periodKey]['raw_target'] = $rawTarget;
+                $project['months'][$periodKey]['target'] = $target;
                 $project['months'][$periodKey]['cumulative'] = $cumulative;
                 $project['months'][$periodKey]['effective_target'] = $effectiveTarget;
                 $project['months'][$periodKey]['deviasi_by_po'] = $deviasiByPo;
                 $project['months'][$periodKey]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
                 $project['months'][$periodKey]['cumulative_percent'] = $effectiveTarget > 0 ? ($achieved / $effectiveTarget) * 100 : ($achieved > 0 ? 100 : 0);
                 $project['months'][$periodKey]['deviasi_by_po_percent'] = $target > 0 ? ($deviasiByPo / $target) * 100 : 0;
+                $project['total_target'] += $target;
                 $project['deviasi_by_po'] += $deviasiByPo;
                 $project['total_effective_deviasi_by_po'] += $cumulative + $deviasiByPo;
                 $totals['months'][$period['key']]['target'] += $target;
@@ -2977,35 +2983,15 @@ class MPO_Monitor extends CI_Model
         }
 
         $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
-        $targetTotal = $this->sumComparisonTargetAmount((int) $idBowheer, $previousPeriodKey, $groupBy);
-        $runningTotal = 0;
         foreach ($rows as &$row) {
-            $row['source_label'] = 'Kumulatif dari periode sebelumnya';
+            $row['source_label'] = 'Kumulatif deviasi periode sebelumnya';
         }
         unset($row);
 
-        $rows = array_values(array_filter($rows, static function ($row) {
-            return (float) ($row['amount'] ?? 0) > 0.000001;
+        return array_values(array_filter($rows, static function ($row) {
+            return (float) ($row['amount'] ?? 0) > 0.000001
+                && (float) ($row['invoiced_amount'] ?? 0) <= 0.000001;
         }));
-
-        $result = [];
-        foreach ($rows as $row) {
-            $remaining = $targetTotal - $runningTotal;
-            if ($remaining <= 0.000001) {
-                break;
-            }
-
-            $amount = (float) ($row['amount'] ?? 0);
-            if ($amount > $remaining) {
-                $row['amount'] = $remaining;
-                $amount = $remaining;
-            }
-
-            $runningTotal += $amount;
-            $result[] = $row;
-        }
-
-        return $result;
     }
 
     private function getComparisonEffectiveTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
@@ -3143,12 +3129,31 @@ class MPO_Monitor extends CI_Model
                 ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
                 : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
 
+            if (
+                !$this->comparisonPeriodIsBeforeCurrentPeriod($rowPeriod, $groupBy)
+                && (float) ($row['invoiced_amount'] ?? 0) > 0.000001
+            ) {
+                return false;
+            }
+
             if (!empty($totalPeriodKeys)) {
                 return isset($totalPeriodKeys[$rowPeriod]);
             }
 
             return $rowPeriod === $periodKey;
         }));
+    }
+
+    private function comparisonPeriodIsBeforeCurrentPeriod($periodKey, $groupBy)
+    {
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $periodSort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+        $currentKey = $groupBy === 'week'
+            ? $this->weekKeyFromDate(date('Y-m-d'))
+            : date('Y-m');
+        $currentSort = $this->comparisonPeriodSortValue($currentKey, $groupBy);
+
+        return $periodSort > 0 && $currentSort > 0 && $periodSort < $currentSort;
     }
 
     private function sumComparisonUninvoicedTargetAmount($idBowheer, $periodKey, $groupBy)
@@ -4154,6 +4159,52 @@ class MPO_Monitor extends CI_Model
             'synced' => (int) ($sync['matched'] ?? 0),
             'message' => 'PO Monitor dibuat dari MyRep'
         ];
+    }
+
+    public function deletePoMonitorMirrorFromMyRepHeader($poHeaderId)
+    {
+        $this->ensureStandaloneSchema();
+        $poHeaderId = (int) $poHeaderId;
+        if ($poHeaderId <= 0 || !$this->db->table_exists('tb_po')) {
+            return ['status' => false, 'deleted' => 0, 'message' => 'Header PO MyRep tidak valid'];
+        }
+
+        $rows = $this->db
+            ->select('id_po')
+            ->from('tb_po')
+            ->where('source_file', 'MYREP_PO_HEADER')
+            ->where('source_row_no', $poHeaderId)
+            ->get()
+            ->result_array();
+        $idPoList = array_values(array_filter(array_map('intval', array_column($rows, 'id_po'))));
+
+        if (empty($idPoList)) {
+            return ['status' => true, 'deleted' => 0, 'message' => 'Tidak ada mirror PO Monitor'];
+        }
+
+        $this->db->trans_begin();
+        if ($this->db->table_exists('tb_po_target_pipeline')) {
+            $this->db
+                ->where_in('linked_id_po', $idPoList)
+                ->update('tb_po_target_pipeline', [
+                    'linked_id_po' => null,
+                    'linked_po_number' => null,
+                    'pipeline_status' => 'OPEN',
+                    'converted_at' => null,
+                    'converted_by' => null,
+                ]);
+        }
+        $this->db->where_in('id_po', $idPoList)->delete('tb_po');
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'deleted' => 0, 'message' => 'Gagal menghapus mirror PO Monitor'];
+        }
+
+        $this->db->trans_commit();
+        $this->rebuildDashboardCache(null);
+
+        return ['status' => true, 'deleted' => count($idPoList), 'message' => 'Mirror PO Monitor dihapus'];
     }
 
     private function ensurePoMonitorTermsFromMyRepHeader($idPo, $poHeaderId, $userId = 0, $idAmend = 0)

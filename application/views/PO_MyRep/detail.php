@@ -643,6 +643,7 @@ if (!function_exists('poMyRepStatusBadge')) {
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger mr-auto" id="btn-delete-po-header">Hapus PO</button>
                     <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan Header</button>
                 </div>
@@ -650,6 +651,9 @@ if (!function_exists('poMyRepStatusBadge')) {
         </div>
     </div>
 </div>
+<form method="post" action="<?= base_url('PO_MyRep/deletePoHeader') ?>" id="form-delete-po-header" class="d-none">
+    <input type="hidden" name="id_po_header" id="delete_po_header_id">
+</form>
 
 <div class="modal fade" id="modal-termin" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -738,6 +742,43 @@ if (!function_exists('poMyRepStatusBadge')) {
             $('#edit_parent_po_header_id option').prop('disabled', false);
             $('#edit_parent_po_header_id option[value="' + headerId + '"]').prop('disabled', true);
             $('#edit_parent_po_header_id').val(parentHeaderId !== '0' && parentHeaderId !== headerId ? parentHeaderId : '');
+            $('#delete_po_header_id').val(headerId);
+            $('#btn-delete-po-header').data('po-number', $button.data('po-number') || '');
+        });
+
+        $(document).on('click', '#btn-delete-po-header', function () {
+            var headerId = String($('#edit_po_header_id').val() || '');
+            var poNumber = String($(this).data('po-number') || $('#edit_po_number').val() || '-');
+            if (!headerId) {
+                return;
+            }
+
+            var submitDelete = function () {
+                $('#delete_po_header_id').val(headerId);
+                $('#form-delete-po-header').trigger('submit');
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                Swal.fire({
+                    title: 'Hapus PO?',
+                    text: 'PO ' + poNumber + ' akan dihapus beserta termin dan mirror PO Monitor terkait.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        submitDelete();
+                    }
+                });
+                return;
+            }
+
+            if (window.confirm('Hapus PO ' + poNumber + '?')) {
+                submitDelete();
+            }
         });
 
         $(document).on('click', '.js-open-termin-modal', function () {
