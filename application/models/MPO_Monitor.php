@@ -974,6 +974,10 @@ class MPO_Monitor extends CI_Model
                 ->update('tb_pipeline_project', ['linked_po_number' => $poNumber]);
         }
 
+        if ($statusPo === 'CANCELLED') {
+            $this->cancelPoTargets($idPo);
+        }
+
         $this->refreshPoDashboardMetrics($idPo);
         $this->rebuildDashboardCache(null);
 
@@ -984,6 +988,31 @@ class MPO_Monitor extends CI_Model
 
         $this->db->trans_commit();
         return ['status' => true, 'message' => 'Header PO berhasil diperbarui.'];
+    }
+
+    private function cancelPoTargets($idPo)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0) {
+            return;
+        }
+
+        $this->db->query("UPDATE tb_po_term_allocation a
+            JOIN tb_po_term t ON t.id_term = a.id_term
+            SET a.target_status = 'CANCELLED'
+            WHERE t.id_po = ?
+                AND CONVERT(a.target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (
+                    CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
+                    CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                )", [$idPo]);
+
+        $this->db->query("UPDATE tb_po_term
+            SET target_status = 'CANCELLED'
+            WHERE id_po = ?
+                AND CONVERT(target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci IN (
+                    CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
+                    CONVERT('CARRY_OVER' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                )", [$idPo]);
     }
 
     public function deletePO($idPo)
