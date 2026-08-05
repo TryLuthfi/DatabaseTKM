@@ -3288,13 +3288,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
             } else if (lastComma >= 0) {
                 var commaParts = normalized.split(',');
                 var commaLast = commaParts[commaParts.length - 1] || '';
-                normalized = commaParts.length > 2 || commaLast.length === 3
+                normalized = commaParts.length > 2 || commaLast.length > 2
                     ? normalized.replace(/,/g, '')
                     : normalized.replace(/,/g, '.');
             } else if (lastDot >= 0) {
                 var dotParts = normalized.split('.');
                 var dotLast = dotParts[dotParts.length - 1] || '';
-                if (dotParts.length > 2 || dotLast.length === 3) {
+                if (dotParts.length > 2 || dotLast.length > 2) {
                     normalized = normalized.replace(/\./g, '');
                 }
             }

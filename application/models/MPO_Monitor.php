@@ -440,7 +440,7 @@ class MPO_Monitor extends CI_Model
             FROM (
                 SELECT
                     p.id_po,
-                    CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(COALESCE(NULLIF(NULLIF(TRIM(a.no_po_sub), ''), '-'), p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
                     CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS parent_po_number,
                     p.po_date,
                     CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
@@ -549,7 +549,7 @@ class MPO_Monitor extends CI_Model
             FROM (
                 SELECT
                     p.id_po,
-                    CONVERT(COALESCE(NULLIF(a.no_po_sub, ''), p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
+                    CONVERT(COALESCE(NULLIF(NULLIF(TRIM(a.no_po_sub), ''), '-'), p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number,
                     CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci AS parent_po_number,
                     p.po_date,
                     CONVERT(COALESCE(bp.bowheer, b.nama_bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS nama_bowheer,
