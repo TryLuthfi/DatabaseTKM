@@ -5561,7 +5561,6 @@ class MPO_Monitor extends CI_Model
                 $poNumber !== '' ? $poNumber : ('NY_PO_ROW_' . ($index + 1)),
                 $poDate,
                 trim((string) ($row['po_term'] ?? '')),
-                trim((string) ($row['type_project'] ?? '')),
                 $statusPo
             ]));
 
@@ -5579,6 +5578,7 @@ class MPO_Monitor extends CI_Model
                     'allocations' => [],
                     'first_row_no' => $index + 1,
                     'ny_po_ref' => trim((string) ($row['ny_po_ref'] ?? '')),
+                    'type_projects' => [],
                     'allocation_hash' => ''
                 ];
             }
@@ -5590,6 +5590,10 @@ class MPO_Monitor extends CI_Model
             $groups[$groupKey]['po_value'] += $poValue;
             $groups[$groupKey]['po_final_value'] += $poFinalValue;
             $groups[$groupKey]['effective_value'] += $effectiveValue;
+            $typeProject = trim((string) ($row['type_project'] ?? ''));
+            if ($typeProject !== '') {
+                $groups[$groupKey]['type_projects'][$typeProject] = $typeProject;
+            }
 
             $hasAllocation = trim((string) ($row['no_po_sub'] ?? '')) !== ''
                 || trim((string) ($row['regional'] ?? '')) !== ''
@@ -5623,6 +5627,9 @@ class MPO_Monitor extends CI_Model
                 ]);
             }
             $group['allocation_hash'] = hash('sha256', implode('~', $allocationHashParts));
+            if (!empty($group['type_projects'])) {
+                $group['base']['type_project'] = implode(', ', array_values($group['type_projects']));
+            }
         }
         unset($group);
 
