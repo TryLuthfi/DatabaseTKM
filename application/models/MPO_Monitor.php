@@ -6365,8 +6365,17 @@ class MPO_Monitor extends CI_Model
                 COALESCE(a.submit_raw, '') AS submit_raw,
                 a.target_status,
                 a.target_week,
-                a.invoice_date,
-                COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation), 0) AS invoice_amount
+                COALESCE(
+                    (SELECT MAX(tc.invoice_date) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation),
+                    (SELECT MAX(tc.invoice_date) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL),
+                    a.invoice_date,
+                    t.invoice_date
+                ) AS invoice_date,
+                COALESCE(
+                    (SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation),
+                    (SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL),
+                    0
+                ) AS invoice_amount
             FROM tb_po_term_allocation a
             JOIN tb_po_term t ON t.id_term = a.id_term
             JOIN tb_po p ON p.id_po = t.id_po
@@ -6742,6 +6751,11 @@ class MPO_Monitor extends CI_Model
 
     private function importReportSubmitValue($item)
     {
+        $invoice = (float) ($item['invoice_amount'] ?? 0);
+        if ($invoice > 0 && !empty($item['invoice_date'])) {
+            return (string) $item['invoice_date'];
+        }
+
         $submit = trim((string) ($item['submit_raw'] ?? ''));
         if ($submit !== '') {
             return $submit;
