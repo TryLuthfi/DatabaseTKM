@@ -3266,6 +3266,7 @@ class MPO_MyRep extends CI_Model
                 ? $this->getMainfeederCertificateDashboardRows($city, $status, $poType, $termNo)
                 : [];
         }
+        $rows = $this->pickActiveCertificateDashboardRows($rows);
 
         $clusterIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_myrep_cluster')))));
         $poMetaMap = $this->getPoMetaMap($clusterIds);
@@ -3351,6 +3352,38 @@ class MPO_MyRep extends CI_Model
         }
 
         return $result;
+    }
+
+    private function pickActiveCertificateDashboardRows(array $rows)
+    {
+        $grouped = [];
+        foreach ($rows as $row) {
+            $groupKey = $this->buildPoHeaderGroupKey($row) . '|TERM:' . (int) ($row['termin_no'] ?? 0);
+            $grouped[$groupKey][] = $row;
+        }
+
+        $active = [];
+        foreach ($grouped as $groupRows) {
+            $selected = $this->pickLatestPoHeaderByCategory($groupRows, ['FINAL']);
+            if (empty($selected)) {
+                $selected = $this->pickLatestPoHeaderByCategory($groupRows, ['INITIAL']);
+            }
+            if (empty($selected)) {
+                $selected = $this->pickLatestPoHeaderByCategory($groupRows, ['AMANDMENT', 'AMENDMENT']);
+            }
+            if (empty($selected)) {
+                foreach ($groupRows as $row) {
+                    if (empty($selected) || $this->isPoHeaderNewer($row, $selected)) {
+                        $selected = $row;
+                    }
+                }
+            }
+            if (!empty($selected)) {
+                $active[] = $selected;
+            }
+        }
+
+        return $active;
     }
 
     private function getMainfeederCertificateDashboardRows($city = '', $status = '', $poType = '', $termNo = 0)
