@@ -1449,7 +1449,14 @@ if (is_array($terminBreakdownRows ?? null)) {
                                         $certificateBadgeClass = $certificatePoType === 'SUBFEEDER' ? 'warning' : (in_array($certificatePoType, ['MAINFEEDER', 'FWA'], true) ? 'dark' : 'primary');
                                         $certificateTermNo = (int) ($row['termin_no'] ?? 0);
                                         ?>
-                                        <tr>
+                                        <tr class="po-certificate-summary-row"
+                                            data-po-type="<?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?>"
+                                            data-total-count="<?= (int) ($row['total_count'] ?? 0) ?>"
+                                            data-released-count="<?= (int) ($row['released_count'] ?? 0) ?>"
+                                            data-ready-count="<?= (int) ($row['ready_count'] ?? 0) ?>"
+                                            data-waiting-astri-count="<?= (int) ($row['waiting_astri_count'] ?? 0) ?>"
+                                            data-waiting-fac-count="<?= (int) ($row['waiting_fac_count'] ?? 0) ?>"
+                                            data-blocked-billing-count="<?= (int) ($row['blocked_billing_count'] ?? 0) ?>">
                                             <td><?= $index + 1 ?></td>
                                             <td><span class="badge badge-<?= $certificateBadgeClass ?>"><?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?></span></td>
                                             <td>
@@ -1485,12 +1492,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                                     <tfoot>
                                         <tr>
                                             <th colspan="3" class="text-right">TOTAL</th>
-                                            <th class="text-center"><?= (int) $certificateTotals['total_count'] ?></th>
-                                            <th class="text-center"><?= (int) $certificateTotals['released_count'] ?></th>
-                                            <th class="text-center"><?= (int) $certificateTotals['ready_count'] ?></th>
-                                            <th class="text-center"><?= (int) $certificateTotals['waiting_astri_count'] ?></th>
-                                            <th class="text-center"><?= (int) $certificateTotals['waiting_fac_count'] ?></th>
-                                            <th class="text-center"><?= (int) $certificateTotals['blocked_billing_count'] ?></th>
+                                            <th class="text-center" id="po-certificate-summary-total-count"><?= (int) $certificateTotals['total_count'] ?></th>
+                                            <th class="text-center" id="po-certificate-summary-released-count"><?= (int) $certificateTotals['released_count'] ?></th>
+                                            <th class="text-center" id="po-certificate-summary-ready-count"><?= (int) $certificateTotals['ready_count'] ?></th>
+                                            <th class="text-center" id="po-certificate-summary-waiting-astri-count"><?= (int) $certificateTotals['waiting_astri_count'] ?></th>
+                                            <th class="text-center" id="po-certificate-summary-waiting-fac-count"><?= (int) $certificateTotals['waiting_fac_count'] ?></th>
+                                            <th class="text-center" id="po-certificate-summary-blocked-billing-count"><?= (int) $certificateTotals['blocked_billing_count'] ?></th>
                                         </tr>
                                     </tfoot>
                                 <?php endif; ?>
@@ -4084,11 +4091,47 @@ if (is_array($terminBreakdownRows ?? null)) {
                 });
             }
 
-            $('#po-certificate-summary-type').on('change', function () {
-                var params = new URLSearchParams(window.location.search);
-                params.set('certificate_po_type', String($(this).val() || 'CLUSTER'));
-                window.location.search = params.toString();
-            });
+            function applyCertificateSummaryFilter() {
+                var selectedType = String($('#po-certificate-summary-type').val() || 'CLUSTER').toUpperCase();
+                var totals = {
+                    total: 0,
+                    released: 0,
+                    ready: 0,
+                    waitingAstri: 0,
+                    waitingFac: 0,
+                    blocked: 0
+                };
+                var rowNo = 1;
+
+                $('.po-certificate-summary-row').each(function () {
+                    var $row = $(this);
+                    var rowType = String($row.data('po-type') || '').toUpperCase();
+                    var visible = selectedType === 'ALL' || rowType === selectedType;
+                    $row.toggle(visible);
+
+                    if (!visible) {
+                        return;
+                    }
+
+                    $row.find('td:first').text(rowNo++);
+                    totals.total += Number($row.data('total-count') || 0);
+                    totals.released += Number($row.data('released-count') || 0);
+                    totals.ready += Number($row.data('ready-count') || 0);
+                    totals.waitingAstri += Number($row.data('waiting-astri-count') || 0);
+                    totals.waitingFac += Number($row.data('waiting-fac-count') || 0);
+                    totals.blocked += Number($row.data('blocked-billing-count') || 0);
+                });
+
+                $('#po-certificate-summary-total-count').text(totals.total);
+                $('#po-certificate-summary-released-count').text(totals.released);
+                $('#po-certificate-summary-ready-count').text(totals.ready);
+                $('#po-certificate-summary-waiting-astri-count').text(totals.waitingAstri);
+                $('#po-certificate-summary-waiting-fac-count').text(totals.waitingFac);
+                $('#po-certificate-summary-blocked-billing-count').text(totals.blocked);
+            }
+
+            $('#po-certificate-summary-type').on('change', applyCertificateSummaryFilter);
+            applyCertificateSummaryFilter();
 
             $('a[data-toggle="pill"]').on('shown.bs.tab', function () {
                 if (tableMonitor) {

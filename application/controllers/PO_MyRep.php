@@ -111,7 +111,7 @@ class PO_MyRep extends CI_Controller
             ? $this->MPO_MyRep->getTerminBreakdownByType($selectedCity, $selectedStatus)
             : [];
         $data['certificateSummaryRows'] = $data['isReady']
-            ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus, $data['selectedCertificatePoType'] === 'ALL' ? '' : $data['selectedCertificatePoType'])
+            ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus, '')
             : [];
         $data['certificateBatchRows'] = $data['isReady']
             ? $this->MPO_MyRep->getCertificateDetailRows($selectedCity, $selectedStatus, '', 0, 'ALL')
