@@ -2876,15 +2876,23 @@ class MPO_MyRep extends CI_Model
         return $detailRows;
     }
 
-    public function getCertificateSummaryByTerm($city = '', $status = '')
+    public function getCertificateSummaryByTerm($city = '', $status = '', $poType = 'CLUSTER')
     {
-        $rows = $this->getCertificateDashboardRows($city, $status);
-        $summary = [];
+        $poType = strtoupper(trim((string) $poType));
+        if (!in_array($poType, ['', 'CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
+            $poType = 'CLUSTER';
+        }
 
-        foreach (['CLUSTER', 'SUBFEEDER'] as $poType) {
+        $rows = $this->getCertificateDashboardRows($city, $status, $poType);
+        $summary = [];
+        $poTypes = $poType === ''
+            ? ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA']
+            : [$poType];
+
+        foreach ($poTypes as $poTypeRow) {
             for ($termNo = 2; $termNo <= 5; $termNo++) {
-                $summary[$poType . '|' . $termNo] = [
-                    'po_type' => $poType,
+                $summary[$poTypeRow . '|' . $termNo] = [
+                    'po_type' => $poTypeRow,
                     'termin_no' => $termNo,
                     'term_label' => $this->getCertificateTermLabel($termNo),
                     'total_count' => 0,
@@ -2904,12 +2912,12 @@ class MPO_MyRep extends CI_Model
         }
 
         foreach ($rows as $row) {
-            $poType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
-            if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+            $poTypeRow = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+            if (!in_array($poTypeRow, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
                 continue;
             }
             $termNo = (int) ($row['termin_no'] ?? 0);
-            $key = $poType . '|' . $termNo;
+            $key = $poTypeRow . '|' . $termNo;
             if (!isset($summary[$key])) {
                 continue;
             }
@@ -3460,6 +3468,7 @@ class MPO_MyRep extends CI_Model
         if (empty($rows)) {
             return [];
         }
+        $rows = $this->pickActiveCertificateDashboardRows($rows);
 
         $headerIds = array_values(array_unique(array_filter(array_map('intval', array_column($rows, 'id_po_header')))));
         $stageMap = $this->getPoStageMapForHeaderIds($headerIds);

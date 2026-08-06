@@ -3,6 +3,10 @@ $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $canBatchInvoice = isset($canBatchInvoice) ? (bool) $canBatchInvoice : false;
 $canBatchCertificate = isset($canBatchCertificate) ? (bool) $canBatchCertificate : false;
+$selectedCertificatePoType = strtoupper(trim((string) ($selectedCertificatePoType ?? 'CLUSTER')));
+if (!in_array($selectedCertificatePoType, ['ALL', 'CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
+    $selectedCertificatePoType = 'CLUSTER';
+}
 
 if (!function_exists('poMyRepNumber')) {
     function poMyRepNumber($value)
@@ -1396,8 +1400,18 @@ if (is_array($terminBreakdownRows ?? null)) {
                 </div>
 
                 <div class="card card-outline card-success shadow-sm">
-                    <div class="card-header">
+                    <div class="card-header d-flex align-items-center justify-content-between">
                         <h3 class="card-title">Summary Sertifikat Claim Invoice</h3>
+                        <div class="form-inline">
+                            <label for="po-certificate-summary-type" class="mr-2 mb-0">Tipe Project</label>
+                            <select id="po-certificate-summary-type" class="form-control form-control-sm">
+                                <?php foreach (['ALL' => 'Semua Data', 'CLUSTER' => 'Cluster', 'SUBFEEDER' => 'Subfeeder', 'MAINFEEDER' => 'Mainfeeder', 'FWA' => 'FWA'] as $certificateTypeValue => $certificateTypeLabel): ?>
+                                    <option value="<?= htmlspecialchars($certificateTypeValue, ENT_QUOTES) ?>" <?= $selectedCertificatePoType === $certificateTypeValue ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($certificateTypeLabel, ENT_QUOTES) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -1432,11 +1446,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                                             $certificateTotals[$key] += (int) ($row[$key] ?? 0);
                                         }
                                         $certificatePoType = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
+                                        $certificateBadgeClass = $certificatePoType === 'SUBFEEDER' ? 'warning' : (in_array($certificatePoType, ['MAINFEEDER', 'FWA'], true) ? 'dark' : 'primary');
                                         $certificateTermNo = (int) ($row['termin_no'] ?? 0);
                                         ?>
                                         <tr>
                                             <td><?= $index + 1 ?></td>
-                                            <td><span class="badge badge-<?= $certificatePoType === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?></span></td>
+                                            <td><span class="badge badge-<?= $certificateBadgeClass ?>"><?= htmlspecialchars($certificatePoType, ENT_QUOTES) ?></span></td>
                                             <td>
                                                 <strong><?= htmlspecialchars((string) ($row['term_label'] ?? ('Term ' . $certificateTermNo)), ENT_QUOTES) ?></strong>
                                             </td>
@@ -4068,6 +4083,12 @@ if (is_array($terminBreakdownRows ?? null)) {
                     tablePoList.ajax.reload();
                 });
             }
+
+            $('#po-certificate-summary-type').on('change', function () {
+                var params = new URLSearchParams(window.location.search);
+                params.set('certificate_po_type', String($(this).val() || 'CLUSTER'));
+                window.location.search = params.toString();
+            });
 
             $('a[data-toggle="pill"]').on('shown.bs.tab', function () {
                 if (tableMonitor) {

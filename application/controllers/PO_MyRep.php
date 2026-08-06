@@ -86,11 +86,16 @@ class PO_MyRep extends CI_Controller
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
         $selectedPoType = strtoupper(trim((string) $this->input->get('po_type')));
+        $selectedCertificatePoType = strtoupper(trim((string) $this->input->get('certificate_po_type')));
+        if ($selectedCertificatePoType === '') {
+            $selectedCertificatePoType = 'CLUSTER';
+        }
 
         $data['title'] = 'PO MyRep';
         $data['selectedCity'] = $selectedCity;
         $data['selectedStatus'] = $selectedStatus;
         $data['selectedPoType'] = in_array($selectedPoType, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true) ? $selectedPoType : '';
+        $data['selectedCertificatePoType'] = in_array($selectedCertificatePoType, ['ALL', 'CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true) ? $selectedCertificatePoType : 'CLUSTER';
         $data['isReady'] = $this->MPO_MyRep->tablesReady();
         $data['cityOptions'] = $this->MPO_MyRep->getCityOptions();
         $data['clusterRows'] = $data['isReady']
@@ -106,7 +111,7 @@ class PO_MyRep extends CI_Controller
             ? $this->MPO_MyRep->getTerminBreakdownByType($selectedCity, $selectedStatus)
             : [];
         $data['certificateSummaryRows'] = $data['isReady']
-            ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus)
+            ? $this->MPO_MyRep->getCertificateSummaryByTerm($selectedCity, $selectedStatus, $data['selectedCertificatePoType'] === 'ALL' ? '' : $data['selectedCertificatePoType'])
             : [];
         $data['certificateBatchRows'] = $data['isReady']
             ? $this->MPO_MyRep->getCertificateDetailRows($selectedCity, $selectedStatus, '', 0, 'ALL')
@@ -1445,7 +1450,7 @@ class PO_MyRep extends CI_Controller
             'BLOCKED_BILLING' => 'Blocked Billing',
         ];
         $title = $labels[$certificateStatus] ?? 'Detail Sertifikat';
-        if (in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+        if (in_array($poType, ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA'], true)) {
             $title .= ' - ' . $poType;
         }
         if ($termNo >= 2 && $termNo <= 5) {
