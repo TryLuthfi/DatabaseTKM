@@ -2517,7 +2517,7 @@ class MPO_Monitor extends CI_Model
                 $cumulative = $previousPeriodKey !== ''
                     ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
                     : 0;
-                $target = $this->comparisonPeriodIsBeforeCurrentPeriod($periodKey, $groupBy) ? $rawTarget : $deviasiByPo;
+                $target = $this->comparisonPeriodIsAfterCurrentPeriod($periodKey, $groupBy) ? $deviasiByPo : $rawTarget;
                 $effectiveTarget = $target + $cumulative;
                 $project['months'][$periodKey]['raw_target'] = $rawTarget;
                 $project['months'][$periodKey]['target'] = $target;
@@ -3083,7 +3083,7 @@ class MPO_Monitor extends CI_Model
         return $rows;
     }
 
-    private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null, $filterInvoicedForActivePeriod = true)
     {
         $rows = $this->db->query("SELECT *
             FROM (
@@ -3192,12 +3192,14 @@ class MPO_Monitor extends CI_Model
             ORDER BY target_week_start ASC, po_number ASC, term_index ASC", [$idBowheer, $idBowheer, $idBowheer])->result_array();
 
         $totalPeriodKeys = $this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth);
-        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy, $totalPeriodKeys) {
+        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy, $totalPeriodKeys, $filterInvoicedForActivePeriod) {
             $rowPeriod = $groupBy === 'week'
                 ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
                 : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
 
             if (
+                $filterInvoicedForActivePeriod
+                &&
                 !$this->comparisonPeriodIsBeforeCurrentPeriod($rowPeriod, $groupBy)
                 && (float) ($row['invoiced_amount'] ?? 0) > 0.000001
             ) {
@@ -3224,6 +3226,18 @@ class MPO_Monitor extends CI_Model
         return $periodSort > 0 && $currentSort > 0 && $periodSort < $currentSort;
     }
 
+    private function comparisonPeriodIsAfterCurrentPeriod($periodKey, $groupBy)
+    {
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $periodSort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+        $currentKey = $groupBy === 'week'
+            ? $this->weekKeyFromDate(date('Y-m-d'))
+            : date('Y-m');
+        $currentSort = $this->comparisonPeriodSortValue($currentKey, $groupBy);
+
+        return $periodSort > 0 && $currentSort > 0 && $periodSort > $currentSort;
+    }
+
     private function sumComparisonUninvoicedTargetAmount($idBowheer, $periodKey, $groupBy)
     {
         static $cache = [];
@@ -3232,16 +3246,31 @@ class MPO_Monitor extends CI_Model
             return $cache[$cacheKey];
         }
 
-        $rows = $this->getComparisonTargetDetail((int) $idBowheer, (string) $periodKey, $groupBy);
+        $rows = $this->getComparisonTargetDetail((int) $idBowheer, (string) $periodKey, $groupBy, null, null, false);
         $total = 0;
         foreach ($rows as $row) {
-            if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001) {
+            if (!$this->comparisonTargetWasInvoicedByPeriod($row, $periodKey, $groupBy)) {
                 $total += (float) ($row['amount'] ?? 0);
             }
         }
 
         $cache[$cacheKey] = $total;
         return $total;
+    }
+
+    private function comparisonTargetWasInvoicedByPeriod(array $row, $periodKey, $groupBy)
+    {
+        if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001 || empty($row['claim_invoice_date'])) {
+            return false;
+        }
+
+        $invoicePeriodKey = $groupBy === 'week'
+            ? $this->weekKeyFromDate($row['claim_invoice_date'])
+            : $this->monthKeyFromInvoiceWeek($row['claim_invoice_date']);
+        $invoiceSort = $this->comparisonPeriodSortValue($invoicePeriodKey, $groupBy);
+        $targetSort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+
+        return $invoiceSort > 0 && $targetSort > 0 && $invoiceSort <= $targetSort;
     }
 
     private function sumComparisonTargetAmount($idBowheer, $periodKey, $groupBy)
