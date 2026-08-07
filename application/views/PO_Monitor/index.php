@@ -98,6 +98,38 @@ if (!function_exists('po_monitor_compare_effective_target_total')) {
     }
 }
 
+if (!function_exists('po_monitor_compare_previous_month_label')) {
+    function po_monitor_compare_previous_month_label(array $month)
+    {
+        $key = (string) ($month['key'] ?? '');
+        if (!preg_match('/^\d{4}-\d{2}$/', $key)) {
+            return 'Kumulatif';
+        }
+
+        $timestamp = strtotime($key . '-01 -1 month');
+        if (!$timestamp) {
+            return 'Kumulatif';
+        }
+
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
+        ];
+
+        return 'Kumulatif ' . ($months[(int) date('n', $timestamp)] ?? date('F', $timestamp));
+    }
+}
+
 if (!function_exists('po_monitor_indonesian_date')) {
     function po_monitor_indonesian_date($date)
     {
@@ -2525,7 +2557,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     <tr>
                                         <?php foreach ($comparisonMatrix['months'] as $month): ?>
                                             <?php if ($comparisonCumulative): ?>
-                                                <th class="po-compare-target">Kumulatif</th>
+                                                <th class="po-compare-target"><?= htmlspecialchars(po_monitor_compare_previous_month_label($month), ENT_QUOTES, 'UTF-8') ?></th>
                                             <?php endif; ?>
                                             <th class="po-compare-target">Target</th>
                                             <th class="po-compare-achieved">Achieved</th>
