@@ -3044,7 +3044,7 @@ class MPO_Monitor extends CI_Model
     {
         $idBowheer = (int) $idBowheer;
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
-        $type = in_array($type, ['achieved', 'cumulative', 'effective_target', 'deviasi_by_po', 'actual_target'], true) ? $type : 'target';
+        $type = in_array($type, ['achieved', 'cumulative', 'effective_target', 'effective_deviasi_by_po', 'deviasi_by_po', 'actual_target'], true) ? $type : 'target';
 
         if ($type === 'achieved') {
             return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
@@ -3054,6 +3054,9 @@ class MPO_Monitor extends CI_Model
         }
         if ($type === 'deviasi_by_po') {
             return $this->getComparisonDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        }
+        if ($type === 'effective_deviasi_by_po') {
+            return $this->getComparisonEffectiveDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
         if ($type === 'cumulative') {
             return $this->getComparisonCumulativeDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
@@ -3141,6 +3144,30 @@ class MPO_Monitor extends CI_Model
             }
 
             $rows = array_merge($rows, $this->getComparisonLockedTargetDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth));
+        }
+
+        return $rows;
+    }
+
+    private function getComparisonEffectiveDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        $periodKeys = [];
+        if ($periodKey === '__total__') {
+            $periodKeys = array_keys($this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth));
+        } else {
+            $periodKeys = [$periodKey];
+        }
+
+        $rows = [];
+        foreach ($periodKeys as $key) {
+            foreach ($this->comparisonPreviousPeriodKeysFromCutoff($key, $groupBy) as $cumulativePeriodKey) {
+                $rows = array_merge(
+                    $rows,
+                    $this->getComparisonCumulativeDetail($idBowheer, $cumulativePeriodKey, $groupBy, $fromMonth, $toMonth)
+                );
+            }
+
+            $rows = array_merge($rows, $this->getComparisonDeviasiByPoDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth));
         }
 
         return $rows;
