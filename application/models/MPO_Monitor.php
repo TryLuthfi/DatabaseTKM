@@ -2364,6 +2364,7 @@ class MPO_Monitor extends CI_Model
                     'cumulative_target' => 0,
                     'cumulative_achieved' => 0,
                     'cumulative' => 0,
+                    'cumulative_breakdown' => [],
                     'effective_target' => 0,
                     'cumulative_percent' => 0,
                     'target_invoiced' => 0,
@@ -2510,6 +2511,7 @@ class MPO_Monitor extends CI_Model
                 'target' => 0,
                 'achieved' => 0,
                 'cumulative' => 0,
+                'cumulative_breakdown' => [],
                 'effective_target' => 0,
                 'cumulative_percent' => 0,
                 'target_invoiced' => 0,
@@ -2527,15 +2529,16 @@ class MPO_Monitor extends CI_Model
                 $rawTarget = (float) $project['months'][$periodKey]['target'];
                 $achieved = (float) $project['months'][$periodKey]['achieved'];
                 $deviasiByPo = $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
-                $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
-                $cumulative = $previousPeriodKey !== ''
-                    ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
-                    : 0;
+                $cumulativeBreakdown = $this->comparisonCumulativeBreakdown((int) $project['id_bowheer'], $periodKey, $groupBy);
+                $cumulative = array_sum(array_map(static function ($item) {
+                    return (float) ($item['amount'] ?? 0);
+                }, $cumulativeBreakdown));
                 $target = $this->sumComparisonLockedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
                 $effectiveTarget = $target + $cumulative;
                 $project['months'][$periodKey]['raw_target'] = $rawTarget;
                 $project['months'][$periodKey]['target'] = $target;
                 $project['months'][$periodKey]['cumulative'] = $cumulative;
+                $project['months'][$periodKey]['cumulative_breakdown'] = $cumulativeBreakdown;
                 $project['months'][$periodKey]['effective_target'] = $effectiveTarget;
                 $project['months'][$periodKey]['deviasi_by_po'] = $deviasiByPo;
                 $project['months'][$periodKey]['percent'] = $target > 0 ? ($achieved / $target) * 100 : ($achieved > 0 ? 100 : 0);
@@ -2547,6 +2550,20 @@ class MPO_Monitor extends CI_Model
                 $totals['months'][$period['key']]['target'] += $target;
                 $totals['months'][$period['key']]['achieved'] += $achieved;
                 $totals['months'][$period['key']]['cumulative'] += $cumulative;
+                foreach ($cumulativeBreakdown as $breakdownItem) {
+                    $breakdownKey = (string) ($breakdownItem['key'] ?? '');
+                    if ($breakdownKey === '') {
+                        continue;
+                    }
+                    if (!isset($totals['months'][$period['key']]['cumulative_breakdown'][$breakdownKey])) {
+                        $totals['months'][$period['key']]['cumulative_breakdown'][$breakdownKey] = [
+                            'key' => $breakdownKey,
+                            'label' => (string) ($breakdownItem['label'] ?? $breakdownKey),
+                            'amount' => 0
+                        ];
+                    }
+                    $totals['months'][$period['key']]['cumulative_breakdown'][$breakdownKey]['amount'] += (float) ($breakdownItem['amount'] ?? 0);
+                }
                 $totals['months'][$period['key']]['effective_target'] += $effectiveTarget;
                 $totals['months'][$period['key']]['target_invoiced'] += (float) $project['months'][$periodKey]['target_invoiced'];
                 $totals['months'][$period['key']]['deviasi_by_po'] += $deviasiByPo;
@@ -2568,6 +2585,11 @@ class MPO_Monitor extends CI_Model
         unset($project);
 
         foreach ($totals['months'] as $monthKey => &$monthTotal) {
+            if (!empty($monthTotal['cumulative_breakdown']) && is_array($monthTotal['cumulative_breakdown'])) {
+                $monthTotal['cumulative_breakdown'] = array_values(array_filter($monthTotal['cumulative_breakdown'], static function ($item) {
+                    return (float) ($item['amount'] ?? 0) > 0.000001;
+                }));
+            }
             $monthTotal['percent'] = $monthTotal['target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
             $monthTotal['cumulative_percent'] = $monthTotal['effective_target'] > 0 ? ($monthTotal['achieved'] / $monthTotal['effective_target']) * 100 : ($monthTotal['achieved'] > 0 ? 100 : 0);
             $monthTotal['deviasi_by_po_percent'] = $monthTotal['target'] > 0 ? ((float) ($monthTotal['deviasi_by_po'] ?? 0) / (float) $monthTotal['target']) * 100 : 0;
@@ -2591,6 +2613,12 @@ class MPO_Monitor extends CI_Model
         $totals['cumulative_deviasi'] = max($totals['total_effective_target'] - $totals['total_achieved'], 0);
         $totals['cumulative_achieved_percent'] = $totals['total_effective_target'] > 0 ? ($totals['total_achieved'] / $totals['total_effective_target']) * 100 : ($totals['total_achieved'] > 0 ? 100 : 0);
         $totals['cumulative_deviasi_percent'] = max(100 - $totals['cumulative_achieved_percent'], 0);
+
+        foreach ($periods as &$period) {
+            $periodKey = (string) ($period['key'] ?? '');
+            $period['cumulative_periods'] = $totals['months'][$periodKey]['cumulative_breakdown'] ?? [];
+        }
+        unset($period);
 
         $rows = array_values($projectMap);
         if ($invoiceOnly) {
@@ -3077,20 +3105,20 @@ class MPO_Monitor extends CI_Model
 
     private function getComparisonCumulativeDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
     {
-        $previousPeriodKey = $this->comparisonPreviousPeriodKey($periodKey, $groupBy);
-        if ($previousPeriodKey === '') {
+        $cumulativePeriodKey = trim((string) $periodKey);
+        if ($cumulativePeriodKey === '' || $cumulativePeriodKey === '__total__') {
             return [];
         }
 
-        $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth, false);
+        $rows = $this->getComparisonTargetDetail($idBowheer, $cumulativePeriodKey, $groupBy, $fromMonth, $toMonth, false);
         foreach ($rows as &$row) {
             $row['source_label'] = 'Kumulatif deviasi periode sebelumnya';
         }
         unset($row);
 
-        return array_values(array_filter($rows, function ($row) use ($previousPeriodKey, $groupBy) {
+        return array_values(array_filter($rows, function ($row) use ($cumulativePeriodKey, $groupBy) {
             return (float) ($row['amount'] ?? 0) > 0.000001
-                && !$this->comparisonTargetWasInvoicedByPeriod($row, $previousPeriodKey, $groupBy);
+                && !$this->comparisonTargetWasInvoicedByPeriod($row, $cumulativePeriodKey, $groupBy);
         }));
     }
 
@@ -3105,11 +3133,14 @@ class MPO_Monitor extends CI_Model
 
         $rows = [];
         foreach ($periodKeys as $key) {
-            $rows = array_merge(
-                $rows,
-                $this->getComparisonCumulativeDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth),
-                $this->getComparisonLockedTargetDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth)
-            );
+            foreach ($this->comparisonPreviousPeriodKeysFromCutoff($key, $groupBy) as $cumulativePeriodKey) {
+                $rows = array_merge(
+                    $rows,
+                    $this->getComparisonCumulativeDetail($idBowheer, $cumulativePeriodKey, $groupBy, $fromMonth, $toMonth)
+                );
+            }
+
+            $rows = array_merge($rows, $this->getComparisonLockedTargetDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth));
         }
 
         return $rows;
@@ -3570,6 +3601,74 @@ class MPO_Monitor extends CI_Model
         }
 
         return date('Y-m', strtotime($activePeriodKey . '-01 -1 month'));
+    }
+
+    private function comparisonCumulativeBreakdown($idBowheer, $activePeriodKey, $groupBy)
+    {
+        $items = [];
+        foreach ($this->comparisonPreviousPeriodKeysFromCutoff($activePeriodKey, $groupBy) as $periodKey) {
+            $amount = $this->sumComparisonUninvoicedTargetAmount((int) $idBowheer, $periodKey, $groupBy);
+            if ($amount <= 0.000001) {
+                continue;
+            }
+
+            $items[] = [
+                'key' => $periodKey,
+                'label' => $this->comparisonShortPeriodLabel($periodKey, $groupBy),
+                'amount' => $amount
+            ];
+        }
+
+        return $items;
+    }
+
+    private function comparisonPreviousPeriodKeysFromCutoff($activePeriodKey, $groupBy)
+    {
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $activePeriodKey = strtoupper(trim((string) $activePeriodKey));
+        $keys = [];
+
+        if ($groupBy === 'week') {
+            if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $activePeriodKey, $matches)) {
+                return [];
+            }
+
+            $year = (int) $matches[1];
+            $activeWeek = (int) $matches[2];
+            for ($week = 1; $week < $activeWeek; $week++) {
+                $keys[] = $this->weekKey($year, $week);
+            }
+
+            return $keys;
+        }
+
+        if (!preg_match('/^(\d{4})-(\d{1,2})$/', $activePeriodKey, $matches)) {
+            return [];
+        }
+
+        $year = (int) $matches[1];
+        $activeMonth = (int) $matches[2];
+        for ($month = 1; $month < $activeMonth; $month++) {
+            $keys[] = sprintf('%04d-%02d', $year, $month);
+        }
+
+        return $keys;
+    }
+
+    private function comparisonShortPeriodLabel($periodKey, $groupBy)
+    {
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $periodKey = strtoupper(trim((string) $periodKey));
+
+        if ($groupBy === 'week' && preg_match('/^(\d{4})-W(\d{1,2})$/', $periodKey, $matches)) {
+            return 'W' . (int) $matches[2];
+        }
+
+        if (preg_match('/^(\d{4})-(\d{1,2})$/', $periodKey, $matches)) {
+            return $this->indonesianMonthName((int) $matches[2]);
+        }
+
+        return $periodKey;
     }
 
     public function comparisonPreviousPeriodKeyPublic($activePeriodKey, $groupBy)
