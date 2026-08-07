@@ -2521,6 +2521,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                             <span>Weeks column</span>
                                         </label>
                                         <label class="po-monitor-switch mb-0">
+                                            <input type="hidden" name="cumulative" value="0">
                                             <input type="checkbox" id="po_compare_cumulative" name="cumulative" value="1" <?= $comparisonCumulative ? 'checked' : '' ?>>
                                             <span class="po-monitor-switch-slider"></span>
                                             <span>Kumulatif</span>
