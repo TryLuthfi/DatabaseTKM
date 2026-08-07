@@ -4423,7 +4423,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
             function updateCompareFooter(api) {
                 var columnCount = api.columns().count();
-                var isCumulative = api.table().node().id === 'table_po_target_invoice_compare_month' && $('#po_compare_cumulative').is(':checked');
+                var isCumulative = $('#po_compare_cumulative').is(':checked');
                 var periodStride = isCumulative ? 4 : 3;
                 var periodCount = Math.max(0, Math.floor((columnCount - 9) / periodStride));
                 var monthTotals = [];
@@ -4518,7 +4518,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     dataType: 'json',
                     data: {
                         from_month: $('input[name="from_month"]').val(),
-                        to_month: $('input[name="to_month"]').val()
+                        to_month: $('input[name="to_month"]').val(),
+                        cumulative: $('#po_compare_cumulative').is(':checked') ? 1 : 0
                     }
                 }).done(function(response) {
                     if (response && response.status && response.html) {
@@ -5368,6 +5369,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
             $('#po_compare_cumulative')
                 .off('change.poCompareCumulative')
                 .on('change.poCompareCumulative', function() {
+                    $('#po_compare_week_panel').data('loaded', 0);
                     this.form.submit();
                 });
 
