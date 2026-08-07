@@ -15,6 +15,8 @@ $matrix = $matrix ?? [
 $groupBy = ($groupBy ?? 'month') === 'week' ? 'week' : 'month';
 $tableId = $tableId ?? ($groupBy === 'week' ? 'table_po_target_invoice_compare_week' : 'table_po_target_invoice_compare_month');
 $comparisonCumulative = !empty($comparisonCumulative);
+$weekSingleCumulative = $comparisonCumulative && $groupBy === 'week';
+$monthMatrix = is_array($monthMatrix ?? null) ? $monthMatrix : [];
 
 if (!function_exists('po_monitor_compare_week_groups')) {
     function po_monitor_compare_week_groups($matrix)
@@ -57,6 +59,56 @@ if (!function_exists('po_monitor_compare_previous_period_label')) {
         }
 
         return 'Kumulatif';
+    }
+}
+
+if (!function_exists('po_monitor_week_cumulative_label')) {
+    function po_monitor_week_cumulative_label(array $monthMatrix)
+    {
+        $months = $monthMatrix['months'] ?? [];
+        if (count($months) === 1) {
+            return po_monitor_compare_previous_period_label($months[0], 'month');
+        }
+
+        return 'Kumulatif';
+    }
+}
+
+if (!function_exists('po_monitor_week_cumulative_period_key')) {
+    function po_monitor_week_cumulative_period_key(array $monthMatrix)
+    {
+        $months = $monthMatrix['months'] ?? [];
+        return count($months) === 1 ? (string) ($months[0]['key'] ?? '__total__') : '__total__';
+    }
+}
+
+if (!function_exists('po_monitor_week_cumulative_amount')) {
+    function po_monitor_week_cumulative_amount(array $monthMatrix, $idBowheer)
+    {
+        $total = 0;
+        foreach (($monthMatrix['rows'] ?? []) as $row) {
+            if ((int) ($row['id_bowheer'] ?? 0) !== (int) $idBowheer) {
+                continue;
+            }
+            foreach (($row['months'] ?? []) as $month) {
+                $total += (float) ($month['cumulative'] ?? 0);
+            }
+            break;
+        }
+
+        return $total;
+    }
+}
+
+if (!function_exists('po_monitor_week_cumulative_total')) {
+    function po_monitor_week_cumulative_total(array $monthMatrix)
+    {
+        $total = 0;
+        foreach (($monthMatrix['totals']['months'] ?? []) as $month) {
+            $total += (float) ($month['cumulative'] ?? 0);
+        }
+
+        return $total;
     }
 }
 
@@ -142,8 +194,11 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-left">PIC</th>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-left" style="min-width: 220px;">Project</th>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Target</th>
+                <?php if ($weekSingleCumulative): ?>
+                    <th rowspan="3" class="po-compare-fixed po-compare-fixed-total"><?= htmlspecialchars(po_monitor_week_cumulative_label($monthMatrix), ENT_QUOTES, 'UTF-8') ?></th>
+                <?php endif; ?>
                 <?php foreach (po_monitor_compare_week_groups($matrix) as $group): ?>
-                    <th colspan="<?= (int) $group['count'] * ($comparisonCumulative ? 4 : 3) ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label'], ENT_QUOTES, 'UTF-8') ?></th>
+                    <th colspan="<?= (int) $group['count'] * 3 ?>" class="po-compare-month-cell"><?= htmlspecialchars($group['label'], ENT_QUOTES, 'UTF-8') ?></th>
                 <?php endforeach; ?>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Total Achieved</th>
                 <th rowspan="3" class="po-compare-fixed po-compare-fixed-total">Deviasi By Target</th>
@@ -153,7 +208,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
             </tr>
             <tr>
                 <?php foreach ($matrix['months'] as $month): ?>
-                    <th colspan="<?= $comparisonCumulative ? 4 : 3 ?>" class="po-compare-week-cell">
+                    <th colspan="3" class="po-compare-week-cell">
                         <?= htmlspecialchars($month['label'], ENT_QUOTES, 'UTF-8') ?><br>
                         <small><?= htmlspecialchars($month['period'] ?? '', ENT_QUOTES, 'UTF-8') ?></small>
                     </th>
@@ -180,7 +235,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
         <?php endif; ?>
         <tr>
             <?php foreach ($matrix['months'] as $month): ?>
-                <?php if ($comparisonCumulative): ?>
+                <?php if ($comparisonCumulative && !$weekSingleCumulative): ?>
                     <th class="po-compare-target"><?= htmlspecialchars(po_monitor_compare_previous_period_label($month, $groupBy), ENT_QUOTES, 'UTF-8') ?></th>
                 <?php endif; ?>
                 <th class="po-compare-target">Target</th>
@@ -192,8 +247,9 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
     <tbody>
         <?php $compareNo = 1; foreach ($matrix['rows'] as $row): ?>
             <?php
+                $weekCumulativeAmount = $weekSingleCumulative ? po_monitor_week_cumulative_amount($monthMatrix, $row['id_bowheer'] ?? 0) : 0;
                 $rowDisplayTarget = $comparisonCumulative
-                    ? po_monitor_compare_effective_target_total($row['months'] ?? [])
+                    ? ($weekSingleCumulative ? ((float) $row['total_target'] + $weekCumulativeAmount) : po_monitor_compare_effective_target_total($row['months'] ?? []))
                     : (float) $row['total_target'];
                 $rowDisplayDeviasi = $comparisonCumulative ? max($rowDisplayTarget - (float) $row['total_achieved'], 0) : (float) $row['deviasi'];
                 $rowDisplayDeviasiByPo = $comparisonCumulative ? (float) ($row['total_effective_deviasi_by_po'] ?? $row['deviasi_by_po'] ?? 0) : (float) ($row['deviasi_by_po'] ?? 0);
@@ -205,14 +261,17 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars($row['project'], ENT_QUOTES, 'UTF-8') ?></td>
                 <td data-po-amount="<?= (float) $rowDisplayTarget ?>"><?= po_monitor_compare_total_amount_link($rowDisplayTarget, $row['id_bowheer'], $groupBy, $comparisonCumulative ? 'effective_target' : 'target', $matrix['from'] ?? '', $matrix['to'] ?? '') ?></td>
+                <?php if ($weekSingleCumulative): ?>
+                    <td data-po-amount="<?= (float) $weekCumulativeAmount ?>"><?= po_monitor_compare_total_amount_link($weekCumulativeAmount, $row['id_bowheer'], 'month', 'cumulative', $monthMatrix['from'] ?? ($matrix['from'] ?? ''), $monthMatrix['to'] ?? ($matrix['to'] ?? ''), po_monitor_week_cumulative_period_key($monthMatrix)) ?></td>
+                <?php endif; ?>
                 <?php foreach ($matrix['months'] as $month): ?>
                     <?php $monthData = $row['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
-                    <?php if ($comparisonCumulative): ?>
+                    <?php if ($comparisonCumulative && !$weekSingleCumulative): ?>
                         <td data-po-amount="<?= (float) ($monthData['cumulative'] ?? 0) ?>"><?= po_monitor_compare_amount_link($monthData['cumulative'] ?? 0, $row['id_bowheer'], $month['key'], $groupBy, 'cumulative') ?></td>
                     <?php endif; ?>
                     <td data-po-amount="<?= (float) $monthData['target'] ?>"><?= po_monitor_compare_amount_link($monthData['target'], $row['id_bowheer'], $month['key'], $groupBy, 'target') ?></td>
                     <td data-po-amount="<?= (float) $monthData['achieved'] ?>"><?= po_monitor_compare_amount_link($monthData['achieved'], $row['id_bowheer'], $month['key'], $groupBy, 'achieved') ?></td>
-                    <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0 || (float) ($monthData['cumulative'] ?? 0) > 0) ? po_monitor_percent($comparisonCumulative ? ($monthData['cumulative_percent'] ?? 0) : $monthData['percent']) : '-' ?></td>
+                    <td><?= ((float) $monthData['target'] > 0 || (float) $monthData['achieved'] > 0 || (float) ($monthData['cumulative'] ?? 0) > 0) ? po_monitor_percent($weekSingleCumulative ? ($monthData['percent'] ?? 0) : ($comparisonCumulative ? ($monthData['cumulative_percent'] ?? 0) : $monthData['percent'])) : '-' ?></td>
                 <?php endforeach; ?>
                 <td data-po-amount="<?= (float) $row['total_achieved'] ?>"><?= number_format((float) $row['total_achieved'], 0, ',', '.') ?></td>
                 <td data-po-amount="<?= (float) $rowDisplayDeviasi ?>"><?= number_format((float) $rowDisplayDeviasi, 0, ',', '.') ?></td>
@@ -226,20 +285,24 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
         <tr>
             <th colspan="3" class="po-compare-footer-label">Total</th>
             <?php
-                $footerDisplayTarget = $comparisonCumulative ? po_monitor_compare_effective_target_total($matrix['totals']['months'] ?? []) : (float) $matrix['totals']['total_target'];
+                $footerWeekCumulative = $weekSingleCumulative ? po_monitor_week_cumulative_total($monthMatrix) : 0;
+                $footerDisplayTarget = $comparisonCumulative ? ($weekSingleCumulative ? ((float) $matrix['totals']['total_target'] + $footerWeekCumulative) : po_monitor_compare_effective_target_total($matrix['totals']['months'] ?? [])) : (float) $matrix['totals']['total_target'];
                 $footerDisplayDeviasi = $comparisonCumulative ? max($footerDisplayTarget - (float) $matrix['totals']['total_achieved'], 0) : (float) $matrix['totals']['deviasi'];
                 $footerDisplayAchievedPercent = $comparisonCumulative ? ($footerDisplayTarget > 0 ? ((float) $matrix['totals']['total_achieved'] / $footerDisplayTarget) * 100 : ((float) $matrix['totals']['total_achieved'] > 0 ? 100 : 0)) : (float) $matrix['totals']['achieved_percent'];
                 $footerDisplayDeviasiPercent = $comparisonCumulative ? max(100 - $footerDisplayAchievedPercent, 0) : (float) $matrix['totals']['deviasi_percent'];
             ?>
             <th><?= number_format((float) $footerDisplayTarget, 0, ',', '.') ?></th>
+            <?php if ($weekSingleCumulative): ?>
+                <th><?= abs((float) $footerWeekCumulative) > 0.000001 ? number_format((float) $footerWeekCumulative, 0, ',', '.') : '-' ?></th>
+            <?php endif; ?>
             <?php foreach ($matrix['months'] as $month): ?>
                 <?php $monthTotal = $matrix['totals']['months'][$month['key']] ?? ['target' => 0, 'achieved' => 0, 'percent' => 0, 'cumulative' => 0, 'cumulative_percent' => 0]; ?>
-                <?php if ($comparisonCumulative): ?>
+                <?php if ($comparisonCumulative && !$weekSingleCumulative): ?>
                     <th><?= abs((float) $monthTotal['cumulative']) > 0.000001 ? number_format((float) $monthTotal['cumulative'], 0, ',', '.') : '-' ?></th>
                 <?php endif; ?>
                 <th><?= number_format((float) $monthTotal['target'], 0, ',', '.') ?></th>
                 <th><?= number_format((float) $monthTotal['achieved'], 0, ',', '.') ?></th>
-                <th><?= po_monitor_percent($comparisonCumulative ? ($monthTotal['cumulative_percent'] ?? 0) : $monthTotal['percent']) ?></th>
+                <th><?= po_monitor_percent($weekSingleCumulative ? ($monthTotal['percent'] ?? 0) : ($comparisonCumulative ? ($monthTotal['cumulative_percent'] ?? 0) : $monthTotal['percent'])) ?></th>
             <?php endforeach; ?>
             <th><?= number_format((float) $matrix['totals']['total_achieved'], 0, ',', '.') ?></th>
             <th><?= number_format((float) $footerDisplayDeviasi, 0, ',', '.') ?></th>

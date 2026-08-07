@@ -4424,10 +4424,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
             function updateCompareFooter(api) {
                 var columnCount = api.columns().count();
                 var isCumulative = $('#po_compare_cumulative').is(':checked');
-                var periodStride = isCumulative ? 4 : 3;
-                var periodCount = Math.max(0, Math.floor((columnCount - 9) / periodStride));
+                var isWeekTable = api.table().node().id === 'table_po_target_invoice_compare_week';
+                var weekSingleCumulative = isCumulative && isWeekTable;
+                var leadingExtraColumns = weekSingleCumulative ? 1 : 0;
+                var periodStride = isCumulative && !weekSingleCumulative ? 4 : 3;
+                var periodCount = Math.max(0, Math.floor((columnCount - 9 - leadingExtraColumns) / periodStride));
                 var monthTotals = [];
                 var totalTarget = 0;
+                var totalSingleCumulative = 0;
                 var totalAchieved = 0;
                 var totalDeviasiByPo = 0;
                 var rowCount = 0;
@@ -4440,20 +4444,23 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     var $cells = $(this.node()).children('td');
                     rowCount++;
                     totalTarget += compareCellAmount($cells, 3);
+                    if (weekSingleCumulative) {
+                        totalSingleCumulative += compareCellAmount($cells, 4);
+                    }
 
                     for (var i = 0; i < periodCount; i++) {
-                        var baseIndex = 4 + (i * periodStride);
-                        var targetIndex = isCumulative ? baseIndex + 1 : baseIndex;
+                        var baseIndex = 4 + leadingExtraColumns + (i * periodStride);
+                        var targetIndex = isCumulative && !weekSingleCumulative ? baseIndex + 1 : baseIndex;
                         var achievedIndex = targetIndex + 1;
-                        if (isCumulative) {
+                        if (isCumulative && !weekSingleCumulative) {
                             monthTotals[i].cumulative += compareCellAmount($cells, baseIndex);
                         }
                         monthTotals[i].target += compareCellAmount($cells, targetIndex);
                         monthTotals[i].achieved += compareCellAmount($cells, achievedIndex);
                     }
 
-                    totalAchieved += compareCellAmount($cells, 4 + (periodCount * periodStride));
-                    totalDeviasiByPo += compareCellAmount($cells, 6 + (periodCount * periodStride));
+                    totalAchieved += compareCellAmount($cells, 4 + leadingExtraColumns + (periodCount * periodStride));
+                    totalDeviasiByPo += compareCellAmount($cells, 6 + leadingExtraColumns + (periodCount * periodStride));
                 });
 
                 var deviasi = Math.max(totalTarget - totalAchieved, 0);
@@ -4461,11 +4468,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 var deviasiPercent = Math.max(100 - achievedPercent, 0);
                 var html = '<th colspan="3" class="po-compare-footer-label">Total (' + rowCount + ' row)</th>';
                 html += '<th>' + formatLocaleNumber(totalTarget) + '</th>';
+                if (weekSingleCumulative) {
+                    html += '<th>' + (Math.abs(totalSingleCumulative) > 0.000001 ? formatLocaleNumber(totalSingleCumulative) : '-') + '</th>';
+                }
 
                 monthTotals.forEach(function(total) {
-                    var effectiveTarget = isCumulative ? total.cumulative + total.target : total.target;
+                    var effectiveTarget = isCumulative && !weekSingleCumulative ? total.cumulative + total.target : total.target;
                     var percent = effectiveTarget > 0 ? (total.achieved / effectiveTarget) * 100 : (total.achieved > 0 ? 100 : 0);
-                    if (isCumulative) {
+                    if (isCumulative && !weekSingleCumulative) {
                         html += '<th>' + (Math.abs(total.cumulative) > 0.000001 ? formatLocaleNumber(total.cumulative) : '-') + '</th>';
                     }
                     html += '<th>' + formatLocaleNumber(total.target) + '</th>';
