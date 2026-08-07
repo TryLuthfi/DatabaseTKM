@@ -139,6 +139,20 @@ class MPO_Monitor extends CI_Model
             KEY `idx_tb_po_dashboard_cache_batch` (`import_batch_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+        $this->db->query("CREATE TABLE IF NOT EXISTS `tb_po_comparison_target_lock` (
+            `id_lock` int(11) NOT NULL AUTO_INCREMENT,
+            `id_bowheer` int(11) NOT NULL,
+            `group_by` varchar(10) NOT NULL DEFAULT 'month',
+            `period_key` varchar(20) NOT NULL,
+            `locked_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+            `raw_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+            `deviasi_amount` decimal(18,2) NOT NULL DEFAULT 0.00,
+            `locked_at` datetime DEFAULT current_timestamp(),
+            PRIMARY KEY (`id_lock`),
+            UNIQUE KEY `uk_tb_po_comparison_target_lock` (`id_bowheer`, `group_by`, `period_key`),
+            KEY `idx_tb_po_comparison_target_lock_period` (`group_by`, `period_key`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
         $this->addColumnIfMissing('tb_po', 'source_file', "ALTER TABLE `tb_po` ADD COLUMN `source_file` varchar(255) DEFAULT NULL");
         $this->addColumnIfMissing('tb_po', 'source_row_no', "ALTER TABLE `tb_po` ADD COLUMN `source_row_no` int(11) DEFAULT NULL");
         $this->addColumnIfMissing('tb_po', 'source_hash', "ALTER TABLE `tb_po` ADD COLUMN `source_hash` varchar(64) DEFAULT NULL");
@@ -2517,7 +2531,7 @@ class MPO_Monitor extends CI_Model
                 $cumulative = $previousPeriodKey !== ''
                     ? $this->sumComparisonUninvoicedTargetAmount((int) $project['id_bowheer'], $previousPeriodKey, $groupBy)
                     : 0;
-                $target = $this->comparisonPeriodIsAfterCurrentPeriod($periodKey, $groupBy) ? $deviasiByPo : $rawTarget;
+                $target = $this->sumComparisonLockedTargetAmount((int) $project['id_bowheer'], $periodKey, $groupBy);
                 $effectiveTarget = $target + $cumulative;
                 $project['months'][$periodKey]['raw_target'] = $rawTarget;
                 $project['months'][$periodKey]['target'] = $target;
@@ -3007,7 +3021,10 @@ class MPO_Monitor extends CI_Model
         if ($type === 'achieved') {
             return $this->getComparisonAchievedDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
-        if ($type === 'deviasi_by_po' || $type === 'actual_target') {
+        if ($type === 'actual_target') {
+            return $this->getComparisonLockedTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        }
+        if ($type === 'deviasi_by_po') {
             return $this->getComparisonDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
         if ($type === 'cumulative') {
@@ -3017,7 +3034,7 @@ class MPO_Monitor extends CI_Model
             return $this->getComparisonEffectiveTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         }
 
-        return $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        return $this->getComparisonLockedTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
     }
 
     private function getComparisonDeviasiByPoDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
@@ -3031,15 +3048,30 @@ class MPO_Monitor extends CI_Model
             return $rows;
         }
 
-        $rows = $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
+        $rows = $this->getComparisonDeviasiByPoDetailRows($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth);
         foreach ($rows as &$row) {
             $row['source_label'] = 'Target belum invoice';
         }
         unset($row);
 
-        return array_values(array_filter($rows, static function ($row) {
-            return (float) ($row['invoiced_amount'] ?? 0) <= 0.000001
-                && (float) ($row['amount'] ?? 0) > 0.000001;
+        return $rows;
+    }
+
+    private function getComparisonLockedTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        $rows = $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth, false);
+        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+            return (float) ($row['amount'] ?? 0) > 0.000001
+                && !$this->comparisonTargetWasInvoicedBeforePeriod($row, $periodKey, $groupBy);
+        }));
+    }
+
+    private function getComparisonDeviasiByPoDetailRows($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
+    {
+        $rows = $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth, false);
+        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+            return (float) ($row['amount'] ?? 0) > 0.000001
+                && !$this->comparisonTargetWasInvoicedByPeriod($row, $periodKey, $groupBy);
         }));
     }
 
@@ -3050,15 +3082,15 @@ class MPO_Monitor extends CI_Model
             return [];
         }
 
-        $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth);
+        $rows = $this->getComparisonTargetDetail($idBowheer, $previousPeriodKey, $groupBy, $fromMonth, $toMonth, false);
         foreach ($rows as &$row) {
             $row['source_label'] = 'Kumulatif deviasi periode sebelumnya';
         }
         unset($row);
 
-        return array_values(array_filter($rows, static function ($row) {
+        return array_values(array_filter($rows, function ($row) use ($previousPeriodKey, $groupBy) {
             return (float) ($row['amount'] ?? 0) > 0.000001
-                && (float) ($row['invoiced_amount'] ?? 0) <= 0.000001;
+                && !$this->comparisonTargetWasInvoicedByPeriod($row, $previousPeriodKey, $groupBy);
         }));
     }
 
@@ -3076,7 +3108,7 @@ class MPO_Monitor extends CI_Model
             $rows = array_merge(
                 $rows,
                 $this->getComparisonCumulativeDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth),
-                $this->getComparisonDeviasiByPoDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth)
+                $this->getComparisonLockedTargetDetail($idBowheer, $key, $groupBy, $fromMonth, $toMonth)
             );
         }
 
@@ -3238,6 +3270,18 @@ class MPO_Monitor extends CI_Model
         return $periodSort > 0 && $currentSort > 0 && $periodSort > $currentSort;
     }
 
+    private function comparisonPeriodIsCurrentPeriod($periodKey, $groupBy)
+    {
+        $groupBy = $groupBy === 'week' ? 'week' : 'month';
+        $periodSort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+        $currentKey = $groupBy === 'week'
+            ? $this->weekKeyFromDate(date('Y-m-d'))
+            : date('Y-m');
+        $currentSort = $this->comparisonPeriodSortValue($currentKey, $groupBy);
+
+        return $periodSort > 0 && $currentSort > 0 && $periodSort === $currentSort;
+    }
+
     private function sumComparisonUninvoicedTargetAmount($idBowheer, $periodKey, $groupBy)
     {
         static $cache = [];
@@ -3258,6 +3302,92 @@ class MPO_Monitor extends CI_Model
         return $total;
     }
 
+    private function sumComparisonLockedTargetAmount($idBowheer, $periodKey, $groupBy)
+    {
+        static $cache = [];
+        $cacheKey = (int) $idBowheer . '|' . (string) $periodKey . '|' . (string) $groupBy;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $locked = $this->getComparisonTargetLockAmount($idBowheer, $periodKey, $groupBy);
+        if ($locked !== null) {
+            $cache[$cacheKey] = $locked;
+            return $locked;
+        }
+
+        if ($this->comparisonPeriodIsCurrentPeriod($periodKey, $groupBy)) {
+            $rawAmount = $this->sumComparisonRawTargetAmount($idBowheer, $periodKey, $groupBy);
+            $deviasiAmount = $this->sumComparisonUninvoicedTargetAmount($idBowheer, $periodKey, $groupBy);
+            $this->saveComparisonTargetLockAmount($idBowheer, $periodKey, $groupBy, $deviasiAmount, $rawAmount, $deviasiAmount);
+            $cache[$cacheKey] = $deviasiAmount;
+            return $deviasiAmount;
+        }
+
+        $rows = $this->getComparisonTargetDetail((int) $idBowheer, (string) $periodKey, $groupBy, null, null, false);
+        $total = 0;
+        foreach ($rows as $row) {
+            if (!$this->comparisonTargetWasInvoicedBeforePeriod($row, $periodKey, $groupBy)) {
+                $total += (float) ($row['amount'] ?? 0);
+            }
+        }
+
+        $cache[$cacheKey] = $total;
+        return $total;
+    }
+
+    private function sumComparisonRawTargetAmount($idBowheer, $periodKey, $groupBy)
+    {
+        $rows = $this->getComparisonTargetDetail((int) $idBowheer, (string) $periodKey, $groupBy, null, null, false);
+        $total = 0;
+        foreach ($rows as $row) {
+            $total += (float) ($row['amount'] ?? 0);
+        }
+
+        return $total;
+    }
+
+    private function getComparisonTargetLockAmount($idBowheer, $periodKey, $groupBy)
+    {
+        if (!$this->db->table_exists('tb_po_comparison_target_lock')) {
+            return null;
+        }
+
+        $row = $this->db
+            ->select('locked_amount')
+            ->from('tb_po_comparison_target_lock')
+            ->where('id_bowheer', (int) $idBowheer)
+            ->where('group_by', $groupBy === 'week' ? 'week' : 'month')
+            ->where('period_key', (string) $periodKey)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return $row ? (float) $row['locked_amount'] : null;
+    }
+
+    private function saveComparisonTargetLockAmount($idBowheer, $periodKey, $groupBy, $lockedAmount, $rawAmount, $deviasiAmount)
+    {
+        if (!$this->db->table_exists('tb_po_comparison_target_lock')) {
+            return;
+        }
+
+        $this->db->query(
+            "INSERT IGNORE INTO tb_po_comparison_target_lock
+                (id_bowheer, group_by, period_key, locked_amount, raw_amount, deviasi_amount, locked_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+                (int) $idBowheer,
+                $groupBy === 'week' ? 'week' : 'month',
+                (string) $periodKey,
+                (float) $lockedAmount,
+                (float) $rawAmount,
+                (float) $deviasiAmount,
+                date('Y-m-d H:i:s')
+            ]
+        );
+    }
+
     private function comparisonTargetWasInvoicedByPeriod(array $row, $periodKey, $groupBy)
     {
         if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001 || empty($row['claim_invoice_date'])) {
@@ -3271,6 +3401,21 @@ class MPO_Monitor extends CI_Model
         $targetSort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
 
         return $invoiceSort > 0 && $targetSort > 0 && $invoiceSort <= $targetSort;
+    }
+
+    private function comparisonTargetWasInvoicedBeforePeriod(array $row, $periodKey, $groupBy)
+    {
+        if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001 || empty($row['claim_invoice_date'])) {
+            return false;
+        }
+
+        $invoicePeriodKey = $groupBy === 'week'
+            ? $this->weekKeyFromDate($row['claim_invoice_date'])
+            : $this->monthKeyFromInvoiceWeek($row['claim_invoice_date']);
+        $invoiceSort = $this->comparisonPeriodSortValue($invoicePeriodKey, $groupBy);
+        $targetSort = $this->comparisonPeriodSortValue($periodKey, $groupBy);
+
+        return $invoiceSort > 0 && $targetSort > 0 && $invoiceSort < $targetSort;
     }
 
     private function sumComparisonTargetAmount($idBowheer, $periodKey, $groupBy)
