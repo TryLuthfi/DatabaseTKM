@@ -445,6 +445,14 @@ if (!function_exists('po_monitor_term_amount_link')) {
         font-weight: 900;
     }
 
+    .po-compare-table thead .po-compare-week-cumulative-lead,
+    .po-compare-table thead .po-compare-cumulative-column {
+        background: #d45c5c !important;
+        color: #111827 !important;
+        text-align: center;
+        font-weight: 900;
+    }
+
     .po-compare-table thead .po-compare-achieved {
         background: #9dc99d;
         color: #111827;
