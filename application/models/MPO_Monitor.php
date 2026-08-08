@@ -3091,10 +3091,56 @@ class MPO_Monitor extends CI_Model
     private function getComparisonLockedTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
     {
         $rows = $this->getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth, $toMonth, false);
-        return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
+        $rows = array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy) {
             return (float) ($row['amount'] ?? 0) > 0.000001
                 && !$this->comparisonTargetWasInvoicedBeforePeriod($row, $periodKey, $groupBy);
         }));
+
+        return $this->alignComparisonDetailRowsToLockedAmount($rows, $idBowheer, $periodKey, $groupBy);
+    }
+
+    private function alignComparisonDetailRowsToLockedAmount(array $rows, $idBowheer, $periodKey, $groupBy)
+    {
+        if ((string) $periodKey === '__total__') {
+            return $rows;
+        }
+
+        $lockedAmount = $this->getComparisonTargetLockAmount($idBowheer, $periodKey, $groupBy);
+        if ($lockedAmount === null) {
+            return $rows;
+        }
+
+        $currentAmount = 0;
+        foreach ($rows as $row) {
+            $currentAmount += (float) ($row['amount'] ?? 0);
+        }
+
+        $adjustment = (float) $lockedAmount - $currentAmount;
+        if (abs($adjustment) <= 0.5) {
+            return $rows;
+        }
+
+        $rows[] = [
+            'id_bowheer' => (int) $idBowheer,
+            'po_number' => '-',
+            'type_project' => 'LOCK TARGET',
+            'po_date' => null,
+            'term_index' => 0,
+            'no_po_sub' => '-',
+            'regional' => 'ADJUSTMENT LOCK',
+            'kota_po' => '-',
+            'detail_po' => 'Penyesuaian angka lock target agar total sesuai dashboard',
+            'remarks' => 'Locked target ' . number_format((float) $lockedAmount, 0, ',', '.'),
+            'target_week' => 0,
+            'target_week_start' => null,
+            'target_week_end' => null,
+            'amount' => $adjustment,
+            'invoiced_amount' => 0,
+            'claim_invoice_date' => null,
+            'source_label' => 'Target Lock Adjustment'
+        ];
+
+        return $rows;
     }
 
     private function getComparisonDeviasiByPoDetailRows($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
