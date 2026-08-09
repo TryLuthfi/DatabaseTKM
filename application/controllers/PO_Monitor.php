@@ -8,6 +8,7 @@ class PO_Monitor extends CI_Controller
         parent::__construct();
         enforce_database_all_po_access();
         $this->load->model('MPO_Monitor');
+        $this->load->helper('po_audit_log');
         $this->MPO_Monitor->ensureStandaloneSchema();
     }
 
@@ -2246,8 +2247,16 @@ class PO_Monitor extends CI_Controller
         $invoiceDateRaw = $this->input->post('invoice_date');
         $invoiceDate = $invoiceDateRaw ? date('Y-m-d', strtotime($invoiceDateRaw)) : null;
         $amount = $this->normalizeAmount($this->input->post('invoice_amount'));
+        $oldAudit = $this->getPoMonitorInvoiceAuditContext($idTerm, $idAllocation);
 
         $result = $this->MPO_Monitor->claimTerm($idTerm, $invoiceDate, $amount, $this->session->userdata('id_user'), $idAllocation);
+        if (!empty($result['status'])) {
+            $newAudit = $this->getPoMonitorInvoiceAuditContext($idTerm, $idAllocation);
+            $this->writePoMonitorInvoiceAudit('CLAIM_INVOICE', $oldAudit, $newAudit, [
+                'input_invoice_date' => $invoiceDate,
+                'input_invoice_amount' => $amount,
+            ]);
+        }
         $this->session->set_flashdata('status', !empty($result['status']));
         $this->session->set_flashdata('error_log', $result['message']);
         redirect('PO_Monitor/detail/' . $idPo);
@@ -2266,8 +2275,16 @@ class PO_Monitor extends CI_Controller
         $invoiceDateRaw = $this->input->post('invoice_date');
         $invoiceDate = $invoiceDateRaw ? date('Y-m-d', strtotime($invoiceDateRaw)) : null;
         $amount = $this->normalizeAmount($this->input->post('invoice_amount'));
+        $oldAudit = $this->getPoMonitorInvoiceAuditContext($idTerm, $idAllocation);
 
         $result = $this->MPO_Monitor->replaceInvoiceClaim($idTerm, $idAllocation, $invoiceDate, $amount, $this->session->userdata('id_user'));
+        if (!empty($result['status'])) {
+            $newAudit = $this->getPoMonitorInvoiceAuditContext($idTerm, $idAllocation);
+            $this->writePoMonitorInvoiceAudit('EDIT_INVOICE', $oldAudit, $newAudit, [
+                'input_invoice_date' => $invoiceDate,
+                'input_invoice_amount' => $amount,
+            ]);
+        }
         $this->session->set_flashdata('status', !empty($result['status']));
         $this->session->set_flashdata('error_log', $result['message']);
         redirect('PO_Monitor/detail/' . $idPo);
@@ -2283,8 +2300,13 @@ class PO_Monitor extends CI_Controller
         $idTerm = (int) $this->input->post('id_term');
         $idPo = (int) $this->input->post('id_po');
         $idAllocation = (int) $this->input->post('id_allocation');
+        $oldAudit = $this->getPoMonitorInvoiceAuditContext($idTerm, $idAllocation);
 
         $result = $this->MPO_Monitor->resetInvoiceClaim($idTerm, $idAllocation);
+        if (!empty($result['status'])) {
+            $newAudit = $this->getPoMonitorInvoiceAuditContext($idTerm, $idAllocation);
+            $this->writePoMonitorInvoiceAudit('RESET_INVOICE', $oldAudit, $newAudit);
+        }
         $this->session->set_flashdata('status', !empty($result['status']));
         $this->session->set_flashdata('error_log', $result['message']);
         redirect('PO_Monitor/detail/' . $idPo);
@@ -2355,10 +2377,18 @@ class PO_Monitor extends CI_Controller
                 continue;
             }
 
-            $result = $this->MPO_Monitor->claimTerm((int) $lookup[$key]['id_term'], $invoiceDate, $amount, $this->session->userdata('id_user'), (int) ($lookup[$key]['id_allocation'] ?? 0));
+            $auditIdTerm = (int) $lookup[$key]['id_term'];
+            $auditIdAllocation = (int) ($lookup[$key]['id_allocation'] ?? 0);
+            $oldAudit = $this->getPoMonitorInvoiceAuditContext($auditIdTerm, $auditIdAllocation);
+            $result = $this->MPO_Monitor->claimTerm($auditIdTerm, $invoiceDate, $amount, $this->session->userdata('id_user'), $auditIdAllocation);
             if (!empty($result['status'])) {
                 $success++;
                 $usedAmount[$key] = (float) ($usedAmount[$key] ?? 0) + $amount;
+                $newAudit = $this->getPoMonitorInvoiceAuditContext($auditIdTerm, $auditIdAllocation);
+                $this->writePoMonitorInvoiceAudit('BATCH_CLAIM_INVOICE', $oldAudit, $newAudit, [
+                    'input_invoice_date' => $invoiceDate,
+                    'input_invoice_amount' => $amount,
+                ]);
             } else {
                 $skipped[] = $poNumber . ' term ' . $termNo . ': ' . ($result['message'] ?? 'gagal');
             }
@@ -2424,5 +2454,73 @@ class PO_Monitor extends CI_Controller
         $this->output
             ->set_content_type('application/json')
             ->set_output(json_encode(['status' => true, 'lookup' => $lookup]));
+    }
+
+    private function getPoMonitorInvoiceAuditContext($idTerm, $idAllocation = 0)
+    {
+        $idTerm = (int) $idTerm;
+        $idAllocation = (int) $idAllocation;
+        $row = $this->db
+            ->select('
+                p.id_po,
+                p.po_number,
+                p.status_po,
+                b.bowheer,
+                t.id_term,
+                t.term_index,
+                a.id_allocation,
+                a.no_po_sub
+            ', false)
+            ->from('tb_po_term t')
+            ->join('tb_po p', 'p.id_po = t.id_po', 'inner')
+            ->join('tb_bowheer_po b', 'b.id_bowheer = p.id_bowheer', 'left')
+            ->join('tb_po_term_allocation a', 'a.id_allocation = ' . $this->db->escape($idAllocation) . ' AND a.id_term = t.id_term', 'left', false)
+            ->where('t.id_term', $idTerm)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $claim = $this->db
+            ->select('COALESCE(SUM(invoice_amount),0) AS invoice_amount, MAX(invoice_date) AS invoice_date, COUNT(*) AS claim_count', false)
+            ->from('tb_po_term_claim')
+            ->where('id_term', $idTerm);
+        if ($idAllocation > 0) {
+            $claim->where('id_allocation', $idAllocation);
+        } else {
+            $claim->where('id_allocation IS NULL', null, false);
+        }
+        $claimRow = $claim->get()->row_array();
+
+        return [
+            'id_po' => (int) ($row['id_po'] ?? 0),
+            'po_number' => (string) ($row['po_number'] ?? ''),
+            'bowheer' => (string) ($row['bowheer'] ?? ''),
+            'status_po' => (string) ($row['status_po'] ?? ''),
+            'id_term' => $idTerm,
+            'term_index' => (int) ($row['term_index'] ?? 0),
+            'id_allocation' => $idAllocation,
+            'no_po_sub' => (string) ($row['no_po_sub'] ?? ''),
+            'invoice_amount' => (float) ($claimRow['invoice_amount'] ?? 0),
+            'invoice_date' => (string) ($claimRow['invoice_date'] ?? ''),
+            'claim_count' => (int) ($claimRow['claim_count'] ?? 0),
+        ];
+    }
+
+    private function writePoMonitorInvoiceAudit($action, array $oldAudit, array $newAudit, array $extra = [])
+    {
+        po_audit_log_write($this, 'PO_Monitor', $action, array_merge([
+            'po' => $newAudit['po_number'] ?: ($oldAudit['po_number'] ?? '-'),
+            'bowheer' => $newAudit['bowheer'] ?: ($oldAudit['bowheer'] ?? '-'),
+            'id_po' => $newAudit['id_po'] ?: ($oldAudit['id_po'] ?? '-'),
+            'term' => $newAudit['term_index'] ?: ($oldAudit['term_index'] ?? '-'),
+            'id_term' => $newAudit['id_term'] ?: ($oldAudit['id_term'] ?? '-'),
+            'id_allocation' => $newAudit['id_allocation'] ?: ($oldAudit['id_allocation'] ?? '-'),
+            'no_po_sub' => $newAudit['no_po_sub'] ?: ($oldAudit['no_po_sub'] ?? '-'),
+            'field' => 'invoice_amount',
+            'old' => $oldAudit['invoice_amount'] ?? 0,
+            'new' => $newAudit['invoice_amount'] ?? 0,
+            'old_date' => $oldAudit['invoice_date'] ?? '-',
+            'new_date' => $newAudit['invoice_date'] ?? '-',
+        ], $extra));
     }
 }

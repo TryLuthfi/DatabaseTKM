@@ -10,6 +10,7 @@ class PO_MyRep extends CI_Controller
         $this->load->model('MPO_Monitor');
         $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->model('MMainfeeder_MyRep');
+        $this->load->helper('po_audit_log');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('PO_MyRep');
@@ -857,6 +858,13 @@ class PO_MyRep extends CI_Controller
 
         if ($result) {
             $this->MPO_Monitor->syncMyRepTerminClaim($terminId, (int) $this->session->userdata('id_user'));
+            $newTermin = $this->MPO_MyRep->getTerminById($terminId) ?: array_merge($termin, [
+                'status_termin' => $statusTermin,
+                'invoice_number' => trim((string) $this->input->post('invoice_number')),
+                'invoice_date' => $invoiceDate,
+                'invoice_value' => $invoiceValue,
+            ]);
+            $this->writePoMyRepInvoiceAudit('EDIT_INVOICE', $termin, $newTermin);
         }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Termin berhasil diupdate.' : 'Termin gagal diupdate.');
@@ -960,6 +968,7 @@ class PO_MyRep extends CI_Controller
 
             if ($updated) {
                 $this->MPO_Monitor->syncMyRepTerminClaim((int) ($termin['id_po_termin'] ?? 0), (int) $this->session->userdata('id_user'));
+                $this->writePoMyRepInvoiceAudit('BATCH_INVOICE', $termin, array_merge($termin, $terminUpdatePayload));
                 $updatedCount++;
             } else {
                 $skippedMessages[] = $rowLabel . ': gagal disimpan.';
@@ -1531,6 +1540,33 @@ class PO_MyRep extends CI_Controller
             'WASPANG',
             'PERMIT',
         ];
+    }
+
+    private function writePoMyRepInvoiceAudit($action, array $oldTermin, array $newTermin)
+    {
+        $oldValue = array_key_exists('invoice_value', $oldTermin) && $oldTermin['invoice_value'] !== null && $oldTermin['invoice_value'] !== ''
+            ? (float) $oldTermin['invoice_value']
+            : 0;
+        $newValue = array_key_exists('invoice_value', $newTermin) && $newTermin['invoice_value'] !== null && $newTermin['invoice_value'] !== ''
+            ? (float) $newTermin['invoice_value']
+            : 0;
+
+        po_audit_log_write($this, 'PO_MyRep', $action, [
+            'po' => (string) ($newTermin['po_number'] ?? $oldTermin['po_number'] ?? '-'),
+            'project_type' => (string) ($newTermin['po_type'] ?? $oldTermin['po_type'] ?? '-'),
+            'id_po_header' => (int) ($newTermin['id_po_header'] ?? $oldTermin['id_po_header'] ?? 0),
+            'id_po_termin' => (int) ($newTermin['id_po_termin'] ?? $oldTermin['id_po_termin'] ?? 0),
+            'cluster_id' => (int) ($newTermin['id_myrep_cluster'] ?? $oldTermin['id_myrep_cluster'] ?? 0),
+            'mainfeeder_id' => (int) ($newTermin['id_mainfeeder'] ?? $oldTermin['id_mainfeeder'] ?? 0),
+            'term' => (int) ($newTermin['termin_no'] ?? $oldTermin['termin_no'] ?? 0),
+            'field' => 'invoice_value',
+            'old' => $oldValue,
+            'new' => $newValue,
+            'old_date' => (string) ($oldTermin['invoice_date'] ?? '-'),
+            'new_date' => (string) ($newTermin['invoice_date'] ?? '-'),
+            'old_status' => (string) ($oldTermin['status_termin'] ?? '-'),
+            'new_status' => (string) ($newTermin['status_termin'] ?? '-'),
+        ]);
     }
 
     private function normalizeNumber($value)
