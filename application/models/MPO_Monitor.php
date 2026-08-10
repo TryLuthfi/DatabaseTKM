@@ -6379,10 +6379,8 @@ class MPO_Monitor extends CI_Model
     private function getNyPoReferencePipelineGroup(array $pipeline)
     {
         $this->ensureStandaloneSchema();
-        $sourceRowNo = (int) ($pipeline['source_row_no'] ?? 0);
         $this->db
             ->from('tb_po_target_pipeline')
-            ->where("CONVERT(target_status USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('TARGET_WEEK' USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
             ->where('COALESCE(id_bowheer, 0) = ' . (int) ($pipeline['id_bowheer'] ?? 0), null, false)
             ->where("CONVERT(COALESCE(dashboard_bowheer, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['dashboard_bowheer'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
             ->where("CONVERT(COALESCE(type_project, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['type_project'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
@@ -6390,10 +6388,6 @@ class MPO_Monitor extends CI_Model
             ->where("CONVERT(COALESCE(kota_po, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['kota_po'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
             ->where("CONVERT(COALESCE(detail_po, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['detail_po'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false)
             ->where("CONVERT(COALESCE(remarks, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(" . $this->db->escape((string) ($pipeline['remarks'] ?? '')) . " USING utf8mb4) COLLATE utf8mb4_unicode_ci", null, false);
-
-        if ($sourceRowNo > 0) {
-            $this->db->where('source_row_no', $sourceRowNo);
-        }
 
         return $this->db
             ->order_by('term_index', 'ASC')
@@ -6405,7 +6399,6 @@ class MPO_Monitor extends CI_Model
     private function buildNyPoReferenceGroupKey(array $row)
     {
         $parts = [
-            (string) ($row['source_row_no'] ?? ''),
             (string) ($row['id_bowheer'] ?? ''),
             $this->normalizeNyPoMatchText((string) ($row['bowheer'] ?? $row['dashboard_bowheer'] ?? '')),
             $this->normalizeNyPoMatchText((string) ($row['type_project'] ?? '')),
@@ -6814,11 +6807,7 @@ class MPO_Monitor extends CI_Model
         $groups = [];
         $refByGroup = [];
         foreach ($queryRows as $item) {
-            $groupKey = 'pipeline|' . (
-                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
-                    ? (string) $item['source_row_no']
-                    : md5(implode('|', [(string) $item['dashboard_bowheer'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks'], (string) $item['type_project']]))
-            );
+            $groupKey = 'pipeline|' . $this->buildNyPoReferenceGroupKey($item);
             $idPipeline = (int) ($item['id_pipeline'] ?? 0);
             if ($idPipeline > 0 && (!isset($refByGroup[$groupKey]) || $idPipeline < $refByGroup[$groupKey])) {
                 $refByGroup[$groupKey] = $idPipeline;
@@ -6826,11 +6815,7 @@ class MPO_Monitor extends CI_Model
         }
 
         foreach ($queryRows as $item) {
-            $groupKey = 'pipeline|' . (
-                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
-                    ? (string) $item['source_row_no']
-                    : md5(implode('|', [(string) $item['dashboard_bowheer'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks'], (string) $item['type_project']]))
-            );
+            $groupKey = 'pipeline|' . $this->buildNyPoReferenceGroupKey($item);
             if (!isset($groups[$groupKey])) {
                 $row = $this->getEmptyImportReportRow();
                 $row['NY PO REF'] = 'NY-' . (int) ($refByGroup[$groupKey] ?? $item['id_pipeline'] ?? 0);
