@@ -3165,10 +3165,48 @@ class MPO_Monitor extends CI_Model
         }
         unset($row);
 
-        return array_values(array_filter($rows, function ($row) use ($cumulativePeriodKey, $groupBy) {
+        $rows = array_values(array_filter($rows, function ($row) use ($cumulativePeriodKey, $groupBy) {
             return (float) ($row['amount'] ?? 0) > 0.000001
                 && !$this->comparisonTargetWasInvoicedByPeriod($row, $cumulativePeriodKey, $groupBy);
         }));
+
+        return $this->alignComparisonCumulativeRowsToSummaryAmount($rows, $idBowheer, $cumulativePeriodKey, $groupBy);
+    }
+
+    private function alignComparisonCumulativeRowsToSummaryAmount(array $rows, $idBowheer, $periodKey, $groupBy)
+    {
+        $summaryAmount = $this->sumComparisonUninvoicedTargetAmount((int) $idBowheer, (string) $periodKey, $groupBy);
+        $currentAmount = 0;
+        foreach ($rows as $row) {
+            $currentAmount += (float) ($row['amount'] ?? 0);
+        }
+
+        $adjustment = (float) $summaryAmount - $currentAmount;
+        if (abs($adjustment) <= 0.5) {
+            return $rows;
+        }
+
+        $rows[] = [
+            'id_bowheer' => (int) $idBowheer,
+            'po_number' => '-',
+            'type_project' => 'LOCK KUMULATIF',
+            'po_date' => null,
+            'term_index' => 0,
+            'no_po_sub' => '-',
+            'regional' => 'ADJUSTMENT KUMULATIF',
+            'kota_po' => '-',
+            'detail_po' => 'Penyesuaian angka kumulatif agar total sesuai dashboard',
+            'remarks' => 'Summary kumulatif ' . number_format((float) $summaryAmount, 0, ',', '.'),
+            'target_week' => 0,
+            'target_week_start' => null,
+            'target_week_end' => null,
+            'amount' => $adjustment,
+            'invoiced_amount' => 0,
+            'claim_invoice_date' => null,
+            'source_label' => 'Kumulatif Adjustment'
+        ];
+
+        return $rows;
     }
 
     private function getComparisonEffectiveTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null)
@@ -6885,6 +6923,7 @@ class MPO_Monitor extends CI_Model
             }
         }
 
+        $dedupedRows = [];
         foreach ($rows as &$row) {
             $groupKey = $this->buildNyPoReferenceGroupKey($row);
             $row['ny_po_ref'] = 'NY-' . (int) ($refByGroup[$groupKey] ?? $row['id_pipeline'] ?? 0);
@@ -6893,10 +6932,27 @@ class MPO_Monitor extends CI_Model
             $row['period'] = !empty($row['target_week_start']) && !empty($row['target_week_end'])
                 ? $row['target_week_start'] . ' s/d ' . $row['target_week_end']
                 : '';
+            $dedupeKey = implode('|', [
+                $groupKey,
+                (int) ($row['term_index'] ?? 0),
+                (string) ($row['amount'] ?? ''),
+                (string) ($row['period'] ?? '')
+            ]);
+
+            if (!isset($dedupedRows[$dedupeKey])) {
+                $dedupedRows[$dedupeKey] = $row;
+                continue;
+            }
+
+            $existingLinkedPo = trim((string) ($dedupedRows[$dedupeKey]['linked_po_number'] ?? ''));
+            $currentLinkedPo = trim((string) ($row['linked_po_number'] ?? ''));
+            if ($existingLinkedPo === '' && $currentLinkedPo !== '') {
+                $dedupedRows[$dedupeKey] = $row;
+            }
         }
         unset($row);
 
-        return $rows;
+        return array_values($dedupedRows);
     }
 
     private function baseOnPoImportReportRow($item)
