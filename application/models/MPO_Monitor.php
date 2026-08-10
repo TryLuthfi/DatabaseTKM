@@ -3605,9 +3605,17 @@ class MPO_Monitor extends CI_Model
                 p.po_date,
                 t.term_index,
                 COALESCE(NULLIF(a.no_po_sub, ''), aa.no_po_sub) AS no_po_sub,
-                COALESCE(NULLIF(a.regional, ''), aa.regional) AS regional,
-                COALESCE(NULLIF(a.kota_po, ''), aa.kota_po) AS kota_po,
-                COALESCE(NULLIF(a.detail_po, ''), aa.detail_po) AS detail_po,
+                COALESCE(NULLIF(a.regional, ''), aa.regional, myrep_cluster.regional_name, myrep_mainfeeder.regional_name) AS regional,
+                COALESCE(NULLIF(a.kota_po, ''), aa.kota_po, myrep_cluster.city_name, myrep_mainfeeder.city_name) AS kota_po,
+                COALESCE(
+                    NULLIF(a.detail_po, ''),
+                    aa.detail_po,
+                    CASE
+                        WHEN TRIM(COALESCE(myrep_cluster.cluster_name, '')) <> '' THEN CONCAT(COALESCE(myrep_header.po_type, 'CLUSTER'), ' - ', myrep_cluster.cluster_name)
+                        WHEN TRIM(COALESCE(myrep_mainfeeder.mainfeeder_name, '')) <> '' THEN CONCAT(COALESCE(myrep_header.po_type, 'MAINFEEDER'), ' - ', myrep_mainfeeder.mainfeeder_name)
+                        ELSE NULL
+                    END
+                ) AS detail_po,
                 COALESCE(NULLIF(a.remarks, ''), aa.remarks) AS remarks,
                 tc.invoice_date,
                 tc.invoice_amount AS amount,
@@ -3627,6 +3635,9 @@ class MPO_Monitor extends CI_Model
                 FROM tb_po_term_allocation
                 GROUP BY id_term
             ) aa ON aa.id_term = t.id_term
+            LEFT JOIN tb_myrep_po_header myrep_header ON CONVERT(TRIM(myrep_header.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(TRIM(p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            LEFT JOIN tb_myrep_cluster myrep_cluster ON myrep_cluster.id_myrep_cluster = myrep_header.id_myrep_cluster
+            LEFT JOIN tb_rfs_myrep_mainfeeder myrep_mainfeeder ON myrep_mainfeeder.id_mainfeeder = myrep_header.id_mainfeeder
             WHERE tc.invoice_date IS NOT NULL
                 AND p.id_bowheer = ?
             ORDER BY tc.invoice_date ASC, p.po_number ASC, t.term_index ASC", [$idBowheer])->result_array();
