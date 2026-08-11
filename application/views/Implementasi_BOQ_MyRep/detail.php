@@ -102,6 +102,25 @@ if (!function_exists('implProgressPhotoPreviewUrl')) {
     }
 }
 
+if (!function_exists('implActivityPhotoUrl')) {
+    function implActivityPhotoUrl($filePath)
+    {
+        $relativePath = ltrim(str_replace('\\', '/', (string) $filePath), '/');
+        if ($relativePath === '' || strpos($relativePath, '..') !== false) {
+            return '';
+        }
+
+        $url = base_url($relativePath);
+        $fullPath = FCPATH . $relativePath;
+        if (is_file($fullPath)) {
+            $version = (string) filemtime($fullPath) . '-' . (string) filesize($fullPath);
+            $url .= '?v=' . rawurlencode($version);
+        }
+
+        return $url;
+    }
+}
+
 if (!function_exists('implPhotoMimeFromPath')) {
     function implPhotoMimeFromPath($filePath)
     {
@@ -416,7 +435,18 @@ foreach ((array) $dailyActivities as $dailyActivity) {
     if (!isset($dailyActivitiesByDate[$dailyDateKey])) {
         $dailyActivitiesByDate[$dailyDateKey] = [];
     }
-    $dailyActivitiesByDate[$dailyDateKey][] = $dailyActivity;
+    $dailyActivityForDate = $dailyActivity;
+    $dailyActivityPhotosForDate = [];
+    foreach ((array) ($dailyActivityForDate['photos'] ?? []) as $dailyActivityPhotoForDate) {
+        $dailyActivityPhotoUrl = implActivityPhotoUrl($dailyActivityPhotoForDate['file_path'] ?? '');
+        if ($dailyActivityPhotoUrl !== '') {
+            $dailyActivityPhotoForDate['image_url'] = $dailyActivityPhotoUrl;
+            $dailyActivityPhotoForDate['thumb_url'] = $dailyActivityPhotoUrl;
+        }
+        $dailyActivityPhotosForDate[] = $dailyActivityPhotoForDate;
+    }
+    $dailyActivityForDate['photos'] = $dailyActivityPhotosForDate;
+    $dailyActivitiesByDate[$dailyDateKey][] = $dailyActivityForDate;
 
     $dailyCode = strtoupper(trim((string) ($dailyActivity['activity_code'] ?? '')));
     $dailyActivityRemark = trim((string) ($dailyActivity['activity_detail'] ?? ''));
@@ -2778,7 +2808,19 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                         ];
                                     }
 
-                                    $dailyGrouped[$groupDate]['activities'][] = $activity;
+                                    $activityForDetail = $activity;
+                                    $activityPhotosForDetail = [];
+                                    foreach ((array) ($activityForDetail['photos'] ?? []) as $activityPhotoForDetail) {
+                                        $activityPhotoUrl = implActivityPhotoUrl($activityPhotoForDetail['file_path'] ?? '');
+                                        if ($activityPhotoUrl !== '') {
+                                            $activityPhotoForDetail['image_url'] = $activityPhotoUrl;
+                                            $activityPhotoForDetail['thumb_url'] = $activityPhotoUrl;
+                                        }
+                                        $activityPhotosForDetail[] = $activityPhotoForDetail;
+                                    }
+                                    $activityForDetail['photos'] = $activityPhotosForDetail;
+
+                                    $dailyGrouped[$groupDate]['activities'][] = $activityForDetail;
                                     $dailyGrouped[$groupDate]['total_qty'] += (float) ($activity['qty_activity'] ?? 0);
                                     $dailyGrouped[$groupDate]['photo_count'] += count((array) ($activity['photos'] ?? []));
                                     $dailyGrouped[$groupDate]['team_count'] = max($dailyGrouped[$groupDate]['team_count'], (int) ($activity['team_count'] ?? 0));
@@ -5855,8 +5897,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                 var photoId = parseInt(photo.id_progress_photo || 0, 10) || 0;
                                 var dailyPhotoId = parseInt(photo.id_activity_photo || 0, 10) || 0;
                                 var imagePath = (photo.file_path || '').replace(/^\/+/, '');
-                                var imageUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : ('<?= base_url() ?>' + imagePath);
-                                var thumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : imageUrl;
+                                var imageUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : (photo.image_url || ('<?= base_url() ?>' + imagePath));
+                                var thumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : (photo.thumb_url || imageUrl);
                                 var photoCaption = photo.caption || photo.file_name || 'Foto';
                                 htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-photo-source="' + (photoId > 0 ? 'progress' : 'daily') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-daily-photo-id="' + escapeAttr(dailyPhotoId) + '" data-image="' + imageUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                                 htmlDaily += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + thumbUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto') + '" loading="lazy" decoding="async" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
@@ -5993,9 +6035,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                 ((parseInt(photo.uploaded_by || 0, 10) || 0) === currentUserId)
                             ))
                         );
-                        var photoOriginalUrl = '<?= base_url() ?>' + (photo.file_path || '');
+                        var photoOriginalUrl = photo.image_url || ('<?= base_url() ?>' + (photo.file_path || ''));
                         var photoPreviewUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'preview') : photoOriginalUrl;
-                        var photoThumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : photoOriginalUrl;
+                        var photoThumbUrl = photoId > 0 ? getProgressPhotoPreviewUrl(photoId, 'thumb') : (photo.thumb_url || photoOriginalUrl);
                         html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '" data-can-delete-photo="' + (canDeletePhoto ? '1' : '0') + '">';
                         html += '<a href="' + photoPreviewUrl + '" class="js-open-lightbox d-block" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-image="' + photoPreviewUrl + '" data-mime="' + escapeAttr(getImageMimeFromUrl(photo.file_path || '')) + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                         html += '<img src="' + lazyPhotoPlaceholder + '" data-src="' + photoThumbUrl + '" class="js-lazy-photo" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '" loading="lazy" decoding="async">';
