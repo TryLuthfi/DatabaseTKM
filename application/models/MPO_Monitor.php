@@ -1521,14 +1521,19 @@ class MPO_Monitor extends CI_Model
         $allocationClaimLimitSql = "GREATEST(" . $allocationValueSql . ", (
             COALESCE((SELECT p.total_value FROM tb_po p WHERE p.id_po = t.id_po), 0) * COALESCE(t.percent, 0) / 100
         ))";
+        $claimAmountSql = "COALESCE(tc_alloc.invoiced_amount, CASE WHEN ac.allocation_count = 1 THEN tc_term.invoiced_amount ELSE 0 END, 0)";
+        $claimDateSql = "COALESCE(tc_alloc.invoice_date, CASE WHEN ac.allocation_count = 1 THEN tc_term.invoice_date ELSE NULL END)";
         $rows = $this->db->select('a.*', false)
             ->select('t.term_index', false)
             ->select($allocationClaimLimitSql . ' AS allocation_value', false)
-            ->select('GREATEST(' . $allocationClaimLimitSql . ' - COALESCE(SUM(tc.invoice_amount),0), 0) AS outstanding_amount', false)
-            ->select('COALESCE(SUM(tc.invoice_amount),0) AS invoiced_amount', false)
+            ->select('GREATEST(' . $allocationClaimLimitSql . ' - ' . $claimAmountSql . ', 0) AS outstanding_amount', false)
+            ->select($claimAmountSql . ' AS invoiced_amount', false)
+            ->select($claimDateSql . ' AS invoice_date', false)
             ->from('tb_po_term_allocation a')
             ->join('tb_po_term t', 't.id_term = a.id_term')
-            ->join('tb_po_term_claim tc', 'tc.id_allocation = a.id_allocation', 'left')
+            ->join('(SELECT id_term, COUNT(*) AS allocation_count FROM tb_po_term_allocation GROUP BY id_term) ac', 'ac.id_term = a.id_term', 'left')
+            ->join('(SELECT id_allocation, SUM(invoice_amount) AS invoiced_amount, MAX(invoice_date) AS invoice_date FROM tb_po_term_claim WHERE id_allocation IS NOT NULL GROUP BY id_allocation) tc_alloc', 'tc_alloc.id_allocation = a.id_allocation', 'left')
+            ->join('(SELECT id_term, SUM(invoice_amount) AS invoiced_amount, MAX(invoice_date) AS invoice_date FROM tb_po_term_claim WHERE id_allocation IS NULL GROUP BY id_term) tc_term', 'tc_term.id_term = a.id_term', 'left')
             ->where('t.id_po', (int) $id_po)
             ->group_by('a.id_allocation')
             ->order_by('t.term_index', 'ASC')
@@ -3375,7 +3380,7 @@ class MPO_Monitor extends CI_Model
                 $filterInvoicedForActivePeriod
                 &&
                 !$this->comparisonPeriodIsBeforeCurrentPeriod($rowPeriod, $groupBy)
-                && (float) ($row['invoiced_amount'] ?? 0) > 0.000001
+                && !empty($row['claim_invoice_date'])
             ) {
                 return false;
             }
@@ -3532,7 +3537,7 @@ class MPO_Monitor extends CI_Model
 
     private function comparisonTargetWasInvoicedByPeriod(array $row, $periodKey, $groupBy)
     {
-        if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001 || empty($row['claim_invoice_date'])) {
+        if (empty($row['claim_invoice_date'])) {
             return false;
         }
 
@@ -3547,7 +3552,7 @@ class MPO_Monitor extends CI_Model
 
     private function comparisonTargetWasInvoicedBeforePeriod(array $row, $periodKey, $groupBy)
     {
-        if ((float) ($row['invoiced_amount'] ?? 0) <= 0.000001 || empty($row['claim_invoice_date'])) {
+        if (empty($row['claim_invoice_date'])) {
             return false;
         }
 
