@@ -336,7 +336,17 @@ $appendPreviewPhotoItemToRemark = static function ($remark, array $photo) {
                             <div class="comply-print-grid">
                                 <?php foreach ($photoChunk as $photo): ?>
                                     <?php
-                                    $photoUrl = base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/');
+                                    $photoUrl = trim((string) ($photo['image_url'] ?? ''));
+                                    if ($photoUrl === '') {
+                                        $relativePhotoPath = ltrim(str_replace('\\', '/', (string) ($photo['file_path'] ?? '')), '/');
+                                        $photoUrl = base_url($relativePhotoPath);
+                                        if ($relativePhotoPath !== '' && strpos($relativePhotoPath, '..') === false) {
+                                            $fullPhotoPath = FCPATH . $relativePhotoPath;
+                                            if (is_file($fullPhotoPath)) {
+                                                $photoUrl .= '?v=' . rawurlencode((string) filemtime($fullPhotoPath) . '-' . (string) filesize($fullPhotoPath));
+                                            }
+                                        }
+                                    }
                                     $description = trim((string) ($photo['description'] ?? '')) !== ''
                                         ? (string) $photo['description']
                                         : (trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto'));

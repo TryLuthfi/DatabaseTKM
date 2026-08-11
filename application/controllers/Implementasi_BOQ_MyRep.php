@@ -547,6 +547,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 $groups[$sectionTitle][] = [
                     'file_name' => (string) ($photo['file_name'] ?? 'Foto Daily Progress'),
                     'file_path' => (string) ($photo['file_path'] ?? ''),
+                    'image_url' => $this->buildVersionedPublicPhotoUrl((string) ($photo['file_path'] ?? '')),
                     'caption' => $caption,
                     'description' => $description,
                     'meta_line' => !empty($metaParts) ? implode(' | ', $metaParts) : 'Daily Progress',
@@ -2590,6 +2591,24 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         return $fullPath;
+    }
+
+    private function buildVersionedPublicPhotoUrl($relativePath)
+    {
+        $relativePath = trim(str_replace('\\', '/', (string) $relativePath));
+        $relativePath = ltrim($relativePath, '/');
+        if ($relativePath === '' || strpos($relativePath, '..') !== false) {
+            return '';
+        }
+
+        $url = base_url($relativePath);
+        $fullPath = FCPATH . ltrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath), DIRECTORY_SEPARATOR);
+        if (is_file($fullPath)) {
+            $version = (string) filemtime($fullPath) . '-' . (string) filesize($fullPath);
+            $url .= '?v=' . rawurlencode($version);
+        }
+
+        return $url;
     }
 
     private function resolvePdfLogoFile($relativePaths)
