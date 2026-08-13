@@ -2352,13 +2352,11 @@ class MyRepublik_Project extends CI_Controller
         } elseif (in_array($statusRfsInput, ['PARTIAL', 'PARTIAL RFS', 'NY RFS'], true) && $statusRfs !== 'FULL RFS') {
             $statusRfs = 'NY RFS';
         }
-        $statusAtp = 'NOT STARTED';
+        $statusAtp = null;
         if (in_array($statusAtpInput, ['DONE', 'PUNCLIST', 'REJECT'], true)) {
-            $statusAtp = $statusAtpInput;
+            $statusAtp = $statusAtpInput === 'REJECT' ? 'PUNCLIST' : $statusAtpInput;
         } elseif (in_array($statusCurrent, ['ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
             $statusAtp = 'DONE';
-        } elseif ($emailAtpDate !== null) {
-            $statusAtp = 'WAITING';
         }
         $rfsClusterId = 0;
         $linkedCluster = $this->db
@@ -4831,6 +4829,10 @@ class MyRepublik_Project extends CI_Controller
             if ($normalizedChecklistStatus !== 'NRO') {
                 $errors[] = $column . ' hanya dipakai saat ' . $statusColumn . ' = NRO';
             }
+        }
+        $statusAtpRaw = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+        if ($statusAtpRaw !== '' && !in_array($statusAtpRaw, ['DONE', 'PUNCLIST', 'REJECT'], true)) {
+            $errors[] = 'status_atp harus kosong, DONE, PUNCLIST, atau REJECT';
         }
         foreach (['po_cluster_on_target', 'po_subfeeder_on_target', 'po_on_target'] as $booleanColumn) {
             if (!$this->isValidImportBoolean($row[$booleanColumn] ?? '')) {
