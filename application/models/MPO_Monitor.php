@@ -3640,7 +3640,20 @@ class MPO_Monitor extends CI_Model
                 FROM tb_po_term_allocation
                 GROUP BY id_term
             ) aa ON aa.id_term = t.id_term
-            LEFT JOIN tb_myrep_po_header myrep_header ON CONVERT(TRIM(myrep_header.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(TRIM(p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            LEFT JOIN tb_myrep_po_header myrep_header
+                ON myrep_header.id_po_header = (
+                    SELECT mh.id_po_header
+                    FROM tb_myrep_po_header mh
+                    WHERE CONVERT(TRIM(mh.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(TRIM(p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    ORDER BY
+                        CASE
+                            WHEN mh.po_category = 'FINAL' THEN 0
+                            WHEN mh.po_category = 'AMANDMENT' THEN 1
+                            ELSE 2
+                        END ASC,
+                        mh.id_po_header DESC
+                    LIMIT 1
+                )
             LEFT JOIN tb_myrep_cluster myrep_cluster ON myrep_cluster.id_myrep_cluster = myrep_header.id_myrep_cluster
             LEFT JOIN tb_rfs_myrep_mainfeeder myrep_mainfeeder ON myrep_mainfeeder.id_mainfeeder = myrep_header.id_mainfeeder
             WHERE tc.invoice_date IS NOT NULL
