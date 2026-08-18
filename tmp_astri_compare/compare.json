@@ -1,0 +1,310 @@
+[
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Berita Acara Kesepakatan",
+        "match":  "YES",
+        "astri_label":  "Berita Acara Kesepakatan",
+        "astri_type":  "permit_cluster_aggreement"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Berita Acara Open",
+        "match":  "YES",
+        "astri_label":  "Berita Acara Open",
+        "astri_type":  "permit_open"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Cluster Approval Proposal",
+        "match":  "YES",
+        "astri_label":  "Cluster Approval Proposal",
+        "astri_type":  "donation_approval"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "CW ATP",
+        "match":  "YES",
+        "astri_label":  "CW ATP",
+        "astri_type":  "civil_work_acceptance_test"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Form Cluster Survey",
+        "match":  "YES",
+        "astri_label":  "Form Cluster Survey",
+        "astri_type":  "cluster_survey_form"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Form Free Layanan",
+        "match":  "YES",
+        "astri_label":  "Form Free Layanan",
+        "astri_type":  "permit_vip_form"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Layout SnD Kasar",
+        "match":  "YES",
+        "astri_label":  "Layout SnD Kasar",
+        "astri_type":  "rough_design_layout"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "Redline",
+        "match":  "YES",
+        "astri_label":  "Redline",
+        "astri_type":  "redline"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "APD DWG Cluster",
+        "astri_type":  "as_plan_drawing_dwg"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "APD KMZ Cluster",
+        "astri_type":  "as_plan_drawing_kmz"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "APD Subfeeder kmz",
+        "astri_type":  "as_plan_drawing_subfeeder_kmz"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "BA Permit Subfeeder",
+        "astri_type":  "permit_subfeeder"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "CW ATP Subfeeder",
+        "astri_type":  "subfeeder_civil_work_acceptance_test"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Homepass Database",
+        "astri_type":  "homepass_database"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Layout Validasi Sales",
+        "astri_type":  "sales_validation_layout"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "PTSP",
+        "astri_type":  "ptsp"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Redline Subfeeder",
+        "astri_type":  "subfeeder_redline"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Rekomtek",
+        "astri_type":  "rekomtek"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "TSSR",
+        "astri_type":  "tssr"
+    },
+    {
+        "route":  "ATP CLUSTER - FULL OPM",
+        "zeyn_doc":  "FULL OPM",
+        "match":  "NO",
+        "astri_label":  "",
+        "astri_type":  ""
+    },
+    {
+        "route":  "ATP CLUSTER - FULL OPM",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "OPM / OTDR ATP",
+        "astri_type":  "opm_otdr_acceptance_test"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "ABD Cluster DWG",
+        "match":  "YES",
+        "astri_label":  "ABD Cluster DWG",
+        "astri_type":  "as_built_drawing_dwg"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "ABD Cluster KMZ",
+        "match":  "YES",
+        "astri_label":  "ABD Cluster KMZ",
+        "astri_type":  "as_built_drawing_kmz"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "Justifikasi Berita Acara Opname",
+        "match":  "YES",
+        "astri_label":  "Justifikasi Berita Acara Opname",
+        "astri_type":  "justifikasi_berita_acara_opname"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "Project Opname",
+        "match":  "YES",
+        "astri_label":  "Project Opname",
+        "astri_type":  "project_opname"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "ABD BoQ Cluster",
+        "astri_type":  "build_of_quantity_as_built_drawing"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "BoQ APD",
+        "astri_type":  "build_of_quantity_as_plan_drawing"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Core Management",
+        "astri_type":  "core_management"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Project Opname Subfeeder",
+        "astri_type":  "subfeeder_project_opname"
+    },
+    {
+        "route":  "ATP SUBFEEDER - CW ATP",
+        "zeyn_doc":  "APD Core Management Subfeeder",
+        "match":  "YES",
+        "astri_label":  "APD Core Management Subfeeder",
+        "astri_type":  "as_plan_drawing_core_management_subfeeder"
+    },
+    {
+        "route":  "ATP SUBFEEDER - CW ATP",
+        "zeyn_doc":  "CW ATP Subfeeder",
+        "match":  "YES",
+        "astri_label":  "CW ATP Subfeeder",
+        "astri_type":  "subfeeder_civil_work_acceptance_test"
+    },
+    {
+        "route":  "ATP SUBFEEDER - CW ATP",
+        "zeyn_doc":  "Redline Subfeeder",
+        "match":  "YES",
+        "astri_label":  "Redline Subfeeder",
+        "astri_type":  "subfeeder_redline"
+    },
+    {
+        "route":  "ATP SUBFEEDER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "APD Subfeeder dwg",
+        "astri_type":  "as_plan_drawing_subfeeder_dwg"
+    },
+    {
+        "route":  "ATP SUBFEEDER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "APD Subfeeder kmz",
+        "astri_type":  "as_plan_drawing_subfeeder_kmz"
+    },
+    {
+        "route":  "ATP SUBFEEDER - CW ATP",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "BA Permit Subfeeder",
+        "astri_type":  "permit_subfeeder"
+    },
+    {
+        "route":  "ATP SUBFEEDER - FULL OPM",
+        "zeyn_doc":  "FULL OPM",
+        "match":  "NO",
+        "astri_label":  "",
+        "astri_type":  ""
+    },
+    {
+        "route":  "ATP SUBFEEDER - FULL OPM",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "OPM / OTDR Subfeeder",
+        "astri_type":  "subfeeder_opm_otdr_acceptance_test"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "ABD Core Management Subfeeder",
+        "match":  "YES",
+        "astri_label":  "ABD Core Management Subfeeder",
+        "astri_type":  "as_built_drawing_core_management_subfeeder"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "ABD Subfeeder DWG",
+        "match":  "YES",
+        "astri_label":  "ABD Subfeeder dwg",
+        "astri_type":  "as_build_drawing_subfeeder_dwg"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "ABD Subfeeder KMZ",
+        "match":  "YES",
+        "astri_label":  "ABD Subfeeder kmz",
+        "astri_type":  "as_built_drawing_subfeeder_kmz"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "BoQ Subfeeder ABD",
+        "match":  "YES",
+        "astri_label":  "BoQ Subfeeder ABD",
+        "astri_type":  "build_of_quantity_subfeeder_as_built_drawing"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "Project Opname Subfeeder",
+        "match":  "YES",
+        "astri_label":  "Project Opname Subfeeder",
+        "astri_type":  "subfeeder_project_opname"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "BoQ Subfeeder APD",
+        "astri_type":  "build_of_quantity_subfeeder_as_plan_drawing"
+    },
+    {
+        "route":  "ATP SUBFEEDER - RFS",
+        "zeyn_doc":  "(tidak ada di ZEYN)",
+        "match":  "EXTRA_ASTRI",
+        "astri_label":  "Justifikasi Berita Acara Opname",
+        "astri_type":  "justifikasi_berita_acara_opname"
+    }
+]

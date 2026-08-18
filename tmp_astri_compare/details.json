@@ -1,0 +1,282 @@
+[
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "as_plan_drawing_dwg",
+        "astri_label":  "APD DWG Cluster",
+        "astri_phase":  "cw_atp",
+        "file_count":  1,
+        "sample_status":  "APPROVED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "as_plan_drawing_kmz",
+        "astri_label":  "APD KMZ Cluster",
+        "astri_phase":  "cw_atp",
+        "file_count":  2,
+        "sample_status":  "ON REVIEW"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "as_plan_drawing_subfeeder_kmz",
+        "astri_label":  "APD Subfeeder kmz",
+        "astri_phase":  "cw_atp",
+        "file_count":  2,
+        "sample_status":  "ON REVIEW"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "permit_subfeeder",
+        "astri_label":  "BA Permit Subfeeder",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "permit_cluster_aggreement",
+        "astri_label":  "Berita Acara Kesepakatan",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "permit_open",
+        "astri_label":  "Berita Acara Open",
+        "astri_phase":  "cw_atp",
+        "file_count":  1,
+        "sample_status":  "ON REVIEW"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "donation_approval",
+        "astri_label":  "Cluster Approval Proposal",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "civil_work_acceptance_test",
+        "astri_label":  "CW ATP",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "subfeeder_civil_work_acceptance_test",
+        "astri_label":  "CW ATP Subfeeder",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "cluster_survey_form",
+        "astri_label":  "Form Cluster Survey",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "permit_vip_form",
+        "astri_label":  "Form Free Layanan",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "homepass_database",
+        "astri_label":  "Homepass Database",
+        "astri_phase":  "cw_atp",
+        "file_count":  1,
+        "sample_status":  "APPROVED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "rough_design_layout",
+        "astri_label":  "Layout SnD Kasar",
+        "astri_phase":  "cw_atp",
+        "file_count":  1,
+        "sample_status":  "ON REVIEW"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "sales_validation_layout",
+        "astri_label":  "Layout Validasi Sales",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "ptsp",
+        "astri_label":  "PTSP",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "redline",
+        "astri_label":  "Redline",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "subfeeder_redline",
+        "astri_label":  "Redline Subfeeder",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "rekomtek",
+        "astri_label":  "Rekomtek",
+        "astri_phase":  "cw_atp",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - CW ATP",
+        "scope":  "CLUSTER",
+        "phase":  "CW ATP",
+        "astri_type":  "tssr",
+        "astri_label":  "TSSR",
+        "astri_phase":  "cw_atp",
+        "file_count":  1,
+        "sample_status":  "APPROVED"
+    },
+    {
+        "route":  "ATP CLUSTER - FULL OPM",
+        "scope":  "CLUSTER",
+        "phase":  "FULL OPM",
+        "astri_type":  "opm_otdr_acceptance_test",
+        "astri_label":  "OPM / OTDR ATP",
+        "astri_phase":  "full_opm",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "build_of_quantity_as_built_drawing",
+        "astri_label":  "ABD BoQ Cluster",
+        "astri_phase":  "rfs",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "as_built_drawing_dwg",
+        "astri_label":  "ABD Cluster DWG",
+        "astri_phase":  "rfs",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "as_built_drawing_kmz",
+        "astri_label":  "ABD Cluster KMZ",
+        "astri_phase":  "rfs",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "build_of_quantity_as_plan_drawing",
+        "astri_label":  "BoQ APD",
+        "astri_phase":  "rfs",
+        "file_count":  1,
+        "sample_status":  "APPROVED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "core_management",
+        "astri_label":  "Core Management",
+        "astri_phase":  "rfs",
+        "file_count":  1,
+        "sample_status":  "ON REVIEW"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "justifikasi_berita_acara_opname",
+        "astri_label":  "Justifikasi Berita Acara Opname",
+        "astri_phase":  "rfs",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "project_opname",
+        "astri_label":  "Project Opname",
+        "astri_phase":  "rfs",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    },
+    {
+        "route":  "ATP CLUSTER - RFS",
+        "scope":  "CLUSTER",
+        "phase":  "RFS",
+        "astri_type":  "subfeeder_project_opname",
+        "astri_label":  "Project Opname Subfeeder",
+        "astri_phase":  "rfs",
+        "file_count":  0,
+        "sample_status":  "NOT UPLOADED"
+    }
+]
