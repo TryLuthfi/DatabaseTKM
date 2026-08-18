@@ -528,17 +528,17 @@ Private Sub ApplyStatusRowFormatting(ByVal ws As Worksheet)
 
     With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""APPROVED""")
         .Interior.Color = RGB(198, 239, 206)
-        .Font.Color = RGB(0, 97, 0)
+        .Font.Color = RGB(0, 0, 0)
     End With
 
     With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""ON REVIEW""")
         .Interior.Color = RGB(255, 242, 204)
-        .Font.Color = RGB(156, 101, 0)
+        .Font.Color = RGB(0, 0, 0)
     End With
 
     With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""REVISION""")
         .Interior.Color = RGB(244, 176, 132)
-        .Font.Color = RGB(156, 87, 0)
+        .Font.Color = RGB(0, 0, 0)
     End With
 
     With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""NOT UPLOADED""")

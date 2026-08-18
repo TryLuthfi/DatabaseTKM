@@ -88,13 +88,13 @@ try {
     $formatRange.FormatConditions.Delete()
     $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="APPROVED"')
     $condition.Interior.Color = 13434828
-    $condition.Font.Color = 24832
+    $condition.Font.Color = 0
     $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="ON REVIEW"')
     $condition.Interior.Color = 13431551
-    $condition.Font.Color = 25948
+    $condition.Font.Color = 0
     $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="REVISION"')
     $condition.Interior.Color = 8696052
-    $condition.Font.Color = 2236316
+    $condition.Font.Color = 0
     $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="NOT UPLOADED"')
     $condition.Interior.Color = 16777215
     $condition.Font.Color = 0
