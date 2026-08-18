@@ -518,4 +518,31 @@ Private Sub ClearResult(ByVal ws As Worksheet)
     ws.Range("A10:P10000").Clear
     ws.Range("A10:P10").Value = Array("Route", "Scope", "Phase", "Astri Type", "Astri Label", "Derived Status", "File Count", "Upload Date", "Verified By", "Verified At", "Revision By", "Revision At", "Revision Remark", "Filename", "Scraped At", "Detail URL")
     ws.Rows(10).Font.Bold = True
+    ApplyStatusRowFormatting ws
+End Sub
+
+Private Sub ApplyStatusRowFormatting(ByVal ws As Worksheet)
+    Dim resultRange As Range
+    Set resultRange = ws.Range("A11:P10000")
+    resultRange.FormatConditions.Delete
+
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""APPROVED""")
+        .Interior.Color = RGB(198, 239, 206)
+        .Font.Color = RGB(0, 97, 0)
+    End With
+
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""ON REVIEW""")
+        .Interior.Color = RGB(255, 242, 204)
+        .Font.Color = RGB(156, 101, 0)
+    End With
+
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""REVISION""")
+        .Interior.Color = RGB(244, 176, 132)
+        .Font.Color = RGB(156, 87, 0)
+    End With
+
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""NOT UPLOADED""")
+        .Interior.Color = RGB(255, 255, 255)
+        .Font.Color = RGB(0, 0, 0)
+    End With
 End Sub

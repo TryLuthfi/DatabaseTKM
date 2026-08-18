@@ -84,6 +84,20 @@ try {
         $result.Cells.Item(1, $i + 1).Value2 = $headers[$i]
     }
     $input.Rows.Item(10).Font.Bold = $true
+    $formatRange = $input.Range('A11:P10000')
+    $formatRange.FormatConditions.Delete()
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="APPROVED"')
+    $condition.Interior.Color = 13434828
+    $condition.Font.Color = 24832
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="ON REVIEW"')
+    $condition.Interior.Color = 13431551
+    $condition.Font.Color = 25948
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="REVISION"')
+    $condition.Interior.Color = 8696052
+    $condition.Font.Color = 2236316
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="NOT UPLOADED"')
+    $condition.Interior.Color = 16777215
+    $condition.Font.Color = 0
     $result.Rows.Item(1).Font.Bold = $true
     $input.Columns.AutoFit()
     $result.Columns.AutoFit()
