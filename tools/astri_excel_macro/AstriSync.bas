@@ -9,7 +9,7 @@ Public Sub SyncAstriDocuments()
     Dim wsInput As Worksheet, wsConfig As Worksheet, wsResult As Worksheet
     Set wsInput = ThisWorkbook.Worksheets("Input")
     Set wsConfig = ThisWorkbook.Worksheets("Config")
-    Set wsResult = ThisWorkbook.Worksheets("Result")
+    Set wsResult = wsInput
 
     Dim baseUrl As String, username As String, password As String
     baseUrl = Trim(CStr(wsConfig.Range("B2").Value))
@@ -49,7 +49,7 @@ Public Sub SyncAstriDocuments()
     FillRoutes routes
 
     Dim resultRow As Long
-    resultRow = 2
+    resultRow = 11
 
     Dim i As Long
     For i = 1 To ROUTE_COUNT
@@ -130,6 +130,14 @@ Private Function FindDetailUrl(ByVal baseUrl As String, ByVal cookieJar As Strin
                 listUrl = baseUrl & routePath & "page-" & CStr(pageNo)
             End If
         End If
+
+        Dim filterValue As String
+        If clusterCode <> "" Then
+            filterValue = clusterCode
+        Else
+            filterValue = clusterName
+        End If
+        If filterValue <> "" Then listUrl = AddQueryParam(listUrl, "filter%5Bglobal%5D", UrlEncode(filterValue))
 
         Dim response As Object
         Set response = HttpRequest("GET", listUrl, "", cookieJar)
@@ -498,8 +506,16 @@ Private Sub SleepMs(ByVal milliseconds As Long)
     Loop
 End Sub
 
+Private Function AddQueryParam(ByVal url As String, ByVal keyName As String, ByVal valueText As String) As String
+    If InStr(1, url, "?", vbTextCompare) > 0 Then
+        AddQueryParam = url & "&" & keyName & "=" & valueText
+    Else
+        AddQueryParam = url & "?" & keyName & "=" & valueText
+    End If
+End Function
+
 Private Sub ClearResult(ByVal ws As Worksheet)
-    ws.Cells.Clear
-    ws.Range("A1:P1").Value = Array("Route", "Scope", "Phase", "Astri Type", "Astri Label", "Derived Status", "File Count", "Upload Date", "Verified By", "Verified At", "Revision By", "Revision At", "Revision Remark", "Filename", "Scraped At", "Detail URL")
-    ws.Rows(1).Font.Bold = True
+    ws.Range("A10:P10000").Clear
+    ws.Range("A10:P10").Value = Array("Route", "Scope", "Phase", "Astri Type", "Astri Label", "Derived Status", "File Count", "Upload Date", "Verified By", "Verified At", "Revision By", "Revision At", "Revision Remark", "Filename", "Scraped At", "Detail URL")
+    ws.Rows(10).Font.Bold = True
 End Sub

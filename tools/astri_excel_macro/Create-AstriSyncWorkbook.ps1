@@ -62,6 +62,8 @@ try {
     $input.Range('A3').Value2 = 'Cluster Name'
     $input.Range('A6').Value2 = 'Status'
     $input.Range('A7').Value2 = 'Last Run'
+    $input.Range('A9').Value2 = 'Result'
+    $input.Range('A9').Font.Bold = $true
     $input.Range('B2').Value2 = ''
     $input.Range('B3').Value2 = ''
     $input.Range('B6').Value2 = 'Ready'
@@ -78,9 +80,12 @@ try {
         'Revision At', 'Revision Remark', 'Filename', 'Scraped At', 'Detail URL'
     )
     for ($i = 0; $i -lt $headers.Count; $i++) {
+        $input.Cells.Item(10, $i + 1).Value2 = $headers[$i]
         $result.Cells.Item(1, $i + 1).Value2 = $headers[$i]
     }
+    $input.Rows.Item(10).Font.Bold = $true
     $result.Rows.Item(1).Font.Bold = $true
+    $input.Columns.AutoFit()
     $result.Columns.AutoFit()
 
     $workbook.VBProject.VBComponents.Import($modulePath) | Out-Null
