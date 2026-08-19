@@ -1,8 +1,12 @@
+param(
+    [string]$OutputName = 'AstriSyncPrototype.xlsm'
+)
+
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')
 $modulePath = Join-Path $PSScriptRoot 'AstriSync.bas'
-$outputPath = Join-Path $repoRoot 'AstriSyncPrototype.xlsm'
+$outputPath = Join-Path $repoRoot $OutputName
 
 function Get-DotEnvValue([string]$key) {
     $envPath = Join-Path $repoRoot '.env'
@@ -62,12 +66,14 @@ try {
     $input.Range('A3').Value2 = 'Cluster Name'
     $input.Range('A6').Value2 = 'Status'
     $input.Range('A7').Value2 = 'Last Run'
+    $input.Range('A8').Value2 = 'Login Detail'
     $input.Range('A9').Value2 = 'Result'
     $input.Range('A9').Font.Bold = $true
     $input.Range('B2').Value2 = ''
     $input.Range('B3').Value2 = ''
     $input.Range('B6').Value2 = 'Ready'
     $input.Range('B7').Value2 = ''
+    $input.Range('B8').Value2 = ''
     $input.Columns('A:B').AutoFit()
 
     $button = $input.Buttons().Add(260, 36, 130, 32)
@@ -75,7 +81,7 @@ try {
     $button.OnAction = 'SyncAstriDocuments'
 
     $headers = @(
-        'Route', 'Scope', 'Phase', 'Astri Type', 'Astri Label', 'Derived Status',
+        'Name (Clean List)', 'Route', 'Scope', 'Phase', 'Astri Type', 'Astri Label', 'Derived Status',
         'File Count', 'Upload Date', 'Verified By', 'Verified At', 'Revision By',
         'Revision At', 'Revision Remark', 'Filename', 'Scraped At', 'Detail URL'
     )
@@ -84,18 +90,18 @@ try {
         $result.Cells.Item(1, $i + 1).Value2 = $headers[$i]
     }
     $input.Rows.Item(10).Font.Bold = $true
-    $formatRange = $input.Range('A11:P10000')
+    $formatRange = $input.Range('A11:Q10000')
     $formatRange.FormatConditions.Delete()
-    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="APPROVED"')
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$G11="APPROVED"')
     $condition.Interior.Color = 13434828
     $condition.Font.Color = 0
-    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="ON REVIEW"')
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$G11="ON REVIEW"')
     $condition.Interior.Color = 13431551
     $condition.Font.Color = 0
-    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="REVISION"')
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$G11="REVISION"')
     $condition.Interior.Color = 8696052
     $condition.Font.Color = 0
-    $condition = $formatRange.FormatConditions.Add(2, 0, '=$F11="NOT UPLOADED"')
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$G11="NOT UPLOADED"')
     $condition.Interior.Color = 16777215
     $condition.Font.Color = 0
     $result.Rows.Item(1).Font.Bold = $true
@@ -105,7 +111,12 @@ try {
     $workbook.VBProject.VBComponents.Import($modulePath) | Out-Null
 
     if (Test-Path -LiteralPath $outputPath) {
-        Remove-Item -LiteralPath $outputPath -Force
+        try {
+            Remove-Item -LiteralPath $outputPath -Force
+        }
+        catch {
+            $outputPath = Join-Path $repoRoot ('AstriSyncPrototype_' + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.xlsm')
+        }
     }
 
     $workbook.SaveAs($outputPath, 52)

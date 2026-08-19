@@ -40,10 +40,11 @@ Public Sub SyncAstriDocuments()
 
     ClearResult wsResult
     wsInput.Range("B6").Value = "Logging in..."
+    wsInput.Range("B8").Value = ""
 
     Dim cookieJar As String
-    cookieJar = LoginAstri(baseUrl, username, password)
-    If cookieJar = "" Then Err.Raise vbObjectError + 100, , "Login gagal atau cookie kosong."
+    cookieJar = LoginAstri(baseUrl, username, password, wsInput)
+    If cookieJar = "" Then Err.Raise vbObjectError + 100, , "Login gagal. Detail: " & CStr(wsInput.Range("B8").Value)
 
     Dim routes(1 To ROUTE_COUNT, 1 To 4) As String
     FillRoutes routes
@@ -89,31 +90,68 @@ Private Sub FillRoutes(ByRef routes() As String)
     routes(6, 1) = "ATP SUBFEEDER - RFS": routes(6, 2) = "rfs-document/subfeeder/rfs": routes(6, 3) = "RFS": routes(6, 4) = "SUBFEEDER"
 End Sub
 
-Private Function LoginAstri(ByVal baseUrl As String, ByVal username As String, ByVal password As String) As String
-    Dim loginPage As Object
-    Set loginPage = HttpRequest("GET", baseUrl, "", "")
+Private Function LoginAstri(ByVal baseUrl As String, ByVal username As String, ByVal password As String, ByVal statusSheet As Worksheet) As String
+    Dim attemptNo As Long
+    For attemptNo = 1 To 3
+        statusSheet.Range("B6").Value = "Logging in... attempt " & CStr(attemptNo) & "/3"
+        DoEvents
 
-    Dim csrfName As String, csrfValue As String
-    csrfName = ExtractInputValue(loginPage.responseText, "csrf_name")
-    csrfValue = ExtractInputValue(loginPage.responseText, "csrf_value")
+        Dim loginPage As Object
+        Set loginPage = HttpRequest("GET", baseUrl, "", "")
 
-    Dim body As String
-    body = "csrf_name=" & UrlEncode(csrfName) & _
-           "&csrf_value=" & UrlEncode(csrfValue) & _
-           "&user-identity=" & UrlEncode(username) & _
-           "&password=" & UrlEncode(password)
+        Dim csrfName As String, csrfValue As String
+        csrfName = ExtractInputValue(loginPage.responseText, "csrf_name")
+        csrfValue = ExtractInputValue(loginPage.responseText, "csrf_value")
 
-    Dim cookieJar As String
-    cookieJar = CollectCookies(loginPage)
+        Dim body As String
+        body = "csrf_name=" & UrlEncode(csrfName) & _
+               "&csrf_value=" & UrlEncode(csrfValue) & _
+               "&user-identity=" & UrlEncode(username) & _
+               "&password=" & UrlEncode(password)
 
-    Dim loginResponse As Object
-    Set loginResponse = HttpRequest("POST", baseUrl & "login-process", body, cookieJar)
-    cookieJar = MergeCookies(cookieJar, CollectCookies(loginResponse))
+        Dim cookieJar As String
+        cookieJar = CollectCookies(loginPage)
 
-    If InStr(1, loginResponse.responseText, "user-identity", vbTextCompare) > 0 Then
-        LoginAstri = ""
+        Dim loginResponse As Object
+        Set loginResponse = HttpRequest("POST", baseUrl & "login-process", body, cookieJar)
+        cookieJar = MergeCookies(cookieJar, CollectCookies(loginResponse))
+
+        SleepMs 2000
+
+        Dim probeResponse As Object
+        Set probeResponse = HttpRequest("GET", baseUrl & "setting/user/update", "", cookieJar)
+
+        If IsLoggedInResponse(loginResponse.responseText) Or IsLoggedInResponse(probeResponse.responseText) Then
+            LoginAstri = cookieJar
+            statusSheet.Range("B8").Value = "Login OK on attempt " & CStr(attemptNo)
+            Exit Function
+        End If
+
+        statusSheet.Range("B8").Value = "Attempt " & CStr(attemptNo) & " failed. Login title: " & ExtractTitle(loginResponse.responseText) & "; probe title: " & ExtractTitle(probeResponse.responseText)
+        SleepMs 3000
+    Next attemptNo
+
+    LoginAstri = ""
+End Function
+
+Private Function IsLoggedInResponse(ByVal html As String) As Boolean
+    IsLoggedInResponse = (InStr(1, html, "Logout", vbTextCompare) > 0 Or InStr(1, html, "/logout", vbTextCompare) > 0) _
+        And InStr(1, html, "user-identity", vbTextCompare) = 0 _
+        And InStr(1, html, "type=""password""", vbTextCompare) = 0
+End Function
+
+Private Function ExtractTitle(ByVal html As String) As String
+    Dim re As Object, matches As Object
+    Set re = CreateObject("VBScript.RegExp")
+    re.Global = False
+    re.IgnoreCase = True
+    re.MultiLine = True
+    re.Pattern = "<title[^>]*>([\s\S]*?)</title>"
+    Set matches = re.Execute(html)
+    If matches.Count > 0 Then
+        ExtractTitle = Trim$(StripHtml(matches(0).SubMatches(0)))
     Else
-        LoginAstri = cookieJar
+        ExtractTitle = "(no title)"
     End If
 End Function
 
@@ -214,10 +252,13 @@ Private Function AppendDetailDocuments(ByVal ws As Worksheet, ByVal startRow As 
     Dim rawJson As String
     rawJson = ExtractDocumentListJson(response.responseText)
     If rawJson = "" Then
-        ws.Cells(startRow, 1).Resize(1, 16).Value = Array(routeName, scopeName, phaseName, "", "", "", "", "", "PARSE_FAILED", "", "", "", "", "", "", detailUrl)
+        ws.Cells(startRow, 1).Resize(1, 17).Value = Array("", routeName, scopeName, phaseName, "", "", "PARSE_FAILED", "", "", "", "", "", "", "", "", "", detailUrl)
         AppendDetailDocuments = startRow + 1
         Exit Function
     End If
+
+    Dim clusterCleanListName As String
+    clusterCleanListName = ExtractInfoCardValue(response.responseText, "Name (Clean List)")
 
     Dim docBlocks As Collection
     Set docBlocks = ExtractDocumentBlocks(rawJson)
@@ -232,34 +273,27 @@ Private Function AppendDetailDocuments(ByVal ws As Worksheet, ByVal startRow As 
         labelName = ExtractJsonString(CStr(block), "label")
         fileCount = CountOccurrences(CStr(block), """work_order_number""")
 
-        Dim latestData As String
-        latestData = ExtractLastDataObject(CStr(block))
+        Dim selectedData As String
 
         Dim statusName As String, uploadDate As String, verifiedBy As String, verifiedAt As String
         Dim revisionBy As String, revisionAt As String, revisionRemark As String, filename As String
 
-        If latestData = "" Then
-            statusName = "NOT UPLOADED"
-        Else
-            uploadDate = ExtractJsonString(latestData, "created_at")
-            verifiedBy = ExtractJsonString(latestData, "verified_by_fullname")
-            If verifiedBy = "" Then verifiedBy = ExtractJsonString(latestData, "verified_by_username")
-            verifiedAt = ExtractJsonString(latestData, "verified_at")
-            revisionBy = ExtractJsonString(latestData, "requested_revision_by_fullname")
-            revisionAt = ExtractJsonString(latestData, "requested_revision_at")
-            revisionRemark = ExtractJsonString(latestData, "requested_revision_remarks")
-            filename = ExtractJsonString(latestData, "filename")
+        selectedData = SelectRelevantDataObject(CStr(block), statusName)
 
-            If revisionAt <> "" Or revisionRemark <> "" Then
-                statusName = "REVISION"
-            ElseIf verifiedBy <> "" Then
-                statusName = "APPROVED"
-            Else
-                statusName = "ON REVIEW"
-            End If
+        If selectedData = "" Then
+            If statusName = "" Then statusName = "NOT UPLOADED"
+        Else
+            uploadDate = ExtractJsonString(selectedData, "created_at")
+            verifiedBy = ExtractJsonString(selectedData, "verified_by_fullname")
+            If verifiedBy = "" Then verifiedBy = ExtractJsonString(selectedData, "verified_by_username")
+            verifiedAt = ExtractJsonString(selectedData, "verified_at")
+            revisionBy = ExtractJsonString(selectedData, "requested_revision_by_fullname")
+            revisionAt = ExtractJsonString(selectedData, "requested_revision_at")
+            revisionRemark = ExtractJsonString(selectedData, "requested_revision_remarks")
+            filename = ExtractJsonString(selectedData, "filename")
         End If
 
-        ws.Cells(rowNo, 1).Resize(1, 16).Value = Array(routeName, scopeName, phaseName, typeName, labelName, statusName, fileCount, uploadDate, verifiedBy, verifiedAt, revisionBy, revisionAt, revisionRemark, filename, Now, detailUrl)
+        ws.Cells(rowNo, 1).Resize(1, 17).Value = Array(clusterCleanListName, routeName, scopeName, phaseName, typeName, labelName, statusName, fileCount, uploadDate, verifiedBy, verifiedAt, revisionBy, revisionAt, revisionRemark, filename, Now, detailUrl)
         rowNo = rowNo + 1
     Next block
 
@@ -267,7 +301,7 @@ Private Function AppendDetailDocuments(ByVal ws As Worksheet, ByVal startRow As 
 End Function
 
 Private Function AppendNotFound(ByVal ws As Worksheet, ByVal startRow As Long, ByVal routeName As String, ByVal phaseName As String, ByVal scopeName As String, ByVal clusterCode As String, ByVal clusterName As String) As Long
-    ws.Cells(startRow, 1).Resize(1, 16).Value = Array(routeName, scopeName, phaseName, "", "", "CLUSTER_NOT_FOUND", "", "", "", "", "", "", "Input: " & clusterCode & " " & clusterName, "", Now, "")
+    ws.Cells(startRow, 1).Resize(1, 17).Value = Array("", routeName, scopeName, phaseName, "", "", "CLUSTER_NOT_FOUND", "", "", "", "", "", "", "Input: " & clusterCode & " " & clusterName, "", Now, "")
     AppendNotFound = startRow + 1
 End Function
 
@@ -334,6 +368,102 @@ Private Function ExtractLastDataObject(ByVal docBlock As String) As String
     Loop
 
     If lastStart > 0 And lastEnd >= lastStart Then ExtractLastDataObject = Mid$(docBlock, lastStart, lastEnd - lastStart + 1)
+End Function
+
+Private Function SelectRelevantDataObject(ByVal docBlock As String, ByRef statusName As String) As String
+    Dim dataObjects As Collection
+    Set dataObjects = ExtractDataObjects(docBlock)
+
+    If dataObjects.Count = 0 Then
+        statusName = "NOT UPLOADED"
+        Exit Function
+    End If
+
+    Dim i As Long, dataObject As String
+    Dim approvedObject As String, revisionObject As String, onReviewObject As String
+
+    For i = 1 To dataObjects.Count
+        dataObject = CStr(dataObjects(i))
+
+        Dim verifiedBy As String, verifiedAt As String
+        verifiedBy = ExtractJsonString(dataObject, "verified_by_fullname")
+        If verifiedBy = "" Then verifiedBy = ExtractJsonString(dataObject, "verified_by_username")
+        verifiedAt = ExtractJsonString(dataObject, "verified_at")
+
+        If verifiedBy <> "" Or verifiedAt <> "" Then
+            approvedObject = dataObject
+        End If
+
+        If ExtractJsonString(dataObject, "requested_revision_at") <> "" Or ExtractJsonString(dataObject, "requested_revision_remarks") <> "" Then
+            revisionObject = dataObject
+        End If
+
+        onReviewObject = dataObject
+    Next i
+
+    If approvedObject <> "" Then
+        statusName = "APPROVED"
+        SelectRelevantDataObject = approvedObject
+    ElseIf revisionObject <> "" Then
+        statusName = "REVISION"
+        SelectRelevantDataObject = revisionObject
+    Else
+        statusName = "ON REVIEW"
+        SelectRelevantDataObject = onReviewObject
+    End If
+End Function
+
+Private Function ExtractDataObjects(ByVal docBlock As String) As Collection
+    Dim result As New Collection
+    Dim dataPos As Long
+    dataPos = InStr(1, docBlock, """data"":[", vbTextCompare)
+    If dataPos = 0 Then
+        Set ExtractDataObjects = result
+        Exit Function
+    End If
+
+    Dim arrayStart As Long
+    arrayStart = InStr(dataPos, docBlock, "[")
+    If arrayStart = 0 Then
+        Set ExtractDataObjects = result
+        Exit Function
+    End If
+
+    Dim pos As Long
+    pos = arrayStart + 1
+    Do
+        Dim objStart As Long
+        objStart = InStr(pos, docBlock, "{")
+        If objStart = 0 Then Exit Do
+        If InStr(pos, docBlock, "]") > 0 And InStr(pos, docBlock, "]") < objStart Then Exit Do
+
+        Dim objEnd As Long
+        objEnd = FindMatchingBrace(docBlock, objStart)
+        If objEnd = 0 Then Exit Do
+
+        result.Add Mid$(docBlock, objStart, objEnd - objStart + 1)
+        pos = objEnd + 1
+    Loop
+
+    Set ExtractDataObjects = result
+End Function
+
+Private Function ExtractInfoCardValue(ByVal html As String, ByVal labelText As String) As String
+    Dim re As Object, matches As Object
+    Set re = CreateObject("VBScript.RegExp")
+    re.Global = False
+    re.IgnoreCase = True
+    re.MultiLine = True
+    re.Pattern = "<small[^>]*>\s*" & EscapeRegex(labelText) & "\s*</small>\s*<p[^>]*(?:title=[""']([^""']*)[""'])?[^>]*>([\s\S]*?)</p>"
+    Set matches = re.Execute(html)
+
+    If matches.Count = 0 Then Exit Function
+
+    If matches(0).SubMatches(0) <> "" Then
+        ExtractInfoCardValue = HtmlDecode(matches(0).SubMatches(0))
+    Else
+        ExtractInfoCardValue = StripHtml(matches(0).SubMatches(1))
+    End If
 End Function
 
 Private Function FindMatchingBrace(ByVal text As String, ByVal startPos As Long) As Long
@@ -458,6 +588,15 @@ Private Function HtmlDecode(ByVal text As String) As String
     HtmlDecode = Replace(Replace(Replace(Replace(Replace(text, "&amp;", "&"), "&quot;", """"), "&#039;", "'"), "&lt;", "<"), "&gt;", ">")
 End Function
 
+Private Function StripHtml(ByVal html As String) As String
+    Dim re As Object
+    Set re = CreateObject("VBScript.RegExp")
+    re.Global = True
+    re.IgnoreCase = True
+    re.Pattern = "<[^>]+>"
+    StripHtml = Trim$(HtmlDecode(re.Replace(html, " ")))
+End Function
+
 Private Function JsonUnescape(ByVal text As String) As String
     Dim result As String
     result = Replace(text, "\/", "/")
@@ -515,33 +654,33 @@ Private Function AddQueryParam(ByVal url As String, ByVal keyName As String, ByV
 End Function
 
 Private Sub ClearResult(ByVal ws As Worksheet)
-    ws.Range("A10:P10000").Clear
-    ws.Range("A10:P10").Value = Array("Route", "Scope", "Phase", "Astri Type", "Astri Label", "Derived Status", "File Count", "Upload Date", "Verified By", "Verified At", "Revision By", "Revision At", "Revision Remark", "Filename", "Scraped At", "Detail URL")
+    ws.Range("A10:Q10000").Clear
+    ws.Range("A10:Q10").Value = Array("Name (Clean List)", "Route", "Scope", "Phase", "Astri Type", "Astri Label", "Derived Status", "File Count", "Upload Date", "Verified By", "Verified At", "Revision By", "Revision At", "Revision Remark", "Filename", "Scraped At", "Detail URL")
     ws.Rows(10).Font.Bold = True
     ApplyStatusRowFormatting ws
 End Sub
 
 Private Sub ApplyStatusRowFormatting(ByVal ws As Worksheet)
     Dim resultRange As Range
-    Set resultRange = ws.Range("A11:P10000")
+    Set resultRange = ws.Range("A11:Q10000")
     resultRange.FormatConditions.Delete
 
-    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""APPROVED""")
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$G11=""APPROVED""")
         .Interior.Color = RGB(198, 239, 206)
         .Font.Color = RGB(0, 0, 0)
     End With
 
-    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""ON REVIEW""")
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$G11=""ON REVIEW""")
         .Interior.Color = RGB(255, 242, 204)
         .Font.Color = RGB(0, 0, 0)
     End With
 
-    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""REVISION""")
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$G11=""REVISION""")
         .Interior.Color = RGB(244, 176, 132)
         .Font.Color = RGB(0, 0, 0)
     End With
 
-    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$F11=""NOT UPLOADED""")
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$G11=""NOT UPLOADED""")
         .Interior.Color = RGB(255, 255, 255)
         .Font.Color = RGB(0, 0, 0)
     End With
