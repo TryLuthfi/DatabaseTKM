@@ -1,7 +1,8 @@
 Attribute VB_Name = "AstriSync"
 Option Explicit
 
-Private Const ROUTE_COUNT As Long = 6
+Private Const ROUTE_COUNT As Long = 7
+Private Const AUTO_COOKIE As String = "__AUTO_COOKIE__"
 
 Public Sub SyncAstriDocuments()
     On Error GoTo HandleError
@@ -54,6 +55,7 @@ Public Sub SyncAstriDocuments()
 
     Dim i As Long
     For i = 1 To ROUTE_COUNT
+        On Error GoTo RouteError
         wsInput.Range("B6").Value = "Searching " & routes(i, 1)
         DoEvents
 
@@ -68,6 +70,17 @@ Public Sub SyncAstriDocuments()
         Else
             resultRow = AppendNotFound(wsResult, resultRow, routes(i, 1), routes(i, 3), routes(i, 4), clusterCode, clusterName)
         End If
+
+        On Error GoTo HandleError
+        GoTo ContinueRoute
+
+RouteError:
+        wsInput.Range("B8").Value = "Route error on " & routes(i, 1) & ": " & Err.Description
+        resultRow = AppendRouteError(wsResult, resultRow, routes(i, 1), routes(i, 3), routes(i, 4), Err.Description)
+        Err.Clear
+        On Error GoTo HandleError
+
+ContinueRoute:
     Next i
 
     wsInput.Range("B6").Value = "Done"
@@ -85,9 +98,10 @@ Private Sub FillRoutes(ByRef routes() As String)
     routes(1, 1) = "ATP CLUSTER - CW ATP": routes(1, 2) = "rfs-document/cw-atp/": routes(1, 3) = "CW ATP": routes(1, 4) = "CLUSTER"
     routes(2, 1) = "ATP CLUSTER - FULL OPM": routes(2, 2) = "rfs-document/full-opm/": routes(2, 3) = "FULL OPM": routes(2, 4) = "CLUSTER"
     routes(3, 1) = "ATP CLUSTER - RFS": routes(3, 2) = "rfs-document/rfs/": routes(3, 3) = "RFS": routes(3, 4) = "CLUSTER"
-    routes(4, 1) = "ATP SUBFEEDER - CW ATP": routes(4, 2) = "rfs-document/subfeeder/cw-atp": routes(4, 3) = "CW ATP": routes(4, 4) = "SUBFEEDER"
-    routes(5, 1) = "ATP SUBFEEDER - FULL OPM": routes(5, 2) = "rfs-document/subfeeder/full-opm": routes(5, 3) = "FULL OPM": routes(5, 4) = "SUBFEEDER"
-    routes(6, 1) = "ATP SUBFEEDER - RFS": routes(6, 2) = "rfs-document/subfeeder/rfs": routes(6, 3) = "RFS": routes(6, 4) = "SUBFEEDER"
+    routes(4, 1) = "PROJECT OPNAME - CLUSTER": routes(4, 2) = "project-opname/cluster/": routes(4, 3) = "PROJECT OPNAME": routes(4, 4) = "CLUSTER"
+    routes(5, 1) = "ATP SUBFEEDER - CW ATP": routes(5, 2) = "rfs-document/subfeeder/cw-atp": routes(5, 3) = "CW ATP": routes(5, 4) = "SUBFEEDER"
+    routes(6, 1) = "ATP SUBFEEDER - FULL OPM": routes(6, 2) = "rfs-document/subfeeder/full-opm": routes(6, 3) = "FULL OPM": routes(6, 4) = "SUBFEEDER"
+    routes(7, 1) = "ATP SUBFEEDER - RFS": routes(7, 2) = "rfs-document/subfeeder/rfs": routes(7, 3) = "RFS": routes(7, 4) = "SUBFEEDER"
 End Sub
 
 Private Function LoginAstri(ByVal baseUrl As String, ByVal username As String, ByVal password As String, ByVal statusSheet As Worksheet) As String
@@ -122,8 +136,13 @@ Private Function LoginAstri(ByVal baseUrl As String, ByVal username As String, B
         Set probeResponse = HttpRequest("GET", baseUrl & "setting/user/update", "", cookieJar)
 
         If IsLoggedInResponse(loginResponse.responseText) Or IsLoggedInResponse(probeResponse.responseText) Then
-            LoginAstri = cookieJar
-            statusSheet.Range("B8").Value = "Login OK on attempt " & CStr(attemptNo)
+            If cookieJar = "" Then
+                LoginAstri = AUTO_COOKIE
+                statusSheet.Range("B8").Value = "Login OK on attempt " & CStr(attemptNo) & " using Excel internal cookie"
+            Else
+                LoginAstri = cookieJar
+                statusSheet.Range("B8").Value = "Login OK on attempt " & CStr(attemptNo) & " with cookie"
+            End If
             Exit Function
         End If
 
@@ -132,6 +151,11 @@ Private Function LoginAstri(ByVal baseUrl As String, ByVal username As String, B
     Next attemptNo
 
     LoginAstri = ""
+End Function
+
+Private Function AppendRouteError(ByVal ws As Worksheet, ByVal startRow As Long, ByVal routeName As String, ByVal phaseName As String, ByVal scopeName As String, ByVal errorMessage As String) As Long
+    ws.Cells(startRow, 1).Resize(1, 17).Value = Array("", routeName, scopeName, phaseName, "", "", "ROUTE_ERROR", "", "", "", "", "", "", errorMessage, "", Now, "")
+    AppendRouteError = startRow + 1
 End Function
 
 Private Function IsLoggedInResponse(ByVal html As String) As Boolean
@@ -189,7 +213,9 @@ Private Function FindDetailUrl(ByVal baseUrl As String, ByVal cookieJar As Strin
         End If
 
         Dim href As String
-        If InStr(1, routePath, "/subfeeder/", vbTextCompare) > 0 Then
+        If InStr(1, routePath, "project-opname/cluster", vbTextCompare) > 0 Then
+            href = ExtractDetailHref(html, "material/cluster/project-opname/review", clusterCode, clusterName)
+        ElseIf InStr(1, routePath, "/subfeeder/", vbTextCompare) > 0 Then
             href = ExtractDetailHref(html, "rfs-document/subfeeder/list/by-invoice-phase/", clusterCode, clusterName)
         Else
             href = ExtractDetailHref(html, "rfs-document/list/by-invoice-phase/", clusterCode, clusterName)
@@ -301,7 +327,14 @@ Private Function AppendDetailDocuments(ByVal ws As Worksheet, ByVal startRow As 
 End Function
 
 Private Function AppendNotFound(ByVal ws As Worksheet, ByVal startRow As Long, ByVal routeName As String, ByVal phaseName As String, ByVal scopeName As String, ByVal clusterCode As String, ByVal clusterName As String) As Long
-    ws.Cells(startRow, 1).Resize(1, 17).Value = Array("", routeName, scopeName, phaseName, "", "", "CLUSTER_NOT_FOUND", "", "", "", "", "", "", "Input: " & clusterCode & " " & clusterName, "", Now, "")
+    Dim statusName As String
+    If InStr(1, routeName, "PROJECT OPNAME", vbTextCompare) > 0 Then
+        statusName = "PROJECT_OPNAME_NOT_FOUND"
+    Else
+        statusName = "CLUSTER_NOT_FOUND"
+    End If
+
+    ws.Cells(startRow, 1).Resize(1, 17).Value = Array("", routeName, scopeName, phaseName, "", "", statusName, "", "", "", "", "", "", "Input: " & clusterCode & " " & clusterName, "", Now, "")
     AppendNotFound = startRow + 1
 End Function
 
@@ -528,7 +561,7 @@ Private Function HttpRequest(ByVal methodName As String, ByVal url As String, By
     http.Open methodName, url, False
     http.setRequestHeader "User-Agent", "Mozilla/5.0"
     http.setRequestHeader "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-    If cookieJar <> "" Then http.setRequestHeader "Cookie", cookieJar
+    If cookieJar <> "" And cookieJar <> AUTO_COOKIE Then http.setRequestHeader "Cookie", cookieJar
     If methodName = "POST" Then http.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
     http.Send body
     Set HttpRequest = http
@@ -618,6 +651,7 @@ Private Function EscapeRegex(ByVal text As String) As String
 End Function
 
 Private Function AbsoluteUrl(ByVal baseUrl As String, ByVal href As String) As String
+    href = Replace(href, " ", "%20")
     If LCase$(Left$(href, 4)) = "http" Then
         AbsoluteUrl = href
     ElseIf Left$(href, 1) = "/" Then
@@ -682,6 +716,11 @@ Private Sub ApplyStatusRowFormatting(ByVal ws As Worksheet)
 
     With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$G11=""NOT UPLOADED""")
         .Interior.Color = RGB(255, 255, 255)
+        .Font.Color = RGB(0, 0, 0)
+    End With
+
+    With resultRange.FormatConditions.Add(Type:=xlExpression, Formula1:="=$G11=""PROJECT_OPNAME_NOT_FOUND""")
+        .Interior.Color = RGB(217, 217, 217)
         .Font.Color = RGB(0, 0, 0)
     End With
 End Sub

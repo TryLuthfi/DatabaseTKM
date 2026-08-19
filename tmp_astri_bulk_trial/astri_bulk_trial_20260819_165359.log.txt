@@ -1,0 +1,13 @@
+[2026-08-19 16:53:59] === ASTRI bulk trial start ===
+[2026-08-19 16:53:59] LimitClusters=3; DelaySeconds=3
+[2026-08-19 16:53:59] Login Astri...
+[2026-08-19 16:54:12] Login OK.
+[2026-08-19 16:54:12] Ambil 3 cluster awal dari CW ATP list...
+[2026-08-19 16:54:26] Cluster ditemukan: 3
+[2026-08-19 16:54:26] Proses cluster PBL000343 / WO/PROBOLINGGO/2026/INST/10/8311
+[2026-08-19 16:54:26]   Route: ATP CLUSTER - CW ATP
+[2026-08-19 16:54:37]   Route: ATP CLUSTER - FULL OPM
+[2026-08-19 16:57:20]   ERROR route ATP CLUSTER - FULL OPM: curl GET failed for https://astri.morarepublic.co.id/rfs-document/list/by-invoice-phase/full-opm?cluster_code=PBL000343&work_order_number=WO%2FPROBOLINGGO%2F2026%2FINST%2F10%2F8311&vendor_label=Technology%20Karya%20Mandiri
+[2026-08-19 16:57:20]   Route: ATP CLUSTER - RFS
+[2026-08-19 16:59:50]   ERROR route ATP CLUSTER - RFS: curl GET failed for https://astri.morarepublic.co.id/rfs-document/list/by-invoice-phase/rfs?cluster_code=PBL000343&work_order_number=WO%2FPROBOLINGGO%2F2026%2FINST%2F10%2F8311&vendor_label=Technology%20Karya%20Mandiri
+[2026-08-19 16:59:50]   Route: PROJECT OPNAME - CLUSTER

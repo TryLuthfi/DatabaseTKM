@@ -1,0 +1,17 @@
+[2026-08-19 16:48:56] === ASTRI bulk trial start ===
+[2026-08-19 16:48:56] LimitClusters=1; DelaySeconds=1
+[2026-08-19 16:48:56] Login Astri...
+[2026-08-19 16:49:03] Login OK.
+[2026-08-19 16:49:03] Ambil 1 cluster awal dari CW ATP list...
+[2026-08-19 16:49:15] Cluster ditemukan: 1
+[2026-08-19 16:49:15] Proses cluster BLT000695 / WO/BLITAR/2026/INST/10/8309
+[2026-08-19 16:49:15]   Route: ATP CLUSTER - CW ATP
+[2026-08-19 16:49:26]   Route: ATP CLUSTER - FULL OPM
+[2026-08-19 16:49:32]   Route: ATP CLUSTER - RFS
+[2026-08-19 16:49:39]   Route: PROJECT OPNAME - CLUSTER
+[2026-08-19 16:50:15]   Route: ATP SUBFEEDER - CW ATP
+[2026-08-19 16:50:24]   Route: ATP SUBFEEDER - FULL OPM
+[2026-08-19 16:50:34]   Route: ATP SUBFEEDER - RFS
+[2026-08-19 16:50:41] CSV dibuat: D:\XAMPP\htdocs\DatabaseTKM\tmp_astri_bulk_trial\astri_bulk_trial_smoke.csv
+[2026-08-19 16:50:44] Excel dibuat: D:\XAMPP\htdocs\DatabaseTKM\tmp_astri_bulk_trial\astri_bulk_trial_smoke.xlsx
+[2026-08-19 16:50:44] === ASTRI bulk trial done ===

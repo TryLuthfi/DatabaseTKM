@@ -104,6 +104,9 @@ try {
     $condition = $formatRange.FormatConditions.Add(2, 0, '=$G11="NOT UPLOADED"')
     $condition.Interior.Color = 16777215
     $condition.Font.Color = 0
+    $condition = $formatRange.FormatConditions.Add(2, 0, '=$G11="PROJECT_OPNAME_NOT_FOUND"')
+    $condition.Interior.Color = 14277081
+    $condition.Font.Color = 0
     $result.Rows.Item(1).Font.Bold = $true
     $input.Columns.AutoFit()
     $result.Columns.AutoFit()
