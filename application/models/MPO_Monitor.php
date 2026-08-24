@@ -1677,7 +1677,15 @@ class MPO_Monitor extends CI_Model
                 SUM(co_2027_on_po) AS co_2027_on_po
             FROM (
                 SELECT
-                    CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS dashboard_bowheer,
+                    CASE
+                        WHEN CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('PT VGREEN' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                            AND (UPPER(TRIM(COALESCE(p.type_project, ''))) = 'EVCS' OR UPPER(TRIM(COALESCE(p.type_project, ''))) LIKE 'DC%')
+                        THEN CONVERT('PT VGREEN ( EVCS )' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        WHEN CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('PT VGREEN' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                            AND (UPPER(TRIM(COALESCE(p.type_project, ''))) = 'BSS' OR UPPER(TRIM(COALESCE(p.type_project, ''))) REGEXP '^[0-9]+S[0-9]+P$')
+                        THEN CONVERT('PT VGREEN ( BSS )' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        ELSE CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    END AS dashboard_bowheer,
                     CASE WHEN YEAR(p.po_date) = 2026 THEN COALESCE(p.total_value, 0) ELSE 0 END AS all_po,
                     COALESCE(p.dashboard_all_invoice, 0) AS all_invoice,
                     COALESCE(p.dashboard_invoice_2026, 0) AS done_inv_2026,
@@ -1690,7 +1698,15 @@ class MPO_Monitor extends CI_Model
                 WHERE COALESCE(p.status_po, 'ON PO') = 'ON PO'
                 UNION ALL
                 SELECT
-                    CONVERT(dashboard_bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci AS dashboard_bowheer,
+                    CASE
+                        WHEN CONVERT(COALESCE(NULLIF(dashboard_bowheer, ''), 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('PT VGREEN' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                            AND (UPPER(TRIM(COALESCE(type_project, ''))) = 'EVCS' OR UPPER(TRIM(COALESCE(type_project, ''))) LIKE 'DC%')
+                        THEN CONVERT('PT VGREEN ( EVCS )' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        WHEN CONVERT(COALESCE(NULLIF(dashboard_bowheer, ''), 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT('PT VGREEN' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                            AND (UPPER(TRIM(COALESCE(type_project, ''))) = 'BSS' OR UPPER(TRIM(COALESCE(type_project, ''))) REGEXP '^[0-9]+S[0-9]+P$')
+                        THEN CONVERT('PT VGREEN ( BSS )' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                        ELSE CONVERT(COALESCE(NULLIF(dashboard_bowheer, ''), 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    END AS dashboard_bowheer,
                     0 AS all_po,
                     0 AS all_invoice,
                     0 AS done_inv_2026,
@@ -7288,10 +7304,13 @@ class MPO_Monitor extends CI_Model
             $this->autoFillNyPoTarget2026FromValue($row);
             $row['dashboard_metrics'] = $this->computeDashboardMetrics($row);
 
+            $resolvedBowheer = $this->resolveImportBowheerName($row['bowheer'], $row['type_project']);
+            $row['bowheer'] = $resolvedBowheer;
+            $row['dashboard_bowheer'] = $resolvedBowheer;
+
             if ($row['status_po'] === 'NY PO') {
                 $pipelineRows[] = $row;
             } else {
-                $row['bowheer'] = $this->resolveImportBowheerName($row['bowheer'], $row['type_project']);
                 $rows[] = $row;
             }
         }
@@ -7996,10 +8015,10 @@ class MPO_Monitor extends CI_Model
         $type = strtoupper(trim((string) $typeProject));
 
         if ($this->normalizeBowheerKey($name) === 'PT VGREEN') {
-            if ($type === 'EVCS') {
+            if ($type === 'EVCS' || strpos($type, 'DC') === 0) {
                 return 'PT VGREEN ( EVCS )';
             }
-            if ($type === 'BSS') {
+            if ($type === 'BSS' || preg_match('/^[0-9]+S[0-9]+P$/', $type)) {
                 return 'PT VGREEN ( BSS )';
             }
         }
@@ -8029,7 +8048,8 @@ class MPO_Monitor extends CI_Model
             'PT IFORTE - FTTH IOH' => 'Bp Sumirat',
             'PT IFORTE - REGULAR & CONN' => 'Bp Sumirat',
             'PT IFORTE - LBS RECTIFIKASI' => 'Bp Hendry',
-            'PT VGREEN' => 'Bp Wendy',
+            'PT VGREEN ( BSS )' => 'Bp Wendy',
+            'PT VGREEN ( EVCS )' => 'Bp Wendy',
             'PT ADT' => 'LOGISTIK',
             'PT DIAN KARYA' => 'LOGISTIK'
         ];
