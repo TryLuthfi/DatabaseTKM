@@ -36,6 +36,21 @@ user_guide_src/cilexer/dist/*
 user_guide_src/cilexer/pycilexer.egg-info/*
 /vendor/
 
+# Local scraper automation output/cache
+/automation - scrap/output/
+/tmp_astri_*/
+/tmp_bak.html
+/tmp_cookie*.txt
+/tmp_cookie*.tmp
+/*.tmp
+
+# Local throwaway analysis scripts/results
+/tmp_*.php
+/tmp_*.json
+/tmp_*.html
+/tmp_*.csv
+/temp_*.php
+
 # IDE Files
 #-------------------------
 /nbproject/
