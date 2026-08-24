@@ -217,14 +217,46 @@ if (!function_exists('po_monitor_achieved_percent_badge')) {
 if (!function_exists('po_monitor_compare_effective_target_total')) {
     function po_monitor_compare_effective_target_total(array $months)
     {
-        $total = 0;
+        $activePeriod = null;
         foreach ($months as $month) {
-            $total += array_key_exists('effective_target', $month)
-                ? (float) $month['effective_target']
-                : (float) ($month['cumulative'] ?? 0) + (float) ($month['target'] ?? 0);
+            $activePeriod = $month;
         }
 
-        return $total;
+        if ($activePeriod === null) {
+            return 0;
+        }
+
+        return array_key_exists('effective_target', $activePeriod)
+            ? (float) $activePeriod['effective_target']
+            : (float) ($activePeriod['cumulative'] ?? 0) + (float) ($activePeriod['target'] ?? 0);
+    }
+}
+
+if (!function_exists('po_monitor_compare_active_period_key')) {
+    function po_monitor_compare_active_period_key(array $periods)
+    {
+        $activeKey = '__total__';
+        foreach ($periods as $period) {
+            $activeKey = (string) ($period['key'] ?? $activeKey);
+        }
+
+        return $activeKey;
+    }
+}
+
+if (!function_exists('po_monitor_compare_effective_deviasi_by_po_total')) {
+    function po_monitor_compare_effective_deviasi_by_po_total(array $months)
+    {
+        $activePeriod = null;
+        foreach ($months as $month) {
+            $activePeriod = $month;
+        }
+
+        if ($activePeriod === null) {
+            return 0;
+        }
+
+        return (float) ($activePeriod['cumulative'] ?? 0) + (float) ($activePeriod['deviasi_by_po'] ?? 0);
     }
 }
 
@@ -245,7 +277,7 @@ if (!function_exists('po_monitor_compare_official_total_target')) {
     function po_monitor_compare_official_total_target(array $row, $comparisonCumulative)
     {
         return $comparisonCumulative
-            ? (float) ($row['total_effective_target'] ?? po_monitor_compare_effective_target_total($row['months'] ?? []))
+            ? po_monitor_compare_effective_target_total($row['months'] ?? [])
             : (float) ($row['total_target'] ?? 0);
     }
 }
@@ -254,7 +286,7 @@ if (!function_exists('po_monitor_compare_official_deviasi_by_po')) {
     function po_monitor_compare_official_deviasi_by_po(array $row, $comparisonCumulative)
     {
         return $comparisonCumulative
-            ? (float) ($row['total_effective_deviasi_by_po'] ?? $row['deviasi_by_po'] ?? 0)
+            ? po_monitor_compare_effective_deviasi_by_po_total($row['months'] ?? [])
             : (float) ($row['deviasi_by_po'] ?? 0);
     }
 }
@@ -377,12 +409,15 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 $totalLinkGroupBy = is_array($officialRow) ? 'month' : $groupBy;
                 $totalLinkFrom = is_array($officialRow) ? ($monthMatrix['from'] ?? ($matrix['from'] ?? '')) : ($matrix['from'] ?? '');
                 $totalLinkTo = is_array($officialRow) ? ($monthMatrix['to'] ?? ($matrix['to'] ?? '')) : ($matrix['to'] ?? '');
+                $totalLinkPeriodKey = $comparisonCumulative
+                    ? po_monitor_compare_active_period_key(is_array($officialRow) ? ($monthMatrix['months'] ?? []) : ($matrix['months'] ?? []))
+                    : '__total__';
             ?>
             <tr data-achieved="<?= (float) $rowDisplayAchieved ?>" data-target="<?= (float) $rowDisplayTarget ?>">
                 <td><?= $compareNo++ ?></td>
                 <td><?= htmlspecialchars($row['pic'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars($row['project'], ENT_QUOTES, 'UTF-8') ?></td>
-                <td data-po-amount="<?= (float) $rowDisplayTarget ?>"><?= po_monitor_compare_total_amount_link($rowDisplayTarget, $row['id_bowheer'], $totalLinkGroupBy, $comparisonCumulative ? 'effective_target' : 'target', $totalLinkFrom, $totalLinkTo) ?></td>
+                <td data-po-amount="<?= (float) $rowDisplayTarget ?>"><?= po_monitor_compare_total_amount_link($rowDisplayTarget, $row['id_bowheer'], $totalLinkGroupBy, $comparisonCumulative ? 'effective_target' : 'target', $totalLinkFrom, $totalLinkTo, $totalLinkPeriodKey) ?></td>
                 <?php foreach ($weekCumulativePeriods as $cumulativePeriod): ?>
                     <?php $cumulativeAmount = po_monitor_week_cumulative_amount_by_key($monthMatrix, $row['id_bowheer'] ?? 0, $cumulativePeriod['key'] ?? ''); ?>
                     <td data-po-amount="<?= (float) $cumulativeAmount ?>" class="po-compare-cumulative-cell po-compare-week-cumulative-cell"><?= po_monitor_compare_total_amount_link($cumulativeAmount, $row['id_bowheer'], 'month', 'cumulative', $monthMatrix['from'] ?? ($matrix['from'] ?? ''), $monthMatrix['to'] ?? ($matrix['to'] ?? ''), $cumulativePeriod['key'] ?? '') ?></td>
@@ -401,7 +436,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                 <?php endforeach; ?>
                 <td data-po-amount="<?= (float) $rowDisplayAchieved ?>"><?= number_format((float) $rowDisplayAchieved, 0, ',', '.') ?></td>
                 <td data-po-amount="<?= (float) $rowDisplayDeviasi ?>"><?= number_format((float) $rowDisplayDeviasi, 0, ',', '.') ?></td>
-                <td data-po-amount="<?= (float) $rowDisplayDeviasiByPo ?>"><?= po_monitor_compare_total_amount_link($rowDisplayDeviasiByPo, $row['id_bowheer'], $totalLinkGroupBy, $comparisonCumulative ? 'effective_deviasi_by_po' : 'deviasi_by_po', $totalLinkFrom, $totalLinkTo) ?></td>
+                <td data-po-amount="<?= (float) $rowDisplayDeviasiByPo ?>"><?= po_monitor_compare_total_amount_link($rowDisplayDeviasiByPo, $row['id_bowheer'], $totalLinkGroupBy, $comparisonCumulative ? 'effective_deviasi_by_po' : 'deviasi_by_po', $totalLinkFrom, $totalLinkTo, $totalLinkPeriodKey) ?></td>
                 <td data-order="<?= (float) $rowDisplayAchievedPercent ?>"><?= po_monitor_achieved_percent_badge($rowDisplayAchievedPercent) ?></td>
                 <td><?= po_monitor_percent($rowDisplayDeviasiPercent) ?></td>
             </tr>
@@ -416,7 +451,7 @@ if (!function_exists('po_monitor_compare_total_amount_link')) {
                     $footerWeekCumulative += po_monitor_week_cumulative_total_by_key($monthMatrix, $cumulativePeriod['key'] ?? '');
                 }
                 $footerSourceTotals = $groupBy === 'week' && !empty($monthMatrix['totals']) ? $monthMatrix['totals'] : $matrix['totals'];
-                $footerDisplayTarget = $comparisonCumulative ? (float) ($footerSourceTotals['total_effective_target'] ?? po_monitor_compare_effective_target_total($footerSourceTotals['months'] ?? [])) : (float) ($footerSourceTotals['total_target'] ?? 0);
+                $footerDisplayTarget = $comparisonCumulative ? po_monitor_compare_effective_target_total($footerSourceTotals['months'] ?? []) : (float) ($footerSourceTotals['total_target'] ?? 0);
                 $footerDisplayAchieved = (float) ($footerSourceTotals['total_achieved'] ?? 0);
                 $footerDisplayDeviasi = $comparisonCumulative ? max($footerDisplayTarget - $footerDisplayAchieved, 0) : (float) ($footerSourceTotals['deviasi'] ?? 0);
                 $footerDisplayAchievedPercent = $footerDisplayTarget > 0 ? ($footerDisplayAchieved / $footerDisplayTarget) * 100 : ($footerDisplayAchieved > 0 ? 100 : 0);

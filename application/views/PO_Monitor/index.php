@@ -87,14 +87,46 @@ if (!function_exists('po_monitor_achieved_percent_badge')) {
 if (!function_exists('po_monitor_compare_effective_target_total')) {
     function po_monitor_compare_effective_target_total(array $months)
     {
-        $total = 0;
+        $activeMonth = null;
         foreach ($months as $month) {
-            $total += array_key_exists('effective_target', $month)
-                ? (float) $month['effective_target']
-                : (float) ($month['cumulative'] ?? 0) + (float) ($month['target'] ?? 0);
+            $activeMonth = $month;
         }
 
-        return $total;
+        if ($activeMonth === null) {
+            return 0;
+        }
+
+        return array_key_exists('effective_target', $activeMonth)
+            ? (float) $activeMonth['effective_target']
+            : (float) ($activeMonth['cumulative'] ?? 0) + (float) ($activeMonth['target'] ?? 0);
+    }
+}
+
+if (!function_exists('po_monitor_compare_active_period_key')) {
+    function po_monitor_compare_active_period_key(array $periods)
+    {
+        $activeKey = '__total__';
+        foreach ($periods as $period) {
+            $activeKey = (string) ($period['key'] ?? $activeKey);
+        }
+
+        return $activeKey;
+    }
+}
+
+if (!function_exists('po_monitor_compare_effective_deviasi_by_po_total')) {
+    function po_monitor_compare_effective_deviasi_by_po_total(array $months)
+    {
+        $activeMonth = null;
+        foreach ($months as $month) {
+            $activeMonth = $month;
+        }
+
+        if ($activeMonth === null) {
+            return 0;
+        }
+
+        return (float) ($activeMonth['cumulative'] ?? 0) + (float) ($activeMonth['deviasi_by_po'] ?? 0);
     }
 }
 
@@ -2602,13 +2634,13 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 <tbody>
                                     <?php $compareNo = 1; foreach ($comparisonMatrix['rows'] as $row): ?>
                                         <?php
-                                            $singleComparePeriodKey = count($comparisonMatrix['months'] ?? []) === 1 ? (string) ($comparisonMatrix['months'][0]['key'] ?? '__total__') : '__total__';
+                                            $singleComparePeriodKey = $comparisonCumulative ? po_monitor_compare_active_period_key($comparisonMatrix['months'] ?? []) : (count($comparisonMatrix['months'] ?? []) === 1 ? (string) ($comparisonMatrix['months'][0]['key'] ?? '__total__') : '__total__');
                                             $rowActualTargetTotal = (float) ($row['deviasi_by_po'] ?? $row['total_target']);
                                             $rowDisplayTarget = $comparisonCumulative
                                                 ? po_monitor_compare_effective_target_total($row['months'] ?? [])
                                                 : (float) $row['total_target'];
                                             $rowDisplayDeviasi = $comparisonCumulative ? max($rowDisplayTarget - (float) $row['total_achieved'], 0) : (float) $row['deviasi'];
-                                            $rowDisplayDeviasiByPo = $comparisonCumulative ? (float) ($row['total_effective_deviasi_by_po'] ?? $row['deviasi_by_po'] ?? 0) : (float) ($row['deviasi_by_po'] ?? 0);
+                                            $rowDisplayDeviasiByPo = $comparisonCumulative ? po_monitor_compare_effective_deviasi_by_po_total($row['months'] ?? []) : (float) ($row['deviasi_by_po'] ?? 0);
                                             $rowDisplayAchievedPercent = $comparisonCumulative ? ($rowDisplayTarget > 0 ? ((float) $row['total_achieved'] / $rowDisplayTarget) * 100 : ((float) $row['total_achieved'] > 0 ? 100 : 0)) : (float) $row['achieved_percent'];
                                             $rowDisplayDeviasiPercent = $comparisonCumulative ? max(100 - $rowDisplayAchievedPercent, 0) : (float) $row['deviasi_percent'];
                                         ?>
@@ -2662,7 +2694,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                         <?php endforeach; ?>
                                         <th><?= number_format((float) $comparisonMatrix['totals']['total_achieved'], 0, ',', '.') ?></th>
                                         <th><?= number_format((float) $footerDisplayDeviasi, 0, ',', '.') ?></th>
-                                        <th><?= number_format((float) ($comparisonCumulative ? ($comparisonMatrix['totals']['total_effective_deviasi_by_po'] ?? $comparisonMatrix['totals']['deviasi_by_po'] ?? 0) : ($comparisonMatrix['totals']['deviasi_by_po'] ?? 0)), 0, ',', '.') ?></th>
+                                        <th><?= number_format((float) ($comparisonCumulative ? po_monitor_compare_effective_deviasi_by_po_total($comparisonMatrix['totals']['months'] ?? []) : ($comparisonMatrix['totals']['deviasi_by_po'] ?? 0)), 0, ',', '.') ?></th>
                                         <th><?= po_monitor_achieved_percent_badge($footerDisplayAchievedPercent) ?></th>
                                         <th><?= po_monitor_percent($footerDisplayDeviasiPercent) ?></th>
                                     </tr>
