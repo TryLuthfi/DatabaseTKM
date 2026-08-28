@@ -1480,6 +1480,8 @@ class MPO_Monitor extends CI_Model
             ->get()
             ->row_array();
 
+        $this->autoRepairSingleMissingPoTerm((int) $id_po, !empty($latestAmend['id_amend']) ? (int) $latestAmend['id_amend'] : null);
+
         $effectiveValueSql = "COALESCE(NULLIF(t.value, 0), (
             COALESCE(
                 (SELECT am.release_value FROM tb_po_amend am WHERE am.id_po = t.id_po ORDER BY am.amend_no DESC LIMIT 1),
@@ -1507,6 +1509,134 @@ class MPO_Monitor extends CI_Model
         $this->db->order_by('t.term_index', 'ASC');
 
         return $this->db->get()->result_array();
+    }
+
+    private function autoRepairSingleMissingPoTerm($idPo, $idAmend = null)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0) {
+            return;
+        }
+
+        $po = $this->db
+            ->select('id_po, po_number, total_value')
+            ->from('tb_po')
+            ->where('id_po', $idPo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!$po) {
+            return;
+        }
+
+        $this->db
+            ->select('id_term, term_index, percent')
+            ->from('tb_po_term')
+            ->where('id_po', $idPo);
+        if ($idAmend === null) {
+            $this->db->where('id_amend IS NULL', null, false);
+        } else {
+            $this->db->where('id_amend', (int) $idAmend);
+        }
+        $terms = $this->db
+            ->order_by('term_index', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (empty($terms) || count($terms) >= 5) {
+            return;
+        }
+
+        $existingIndexes = [];
+        $totalPercent = 0;
+        foreach ($terms as $term) {
+            $termIndex = (int) ($term['term_index'] ?? 0);
+            if ($termIndex >= 1 && $termIndex <= 5) {
+                $existingIndexes[$termIndex] = true;
+            }
+            $totalPercent += (float) ($term['percent'] ?? 0);
+        }
+
+        $missingIndexes = [];
+        for ($index = 1; $index <= 5; $index++) {
+            if (empty($existingIndexes[$index])) {
+                $missingIndexes[] = $index;
+            }
+        }
+
+        $remainingPercent = round(100 - $totalPercent, 2);
+        if (count($missingIndexes) !== 1 || $remainingPercent <= 0.000001) {
+            return;
+        }
+
+        $missingIndex = (int) $missingIndexes[0];
+        $termValue = round((float) ($po['total_value'] ?? 0) * $remainingPercent / 100, 2);
+        if ($termValue <= 0.000001) {
+            return;
+        }
+
+        $this->db->trans_begin();
+        $this->db->insert('tb_po_term', [
+            'id_po' => $idPo,
+            'id_amend' => $idAmend,
+            'term_index' => $missingIndex,
+            'percent' => $remainingPercent,
+            'value' => $termValue,
+            'plan_amount' => 0,
+            'target_status' => 'OPEN',
+        ]);
+        $idTerm = (int) $this->db->insert_id();
+
+        if ($idTerm > 0) {
+            $sourceAllocation = $this->db
+                ->select('a.no_po_sub, a.regional, a.kota_po, a.detail_po, a.remarks, a.source_row_no')
+                ->from('tb_po_term_allocation a')
+                ->join('tb_po_term t', 't.id_term = a.id_term')
+                ->where('t.id_po', $idPo)
+                ->order_by('a.source_row_no', 'ASC')
+                ->order_by('a.id_allocation', 'ASC')
+                ->limit(1)
+                ->get()
+                ->row_array();
+
+            if ($sourceAllocation) {
+                $this->db->insert('tb_po_term_allocation', [
+                    'id_term' => $idTerm,
+                    'no_po_sub' => $sourceAllocation['no_po_sub'] ?? null,
+                    'regional' => $sourceAllocation['regional'] ?? null,
+                    'kota_po' => $sourceAllocation['kota_po'] ?? null,
+                    'detail_po' => $sourceAllocation['detail_po'] ?? null,
+                    'remarks' => $sourceAllocation['remarks'] ?? null,
+                    'allocation_value' => $termValue,
+                    'plan_amount' => 0,
+                    'target_status' => 'OPEN',
+                    'outstanding_amount' => $termValue,
+                    'source_row_no' => $sourceAllocation['source_row_no'] ?? null,
+                ]);
+            }
+        }
+
+        if ($this->db->trans_status() === false || $idTerm <= 0) {
+            $this->db->trans_rollback();
+            return;
+        }
+
+        $this->db->trans_commit();
+        $this->refreshPoDashboardMetrics($idPo);
+
+        if (function_exists('po_audit_log_write')) {
+            $ci =& get_instance();
+            po_audit_log_write($ci, 'PO_Monitor', 'AUTO_REPAIR_TERM', [
+                'po_number' => $po['po_number'] ?? $idPo,
+                'id_po' => $idPo,
+                'id_term' => $idTerm,
+                'missing_term' => $missingIndex,
+                'old_total_percent' => $totalPercent,
+                'new_percent' => $remainingPercent,
+                'new_value' => $termValue,
+                'status' => 'OPEN',
+            ]);
+        }
     }
 
     public function getPOAllocations($id_po)
@@ -4597,7 +4727,8 @@ class MPO_Monitor extends CI_Model
             ];
         }
 
-        $idBowheer = $this->resolveBowheerId('PT EMR - NRO');
+        $monitorBowheer = $this->resolveMyRepMonitorBowheer($header);
+        $idBowheer = $this->resolveBowheerId($monitorBowheer);
         $poDate = $this->normalizeSyncDate($header['po_date'] ?? null);
         $poValue = (float) ($header['po_value'] ?? 0);
         $sourceHash = hash('sha256', 'MYREP_PO_HEADER|' . $poHeaderId . '|' . strtoupper($poNumber));
@@ -4614,7 +4745,7 @@ class MPO_Monitor extends CI_Model
             'id_bowheer' => $idBowheer,
             'total_value' => $poValue,
             'status_po' => 'ON PO',
-            'dashboard_bowheer' => 'PT EMR - NRO',
+            'dashboard_bowheer' => $monitorBowheer,
             'type_project' => implode(' - ', $typeProjectParts) ?: 'MYREP',
             'dashboard_all_invoice' => 0,
             'dashboard_invoice_2026' => 0,
@@ -4779,6 +4910,8 @@ class MPO_Monitor extends CI_Model
 
         $poDate = $this->normalizeSyncDate($header['po_date'] ?? null);
         $poValue = (float) ($header['po_value'] ?? 0);
+        $monitorBowheer = $this->resolveMyRepMonitorBowheer($header);
+        $idBowheer = $this->resolveBowheerId($monitorBowheer);
         $typeProjectParts = array_filter([
             strtoupper(trim((string) ($header['po_type'] ?? ''))),
             trim((string) ($header['regional_name'] ?? '')),
@@ -4789,9 +4922,10 @@ class MPO_Monitor extends CI_Model
             ->where('id_po', $idPo)
             ->update('tb_po', [
                 'po_date' => $poDate,
+                'id_bowheer' => $idBowheer,
                 'total_value' => $poValue,
                 'status_po' => 'ON PO',
-                'dashboard_bowheer' => 'PT EMR - NRO',
+                'dashboard_bowheer' => $monitorBowheer,
                 'type_project' => implode(' - ', $typeProjectParts) ?: 'MYREP',
                 'source_row_no' => (int) ($header['id_po_header'] ?? 0),
                 'source_hash' => hash('sha256', 'MYREP_PO_HEADER|' . (int) ($header['id_po_header'] ?? 0) . '|' . strtoupper(trim((string) ($header['po_number'] ?? '')))),
@@ -4820,7 +4954,17 @@ class MPO_Monitor extends CI_Model
         return true;
     }
 
-    public function backfillPoMonitorFromMyRepHeaders(array $poNumbers = [], $userId = 0, $limit = 50, $offset = 0, $allowAll = false)
+    private function resolveMyRepMonitorBowheer(array $header)
+    {
+        $poType = strtoupper(trim((string) ($header['po_type'] ?? '')));
+        if ($poType === 'DONASI') {
+            return 'PT EMR - DONASI';
+        }
+
+        return 'PT EMR - NRO';
+    }
+
+    public function backfillPoMonitorFromMyRepHeaders(array $poNumbers = [], $userId = 0, $limit = 50, $offset = 0, $allowAll = false, $poTypeFilter = '')
     {
         $this->ensureStandaloneSchema();
         if (!$this->db->table_exists('tb_myrep_po_header')) {
@@ -4840,6 +4984,12 @@ class MPO_Monitor extends CI_Model
 
         $limit = max(1, min(200, (int) $limit));
         $offset = max(0, (int) $offset);
+        $poTypeFilter = strtoupper(trim((string) $poTypeFilter));
+        $allowedPoTypes = ['CLUSTER', 'SUBFEEDER', 'MAINFEEDER', 'FWA', 'DONASI'];
+        if (!in_array($poTypeFilter, $allowedPoTypes, true)) {
+            $poTypeFilter = '';
+        }
+
         if (empty($poNumbers) && !$allowAll) {
             return [
                 'status' => false,
@@ -4855,17 +5005,20 @@ class MPO_Monitor extends CI_Model
         }
 
         $query = $this->db
-            ->select('MIN(id_po_header) AS id_po_header, UPPER(TRIM(po_number)) AS po_number', false)
+            ->select('MIN(id_po_header) AS id_po_header, UPPER(TRIM(po_number)) AS po_number, UPPER(TRIM(COALESCE(po_type, ""))) AS po_type', false)
             ->from('tb_myrep_po_header')
             ->where("COALESCE(TRIM(po_number), '') !=", '');
 
         if (!empty($poNumbers)) {
             $query->where_in('UPPER(TRIM(po_number))', $poNumbers);
         }
+        if ($poTypeFilter !== '') {
+            $query->where('UPPER(TRIM(COALESCE(po_type, "")))', $poTypeFilter);
+        }
 
         $headers = $query
             ->order_by('po_number', 'ASC')
-            ->group_by('UPPER(TRIM(po_number))')
+            ->group_by(['UPPER(TRIM(po_number))', 'UPPER(TRIM(COALESCE(po_type, "")))'])
             ->limit($limit, $offset)
             ->get()
             ->result_array();
@@ -4879,6 +5032,7 @@ class MPO_Monitor extends CI_Model
             'limit' => $limit,
             'offset' => $offset,
             'next_offset' => $offset + count($headers),
+            'po_type_filter' => $poTypeFilter,
             'errors' => []
         ];
 
