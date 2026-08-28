@@ -2115,7 +2115,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $filePath = 'uploads/checklist_myrep_mainfeeder/' . $fileData['file_name'];
         }
 
-        $this->MChecklist_Dokument_MyRep->saveMainfeederFileUpload([
+        $savedFileId = $this->MChecklist_Dokument_MyRep->saveMainfeederFileUpload([
             'id_doc_package_mainfeeder' => $packageId,
             'id_doc_item_mainfeeder' => $itemId,
             'file_name' => $fileName,
@@ -2125,6 +2125,13 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'uploaded_by' => (int) $this->session->userdata('id_user'),
             'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
         ]);
+        if ((int) $savedFileId <= 0) {
+            if ($filePath !== '') {
+                @unlink(FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath));
+            }
+            $this->handleUploadError('Dokumen mainfeeder gagal disimpan ke database. Cek akses kota/package dokumen.', 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
 
         $this->notifyMainfeederDocumentSubmittedToHo($mainfeederId, [
             'package_id' => $packageId,
@@ -2340,7 +2347,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 $filePath = 'uploads/checklist_myrep_mainfeeder/' . $fileName;
             }
 
-            $this->MChecklist_Dokument_MyRep->saveMainfeederFileUpload([
+            $savedFileId = $this->MChecklist_Dokument_MyRep->saveMainfeederFileUpload([
                 'id_doc_package_mainfeeder' => $packageId,
                 'id_doc_item_mainfeeder' => $itemId,
                 'file_name' => $fileName,
@@ -2350,6 +2357,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'uploaded_by' => (int) $this->session->userdata('id_user'),
                 'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
             ]);
+            if ((int) $savedFileId <= 0) {
+                if ($filePath !== '') {
+                    @unlink(FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath));
+                }
+                continue;
+            }
 
             if ($notificationItemId <= 0) {
                 $notificationItemId = $itemId;

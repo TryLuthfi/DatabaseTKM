@@ -3335,7 +3335,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $row = $this->db
-            ->select('mt.city_name')
+            ->select('COALESCE(mf.city_name, mt.city_name) AS city_name', false)
             ->from('tb_rfs_myrep_mainfeeder_doc_package p')
             ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
