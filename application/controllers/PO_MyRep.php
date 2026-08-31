@@ -20,6 +20,7 @@ class PO_MyRep extends CI_Controller
                 'batchTerminCertificate' => 'EDIT',
                 'batchSavePo' => 'EDIT',
                 'setPoNyRef' => 'EDIT',
+                'setMainfeederPoNyRef' => 'EDIT',
                 'updatePoHeader' => 'EDIT',
                 'deletePoHeader' => 'EDIT',
             ]);
@@ -794,6 +795,85 @@ class PO_MyRep extends CI_Controller
 
         $this->session->set_flashdata('success', $nyPoRef !== '' ? 'NY PO REF berhasil disimpan dan di-link ke PO Monitor.' : 'NY PO REF berhasil dikosongkan.');
         redirect('PO_MyRep/detail/' . $clusterId);
+    }
+
+    public function setMainfeederPoNyRef($mainfeederId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MPO_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel PO MyRep belum tersedia.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        $mainfeederId = (int) $mainfeederId;
+        $poHeaderId = (int) $this->input->post('id_po_header');
+        $nyPoRef = strtoupper(trim((string) $this->input->post('ny_po_ref')));
+        $userId = (int) $this->session->userdata('id_user');
+
+        if ($mainfeederId <= 0 || $poHeaderId <= 0) {
+            $this->session->set_flashdata('error', 'Data PO mainfeeder tidak valid.');
+            redirect('PO_MyRep');
+            return;
+        }
+
+        if ($nyPoRef !== '' && !preg_match('/^NY-\d+$/', $nyPoRef)) {
+            $this->session->set_flashdata('error', 'NY PO REF tidak valid. Gunakan format NY-123.');
+            redirect('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        if (!$this->MPO_MyRep->ensurePoHeaderNyRefColumn()) {
+            $this->session->set_flashdata('error', 'Kolom NY PO REF belum tersedia.');
+            redirect('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $header = $this->db
+            ->select('id_po_header, id_mainfeeder, po_type, po_monitor_ny_ref')
+            ->from('tb_myrep_po_header')
+            ->where('id_po_header', $poHeaderId)
+            ->where('id_mainfeeder', $mainfeederId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $poType = strtoupper(trim((string) ($header['po_type'] ?? '')));
+        if (empty($header) || !in_array($poType, ['MAINFEEDER', 'FWA'], true)) {
+            $this->session->set_flashdata('error', 'PO mainfeeder tidak ditemukan.');
+            redirect('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $oldNyPoRef = strtoupper(trim((string) ($header['po_monitor_ny_ref'] ?? '')));
+        $saved = $this->MPO_MyRep->updatePoHeaderNyRef($poHeaderId, $nyPoRef, $userId);
+        if (!$saved) {
+            $this->session->set_flashdata('error', 'NY PO REF mainfeeder gagal disimpan.');
+            redirect('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        if ($nyPoRef !== '') {
+            $linkResult = $this->MPO_Monitor->linkNyPoReferenceToMyRepHeader($poHeaderId, $nyPoRef, $userId);
+            if (empty($linkResult['status'])) {
+                $this->MPO_MyRep->updatePoHeaderNyRef($poHeaderId, $oldNyPoRef, $userId);
+                $this->session->set_flashdata('error', 'NY PO REF tersimpan, tapi gagal link ke PO Monitor: ' . ($linkResult['message'] ?? 'unknown error'));
+                redirect('PO_MyRep/mainfeeder/' . $mainfeederId);
+                return;
+            }
+        }
+
+        if ($oldNyPoRef !== '' && $oldNyPoRef !== $nyPoRef) {
+            $ensure = $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poHeaderId, $userId);
+            $this->MPO_Monitor->unlinkNyPoReferenceFromPo($oldNyPoRef, (int) ($ensure['id_po'] ?? 0));
+        }
+
+        $this->session->set_flashdata('success', $nyPoRef !== '' ? 'NY PO REF mainfeeder berhasil disimpan dan di-link ke PO Monitor.' : 'NY PO REF mainfeeder berhasil dikosongkan.');
+        redirect('PO_MyRep/mainfeeder/' . $mainfeederId);
     }
 
     public function updateTermin()

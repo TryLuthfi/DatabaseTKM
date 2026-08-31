@@ -58,6 +58,20 @@ class MMainfeeder_MyRep extends CI_Model
             && $this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header');
     }
 
+    public function ensurePoHeaderNyRefColumn()
+    {
+        if (!$this->db->table_exists('tb_myrep_po_header')) {
+            return false;
+        }
+
+        if (!$this->db->field_exists('po_monitor_ny_ref', 'tb_myrep_po_header')) {
+            $afterColumn = $this->db->field_exists('remark_po', 'tb_myrep_po_header') ? ' AFTER `remark_po`' : '';
+            $this->db->query('ALTER TABLE `tb_myrep_po_header` ADD COLUMN `po_monitor_ny_ref` VARCHAR(50) NULL' . $afterColumn);
+        }
+
+        return $this->db->field_exists('po_monitor_ny_ref', 'tb_myrep_po_header');
+    }
+
     public function getStatusOptions()
     {
         return ['DRM', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'];
@@ -382,6 +396,10 @@ class MMainfeeder_MyRep extends CI_Model
         ];
         if ($this->db->field_exists('on_target', 'tb_myrep_po_header')) {
             $header['on_target'] = (int) ($payload['on_target'] ?? 1);
+        }
+        if ($this->ensurePoHeaderNyRefColumn()) {
+            $nyRef = strtoupper(trim((string) ($payload['po_monitor_ny_ref'] ?? '')));
+            $header['po_monitor_ny_ref'] = $nyRef !== '' ? $nyRef : null;
         }
 
         if (!empty($existing['id_po_header'])) {
@@ -938,6 +956,7 @@ class MMainfeeder_MyRep extends CI_Model
 
         $poType = $this->getProjectTypeById($mainfeederId);
         $poValue = (float) ($payload['po_value'] ?? 0);
+        $hasNyRefColumn = $this->ensurePoHeaderNyRefColumn();
         $this->db->trans_start();
         $header = [
             'id_myrep_cluster' => null,
@@ -957,6 +976,10 @@ class MMainfeeder_MyRep extends CI_Model
         ];
         if ($this->db->field_exists('on_target', 'tb_myrep_po_header')) {
             $header['on_target'] = 1;
+        }
+        if ($hasNyRefColumn) {
+            $nyRef = strtoupper(trim((string) ($payload['po_monitor_ny_ref'] ?? '')));
+            $header['po_monitor_ny_ref'] = $nyRef !== '' ? $nyRef : null;
         }
         $this->db->insert('tb_myrep_po_header', $header);
         $poHeaderId = (int) $this->db->insert_id();

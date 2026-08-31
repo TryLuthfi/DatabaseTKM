@@ -116,6 +116,12 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
 $canViewCertificateSection = strtoupper(trim((string) $this->session->userdata('homebase'))) === 'HO' || $isSuperAdmin;
 $canReleaseCertificate = $canEditPo && (strtoupper(trim((string) $this->session->userdata('lokasi_user'))) === 'HO' || $isSuperAdmin);
 $certificateTerms = isset($certificateTerms) && is_array($certificateTerms) ? $certificateTerms : [];
+$poHeaders = isset($poHeaders) && is_array($poHeaders) ? $poHeaders : [];
+$poTotalCount = count($poHeaders);
+$poTotalValue = 0;
+foreach ($poHeaders as $poHeaderSummary) {
+    $poTotalValue += (float) ($poHeaderSummary['po_value'] ?? 0);
+}
 $sectionMeta = [
     'drm' => ['icon' => 'fas fa-clipboard-check', 'label' => 'DRM', 'accent' => 'primary'],
     'implementasi' => ['icon' => 'fas fa-tools', 'label' => 'Implementasi', 'accent' => 'success'],
@@ -253,8 +259,86 @@ foreach (($drmDocuments ?? []) as $docRow) {
         font-weight: 800;
     }
 
+    .mf-po-hero {
+        background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, .18), transparent 32%),
+            linear-gradient(135deg, #0f172a, #1e3a8a 58%, #0f766e);
+        border-radius: 20px;
+        color: #fff;
+        margin-bottom: 1.25rem;
+        padding: 1.25rem;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+    }
+
+    .mf-po-hero__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .mf-po-hero__label {
+        color: rgba(255,255,255,.72);
+        font-size: .82rem;
+        letter-spacing: 0;
+        margin-bottom: .2rem;
+        text-transform: uppercase;
+    }
+
+    .mf-po-hero__value {
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    .mf-po-card {
+        background: #fff;
+        border: 1px solid #dbeafe;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+        overflow: hidden;
+    }
+
+    .mf-po-card__head {
+        align-items: center;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        border-bottom: 1px solid #dbeafe;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 1rem 1.1rem;
+    }
+
+    .mf-po-card__title,
+    .mf-po-header-box__title {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .mf-po-header-box {
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+
+    .mf-po-termin-table th {
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .mf-po-termin-table td {
+        vertical-align: middle;
+    }
+
     @media (max-width: 767.98px) {
         .mf-section-header {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .mf-po-card__head {
             align-items: stretch;
             flex-direction: column;
         }
@@ -278,8 +362,7 @@ foreach (($drmDocuments ?? []) as $docRow) {
                     <h1 class="m-0 text-dark"><?= mfModuleDetailHtml($moduleTitle) ?></h1>
                 </div>
                 <div class="col-sm-6 text-right">
-                    <a href="<?= base_url('MyRepublik_Project') ?>" class="btn btn-outline-secondary">List Project</a>
-                    <a href="<?= base_url('MyRepublik_Project') ?>" class="btn btn-dark">List Project</a>
+                    <a href="<?= base_url('MyRepublik_Project') ?>" class="btn btn-outline-secondary">Kembali</a>
                 </div>
             </div>
         </div>
@@ -290,24 +373,65 @@ foreach (($drmDocuments ?? []) as $docRow) {
             <?php if (!empty($this->session->flashdata('success'))): ?><div class="alert alert-success"><?= mfModuleDetailHtml($this->session->flashdata('success')) ?></div><?php endif; ?>
             <?php if (!empty($this->session->flashdata('error'))): ?><div class="alert alert-danger"><?= mfModuleDetailHtml($this->session->flashdata('error')) ?></div><?php endif; ?>
 
-            <div class="card card-outline card-<?= mfModuleDetailHtml($meta['accent']) ?> shadow-sm mf-project-card">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-5">
-                            <h4 class="mb-2"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></h4>
-                            <span class="badge badge-dark"><?= mfModuleDetailHtml($projectType) ?></span>
-                            <span class="badge badge-info"><?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?></span>
+            <?php if ($section === 'po'): ?>
+                <div class="mf-po-hero">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start" style="gap:1rem;">
+                        <div>
+                            <div class="h4 font-weight-bold mb-1"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></div>
+                            <div class="text-white-50"><?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '-') ?> &bull; <?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '-') ?></div>
                         </div>
-                        <div class="col-md-7 mf-project-meta">
-                            <div class="row">
-                                <div class="col-md-4"><strong>Cluster Code</strong><div><?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '-') ?></div></div>
-                                <div class="col-md-4"><strong>Kota</strong><div><?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '-') ?></div></div>
-                                <div class="col-md-4"><strong>Regional</strong><div><?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '-') ?></div></div>
+                        <?php if ($canTambahPo): ?>
+                            <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-mf-create-po">Tambah PO</button>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="mf-po-hero__grid">
+                        <div>
+                            <div class="mf-po-hero__label">Project Type</div>
+                            <div class="mf-po-hero__value"><?= mfModuleDetailHtml($projectType) ?></div>
+                        </div>
+                        <div>
+                            <div class="mf-po-hero__label">Status Flow</div>
+                            <div class="mf-po-hero__value"><?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?></div>
+                        </div>
+                        <div>
+                            <div class="mf-po-hero__label">Cluster Code</div>
+                            <div class="mf-po-hero__value"><?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '-') ?></div>
+                        </div>
+                        <div>
+                            <div class="mf-po-hero__label">DRM Date</div>
+                            <div class="mf-po-hero__value"><?= mfModuleDetailDate($mainfeeder['drm_date'] ?? '') ?></div>
+                        </div>
+                        <div>
+                            <div class="mf-po-hero__label">PO Count</div>
+                            <div class="mf-po-hero__value"><?= (int) $poTotalCount ?></div>
+                        </div>
+                        <div>
+                            <div class="mf-po-hero__label">Total PO Value</div>
+                            <div class="mf-po-hero__value"><?= mfModuleDetailNum($poTotalValue) ?></div>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="card card-outline card-<?= mfModuleDetailHtml($meta['accent']) ?> shadow-sm mf-project-card">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <h4 class="mb-2"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></h4>
+                                <span class="badge badge-dark"><?= mfModuleDetailHtml($projectType) ?></span>
+                                <span class="badge badge-info"><?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?></span>
+                            </div>
+                            <div class="col-md-7 mf-project-meta">
+                                <div class="row">
+                                    <div class="col-md-4"><strong>Cluster Code</strong><div><?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '-') ?></div></div>
+                                    <div class="col-md-4"><strong>Kota</strong><div><?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '-') ?></div></div>
+                                    <div class="col-md-4"><strong>Regional</strong><div><?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '-') ?></div></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php endif; ?>
 
             <nav class="mf-stage-nav">
                 <?php foreach ($stageLinks as $stageLink): ?>
@@ -440,36 +564,23 @@ foreach (($drmDocuments ?? []) as $docRow) {
             <?php endif; ?>
 
             <?php if ($section === 'po'): ?>
-                <div class="card card-outline card-dark shadow-sm">
-                    <div class="card-header mf-section-header">
-                        <h3 class="card-title mb-1">PO <?= mfModuleDetailHtml($projectLabel) ?></h3>
+                <div class="mf-po-card mb-4">
+                    <div class="mf-po-card__head">
+                        <div>
+                            <div class="mf-po-card__title">PO <?= mfModuleDetailHtml($projectLabel) ?></div>
+                            <div class="small text-muted">Header PO, referensi PO Monitor, dan termin invoice.</div>
+                        </div>
                         <span class="badge badge-dark"><?= mfModuleDetailHtml($projectType) ?></span>
                     </div>
                     <div class="card-body">
-                        <?php if ($canTambahPo): ?>
-                            <form method="post" action="<?= base_url('Mainfeeder_MyRep/savePo/' . $mainfeederId) ?>" class="row">
-                                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                                <div class="col-md-3"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" class="form-control" required></div></div>
-                                <div class="col-md-2"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" class="form-control" required></div></div>
-                                <div class="col-md-2"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" class="form-control" required></div></div>
-                                <div class="col-md-2"><div class="form-group"><label>Kategori</label><select name="po_category" class="form-control"><?php foreach (($poCategoryOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Status</label><select name="status_po" class="form-control"><?php foreach (($poStatusOptions ?? []) as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
-                                <div class="col-md-6"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" class="form-control" placeholder="FINAL 01 / AMANDMENT 01"></div></div>
-                                <div class="col-md-6"><div class="form-group"><label>Remark</label><input type="text" name="remark_po" class="form-control"></div></div>
-                                <div class="col-md-12"><button type="submit" class="btn btn-dark mf-action-btn">Simpan PO</button></div>
-                            </form>
-                            <hr>
-                        <?php endif; ?>
-
                         <?php if ($canViewCertificateSection): ?>
-                            <div class="card card-outline card-success shadow-sm mb-4">
-                                <div class="card-header mf-section-header">
-                                    <h3 class="card-title mb-1">Sertifikat Claim Invoice</h3>
+                            <div class="mf-po-header-box mb-4">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3" style="gap:1rem;">
+                                    <div class="mf-po-header-box__title mb-0">Sertifikat Claim Invoice</div>
                                     <span class="badge badge-info">Term 2-5</span>
                                 </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered mb-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>PO</th>
@@ -529,24 +640,46 @@ foreach (($drmDocuments ?? []) as $docRow) {
                                                     <?php endforeach; ?>
                                                 <?php endif; ?>
                                             </tbody>
-                                        </table>
-                                    </div>
+                                    </table>
                                 </div>
                             </div>
                         <?php endif; ?>
 
-                        <?php foreach (($poHeaders ?? []) as $po): ?>
-                            <div class="card card-outline card-secondary shadow-sm mb-4">
-                                <div class="card-header mf-section-header">
-                                    <div>
-                                        <h3 class="card-title mb-1"><?= mfModuleDetailHtml($po['po_number'] ?? '-') ?></h3>
-                                        <div class="small text-muted"><?= mfModuleDetailHtml($po['po_category'] ?? '-') ?> / <?= mfModuleDetailHtml($po['status_po'] ?? '-') ?></div>
+                        <?php foreach ($poHeaders as $po): ?>
+                            <div class="mf-po-header-box">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between mb-2" style="gap:1rem;">
+                                    <div class="mf-po-header-box__title mb-0">
+                                        <?= mfModuleDetailHtml($po['po_number'] ?? '-') ?>
+                                        <span class="badge badge-primary ml-2"><?= mfModuleDetailHtml($po['po_category'] ?? '-') ?></span>
+                                        <span class="badge badge-info ml-1"><?= mfModuleDetailHtml($po['status_po'] ?? '-') ?></span>
                                     </div>
-                                    <div class="text-right"><strong><?= mfModuleDetailNum($po['po_value'] ?? 0) ?></strong><div class="small text-muted"><?= mfModuleDetailDate($po['po_date'] ?? '') ?></div></div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-sm mf-detail-table">
+                                <div class="row">
+                                    <div class="col-md-3"><strong>Tanggal PO</strong><div><?= mfModuleDetailDate($po['po_date'] ?? '') ?></div></div>
+                                    <div class="col-md-3"><strong>Nilai PO</strong><div><?= mfModuleDetailNum($po['po_value'] ?? 0) ?></div></div>
+                                    <div class="col-md-3"><strong>Versi</strong><div><?= !empty($po['po_version_label']) ? mfModuleDetailHtml($po['po_version_label']) : '-' ?></div></div>
+                                    <div class="col-md-3"><strong>Remark</strong><div><?= !empty($po['remark_po']) ? mfModuleDetailHtml($po['remark_po']) : '-' ?></div></div>
+                                </div>
+                                <div class="mt-3">
+                                    <?php if ($canEditPo): ?>
+                                        <form method="post" action="<?= base_url('PO_MyRep/setMainfeederPoNyRef/' . $mainfeederId) ?>" class="form-inline">
+                                            <input type="hidden" name="id_po_header" value="<?= (int) ($po['id_po_header'] ?? 0) ?>">
+                                            <label class="mr-2 mb-2 mb-sm-0"><strong>NY PO REF</strong></label>
+                                            <input
+                                                type="text"
+                                                name="ny_po_ref"
+                                                class="form-control form-control-sm mr-2"
+                                                placeholder="NY-123"
+                                                value="<?= mfModuleDetailHtml($po['po_monitor_ny_ref'] ?? '') ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Update Ref</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <strong>NY PO REF</strong>
+                                        <div><?= !empty($po['po_monitor_ny_ref']) ? mfModuleDetailHtml($po['po_monitor_ny_ref']) : '-' ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="table-responsive mt-3">
+                                        <table class="table table-bordered table-sm mf-po-termin-table">
                                             <thead><tr><th>Term</th><th>%</th><th>Invoice</th><th>Outstanding</th><th>Status</th><th>Sertifikat</th><th>No Invoice</th><th>Tgl Invoice</th><th>BAST</th><th>Payment</th><th>Remark</th><th>Aksi</th></tr></thead>
                                             <tbody>
                                                 <?php $invoiceTotal = 0; $outstandingTotal = 0; ?>
@@ -588,7 +721,6 @@ foreach (($drmDocuments ?? []) as $docRow) {
                                             </tbody>
                                             <tfoot><tr><th colspan="2" class="text-right">TOTAL</th><th class="text-right"><?= $invoiceTotal > 0 ? mfModuleDetailNum($invoiceTotal) : '-' ?></th><th class="text-right"><?= $outstandingTotal > 0 ? mfModuleDetailNum($outstandingTotal) : '-' ?></th><th colspan="8"></th></tr></tfoot>
                                         </table>
-                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -602,6 +734,42 @@ foreach (($drmDocuments ?? []) as $docRow) {
         </div>
     </section>
 </div>
+
+<?php if ($section === 'po' && $canTambahPo): ?>
+<div class="modal fade" id="modal-mf-create-po" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/savePo/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Tambah PO <?= mfModuleDetailHtml($projectLabel) ?></h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label><?= mfModuleDetailHtml($projectLabel) ?></label><input type="text" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?>" readonly></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Status Flow</label><input type="text" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?>" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kategori PO</label><select name="po_category" class="form-control"><?php foreach (($poCategoryOptions ?? []) as $value => $label): ?><option value="<?= mfModuleDetailHtml($value) ?>"><?= mfModuleDetailHtml($label) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Status PO</label><select name="status_po" class="form-control"><?php foreach (($poStatusOptions ?? []) as $value => $label): ?><option value="<?= mfModuleDetailHtml($value) ?>" <?= $value === 'ISSUED' ? 'selected' : '' ?>><?= mfModuleDetailHtml($label) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>NY PO REF</label><input type="text" name="ny_po_ref" class="form-control" placeholder="NY-123 (opsional)"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" class="form-control" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" class="form-control" value="<?= date('Y-m-d') ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" class="form-control" required></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" class="form-control" placeholder="FINAL 01 / AMANDMENT 01"></div></div>
+                        <div class="col-md-8"><div class="form-group"><label>Parent PO</label><select name="parent_po_header_id" class="form-control"><option value="">PO Baru</option><?php foreach ($poHeaders as $existingPo): ?><option value="<?= (int) ($existingPo['id_po_header'] ?? 0) ?>"><?= mfModuleDetailHtml($existingPo['po_number'] ?? '-') ?> - <?= mfModuleDetailHtml($existingPo['po_category'] ?? '-') ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_po" class="form-control" rows="3"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="text-muted small mr-auto">5 termin dibuat otomatis mengikuti nilai PO.</div>
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan PO</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ($section === 'po' && $canEditPo): ?>
 <div class="modal fade" id="modal-mf-termin" tabindex="-1" role="dialog" aria-hidden="true">
