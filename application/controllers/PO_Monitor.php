@@ -120,13 +120,15 @@ class PO_Monitor extends CI_Controller
         $limit = (int) ($this->input->post('limit') ?: $this->input->get('limit') ?: 50);
         $offset = (int) ($this->input->post('offset') ?: $this->input->get('offset') ?: 0);
         $allowAll = in_array(strtolower((string) ($this->input->post('all') ?: $this->input->get('all'))), ['1', 'true', 'yes'], true);
+        $poType = strtoupper(trim((string) ($this->input->post('po_type') ?: $this->input->get('po_type'))));
 
         $summary = $this->MPO_Monitor->backfillPoMonitorFromMyRepHeaders(
             (array) $poNumbers,
             (int) $this->session->userdata('id_user'),
             $limit,
             $offset,
-            $allowAll
+            $allowAll,
+            $poType
         );
 
         $this->output
