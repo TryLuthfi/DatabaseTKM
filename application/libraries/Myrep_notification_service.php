@@ -65,7 +65,7 @@ class Myrep_notification_service
                 ->row_array();
         }
 
-        if (in_array($normalizedEvent, ['full_upload', 'batch_revised'], true) && $normalizedModule === 'batch_approval_myrep') {
+        if (in_array($normalizedEvent, ['full_upload', 'batch_revised', 'propose_donation'], true) && $normalizedModule === 'batch_approval_myrep') {
             return $this->ci->db
                 ->from('tb_myrep_notification_route')
                 ->where('module_name', (string) $moduleName)
@@ -306,6 +306,10 @@ class Myrep_notification_service
 
     private function buildMessage($moduleName, $eventName, array $payload, array $recipient)
     {
+        if (strtolower(trim((string) $moduleName)) === 'batch_approval_myrep' && strtolower(trim((string) $eventName)) === 'propose_donation') {
+            return $this->buildProposeDonationMessage($payload, $recipient);
+        }
+
         $title = $this->resolveModuleAwareTitle($moduleName, $eventName, $payload);
         $docLine = $this->resolveDocumentLine($moduleName, $eventName, $payload);
         $metaLine = $this->resolveMetaLine($payload);
@@ -327,6 +331,42 @@ class Myrep_notification_service
         if (!empty($supplementalLines)) {
             array_splice($lines, 4, 0, $supplementalLines);
         }
+
+        if ($detailUrl !== '') {
+            $lines[] = '';
+            $lines[] = $this->escapeTelegramText($detailUrl);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function buildProposeDonationMessage(array $payload, array $recipient)
+    {
+        $city = strtoupper(trim((string) ($payload['city_name'] ?? '')));
+        $cluster = strtoupper(trim((string) ($payload['cluster_name'] ?? '')));
+        $locationLine = trim($city . ' | ' . $cluster, " |\t\n\r\0\x0B");
+        if ($locationLine === '') {
+            $locationLine = '-';
+        }
+
+        $homepass = (int) ($payload['homepass'] ?? 0);
+        $nominalPerHomepass = (float) ($payload['nominal_per_homepass'] ?? 0);
+        $donationTotal = (float) ($payload['donation_total'] ?? 0);
+        $senderLine = $this->resolveSenderLine($payload, $recipient);
+        $timeLine = $this->formatIndonesianDateTime($payload['timestamp'] ?? date('Y-m-d H:i:s'));
+        $detailUrl = trim((string) ($payload['detail_url'] ?? ''));
+
+        $lines = [
+            '<b>PROPOSE DONATION - EMR</b>',
+            $this->escapeTelegramText($locationLine),
+            '',
+            $this->escapeTelegramText('HP : ' . number_format($homepass, 0, ',', '.') . ' HP'),
+            $this->escapeTelegramText('CPH : ' . $this->formatRupiahWithDot($nominalPerHomepass)),
+            $this->escapeTelegramText('Total : ' . $this->formatRupiahWithDot($donationTotal)),
+            '',
+            '👤 ' . $senderLine,
+            '🕒 ' . $this->escapeTelegramText($timeLine),
+        ];
 
         if ($detailUrl !== '') {
             $lines[] = '';
@@ -613,6 +653,11 @@ class Myrep_notification_service
     private function formatRupiah($value)
     {
         return 'Rp ' . number_format((float) $value, 0, ',', '.');
+    }
+
+    private function formatRupiahWithDot($value)
+    {
+        return 'Rp. ' . number_format((float) $value, 0, ',', '.');
     }
 
     private function escapeTelegramText($text)

@@ -2432,6 +2432,20 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                     </button>
                                 </form>
                             </div>
+                            <div class="border-top mt-3 pt-3 d-flex flex-wrap align-items-center justify-content-between">
+                                <div class="mb-2 mb-md-0">
+                                    <div class="font-weight-bold">Backfill PO Donasi MyRep</div>
+                                    <div class="text-muted small">Sync ulang mirror PO Donasi ke PO Monitor dengan bowheer PT EMR - DONASI.</div>
+                                </div>
+                                <form method="get" action="<?= site_url('PO_Monitor/backfill_myrep_po_monitor') ?>" class="mb-0 js-po-donasi-backfill-form">
+                                    <input type="hidden" name="all" value="1">
+                                    <input type="hidden" name="po_type" value="DONASI">
+                                    <input type="hidden" name="limit" value="200">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-sync-alt mr-1"></i> Backfill PO Donasi
+                                    </button>
+                                </form>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -3975,6 +3989,10 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 }
                 $(this).find('input[name="confirm_delete"]').val(confirmText);
                 return true;
+            });
+
+            $('.js-po-donasi-backfill-form').off('submit.poDonasiBackfill').on('submit.poDonasiBackfill', function() {
+                return window.confirm('Backfill ulang PO Donasi dari PO MyRep ke PO Monitor?');
             });
 
             $('#dashboard_initial_toggle').off('change.poDashboardMode').on('change.poDashboardMode', function() {

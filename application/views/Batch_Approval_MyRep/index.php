@@ -1,16 +1,65 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+if (!function_exists('batchStageLabel')) {
+    function batchStageLabel($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $labels = [
+            'DRAFT' => 'Draft',
+            'WAITING HO' => 'Menunggu Review HO',
+            'WAITING MYREP' => 'Menunggu Review EMR',
+            'WAITING FINANCE' => 'Menunggu Finance',
+            'WAITING_BATCH_APPROVAL' => 'Menunggu Nomor Batch Approval',
+            'BATCH_APPROVED' => 'Batch Approval Disetujui',
+            'HOLD' => 'Ditahan',
+            'WAITING_PRE_ZEYN_DOC' => 'NY Dokumen Tahap 1',
+            'PRE_ZEYN_DOC_ON_REVIEW' => 'On Review Dokumen Tahap 1',
+            'PRE_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 1',
+            'PRE_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 1',
+            'PRE_ZEYN_FINANCE_APPROVED' => 'Approved Finance Dokumen Tahap 1',
+            'WAITING_FINANCE_RELEASE' => 'Menunggu Pembayaran Finance',
+            'RELEASED' => 'Donasi Dibayarkan',
+            'WAITING_POST_ZEYN_DOC' => 'NY Dokumen Tahap 2',
+            'POST_ZEYN_DOC_ON_REVIEW' => 'On Review Dokumen Tahap 2',
+            'POST_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 2',
+            'POST_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 2',
+            'WAITING_ASTRI_SUBMISSION' => 'Menunggu Submit Astri',
+            'ASTRI_ON_REVIEW' => 'On Review Astri',
+            'ASTRI_APPROVED' => 'Approved Astri',
+            'PO_DONASI' => 'PO Donasi',
+            'INVOICE' => 'Invoice',
+            'DONE BATCH APPROVAL' => 'Batch Approval Selesai',
+            'WAITING DOC' => 'Menunggu Dokumen Post Donasi',
+            'COMPLETED' => 'Done',
+            'REJECTED' => 'Ditolak',
+            'WAITING INPUT' => 'Menunggu Pengajuan',
+        ];
+
+        return $labels[$status] ?? ($status !== '' ? ucwords(strtolower(str_replace('_', ' ', $status))) : 'Draft');
+    }
+}
 $statusOptions = [
-    'DRAFT' => 'DRAFT',
-    'WAITING HO' => 'WAITING HO',
-    'WAITING MYREP' => 'WAITING EMR',
-    'WAITING FINANCE' => 'WAITING FINANCE',
-    'RELEASED' => 'RELEASED',
-    'WAITING DOC' => 'WAITING DOC',
-    'COMPLETED' => 'COMPLETED',
-    'DONE BATCH APPROVAL' => 'DONE BATCH APPROVAL',
-    'REJECTED' => 'REJECTED',
+    'DRAFT' => batchStageLabel('DRAFT'),
+    'BATCH_APPROVED' => batchStageLabel('BATCH_APPROVED'),
+    'HOLD' => batchStageLabel('HOLD'),
+    'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
+    'PRE_ZEYN_DOC_ON_REVIEW' => batchStageLabel('PRE_ZEYN_DOC_ON_REVIEW'),
+    'PRE_ZEYN_DOC_APPROVED' => batchStageLabel('PRE_ZEYN_DOC_APPROVED'),
+    'PRE_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('PRE_ZEYN_FINANCE_ON_REVIEW'),
+    'PRE_ZEYN_FINANCE_APPROVED' => batchStageLabel('PRE_ZEYN_FINANCE_APPROVED'),
+    'WAITING_FINANCE_RELEASE' => batchStageLabel('WAITING_FINANCE_RELEASE'),
+    'RELEASED' => batchStageLabel('RELEASED'),
+    'WAITING_POST_ZEYN_DOC' => batchStageLabel('WAITING_POST_ZEYN_DOC'),
+    'POST_ZEYN_DOC_ON_REVIEW' => batchStageLabel('POST_ZEYN_DOC_ON_REVIEW'),
+    'POST_ZEYN_DOC_APPROVED' => batchStageLabel('POST_ZEYN_DOC_APPROVED'),
+    'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
+    'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
+    'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
+    'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
+    'PO_DONASI' => batchStageLabel('PO_DONASI'),
+    'INVOICE' => batchStageLabel('INVOICE'),
+    'REJECTED' => batchStageLabel('REJECTED'),
 ];
 $summaryNyBatch = 0;
 $summaryOnProses = 0;
@@ -18,12 +67,35 @@ $summaryDone = 0;
 $summaryRejected = 0;
 $createCityOptions = [];
 $nyDrmRows = [];
+$donationStageSummary = [];
+$donationStageOrder = [
+    'BATCH_APPROVED' => batchStageLabel('BATCH_APPROVED'),
+    'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
+    'PRE_ZEYN_DOC_ON_REVIEW' => batchStageLabel('PRE_ZEYN_DOC_ON_REVIEW'),
+    'PRE_ZEYN_DOC_APPROVED' => batchStageLabel('PRE_ZEYN_DOC_APPROVED'),
+    'PRE_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('PRE_ZEYN_FINANCE_ON_REVIEW'),
+    'PRE_ZEYN_FINANCE_APPROVED' => batchStageLabel('PRE_ZEYN_FINANCE_APPROVED'),
+    'WAITING_FINANCE_RELEASE' => batchStageLabel('WAITING_FINANCE_RELEASE'),
+    'RELEASED' => batchStageLabel('RELEASED'),
+    'WAITING_POST_ZEYN_DOC' => batchStageLabel('WAITING_POST_ZEYN_DOC'),
+    'POST_ZEYN_DOC_ON_REVIEW' => batchStageLabel('POST_ZEYN_DOC_ON_REVIEW'),
+    'POST_ZEYN_DOC_APPROVED' => batchStageLabel('POST_ZEYN_DOC_APPROVED'),
+    'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
+    'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
+    'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
+    'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
+    'PO_DONASI' => batchStageLabel('PO_DONASI'),
+    'INVOICE' => batchStageLabel('INVOICE'),
+    'HOLD' => batchStageLabel('HOLD'),
+    'REJECTED' => batchStageLabel('REJECTED'),
+];
 $postBatchStatuses = [
     'DRM',
     'RFS',
     'ATP',
     'DONE',
 ];
+$donationDoneStatuses = ['COMPLETED', 'INVOICE'];
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'TAMBAH') : true;
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true;
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
@@ -48,7 +120,7 @@ foreach ($clusterRows as $row) {
         !in_array($currentStatus, $postBatchStatuses, true)
         && (
             !$hasBatch
-            || !in_array($batchStatus, ['COMPLETED', 'REJECTED'], true)
+            || (!in_array($batchStatus, $donationDoneStatuses, true) && $batchStatus !== 'REJECTED')
         )
     ) {
         $nyDrmRows[] = $row;
@@ -58,13 +130,13 @@ foreach ($clusterRows as $row) {
         $summaryNyBatch++;
     }
 
-    if ($hasBatch && !in_array($batchStatus, ['COMPLETED', 'REJECTED'], true)) {
+    if ($hasBatch && !in_array($batchStatus, array_merge($donationDoneStatuses, ['REJECTED']), true)) {
         $summaryOnProses++;
     }
 
     if (
         $hasBatch
-        && $batchStatus === 'COMPLETED'
+        && in_array($batchStatus, $donationDoneStatuses, true)
         && !in_array($currentStatus, $postBatchStatuses, true)
     ) {
         $summaryDone++;
@@ -72,6 +144,35 @@ foreach ($clusterRows as $row) {
 
     if ($hasBatch && ($batchStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
         $summaryRejected++;
+    }
+
+    if ($hasBatch) {
+        if (!isset($donationStageSummary[$batchStatus])) {
+            $donationStageSummary[$batchStatus] = [
+                'label' => $donationStageOrder[$batchStatus] ?? str_replace('_', ' ', $batchStatus),
+                'count' => 0,
+                'hp' => 0,
+                'nominal_pengajuan' => 0,
+                'nominal_release' => 0,
+            ];
+        }
+
+        $donationStageSummary[$batchStatus]['count']++;
+        $donationStageSummary[$batchStatus]['hp'] += (float) ($row['hp_donasi'] ?? 0);
+        $donationStageSummary[$batchStatus]['nominal_pengajuan'] += (float) ($row['nominal_pengajuan_area'] ?? 0);
+        $donationStageSummary[$batchStatus]['nominal_release'] += (float) ($row['nominal_release_finance'] ?? 0);
+    }
+}
+
+$orderedDonationStageSummary = [];
+foreach ($donationStageOrder as $stageCode => $stageLabel) {
+    if (isset($donationStageSummary[$stageCode])) {
+        $orderedDonationStageSummary[$stageCode] = $donationStageSummary[$stageCode];
+    }
+}
+foreach ($donationStageSummary as $stageCode => $stageData) {
+    if (!isset($orderedDonationStageSummary[$stageCode])) {
+        $orderedDonationStageSummary[$stageCode] = $stageData;
     }
 }
 
@@ -83,10 +184,28 @@ if (!function_exists('batchBadgeClass')) {
             case 'RELEASED':
             case 'DONE BATCH APPROVAL':
             case 'COMPLETED':
+            case 'BATCH_APPROVED':
+            case 'PRE_ZEYN_DOC_APPROVED':
+            case 'PRE_ZEYN_FINANCE_APPROVED':
+            case 'POST_ZEYN_DOC_APPROVED':
+            case 'ASTRI_APPROVED':
+            case 'PO_DONASI':
+            case 'INVOICE':
                 return 'success';
             case 'WAITING INPUT':
+            case 'WAITING_BATCH_APPROVAL':
+            case 'WAITING_ASTRI_SUBMISSION':
                 return 'info';
+            case 'HOLD':
             case 'WAITING DOC':
+            case 'WAITING_PRE_ZEYN_DOC':
+            case 'PRE_ZEYN_DOC_ON_REVIEW':
+            case 'PRE_ZEYN_FINANCE_ON_REVIEW':
+            case 'WAITING_FINANCE_RELEASE':
+            case 'WAITING_POST_ZEYN_DOC':
+            case 'POST_ZEYN_DOC_ON_REVIEW':
+            case 'POST_ZEYN_FINANCE_ON_REVIEW':
+            case 'ASTRI_ON_REVIEW':
                 return 'warning';
             case 'REJECTED':
                 return 'danger';
@@ -125,12 +244,22 @@ if (!function_exists('batchDocLabel')) {
 if (!function_exists('batchStatusLabel')) {
     function batchStatusLabel($status)
     {
-        $status = strtoupper(trim((string) $status));
-        if ($status === 'WAITING MYREP') {
-            return 'WAITING EMR';
+        return batchStageLabel($status);
+    }
+}
+
+if (!function_exists('batchMoneyCompact')) {
+    function batchMoneyCompact($value)
+    {
+        $value = (float) $value;
+        if (abs($value) >= 1000000000) {
+            return 'Rp ' . number_format($value / 1000000000, 1, ',', '.') . ' M';
+        }
+        if (abs($value) >= 1000000) {
+            return 'Rp ' . number_format($value / 1000000, 1, ',', '.') . ' Jt';
         }
 
-        return $status !== '' ? $status : 'DRAFT';
+        return 'Rp ' . number_format($value, 0, ',', '.');
     }
 }
 
@@ -141,12 +270,12 @@ if (!function_exists('batchAgingBadgeClass')) {
             return 'secondary';
         }
 
-        return (int) $agingDays > 5 ? 'danger' : 'success';
+        return (int) $agingDays > 17 ? 'danger' : 'success';
     }
 }
 
-if (!function_exists('batchCountWorkingDays')) {
-    function batchCountWorkingDays($startDateString, $endDateString = null)
+if (!function_exists('batchCountCalendarDays')) {
+    function batchCountCalendarDays($startDateString, $endDateString = null)
     {
         if (empty($startDateString) || $startDateString === '0000-00-00') {
             return null;
@@ -168,16 +297,7 @@ if (!function_exists('batchCountWorkingDays')) {
             return 0;
         }
 
-        $workingDays = 0;
-        $cursor = $start->modify('+1 day');
-        while ($cursor <= $end) {
-            if ((int) $cursor->format('N') < 6) {
-                $workingDays++;
-            }
-            $cursor = $cursor->modify('+1 day');
-        }
-
-        return $workingDays;
+        return (int) $start->diff($end)->days;
     }
 }
 
@@ -199,7 +319,7 @@ if (!function_exists('batchSlaInfo')) {
         $approvalEmrDate = trim((string) ($row['submitted_to_finance_at'] ?? ''));
         return [
             'start_date' => substr($approvedValsalDate, 0, 10),
-            'aging_days' => batchCountWorkingDays($approvedValsalDate, $approvalEmrDate !== '' ? $approvalEmrDate : date('Y-m-d')),
+            'aging_days' => batchCountCalendarDays($approvedValsalDate, $approvalEmrDate !== '' ? $approvalEmrDate : date('Y-m-d')),
         ];
     }
 }
@@ -211,7 +331,7 @@ if (!function_exists('batchSlaBadgeClass')) {
             return 'secondary';
         }
 
-        return (int) $slaInfo['aging_days'] > 5 ? 'danger' : 'success';
+        return (int) $slaInfo['aging_days'] > 17 ? 'danger' : 'success';
     }
 }
 
@@ -219,14 +339,16 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
     foreach ($rows as $index => $row) {
         $slaInfo = batchSlaInfo($row);
         $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
-        $batchStageLabel = $hasBatch ? batchStatusLabel($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT') : 'WAITING INPUT';
-        $canStartBatchInput = !$hasBatch && strtoupper($batchStageLabel) === 'WAITING INPUT';
+        $batchStageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $batchStageLabel = $hasBatch ? batchStatusLabel($batchStageCode) : batchStatusLabel('WAITING INPUT');
+        $isWaitingInputStage = !$hasBatch || $batchStageCode === 'WAITING INPUT';
+        $canStartBatchInput = !$hasBatch;
         $batchDocLabel = $hasBatch ? batchDocLabel($row) : 'BELUM ADA DOC';
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
         $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
-        $useReleaseNominal = in_array(strtoupper($batchStageLabel), ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $useReleaseNominal = in_array($batchStageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
         $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
@@ -234,7 +356,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         <tr>
             <td><?= $index + 1 ?></td>
             <td>
-                <?php if (!empty($row['id_myrep_cluster'])): ?>
+                <?php if (!empty($row['id_myrep_cluster']) && !$isWaitingInputStage): ?>
                     <a href="<?= base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="font-weight-bold">
                         <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
                     </a>
@@ -252,12 +374,12 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             <td class="text-right"><?= $displayNominalPerHomepass !== null ? number_format($displayNominalPerHomepass, 0, ',', '.') : '-' ?></td>
             <td>
                 <div class="batch-sla-aging-cell">
-                    <span class="badge badge-<?= batchSlaBadgeClass($slaInfo) ?>">SLA 5 HK</span>
+                    <span class="badge badge-<?= batchSlaBadgeClass($slaInfo) ?>">SLA 17 Hari</span>
                     <span class="badge badge-<?= batchAgingBadgeClass($slaInfo['aging_days']) ?>">
                         <?php if ($slaInfo['aging_days'] === null): ?>
                             Aging -
                         <?php else: ?>
-                            Aging <?= (int) $slaInfo['aging_days'] ?> HK
+                            Aging <?= (int) $slaInfo['aging_days'] ?> Hari
                         <?php endif; ?>
                     </span>
                 </div>
@@ -333,9 +455,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                 <?php endif; ?>
 
                 <?php if ($hasBatch && $canHapus): ?>
-                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta Batch Approval dan seluruh flow MyRep terkait?');">
+                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus data Batch Approval untuk cluster ini? Cluster MyRep dan flow lainnya tetap tersimpan.');">
                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Batch</button>
                     </form>
                 <?php endif; ?>
             </td>
@@ -468,6 +590,50 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                     </div>
                 </div>
             </div>
+
+            <?php if (!empty($orderedDonationStageSummary)): ?>
+                <div class="card card-outline card-info shadow-sm batch-stage-summary-card">
+                    <div class="card-header batch-section-header">
+                        <div>
+                            <h3 class="card-title mb-1">Summary Staging Donasi</h3>
+                        </div>
+                        <div class="batch-stage-summary-card__actions">
+                            <a href="<?= base_url('Batch_Approval_MyRep/downloadStageSummaryReport' . (!empty($selectedCity) || !empty($selectedStatus) ? '?' . http_build_query(array_filter(['city' => $selectedCity, 'status' => $selectedStatus])) : '')) ?>" class="btn btn-sm btn-outline-secondary mr-1">
+                                <i class="fas fa-table mr-1"></i> Summary CSV
+                            </a>
+                            <a href="<?= base_url('Batch_Approval_MyRep/downloadReport' . (!empty($selectedCity) || !empty($selectedStatus) ? '?' . http_build_query(array_filter(['city' => $selectedCity, 'status' => $selectedStatus])) : '')) ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download mr-1"></i> Report Filter
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="batch-stage-summary-grid">
+                            <?php foreach ($orderedDonationStageSummary as $stageCode => $stageData): ?>
+                                <?php
+                                $stageFilterQuery = array_filter([
+                                    'city' => $selectedCity,
+                                    'status' => $stageCode,
+                                ]);
+                                $stageUrl = base_url('Batch_Approval_MyRep' . (!empty($stageFilterQuery) ? '?' . http_build_query($stageFilterQuery) : ''));
+                                ?>
+                                <a href="<?= $stageUrl ?>" class="batch-stage-summary-item batch-stage-summary-item--<?= batchBadgeClass($stageCode) ?>">
+                                    <span class="batch-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode)) ?></span>
+                                    <span class="batch-stage-summary-item__count"><?= number_format((int) ($stageData['count'] ?? 0), 0, ',', '.') ?></span>
+                                    <span class="batch-stage-summary-item__meta">
+                                        HP <?= number_format((float) ($stageData['hp'] ?? 0), 0, ',', '.') ?>
+                                    </span>
+                                    <span class="batch-stage-summary-item__money">
+                                        Pengajuan <?= batchMoneyCompact($stageData['nominal_pengajuan'] ?? 0) ?>
+                                    </span>
+                                    <span class="batch-stage-summary-item__money">
+                                        Release <?= batchMoneyCompact($stageData['nominal_release'] ?? 0) ?>
+                                    </span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div class="row">
                 <div class="col-md-12">
@@ -731,15 +897,10 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                 <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" class="form-control js-homepass-valsal js-number-format" data-decimals="0" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="create_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" required></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan</label><input type="date" name="submission_date" id="create_submission_date" class="form-control" value="<?= date('Y-m-d') ?>"></div></div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label>Staging</label>
-                                        <input type="hidden" name="staging_status" id="create_staging_status" value="WAITING HO">
-                                        <input type="text" class="form-control" value="WAITING HO" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="create_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required></div></div>
-                                <div class="col-md-6"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="create_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" readonly></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>No Batch Astri</label><input type="text" name="astri_batch_number" class="form-control" placeholder="Batch 2026-XX" required></div></div>
+                                <div class="col-md-6"><div class="form-group mb-md-0"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="create_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required><input type="hidden" name="nominal_nego_emr" id="create_nominal_nego_emr"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Tanggal Batch Approval</label><input type="date" name="astri_batch_approved_at" id="create_astri_batch_approved_at" class="form-control" value="<?= date('Y-m-d') ?>" required></div></div>
+                                <div class="col-md-3"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="create_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" readonly></div></div>
                             </div>
                         </div>
 
@@ -760,13 +921,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                 <div class="col-md-4"><div class="form-group"><label>No HP Penerima</label><input type="text" name="recipient_phone" id="create_recipient_phone" class="form-control js-recipient-source"></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Jabatan Penerima</label><input type="text" name="recipient_position" id="create_recipient_position" class="form-control js-recipient-source"></div></div>
                                 <div class="col-md-4"><div class="form-group mb-0"><label>Masa Jabatan</label><input type="text" name="recipient_period" id="create_recipient_period" class="form-control js-recipient-source" placeholder="2023 - 2026"></div></div>
-                            </div>
-                        </div>
-
-                        <div class="batch-form-section js-emr-fields" data-stage-scope="create" style="display:none;">
-                            <div class="batch-form-section__title">Approval EMR</div>
-                            <div class="row">
-                                <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Approval EMR</label><input type="text" name="nominal_nego_emr" inputmode="decimal" class="form-control js-number-format" data-decimals="0"></div></div>
                             </div>
                         </div>
 
@@ -1496,6 +1650,82 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
     }
 
+    .batch-stage-summary-card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .batch-stage-summary-card__actions {
+        margin-left: auto;
+    }
+
+    .batch-stage-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: .75rem;
+    }
+
+    .batch-stage-summary-item {
+        display: grid;
+        min-height: 128px;
+        padding: .85rem .9rem;
+        border: 1px solid #dbe7f3;
+        border-left: 5px solid #64748b;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f172a;
+        text-decoration: none;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .batch-stage-summary-item:hover {
+        color: #0f172a;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    .batch-stage-summary-item--success {
+        border-left-color: #16a34a;
+    }
+
+    .batch-stage-summary-item--info {
+        border-left-color: #0284c7;
+    }
+
+    .batch-stage-summary-item--warning {
+        border-left-color: #f59e0b;
+    }
+
+    .batch-stage-summary-item--danger {
+        border-left-color: #dc2626;
+    }
+
+    .batch-stage-summary-item__label {
+        min-height: 34px;
+        color: #475569;
+        font-size: .76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .batch-stage-summary-item__count {
+        display: block;
+        margin-top: .15rem;
+        font-size: 1.55rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .batch-stage-summary-item__meta,
+    .batch-stage-summary-item__money {
+        display: block;
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
     .batch-toolbar {
         display: flex;
         justify-content: flex-end;
@@ -2201,6 +2431,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             var nominalDonasi = normalizeFormattedNumber($('#' + prefix + '_nominal_pengajuan_area').val());
             var result = hpDonasi > 0 ? (nominalDonasi / hpDonasi) : 0;
             $('#' + prefix + '_nominal_per_homepass').val(result > 0 ? formatNumberValue(result, 2) : '');
+            if (prefix === 'create') {
+                $('#create_nominal_nego_emr').val(nominalDonasi > 0 ? String(Math.round(nominalDonasi)) : '');
+            }
         }
 
         function fillCreateDefaults() {
@@ -2208,6 +2441,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             var month = String(today.getMonth() + 1).padStart(2, '0');
             var day = String(today.getDate()).padStart(2, '0');
             $('#create_submission_date').val(today.getFullYear() + '-' + month + '-' + day);
+            $('#create_astri_batch_approved_at').val(today.getFullYear() + '-' + month + '-' + day);
         }
 
         function escapeHtml(value) {

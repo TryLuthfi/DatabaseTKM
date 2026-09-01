@@ -544,6 +544,33 @@ class Post_Donasi_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MPost_Donasi_MyRep->getFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
     private function isApprover()
     {
         return $this->session->userdata('lokasi_user') === 'HO'

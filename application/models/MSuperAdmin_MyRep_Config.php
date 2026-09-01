@@ -14,6 +14,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'atp_ho',
         'rfs_ho',
         'sitac_ho',
+        'finance_ho',
         'dc_ho',
         'qa_ho',
     ];
@@ -50,6 +51,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'ATP_HO',
         'RFS_HO',
         'SITAC_HO',
+        'FINANCE_HO',
         'DC_HO',
         'QA_HO',
     ];
@@ -176,6 +178,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
             return [];
         }
+        $this->ensureFinanceHoMappingColumn();
 
         $tableName = 'tb_myrep_pic_mapping_city';
 
@@ -262,6 +265,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
             return $this->cityPicRoleColumns;
         }
+        $this->ensureFinanceHoMappingColumn();
 
         $availableColumns = [];
         foreach ($this->cityPicRoleColumns as $columnName) {
@@ -278,6 +282,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
             return ['ok' => false, 'updated' => 0, 'failed' => []];
         }
+        $this->ensureFinanceHoMappingColumn();
 
         $this->db->trans_begin();
         $updated = 0;
@@ -315,6 +320,13 @@ class MSuperAdmin_MyRep_Config extends CI_Model
 
         $this->db->trans_commit();
         return ['ok' => empty($failed), 'updated' => $updated, 'failed' => $failed];
+    }
+
+    private function ensureFinanceHoMappingColumn()
+    {
+        if ($this->db->table_exists('tb_myrep_pic_mapping_city') && !$this->db->field_exists('finance_ho', 'tb_myrep_pic_mapping_city')) {
+            $this->db->query("ALTER TABLE `tb_myrep_pic_mapping_city` ADD COLUMN `finance_ho` VARCHAR(255) NULL AFTER `sitac_ho`");
+        }
     }
 
     public function getUserOptions()

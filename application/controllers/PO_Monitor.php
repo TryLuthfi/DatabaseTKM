@@ -294,7 +294,12 @@ class PO_Monitor extends CI_Controller
             'term_master_id' => (int) $this->input->post('term_master_id'),
         ];
 
+        $oldHeaderAudit = $this->getPoMonitorHeaderAuditContext($id_po);
         $result = $this->MPO_Monitor->updatePOHeader($id_po, $payload, (int) $this->session->userdata('id_user'));
+        if (!empty($result['status'])) {
+            $newHeaderAudit = $this->getPoMonitorHeaderAuditContext($id_po);
+            $this->writePoMonitorHeaderAudit($oldHeaderAudit, $newHeaderAudit, $payload);
+        }
         $this->session->set_flashdata('status', (bool) ($result['status'] ?? false));
         $this->session->set_flashdata('error_log', $result['message'] ?? 'Header PO gagal diperbarui.');
 
@@ -322,7 +327,11 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
+        $deleteAudit = $this->getPoMonitorHeaderAuditContext($id_po);
         $result = $this->MPO_Monitor->deletePO($id_po);
+        if (!empty($result['status'])) {
+            $this->writePoMonitorDeleteAudit($deleteAudit);
+        }
         $this->session->set_flashdata('status', (bool) ($result['status'] ?? false));
         $this->session->set_flashdata('error_log', $result['message'] ?? 'PO gagal dihapus.');
 
@@ -2506,6 +2515,210 @@ class PO_Monitor extends CI_Controller
             'invoice_date' => (string) ($claimRow['invoice_date'] ?? ''),
             'claim_count' => (int) ($claimRow['claim_count'] ?? 0),
         ];
+    }
+
+    private function getPoMonitorHeaderAuditContext($idPo)
+    {
+        $idPo = (int) $idPo;
+        $row = $this->db
+            ->select('
+                p.id_po,
+                p.po_number,
+                p.po_date,
+                p.id_bowheer,
+                b.bowheer,
+                b.pic,
+                p.dashboard_bowheer,
+                p.type_project,
+                p.status_po,
+                p.total_value,
+                p.dashboard_all_invoice,
+                p.dashboard_invoice_2026,
+                p.dashboard_outs_2026,
+                p.dashboard_co_2027
+            ', false)
+            ->from('tb_po p')
+            ->join('tb_bowheer_po b', 'b.id_bowheer = p.id_bowheer', 'left')
+            ->where('p.id_po', $idPo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (!$row) {
+            return [
+                'id_po' => $idPo,
+                'po_number' => '',
+                'po_date' => '',
+                'id_bowheer' => 0,
+                'bowheer' => '',
+                'pic' => '',
+                'dashboard_bowheer' => '',
+                'type_project' => '',
+                'status_po' => '',
+                'total_value' => 0,
+                'dashboard_all_invoice' => 0,
+                'dashboard_invoice_2026' => 0,
+                'dashboard_outs_2026' => 0,
+                'dashboard_co_2027' => 0,
+                'term_signature' => '',
+                'term_count' => 0,
+                'claim_count' => 0,
+                'allocation_count' => 0,
+                'linked_ny_ref_count' => 0,
+            ];
+        }
+
+        $terms = $this->db
+            ->select('term_index, percent, value, plan_amount, target_status, target_year, target_week')
+            ->from('tb_po_term')
+            ->where('id_po', $idPo)
+            ->order_by('term_index', 'ASC')
+            ->get()
+            ->result_array();
+        $termParts = [];
+        foreach ($terms as $term) {
+            $termParts[] = implode(':', [
+                (int) ($term['term_index'] ?? 0),
+                $this->formatPoMonitorAuditNumber($term['percent'] ?? 0),
+                $this->formatPoMonitorAuditNumber($term['value'] ?? 0),
+                $this->formatPoMonitorAuditNumber($term['plan_amount'] ?? 0),
+                (string) ($term['target_status'] ?? ''),
+                (string) ($term['target_year'] ?? ''),
+                (string) ($term['target_week'] ?? ''),
+            ]);
+        }
+
+        $claimCount = $this->db
+            ->from('tb_po_term_claim tc')
+            ->join('tb_po_term t', 't.id_term = tc.id_term', 'inner')
+            ->where('t.id_po', $idPo)
+            ->count_all_results();
+        $allocationCount = $this->db
+            ->from('tb_po_term_allocation a')
+            ->join('tb_po_term t', 't.id_term = a.id_term', 'inner')
+            ->where('t.id_po', $idPo)
+            ->count_all_results();
+        $linkedNyCount = $this->db->table_exists('tb_po_target_pipeline')
+            ? $this->db->where('linked_id_po', $idPo)->count_all_results('tb_po_target_pipeline')
+            : 0;
+
+        return [
+            'id_po' => (int) ($row['id_po'] ?? 0),
+            'po_number' => (string) ($row['po_number'] ?? ''),
+            'po_date' => (string) ($row['po_date'] ?? ''),
+            'id_bowheer' => (int) ($row['id_bowheer'] ?? 0),
+            'bowheer' => (string) ($row['bowheer'] ?? ''),
+            'pic' => (string) ($row['pic'] ?? ''),
+            'dashboard_bowheer' => (string) ($row['dashboard_bowheer'] ?? ''),
+            'type_project' => (string) ($row['type_project'] ?? ''),
+            'status_po' => (string) ($row['status_po'] ?? ''),
+            'total_value' => (float) ($row['total_value'] ?? 0),
+            'dashboard_all_invoice' => (float) ($row['dashboard_all_invoice'] ?? 0),
+            'dashboard_invoice_2026' => (float) ($row['dashboard_invoice_2026'] ?? 0),
+            'dashboard_outs_2026' => (float) ($row['dashboard_outs_2026'] ?? 0),
+            'dashboard_co_2027' => (float) ($row['dashboard_co_2027'] ?? 0),
+            'term_signature' => implode('|', $termParts),
+            'term_count' => count($terms),
+            'claim_count' => (int) $claimCount,
+            'allocation_count' => (int) $allocationCount,
+            'linked_ny_ref_count' => (int) $linkedNyCount,
+        ];
+    }
+
+    private function writePoMonitorHeaderAudit(array $oldAudit, array $newAudit, array $payload)
+    {
+        $fields = [
+            'po_number',
+            'po_date',
+            'id_bowheer',
+            'bowheer',
+            'pic',
+            'dashboard_bowheer',
+            'type_project',
+            'status_po',
+            'total_value',
+            'dashboard_all_invoice',
+            'dashboard_invoice_2026',
+            'dashboard_outs_2026',
+            'dashboard_co_2027',
+            'term_signature',
+            'term_count',
+            'allocation_count',
+            'linked_ny_ref_count',
+        ];
+
+        foreach ($fields as $field) {
+            $oldValue = $this->normalizePoMonitorAuditValue($oldAudit[$field] ?? null);
+            $newValue = $this->normalizePoMonitorAuditValue($newAudit[$field] ?? null);
+            if ($oldValue === $newValue) {
+                continue;
+            }
+
+            po_audit_log_write($this, 'PO_Monitor', 'EDIT_HEADER', [
+                'po' => $newAudit['po_number'] ?: ($oldAudit['po_number'] ?? '-'),
+                'bowheer' => $newAudit['bowheer'] ?: ($oldAudit['bowheer'] ?? '-'),
+                'id_po' => $newAudit['id_po'] ?: ($oldAudit['id_po'] ?? '-'),
+                'field' => $field,
+                'old' => $oldValue,
+                'new' => $newValue,
+                'claim_count' => $newAudit['claim_count'] ?? ($oldAudit['claim_count'] ?? 0),
+            ]);
+        }
+
+        $termMasterId = (int) ($payload['term_master_id'] ?? 0);
+        if ($termMasterId > 0) {
+            po_audit_log_write($this, 'PO_Monitor', 'EDIT_HEADER', [
+                'po' => $newAudit['po_number'] ?: ($oldAudit['po_number'] ?? '-'),
+                'bowheer' => $newAudit['bowheer'] ?: ($oldAudit['bowheer'] ?? '-'),
+                'id_po' => $newAudit['id_po'] ?: ($oldAudit['id_po'] ?? '-'),
+                'field' => 'term_master_id',
+                'old' => '-',
+                'new' => $termMasterId,
+                'claim_count' => $newAudit['claim_count'] ?? ($oldAudit['claim_count'] ?? 0),
+            ]);
+        }
+    }
+
+    private function writePoMonitorDeleteAudit(array $audit)
+    {
+        po_audit_log_write($this, 'PO_Monitor', 'DELETE_PO', [
+            'po' => $audit['po_number'] ?? '-',
+            'bowheer' => $audit['bowheer'] ?? '-',
+            'id_po' => $audit['id_po'] ?? '-',
+            'po_date' => $audit['po_date'] ?? '-',
+            'status_po' => $audit['status_po'] ?? '-',
+            'type_project' => $audit['type_project'] ?? '-',
+            'total_value' => $this->formatPoMonitorAuditNumber($audit['total_value'] ?? 0),
+            'dashboard_all_invoice' => $this->formatPoMonitorAuditNumber($audit['dashboard_all_invoice'] ?? 0),
+            'dashboard_invoice_2026' => $this->formatPoMonitorAuditNumber($audit['dashboard_invoice_2026'] ?? 0),
+            'dashboard_outs_2026' => $this->formatPoMonitorAuditNumber($audit['dashboard_outs_2026'] ?? 0),
+            'dashboard_co_2027' => $this->formatPoMonitorAuditNumber($audit['dashboard_co_2027'] ?? 0),
+            'term_count' => $audit['term_count'] ?? 0,
+            'allocation_count' => $audit['allocation_count'] ?? 0,
+            'claim_count' => $audit['claim_count'] ?? 0,
+            'linked_ny_ref_count' => $audit['linked_ny_ref_count'] ?? 0,
+            'term_signature' => $audit['term_signature'] ?? '-',
+        ]);
+    }
+
+    private function normalizePoMonitorAuditValue($value)
+    {
+        if (is_float($value) || is_int($value)) {
+            return $this->formatPoMonitorAuditNumber($value);
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return $this->formatPoMonitorAuditNumber($value);
+        }
+
+        $value = trim((string) $value);
+        return $value === '' ? '-' : $value;
+    }
+
+    private function formatPoMonitorAuditNumber($value)
+    {
+        $number = (float) $value;
+        return rtrim(rtrim(number_format($number, 4, '.', ''), '0'), '.');
     }
 
     private function writePoMonitorInvoiceAudit($action, array $oldAudit, array $newAudit, array $extra = [])

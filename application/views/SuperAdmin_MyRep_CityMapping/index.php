@@ -11,6 +11,7 @@ $roleHeader = [
     'atp_ho' => 'ATP HO',
     'rfs_ho' => 'RFS HO',
     'sitac_ho' => 'SITAC HO',
+    'finance_ho' => 'FINANCE HO',
     'dc_ho' => 'DC HO',
     'qa_ho' => 'QA HO',
 ];
@@ -24,6 +25,7 @@ $roleNameField = [
     'atp_ho' => 'atp_ho_name',
     'rfs_ho' => 'rfs_ho_name',
     'sitac_ho' => 'sitac_ho_name',
+    'finance_ho' => 'finance_ho_name',
     'dc_ho' => 'dc_ho_name',
     'qa_ho' => 'qa_ho_name',
 ];
