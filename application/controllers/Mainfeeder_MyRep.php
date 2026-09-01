@@ -465,8 +465,14 @@ class Mainfeeder_MyRep extends CI_Controller
         $poNumber = trim((string) $this->input->post('po_number'));
         $poDate = $this->normalizeDate($this->input->post('po_date'));
         $poValue = $this->normalizeNumber($this->input->post('po_value'));
+        $nyPoRef = strtoupper(trim((string) $this->input->post('ny_po_ref')));
         if ($poNumber === '' || $poDate === null || $poValue <= 0) {
             $this->session->set_flashdata('error', 'Nomor PO, tanggal PO, dan nilai PO wajib diisi.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+        if ($nyPoRef !== '' && !preg_match('/^NY-\d+$/', $nyPoRef)) {
+            $this->session->set_flashdata('error', 'NY PO REF tidak valid. Gunakan format NY-123.');
             $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
             return;
         }
@@ -476,6 +482,7 @@ class Mainfeeder_MyRep extends CI_Controller
             'po_number' => $poNumber,
             'po_date' => $poDate,
             'po_value' => $poValue,
+            'po_monitor_ny_ref' => $nyPoRef,
             'status_po' => strtoupper(trim((string) $this->input->post('status_po'))) ?: 'ISSUED',
             'po_version_label' => $this->input->post('po_version_label'),
             'remark_po' => $this->input->post('remark_po'),
@@ -484,6 +491,14 @@ class Mainfeeder_MyRep extends CI_Controller
         ]);
         if ($poId > 0) {
             $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poId, (int) $this->session->userdata('id_user'));
+            if ($nyPoRef !== '') {
+                $linkResult = $this->MPO_Monitor->linkNyPoReferenceToMyRepHeader($poId, $nyPoRef, (int) $this->session->userdata('id_user'));
+                if (empty($linkResult['status'])) {
+                    $this->session->set_flashdata('error', 'PO mainfeeder berhasil disimpan, tapi NY PO REF gagal link ke PO Monitor: ' . ($linkResult['message'] ?? 'unknown error'));
+                    $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+                    return;
+                }
+            }
         }
         $this->session->set_flashdata($poId > 0 ? 'success' : 'error', $poId > 0 ? 'PO mainfeeder berhasil disimpan.' : 'PO mainfeeder gagal disimpan.');
         $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
