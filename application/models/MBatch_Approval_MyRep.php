@@ -10,6 +10,8 @@ class MBatch_Approval_MyRep extends CI_Model
     private $lastErrorMessage = '';
     /** @var array<string,array<string,bool>> */
     private $tableFieldSetCache = [];
+    /** @var bool|null */
+    private $currentUserIsFinanceHo = null;
     private $cityPicApprovalColumn = 'sitac_ho';
     private $cityPicApprovalNameCache = [];
     private $masterUserNameByNikCache = [];
@@ -2518,12 +2520,17 @@ class MBatch_Approval_MyRep extends CI_Model
 
     private function isCurrentUserFinanceHo()
     {
+        if ($this->currentUserIsFinanceHo !== null) {
+            return $this->currentUserIsFinanceHo;
+        }
+
+        $this->currentUserIsFinanceHo = false;
         $userId = (int) $this->session->userdata('id_user');
         if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
-            return false;
+            return $this->currentUserIsFinanceHo;
         }
         if (!$this->db->field_exists('finance_ho', 'tb_myrep_pic_mapping_city')) {
-            return false;
+            return $this->currentUserIsFinanceHo;
         }
 
         $user = (array) $this->db
@@ -2535,7 +2542,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->row_array();
         $nik = trim((string) ($user['nik'] ?? ''));
         if ($nik === '') {
-            return false;
+            return $this->currentUserIsFinanceHo;
         }
 
         $this->db->from('tb_myrep_pic_mapping_city');
@@ -2544,7 +2551,8 @@ class MBatch_Approval_MyRep extends CI_Model
             $this->db->where('is_active', 1);
         }
 
-        return (int) $this->db->count_all_results() > 0;
+        $this->currentUserIsFinanceHo = (int) $this->db->count_all_results() > 0;
+        return $this->currentUserIsFinanceHo;
     }
 
     private function getTableFieldSet($tableName)
