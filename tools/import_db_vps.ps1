@@ -130,7 +130,16 @@ function Invoke-ProcessOutputToFile {
 
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
+    $stderrBuilder = [System.Text.StringBuilder]::new()
+    $errorHandler = [System.Diagnostics.DataReceivedEventHandler] {
+        param($sender, $eventArgs)
+        if ($null -ne $eventArgs.Data -and $eventArgs.Data.Trim() -ne "") {
+            [void] $stderrBuilder.AppendLine($eventArgs.Data)
+        }
+    }
+    $process.add_ErrorDataReceived($errorHandler)
     [void] $process.Start()
+    $process.BeginErrorReadLine()
 
     $outputStream = [System.IO.File]::Create($OutputFile)
     try {
@@ -140,14 +149,29 @@ function Invoke-ProcessOutputToFile {
         $outputStream.Close()
     }
 
-    $stderr = $process.StandardError.ReadToEnd()
     $process.WaitForExit()
+    $process.CancelErrorRead()
+    $process.remove_ErrorDataReceived($errorHandler)
 
+    $stderr = $stderrBuilder.ToString()
     if ($stderr.Trim() -ne "") {
         Write-Host $stderr.Trim()
     }
 
-    return $process.ExitCode
+    return @{
+        ExitCode = $process.ExitCode
+        Error = $stderr.Trim()
+    }
+}
+
+function Test-MysqlDumpLooksComplete {
+    param([string] $Path)
+    if (!(Test-Path -LiteralPath $Path) -or ((Get-Item -LiteralPath $Path).Length -le 0)) {
+        return $false
+    }
+
+    $tail = Get-Content -LiteralPath $Path -Tail 20 -ErrorAction SilentlyContinue
+    return (($tail | Where-Object { $_ -like "-- Dump completed on *" }) | Measure-Object).Count -gt 0
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -261,12 +285,48 @@ if ($remoteDumpPath -eq "") {
 
 Write-Host "[2/6] Download dump ke $localDumpPath..."
 $downloadCommand = "cat " + (Quote-BashSingleQuoted $remoteDumpPath)
-$downloadExitCode = Invoke-ProcessOutputToFile "ssh" ($sshArgs + @($downloadCommand)) $localDumpPath
-if ($downloadExitCode -ne 0) {
-    throw "Gagal download dump dari VPS via SSH stream."
+$downloadPartPath = "$localDumpPath.part"
+$downloadResult = $null
+$downloadMaxAttempts = 3
+for ($downloadAttempt = 1; $downloadAttempt -le $downloadMaxAttempts; $downloadAttempt++) {
+    if (Test-Path -LiteralPath $downloadPartPath) {
+        Remove-Item -LiteralPath $downloadPartPath -Force
+    }
+
+    if ($downloadMaxAttempts -gt 1) {
+        Write-Host "[Download] Percobaan $downloadAttempt/$downloadMaxAttempts..."
+    }
+
+    $downloadResult = Invoke-ProcessOutputToFile "ssh" ($sshArgs + @($downloadCommand)) $downloadPartPath
+    $dumpLooksComplete = Test-MysqlDumpLooksComplete $downloadPartPath
+    if ([int] $downloadResult.ExitCode -eq 0 -and $dumpLooksComplete) {
+        Move-Item -LiteralPath $downloadPartPath -Destination $localDumpPath -Force
+        break
+    }
+
+    if ([int] $downloadResult.ExitCode -ne 0 -and $dumpLooksComplete) {
+        Write-Host "[Download] SSH keluar dengan ExitCode=$($downloadResult.ExitCode), tapi dump memiliki footer lengkap. File tetap dipakai."
+        Move-Item -LiteralPath $downloadPartPath -Destination $localDumpPath -Force
+        break
+    }
+
+    $partialSize = 0
+    if (Test-Path -LiteralPath $downloadPartPath) {
+        $partialSize = (Get-Item -LiteralPath $downloadPartPath).Length
+    }
+    Write-Host "[Download] Gagal pada percobaan $downloadAttempt. ExitCode=$($downloadResult.ExitCode), bytes=$partialSize"
+
+    if ($downloadAttempt -lt $downloadMaxAttempts) {
+        Start-Sleep -Seconds (5 * $downloadAttempt)
+    }
 }
-if (!(Test-Path -LiteralPath $localDumpPath) -or ((Get-Item -LiteralPath $localDumpPath).Length -le 0)) {
-    throw "Dump dari VPS kosong setelah download."
+
+if (!(Test-MysqlDumpLooksComplete $localDumpPath)) {
+    $lastError = ""
+    if ($downloadResult -and $downloadResult.Error) {
+        $lastError = " Detail SSH: " + $downloadResult.Error
+    }
+    throw "Gagal download dump dari VPS via SSH stream setelah $downloadMaxAttempts percobaan.$lastError"
 }
 
 Write-Host "[3/6] Normalize dump untuk MariaDB XAMPP..."

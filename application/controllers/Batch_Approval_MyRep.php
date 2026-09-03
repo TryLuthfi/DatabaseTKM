@@ -1008,11 +1008,6 @@ class Batch_Approval_MyRep extends CI_Controller
         $groupKey = strtoupper(trim((string) $this->input->post('group_key')));
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
 
-        if (!$this->canUploadDonationDocument()) {
-            $this->handleUploadError('Upload dokumen hanya tersedia untuk Admin Area dan Super Admin.', $redirectPath);
-            return;
-        }
-
         if (!$this->MBatch_Approval_MyRep->batchDocumentTablesReady()) {
             $this->handleUploadError('Tabel dokumen Batch Approval belum tersedia.', $redirectPath);
             return;
@@ -1029,13 +1024,16 @@ class Batch_Approval_MyRep extends CI_Controller
         $financeStatus = strtoupper(trim((string) ($context['finance_status'] ?? 'NY')));
         $isReplaceApprovedFile = (int) $this->input->post('replace_file') === 1;
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
-        $canUploadByStatus = in_array($rawStatus, ['', 'REJECTED'], true);
-        $canUploadAstriRejectedRevision = $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED';
+        $canStandardUpload = $this->canUploadDonationDocument();
+        $canUploadByStatus = $canStandardUpload && in_array($rawStatus, ['', 'REJECTED'], true);
+        $canUploadAstriRejectedRevision = $canStandardUpload && $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED';
         $canReplaceApprovedFile = $rawStatus === 'APPROVED' && $isReplaceApprovedFile && $this->isSitacHoUser();
         if (!$canUploadByStatus && !$canUploadAstriRejectedRevision && !$canReplaceApprovedFile) {
-            $message = $rawStatus === 'APPROVED'
+            $message = !$canStandardUpload && !$canReplaceApprovedFile
+                ? 'Upload dokumen hanya tersedia untuk Admin Area, SITAC HO, dan Super Admin.'
+                : ($rawStatus === 'APPROVED'
                 ? 'Dokumen approved hanya bisa di-replace oleh akun SITAC HO, kecuali dokumen rejected Astri untuk revisi area.'
-                : 'Dokumen hanya bisa diupload saat status belum upload atau rejected.';
+                : 'Dokumen hanya bisa diupload saat status belum upload atau rejected.');
             $this->handleUploadError($message, $redirectPath);
             return;
         }
@@ -1119,7 +1117,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $groupKey = strtoupper(trim((string) $this->input->post('group_key')));
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
         if (!$this->canUploadDonationDocument()) {
-            $this->handleUploadError('Upload dokumen hanya tersedia untuk Admin Area dan Super Admin.', $redirectPath);
+            $this->handleUploadError('Upload dokumen hanya tersedia untuk Admin Area, SITAC HO, dan Super Admin.', $redirectPath);
             return;
         }
 
@@ -3441,6 +3439,10 @@ class Batch_Approval_MyRep extends CI_Controller
 
     private function isSitacHoUser()
     {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
         if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
             return false;
         }
@@ -3471,7 +3473,8 @@ class Batch_Approval_MyRep extends CI_Controller
             return false;
         }
 
-        return in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
+        $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
+        return in_array('ADMIN_AREA', $roleKeys, true) || in_array('SITAC_HO', $roleKeys, true);
     }
 
     private function hasBatchPermission($actionKey)
