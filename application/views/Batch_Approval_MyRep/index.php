@@ -16,14 +16,11 @@ if (!function_exists('batchStageLabel')) {
             'WAITING_PRE_ZEYN_DOC' => 'NY Dokumen Tahap 1',
             'PRE_ZEYN_DOC_ON_REVIEW' => 'On Review Dokumen Tahap 1',
             'PRE_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 1',
-            'PRE_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 1',
-            'PRE_ZEYN_FINANCE_APPROVED' => 'Approved Finance Dokumen Tahap 1',
             'WAITING_FINANCE_RELEASE' => 'Menunggu Pembayaran Finance',
             'RELEASED' => 'Donasi Dibayarkan',
             'WAITING_POST_ZEYN_DOC' => 'NY Dokumen Tahap 2',
             'POST_ZEYN_DOC_ON_REVIEW' => 'On Review Dokumen Tahap 2',
             'POST_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 2',
-            'POST_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 2',
             'WAITING_ASTRI_SUBMISSION' => 'Menunggu Submit Astri',
             'ASTRI_ON_REVIEW' => 'On Review Astri',
             'ASTRI_APPROVED' => 'Approved Astri',
@@ -46,14 +43,11 @@ $statusOptions = [
     'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
     'PRE_ZEYN_DOC_ON_REVIEW' => batchStageLabel('PRE_ZEYN_DOC_ON_REVIEW'),
     'PRE_ZEYN_DOC_APPROVED' => batchStageLabel('PRE_ZEYN_DOC_APPROVED'),
-    'PRE_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('PRE_ZEYN_FINANCE_ON_REVIEW'),
-    'PRE_ZEYN_FINANCE_APPROVED' => batchStageLabel('PRE_ZEYN_FINANCE_APPROVED'),
     'WAITING_FINANCE_RELEASE' => batchStageLabel('WAITING_FINANCE_RELEASE'),
     'RELEASED' => batchStageLabel('RELEASED'),
     'WAITING_POST_ZEYN_DOC' => batchStageLabel('WAITING_POST_ZEYN_DOC'),
     'POST_ZEYN_DOC_ON_REVIEW' => batchStageLabel('POST_ZEYN_DOC_ON_REVIEW'),
     'POST_ZEYN_DOC_APPROVED' => batchStageLabel('POST_ZEYN_DOC_APPROVED'),
-    'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
     'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
@@ -73,14 +67,11 @@ $donationStageOrder = [
     'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
     'PRE_ZEYN_DOC_ON_REVIEW' => batchStageLabel('PRE_ZEYN_DOC_ON_REVIEW'),
     'PRE_ZEYN_DOC_APPROVED' => batchStageLabel('PRE_ZEYN_DOC_APPROVED'),
-    'PRE_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('PRE_ZEYN_FINANCE_ON_REVIEW'),
-    'PRE_ZEYN_FINANCE_APPROVED' => batchStageLabel('PRE_ZEYN_FINANCE_APPROVED'),
     'WAITING_FINANCE_RELEASE' => batchStageLabel('WAITING_FINANCE_RELEASE'),
     'RELEASED' => batchStageLabel('RELEASED'),
     'WAITING_POST_ZEYN_DOC' => batchStageLabel('WAITING_POST_ZEYN_DOC'),
     'POST_ZEYN_DOC_ON_REVIEW' => batchStageLabel('POST_ZEYN_DOC_ON_REVIEW'),
     'POST_ZEYN_DOC_APPROVED' => batchStageLabel('POST_ZEYN_DOC_APPROVED'),
-    'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
     'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
@@ -186,7 +177,6 @@ if (!function_exists('batchBadgeClass')) {
             case 'COMPLETED':
             case 'BATCH_APPROVED':
             case 'PRE_ZEYN_DOC_APPROVED':
-            case 'PRE_ZEYN_FINANCE_APPROVED':
             case 'POST_ZEYN_DOC_APPROVED':
             case 'ASTRI_APPROVED':
             case 'PO_DONASI':
@@ -200,11 +190,9 @@ if (!function_exists('batchBadgeClass')) {
             case 'WAITING DOC':
             case 'WAITING_PRE_ZEYN_DOC':
             case 'PRE_ZEYN_DOC_ON_REVIEW':
-            case 'PRE_ZEYN_FINANCE_ON_REVIEW':
             case 'WAITING_FINANCE_RELEASE':
             case 'WAITING_POST_ZEYN_DOC':
             case 'POST_ZEYN_DOC_ON_REVIEW':
-            case 'POST_ZEYN_FINANCE_ON_REVIEW':
             case 'ASTRI_ON_REVIEW':
                 return 'warning';
             case 'REJECTED':
@@ -455,9 +443,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                 <?php endif; ?>
 
                 <?php if ($hasBatch && $canHapus): ?>
-                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus data Batch Approval untuk cluster ini? Cluster MyRep dan flow lainnya tetap tersimpan.');">
+                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta Batch Approval dan seluruh flow MyRep terkait?');">
                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Batch</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
                     </form>
                 <?php endif; ?>
             </td>
@@ -896,7 +884,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                             <div class="row">
                                 <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" class="form-control js-homepass-valsal js-number-format" data-decimals="0" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="create_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" required></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan</label><input type="date" name="submission_date" id="create_submission_date" class="form-control" value="<?= date('Y-m-d') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan Astri</label><input type="date" name="submission_date" id="create_submission_date" class="form-control" value="<?= date('Y-m-d') ?>"></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>No Batch Astri</label><input type="text" name="astri_batch_number" class="form-control" placeholder="Batch 2026-XX" required></div></div>
                                 <div class="col-md-6"><div class="form-group mb-md-0"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="create_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required><input type="hidden" name="nominal_nego_emr" id="create_nominal_nego_emr"></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Tanggal Batch Approval</label><input type="date" name="astri_batch_approved_at" id="create_astri_batch_approved_at" class="form-control" value="<?= date('Y-m-d') ?>" required></div></div>
@@ -1019,7 +1007,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                             <div class="row">
                                 <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" required></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan</label><input type="date" name="submission_date" id="edit_submission_date" class="form-control"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan Astri</label><input type="date" name="submission_date" id="edit_submission_date" class="form-control"></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>"><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
                                 <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required></div></div>
                                 <div class="col-md-6"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" readonly></div></div>

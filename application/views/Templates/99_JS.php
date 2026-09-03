@@ -235,6 +235,9 @@ if (
                     actionKey = inferActionByUrl($form.attr('action') || '');
                 }
             }
+            if (!actionKey && $el.is('a')) {
+                return '';
+            }
             if (!actionKey) {
                 actionKey = inferActionByElement($el);
             }
@@ -242,10 +245,14 @@ if (
             return actionKey;
         }
 
+        function isRoleGuardExempt($el) {
+            return !!($el && $el.length && ($el.is('[data-role-guard-exempt="1"]') || $el.closest('[data-role-guard-exempt="1"]').length));
+        }
+
         function protectByUrl($targets, urlAccessor) {
             $targets.each(function() {
                 var $el = $(this);
-                if ($el.is('[data-role-guard-exempt="1"]')) {
+                if (isRoleGuardExempt($el)) {
                     return;
                 }
                 var rawUrl = urlAccessor($el);
@@ -270,7 +277,7 @@ if (
 
             $('form[action]').each(function() {
                 var $form = $(this);
-                if ($form.is('[data-role-guard-exempt="1"]')) {
+                if (isRoleGuardExempt($form)) {
                     return;
                 }
                 var actionKey = inferActionByUrl($form.attr('action'));
@@ -284,7 +291,10 @@ if (
 
             $('button, input[type=button], input[type=submit], .btn').each(function() {
                 var $el = $(this);
-                if ($el.is('[data-role-guard-exempt="1"]')) {
+                if (isRoleGuardExempt($el)) {
+                    return;
+                }
+                if ($el.is('a') && !$el.closest('form[action]').length) {
                     return;
                 }
                 var actionKey = resolveActionKey($el);
@@ -319,7 +329,10 @@ if (
 
             $(document).on('click', 'a[href], [data-url], button, input[type=submit]', function(e) {
                 var $el = $(this);
-                if ($el.is('[data-role-guard-exempt="1"]')) {
+                if (isRoleGuardExempt($el)) {
+                    return true;
+                }
+                if ($el.is('a') && !$el.attr('data-required-action') && !$el.attr('data-url') && !$el.closest('form[action]').length) {
                     return true;
                 }
                 var actionKey = resolveActionKey($el);

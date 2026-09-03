@@ -42,6 +42,7 @@ class MBatch_Approval_MyRep extends CI_Model
     {
         parent::__construct();
         $this->ensureFinanceApprovalSchema();
+        $this->ensureDonationDocumentDefinitions();
         if ($this->shouldRestrictCityByUser()) {
             $this->getCurrentUserAllowedCitySet();
         }
@@ -62,6 +63,123 @@ class MBatch_Approval_MyRep extends CI_Model
 
         if ($this->db->table_exists('tb_myrep_pic_mapping_city')) {
             $this->addColumnIfMissing('tb_myrep_pic_mapping_city', 'finance_ho', "ALTER TABLE `tb_myrep_pic_mapping_city` ADD COLUMN `finance_ho` VARCHAR(255) NULL AFTER `sitac_ho`");
+        }
+
+        $this->ensureFileLogActionTypeSchema();
+    }
+
+    private function ensureFileLogActionTypeSchema()
+    {
+        if (!$this->db->table_exists('tb_myrep_flow_doc_file_log') || !$this->tableHasField('tb_myrep_flow_doc_file_log', 'action_type')) {
+            return;
+        }
+
+        $field = $this->db->field_data('tb_myrep_flow_doc_file_log');
+        foreach ($field as $column) {
+            if ((string) ($column->name ?? '') !== 'action_type') {
+                continue;
+            }
+
+            if (strtolower((string) ($column->type ?? '')) === 'enum') {
+                $this->db->query("ALTER TABLE `tb_myrep_flow_doc_file_log` MODIFY `action_type` VARCHAR(50) NOT NULL DEFAULT ''");
+            }
+            break;
+        }
+
+        $this->db->query("
+            UPDATE `tb_myrep_flow_doc_file_log`
+            SET `action_type` = CONCAT('ASTRI_', REPLACE(`status_after`, ' ', '_'))
+            WHERE COALESCE(`action_type`, '') = ''
+              AND `status_after` IN ('NY', 'ON REVIEW', 'APPROVED', 'REJECTED')
+        ");
+    }
+
+    private function ensureDonationDocumentDefinitions()
+    {
+        if (
+            !$this->db->table_exists('md_myrep_flow_doc_group') ||
+            !$this->db->table_exists('md_myrep_flow_doc_item')
+        ) {
+            return;
+        }
+
+        $groups = (array) $this->db
+            ->select('id_doc_group, group_label')
+            ->from('md_myrep_flow_doc_group')
+            ->where('flow_type', 'BATCH_APPROVAL')
+            ->where_in('group_label', ['PRE ZEYN DOCUMENT', 'POST PAYMENT ZEYN DOCUMENT'])
+            ->where('is_active', 1)
+            ->get()
+            ->result_array();
+
+        $groupIds = [];
+        foreach ($groups as $group) {
+            $groupIds[strtoupper(trim((string) ($group['group_label'] ?? '')))] = (int) ($group['id_doc_group'] ?? 0);
+        }
+
+        if (empty($groupIds['PRE ZEYN DOCUMENT']) || empty($groupIds['POST PAYMENT ZEYN DOCUMENT'])) {
+            return;
+        }
+
+        $definitions = [
+            'PRE ZEYN DOCUMENT' => [
+                ['Screenshot Evidence Upload DRM di Astri', 'Upload gambar screenshot evidence upload DRM di Astri', 1],
+                ['Screenshot Buku Rekening Penerima Dana', 'Upload gambar screenshot buku rekening penerima dana', 1],
+                ['Surat Ijin RT/RW', 'Dokumen pendukung pengajuan donasi', 1],
+                ['Form Cluster Survey', 'Dokumen pendukung pengajuan donasi', 1],
+                ['BAP Open', 'Dokumen pendukung pengajuan donasi', 1],
+                ['BAP SND & SND Kasar', 'Dokumen pendukung pengajuan donasi', 1],
+                ['Cluster Approval', 'Dokumen pendukung pengajuan donasi', 1],
+                ['Perjanjian Donasi & Pemberian Izin', 'Dokumen pendukung pengajuan donasi', 1],
+                ['KTP Penerima Donasi', 'Dokumen pendukung pengajuan donasi', 1],
+                ['Dokumentasi CSR Banner', 'Upload PDF dokumentasi CSR banner', 1],
+                ['Dokumentasi Banner Pre Sales', 'Upload PDF dokumentasi banner pre sales', 1],
+                ['Dokumentasi Sosialisasi Warga', 'Upload PDF dokumentasi sosialisasi warga', 1],
+                ['Form Free Wifi & KTP', 'Opsional jika ada free wifi', 0],
+            ],
+            'POST PAYMENT ZEYN DOCUMENT' => [
+                ['Kwitansi', 'Dokumen setelah pembayaran donasi', 1],
+                ['Bukti Transfer', 'Area wajib upload ulang bukti transfer', 1],
+                ['Bukti Penyerahan Dana', 'Dokumen setelah pembayaran donasi', 1],
+            ],
+        ];
+
+        foreach ($definitions as $groupLabel => $items) {
+            $groupId = (int) $groupIds[$groupLabel];
+            foreach ($items as $index => $item) {
+                $docName = (string) $item[0];
+                $existing = (array) $this->db
+                    ->select('i.id_doc_item')
+                    ->from('md_myrep_flow_doc_item i')
+                    ->join('md_myrep_flow_doc_group g', 'g.id_doc_group = i.id_doc_group', 'inner')
+                    ->where('g.flow_type', 'BATCH_APPROVAL')
+                    ->where('UPPER(TRIM(i.doc_name)) = ' . $this->db->escape(strtoupper(trim($docName))), null, false)
+                    ->order_by('i.is_active', 'DESC')
+                    ->order_by('i.id_doc_item', 'ASC')
+                    ->limit(1)
+                    ->get()
+                    ->row_array();
+
+                $payload = [
+                    'id_doc_group' => $groupId,
+                    'doc_name' => $docName,
+                    'doc_requirement_note' => (string) $item[1],
+                    'verification_team' => 'SITAC HO / ASTRI',
+                    'sort_no' => $index + 1,
+                    'is_required' => (int) $item[2],
+                    'is_active' => 1,
+                ];
+
+                if (!empty($existing['id_doc_item'])) {
+                    $this->db
+                        ->where('id_doc_item', (int) $existing['id_doc_item'])
+                        ->update('md_myrep_flow_doc_item', $payload);
+                    continue;
+                }
+
+                $payload['created_at'] = date('Y-m-d H:i:s');
+                $this->db->insert('md_myrep_flow_doc_item', $payload);
+            }
         }
     }
 
@@ -478,7 +596,8 @@ class MBatch_Approval_MyRep extends CI_Model
                 (string) $row['staging_status'],
                 (int) $summary['total'],
                 (int) $summary['approved'],
-                $donationSummary
+                $donationSummary,
+                $row
             );
         }
         unset($row);
@@ -871,7 +990,8 @@ class MBatch_Approval_MyRep extends CI_Model
             (string) $row['staging_status'],
             (int) $summary['total'],
             (int) $summary['approved'],
-            $donationSummary
+            $donationSummary,
+            $row
         );
 
         return $row;
@@ -1327,12 +1447,15 @@ class MBatch_Approval_MyRep extends CI_Model
             'reviewed_at' => date('Y-m-d H:i:s'),
             'approved_at' => $statusFile === 'APPROVED' ? date('Y-m-d H:i:s') : null,
         ];
+        $preserveFinanceApproval = $statusFile === 'APPROVED'
+            && strtoupper(trim((string) ($file['finance_status'] ?? 'NY'))) === 'APPROVED'
+            && strtoupper(trim((string) ($file['astri_status'] ?? 'NY'))) === 'REJECTED';
         if ($this->tableHasField('tb_myrep_flow_doc_file', 'finance_status')) {
-            $payload['finance_status'] = 'NY';
-            $payload['finance_remark'] = null;
-            $payload['finance_reviewed_at'] = null;
-            $payload['finance_approved_by'] = null;
-            $payload['finance_approved_at'] = null;
+            $payload['finance_status'] = $preserveFinanceApproval ? (string) ($file['finance_status'] ?? 'APPROVED') : 'NY';
+            $payload['finance_remark'] = $preserveFinanceApproval ? ($file['finance_remark'] ?? null) : null;
+            $payload['finance_reviewed_at'] = $preserveFinanceApproval ? ($file['finance_reviewed_at'] ?? null) : null;
+            $payload['finance_approved_by'] = $preserveFinanceApproval ? ($file['finance_approved_by'] ?? null) : null;
+            $payload['finance_approved_at'] = $preserveFinanceApproval ? ($file['finance_approved_at'] ?? null) : null;
         }
 
         $result = $this->db
@@ -1525,9 +1648,9 @@ class MBatch_Approval_MyRep extends CI_Model
             ->result_array();
     }
 
-    public function getDonationDocumentDetail($clusterId, $docItemId)
+    public function getDonationDocumentDetail($clusterId, $docItemId, $groupKey = '')
     {
-        $rows = $this->getDonationDocumentRows((int) $clusterId);
+        $rows = $this->getDonationDocumentRows((int) $clusterId, (string) $groupKey);
         foreach ($rows as $row) {
             if ((int) ($row['id_doc_item'] ?? 0) === (int) $docItemId) {
                 return $row;
@@ -1563,7 +1686,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return 0;
         }
 
-        $context = $this->getDonationDocumentDetail((int) $clusterId, (int) $docItemId);
+        $context = $this->getDonationDocumentDetail((int) $clusterId, (int) $docItemId, (string) ($data['group_key'] ?? ''));
         if (empty($context['id_doc_group']) || empty($context['id_doc_item'])) {
             return 0;
         }
@@ -1581,6 +1704,8 @@ class MBatch_Approval_MyRep extends CI_Model
         $incomingFileName = (string) ($data['file_name'] ?? '');
         $incomingFilePath = (string) ($data['file_path'] ?? '');
         $preserveExistingFile = !empty($data['preserve_existing_file']) && $incomingFileName === '' && $incomingFilePath === '' && $existing;
+        $preserveFinanceApproval = !empty($data['preserve_finance_approval']) && $existing;
+        $preserveAstriRejected = !empty($data['preserve_astri_rejected']) && $existing;
 
         $payload = [
             'file_name' => $preserveExistingFile ? (string) ($existing['file_name'] ?? '') : $incomingFileName,
@@ -1595,20 +1720,20 @@ class MBatch_Approval_MyRep extends CI_Model
             'approved_at' => null,
         ];
         if ($this->tableHasField('tb_myrep_flow_doc_file', 'finance_status')) {
-            $payload['finance_status'] = 'NY';
-            $payload['finance_remark'] = null;
-            $payload['finance_reviewed_at'] = null;
-            $payload['finance_approved_by'] = null;
-            $payload['finance_approved_at'] = null;
+            $payload['finance_status'] = $preserveFinanceApproval ? (string) ($existing['finance_status'] ?? 'APPROVED') : 'NY';
+            $payload['finance_remark'] = $preserveFinanceApproval ? ($existing['finance_remark'] ?? null) : null;
+            $payload['finance_reviewed_at'] = $preserveFinanceApproval ? ($existing['finance_reviewed_at'] ?? null) : null;
+            $payload['finance_approved_by'] = $preserveFinanceApproval ? ($existing['finance_approved_by'] ?? null) : null;
+            $payload['finance_approved_at'] = $preserveFinanceApproval ? ($existing['finance_approved_at'] ?? null) : null;
         }
         if ($this->tableHasField('tb_myrep_flow_doc_file', 'astri_status')) {
-            $payload['astri_status'] = 'NY';
-            $payload['astri_submitted_date'] = null;
+            $payload['astri_status'] = $preserveAstriRejected ? 'REJECTED' : 'NY';
+            $payload['astri_submitted_date'] = $preserveAstriRejected ? ($existing['astri_submitted_date'] ?? null) : null;
             if ($this->tableHasField('tb_myrep_flow_doc_file', 'astri_approved_date')) {
-                $payload['astri_approved_date'] = null;
+                $payload['astri_approved_date'] = $preserveAstriRejected ? ($existing['astri_approved_date'] ?? null) : null;
             }
-            $payload['astri_status_updated_at'] = null;
-            $payload['astri_remark'] = null;
+            $payload['astri_status_updated_at'] = $preserveAstriRejected ? ($existing['astri_status_updated_at'] ?? null) : null;
+            $payload['astri_remark'] = $preserveAstriRejected ? ($existing['astri_remark'] ?? null) : null;
         }
 
         if ($existing) {
@@ -1823,7 +1948,19 @@ class MBatch_Approval_MyRep extends CI_Model
     {
         $summary = $this->getDonationDocumentSummary((int) $clusterId);
         return (int) ($summary['POST_ZEYN']['required'] ?? 0) > 0
+            && (int) ($summary['PRE_ZEYN']['astri_rejected'] ?? 0) === 0
+            && (int) ($summary['POST_ZEYN']['astri_rejected'] ?? 0) === 0
             && (int) ($summary['POST_ZEYN']['astri_approved'] ?? 0) >= (int) ($summary['POST_ZEYN']['required'] ?? 0);
+    }
+
+    public function areAllDonationDocumentsAstriApproved($clusterId)
+    {
+        $summary = $this->getDonationDocumentSummary((int) $clusterId);
+        $required = (int) ($summary['PRE_ZEYN']['required'] ?? 0) + (int) ($summary['POST_ZEYN']['required'] ?? 0);
+        $approved = (int) ($summary['PRE_ZEYN']['astri_approved'] ?? 0) + (int) ($summary['POST_ZEYN']['astri_approved'] ?? 0);
+        $rejected = (int) ($summary['PRE_ZEYN']['astri_rejected'] ?? 0) + (int) ($summary['POST_ZEYN']['astri_rejected'] ?? 0);
+
+        return $required > 0 && $rejected === 0 && $approved >= $required;
     }
 
     public function getDonationDocumentSummary($clusterId)
@@ -2685,14 +2822,56 @@ class MBatch_Approval_MyRep extends CI_Model
         }
     }
 
-    private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocApproved, array $donationSummary = [])
+    private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocApproved, array $donationSummary = [], array $row = [])
     {
         $stagingStatus = strtoupper(trim((string) $stagingStatus));
         $postDocTotal = (int) $postDocTotal;
         $postDocApproved = (int) $postDocApproved;
+        $pre = $donationSummary['PRE_ZEYN'] ?? [];
+        $post = $donationSummary['POST_ZEYN'] ?? [];
+        $postRequired = (int) ($post['required'] ?? 0);
+        $postFinanceRequired = (int) ($post['finance_required'] ?? $postRequired);
+        $allAstriRequired = (int) ($pre['required'] ?? 0) + (int) ($post['required'] ?? 0);
+        $allAstriApproved = (int) ($pre['astri_approved'] ?? 0) + (int) ($post['astri_approved'] ?? 0);
+        $allAstriRejected = (int) ($pre['astri_rejected'] ?? 0) + (int) ($post['astri_rejected'] ?? 0);
+        $releasedAt = trim((string) ($row['released_at'] ?? ''));
+        $hasPostProgress = $postRequired > 0 && (
+            $releasedAt !== ''
+            || (int) ($post['uploaded'] ?? 0) > 0
+            || (int) ($post['approved'] ?? 0) > 0
+            || (int) ($post['finance_approved'] ?? 0) > 0
+            || (int) ($post['finance_rejected'] ?? 0) > 0
+            || (int) ($post['astri_submitted'] ?? 0) > 0
+            || (int) ($post['astri_approved'] ?? 0) > 0
+            || (int) ($post['astri_rejected'] ?? 0) > 0
+        );
+        $hasAnyAstriRejected = $allAstriRejected > 0;
+        $isTerminalStage = in_array($stagingStatus, ['PO_DONASI', 'INVOICE', 'HOLD', 'REJECTED'], true)
+            || ($stagingStatus === 'ASTRI_APPROVED' && !$hasAnyAstriRejected);
+
+        if (!$isTerminalStage && $hasPostProgress) {
+            if ((int) ($post['approved'] ?? 0) < $postRequired) {
+                if ((int) ($post['uploaded'] ?? 0) >= $postRequired) {
+                    return 'POST_ZEYN_DOC_ON_REVIEW';
+                }
+                return 'WAITING_POST_ZEYN_DOC';
+            }
+            if ((int) ($post['finance_approved'] ?? 0) < $postFinanceRequired) {
+                return 'POST_ZEYN_FINANCE_ON_REVIEW';
+            }
+            if ($hasAnyAstriRejected) {
+                return 'ASTRI_ON_REVIEW';
+            }
+            if ($allAstriRequired > 0 && $allAstriApproved >= $allAstriRequired) {
+                return 'ASTRI_APPROVED';
+            }
+            if ((int) ($post['astri_submitted'] ?? 0) > 0) {
+                return 'ASTRI_ON_REVIEW';
+            }
+            return 'WAITING_ASTRI_SUBMISSION';
+        }
 
         if ($stagingStatus === 'BATCH_APPROVED') {
-            $pre = $donationSummary['PRE_ZEYN'] ?? [];
             $preRequired = (int) ($pre['required'] ?? 0);
             if ($preRequired > 0) {
                 if ((int) ($pre['approved'] ?? 0) < $preRequired) {
@@ -2720,8 +2899,6 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         if ($stagingStatus === 'RELEASED') {
-            $post = $donationSummary['POST_ZEYN'] ?? [];
-            $postRequired = (int) ($post['required'] ?? 0);
             if ($postRequired > 0) {
                 if ((int) ($post['approved'] ?? 0) < $postRequired) {
                     if ((int) ($post['uploaded'] ?? 0) >= $postRequired) {
@@ -2737,8 +2914,6 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         if ($stagingStatus === 'POST_ZEYN_DOC_APPROVED' || $stagingStatus === 'POST_ZEYN_FINANCE_ON_REVIEW') {
-            $post = $donationSummary['POST_ZEYN'] ?? [];
-            $postFinanceRequired = (int) ($post['finance_required'] ?? $post['required'] ?? 0);
             if ($postFinanceRequired > 0 && (int) ($post['finance_approved'] ?? 0) >= $postFinanceRequired) {
                 return 'WAITING_ASTRI_SUBMISSION';
             }
@@ -2748,8 +2923,10 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         if ($stagingStatus === 'WAITING_ASTRI_SUBMISSION' || $stagingStatus === 'ASTRI_ON_REVIEW') {
-            $post = $donationSummary['POST_ZEYN'] ?? [];
-            if ((int) ($post['required'] ?? 0) > 0 && (int) ($post['astri_approved'] ?? 0) >= (int) ($post['required'] ?? 0)) {
+            if ($hasAnyAstriRejected) {
+                return 'ASTRI_ON_REVIEW';
+            }
+            if ($allAstriRequired > 0 && $allAstriApproved >= $allAstriRequired) {
                 return 'ASTRI_APPROVED';
             }
         }

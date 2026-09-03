@@ -11,6 +11,7 @@ class Post_Donasi_MyRep extends CI_Controller
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
         $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
     }
 
     public function index()
@@ -84,6 +85,12 @@ class Post_Donasi_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $redirectPath = $this->resolveRedirectPath($clusterId);
+        if (!$this->canUploadDonationDocument()) {
+            $this->session->set_flashdata('error', 'Upload dokumen hanya tersedia untuk Admin Area dan Super Admin.');
+            redirect($redirectPath);
+            return;
+        }
+
         $docItemId = (int) $this->input->post('id_doc_item');
         $detail = $this->MPost_Donasi_MyRep->getDocumentDetail($clusterId, $docItemId);
         if (empty($detail)) {
@@ -157,6 +164,12 @@ class Post_Donasi_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $redirectPath = $this->resolveRedirectPath($clusterId);
+        if (!$this->canUploadDonationDocument()) {
+            $this->session->set_flashdata('error', 'Upload dokumen hanya tersedia untuk Admin Area dan Super Admin.');
+            redirect($redirectPath);
+            return;
+        }
+
         $docItemIds = (array) $this->input->post('bulk_doc_item_ids');
 
         if ($clusterId <= 0 || empty($docItemIds)) {
@@ -584,6 +597,19 @@ class Post_Donasi_MyRep extends CI_Controller
         }
 
         return 'Post_Donasi_MyRep/detail/' . (int) $clusterId;
+    }
+
+    private function canUploadDonationDocument()
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        return in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
     }
 
     private function sendPostDonasiNotificationAfterUpload($clusterId, $hasReupload, $documentLabel = '')
