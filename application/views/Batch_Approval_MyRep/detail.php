@@ -5,6 +5,10 @@ $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batc
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true;
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
+$canDonationUpload = (string) $this->session->userdata('nama_level') === 'Super Admin'
+    || (isset($this->myrepAccess)
+        && method_exists($this->myrepAccess, 'getCurrentRoleKeys')
+        && in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true));
 $canReplaceDonationFile = !empty($canReplaceDonationFile);
 $canFinanceApprovalAction = !empty($canFinanceApprovalAction);
 
@@ -122,6 +126,109 @@ if (!function_exists('batchDetailAgingText')) {
     }
 }
 
+if (!function_exists('batchDetailAddCalendarDays')) {
+    function batchDetailAddCalendarDays($value, $days)
+    {
+        $value = trim((string) $value);
+        if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+            return '';
+        }
+
+        $timestamp = strtotime($value);
+        if (!$timestamp) {
+            return '';
+        }
+
+        $date = new DateTime(date('Y-m-d', $timestamp));
+        $date->modify('+' . max(0, (int) $days) . ' day');
+        return $date->format('Y-m-d');
+    }
+}
+
+if (!function_exists('batchDetailLatestDateFromRows')) {
+    function batchDetailLatestDateFromRows(array $rows, $dateField, $requiredOnly = true, $statusField = '', $statusValue = '')
+    {
+        $latest = '';
+        foreach ($rows as $row) {
+            if ($requiredOnly && (int) ($row['is_required'] ?? 1) !== 1) {
+                continue;
+            }
+            if ($statusField !== '') {
+                $currentStatus = strtoupper(trim((string) ($row[$statusField] ?? '')));
+                if ($currentStatus !== strtoupper(trim((string) $statusValue))) {
+                    continue;
+                }
+            }
+
+            $value = trim((string) ($row[$dateField] ?? ''));
+            if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+                continue;
+            }
+            if ($latest === '' || strtotime($value) > strtotime($latest)) {
+                $latest = $value;
+            }
+        }
+
+        return $latest;
+    }
+}
+
+if (!function_exists('batchDetailSlaStatus')) {
+    function batchDetailSlaStatus($targetDate, $actualDate)
+    {
+        $targetTimestamp = strtotime((string) $targetDate);
+        $actualTimestamp = strtotime((string) $actualDate);
+        if (!$actualTimestamp) {
+            return ['label' => 'Pending', 'class' => 'secondary', 'icon' => 'clock'];
+        }
+        if (!$targetTimestamp || $actualTimestamp <= $targetTimestamp) {
+            return ['label' => 'Tepat Waktu', 'class' => 'success', 'icon' => 'check-circle'];
+        }
+
+        return ['label' => 'Terlambat', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
+    }
+}
+
+if (!function_exists('batchDetailSlaRemainingDays')) {
+    function batchDetailSlaRemainingDays($targetDate, $actualDate)
+    {
+        $targetTimestamp = strtotime((string) $targetDate);
+        if (!$targetTimestamp) {
+            return '-';
+        }
+
+        $endTimestamp = strtotime((string) $actualDate);
+        if (!$endTimestamp) {
+            $endTimestamp = strtotime(date('Y-m-d'));
+        }
+
+        $target = new DateTime(date('Y-m-d', $targetTimestamp));
+        $end = new DateTime(date('Y-m-d', $endTimestamp));
+        $diff = (int) $end->diff($target)->days;
+
+        if ($end <= $target) {
+            return $diff . ' hari';
+        }
+
+        return '-' . $diff . ' hari';
+    }
+}
+
+if (!function_exists('batchDetailSlaPicMeta')) {
+    function batchDetailSlaPicMeta($pic)
+    {
+        $pic = strtoupper(trim((string) $pic));
+        $map = [
+            'ASTRI' => ['label' => 'Astri', 'class' => 'astri', 'icon' => 'user-astronaut'],
+            'ZEYN' => ['label' => 'Zeyn', 'class' => 'zeyn', 'icon' => 'user-check'],
+            'SITAC HO TEAM' => ['label' => 'SITAC HO Team', 'class' => 'sitac', 'icon' => 'users'],
+            'FINANCE TEAM' => ['label' => 'Finance Team', 'class' => 'finance', 'icon' => 'user-tie'],
+        ];
+
+        return $map[$pic] ?? ['label' => ucwords(strtolower($pic)), 'class' => 'default', 'icon' => 'user'];
+    }
+}
+
 if (!function_exists('batchDetailDocumentLabel')) {
     function batchDetailDocumentLabel($row)
     {
@@ -163,6 +270,33 @@ if (!function_exists('batchDetailFinanceDocumentLabel')) {
         }
 
         return 'ON REVIEW';
+    }
+}
+
+if (!function_exists('batchDetailIsImageDonationDoc')) {
+    function batchDetailIsImageDonationDoc($docName)
+    {
+        return strpos(strtoupper(trim((string) $docName)), 'SCREENSHOT') !== false;
+    }
+}
+
+if (!function_exists('batchDetailShortFileName')) {
+    function batchDetailShortFileName($fileName, $maxWords = 10)
+    {
+        $fileName = trim((string) $fileName);
+        if ($fileName === '') {
+            return '-';
+        }
+
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $baseName = $extension !== '' ? substr($fileName, 0, -1 * (strlen($extension) + 1)) : $fileName;
+        $tokens = preg_split('/[\s_\-]+/', $baseName, -1, PREG_SPLIT_NO_EMPTY);
+        if (!$tokens || count($tokens) <= (int) $maxWords) {
+            return $fileName;
+        }
+
+        $shortName = implode(' ', array_slice($tokens, 0, (int) $maxWords));
+        return $shortName . ' ....' . ($extension !== '' ? '.' . $extension : '');
     }
 }
 
@@ -229,7 +363,7 @@ $displayStageStatus = (string) ($cluster['display_staging_status'] ?? $cluster['
 $stageMeta = batchDetailStageMeta($displayStageStatus);
 $batchDocumentStatus = batchDetailDocumentLabel($batchDocument);
 $batchDocumentRawStatus = strtoupper(trim((string) ($batchDocument['status_file'] ?? '')));
-$batchDocumentCanUpload = $canTambah && in_array($batchDocumentStatus, ['BELUM UPLOAD', 'REJECTED'], true);
+$batchDocumentCanUpload = $canDonationUpload && in_array($batchDocumentStatus, ['BELUM UPLOAD', 'REJECTED'], true);
 $batchDocumentCanReview = $canApprove && $canApprovalAction && !empty($batchDocument['id_doc_file']) && $batchDocumentRawStatus === 'UPLOADED';
 $transferProofPath = (string) ($cluster['transfer_proof_file_path'] ?? '');
 $transferProofExtension = strtolower(pathinfo($transferProofPath, PATHINFO_EXTENSION));
@@ -268,6 +402,42 @@ $statusOptions = [
 $currentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? 'DRAFT')));
 $stageButtonTarget = '';
 $stageButtonLabel = '';
+$releaseNominal = !is_null($cluster['nominal_release_finance'] ?? null) ? (float) $cluster['nominal_release_finance'] : null;
+$approvalNominal = !is_null($cluster['nominal_nego_emr'] ?? null) ? (float) $cluster['nominal_nego_emr'] : null;
+$releaseVariance = $releaseNominal !== null && $approvalNominal !== null ? $releaseNominal - $approvalNominal : null;
+$slaStartDate = trim((string) ($cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? $cluster['created_at'] ?? ''));
+$slaRows = [];
+$slaCumulativeDays = 0;
+$slaDefinitions = [
+    ['Pengajuan Donasi Astri & Zeyn', 'Astri', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? ''],
+    ['Release Batch Approval', 'Zeyn', 1, $cluster['astri_batch_approved_at'] ?? ''],
+    ['Upload Dokumen Tahap 1 Pra-Finance Zeyn', 'Zeyn', 2, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'uploaded_at', true)],
+    ['Approve SITAC HO Tahap 1', 'SITAC HO Team', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
+    ['Approve Finance Tahap 1', 'Finance Team', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Pembayaran Donasi Finance', 'Finance Team', 2, $cluster['released_at'] ?? ''],
+    ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'Zeyn', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'uploaded_at', true)],
+    ['Approve SITAC HO Tahap 2', 'SITAC HO Team', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
+    ['Approve Finance Tahap 2', 'Finance Team', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Submit Final Astri', 'Astri', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_submitted_date', true)],
+    ['Approved Astri', 'Astri', 3, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_approved_date', true, 'astri_status', 'APPROVED')],
+    ['PO Donasi', 'Zeyn', 3, $cluster['po_donasi_date'] ?? ''],
+    ['Invoice Donasi', 'Zeyn', 1, $cluster['invoice_donasi_date'] ?? ''],
+];
+foreach ($slaDefinitions as $slaDefinition) {
+    $slaCumulativeDays += (int) $slaDefinition[2];
+    $targetDate = batchDetailAddCalendarDays($slaStartDate, $slaCumulativeDays);
+    $actualDate = trim((string) $slaDefinition[3]);
+    $picMeta = batchDetailSlaPicMeta($slaDefinition[1]);
+    $slaRows[] = [
+        'name' => $slaDefinition[0],
+        'pic' => $picMeta,
+        'days' => (int) $slaDefinition[2],
+        'target_date' => $targetDate,
+        'actual_date' => $actualDate,
+        'remaining_days' => batchDetailSlaRemainingDays($targetDate, $actualDate),
+        'status' => batchDetailSlaStatus($targetDate, $actualDate),
+    ];
+}
 $postDonasiUploadableRows = [];
 $postDonasiReviewableRows = [];
 $postDonasiDownloadableRows = [];
@@ -334,6 +504,230 @@ if ($canApprove && $canApprovalAction) {
         font-weight: 700;
         letter-spacing: 0;
         margin: 0;
+    }
+
+    .batch-section-header {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+
+    .batch-disbursement-card .card-header {
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .batch-disbursement-metric,
+    .batch-disbursement-proof {
+        min-height: 82px;
+        padding: .9rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+
+    .batch-disbursement-label {
+        display: block;
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0;
+    }
+
+    .batch-disbursement-metric strong {
+        display: block;
+        margin-top: .35rem;
+        color: #0f172a;
+        font-size: 1.05rem;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .batch-disbursement-proof__preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 120px;
+        max-height: 180px;
+        padding: .6rem;
+        border-radius: 8px;
+        background: #111827;
+        overflow: hidden;
+    }
+
+    .batch-disbursement-proof__preview img {
+        max-width: 100%;
+        max-height: 160px;
+        object-fit: contain;
+    }
+
+    .batch-disbursement-empty {
+        display: flex;
+        align-items: center;
+        min-height: 74px;
+        padding: .75rem;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        color: #64748b;
+        background: #fff;
+        font-weight: 700;
+    }
+
+    .batch-sla-card {
+        border: 1px solid #d6e6f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .batch-sla-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 42px;
+        padding: .55rem .85rem;
+        background: linear-gradient(90deg, #93d6c5, #2b8fc3);
+        color: #fff;
+        border-bottom: 0;
+    }
+
+    .batch-sla-card__header .card-title {
+        color: #082f49;
+        font-size: .98rem;
+        font-weight: 900;
+    }
+
+    .batch-sla-total-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: .15rem .55rem;
+        border-radius: 4px;
+        background: rgba(15, 118, 145, .88);
+        color: #fff;
+        font-size: .72rem;
+        font-weight: 800;
+    }
+
+    .batch-sla-card__body {
+        padding: .75rem .85rem .9rem;
+        background: #fff;
+    }
+
+    .batch-sla-table {
+        border: 1px solid #d7e0e8;
+        font-size: .78rem;
+    }
+
+    .batch-sla-table thead th {
+        background: #f5f7fa;
+        border-color: #d7e0e8;
+        color: #111827;
+        font-weight: 800;
+        line-height: 1.15;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .batch-sla-table tbody td {
+        border-color: #d7e0e8;
+        color: #111827;
+        line-height: 1.2;
+        padding: .35rem .45rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .batch-sla-table tbody tr:nth-child(odd) {
+        background: #fbfdff;
+    }
+
+    .batch-sla-table tbody tr:hover {
+        background: #eef9fb;
+    }
+
+    .batch-sla-no {
+        color: #334155;
+        font-weight: 800;
+    }
+
+    .batch-sla-process {
+        min-width: 250px;
+        white-space: normal !important;
+        font-weight: 700;
+    }
+
+    .batch-sla-pic {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .batch-sla-pic i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: .62rem;
+    }
+
+    .batch-sla-pic--astri i {
+        background: #0f766e;
+    }
+
+    .batch-sla-pic--zeyn i {
+        background: #65a30d;
+    }
+
+    .batch-sla-pic--sitac i {
+        background: #2563eb;
+    }
+
+    .batch-sla-pic--finance i {
+        background: #475569;
+    }
+
+    .batch-sla-pic--default i {
+        background: #64748b;
+    }
+
+    .batch-sla-status {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        min-height: 20px;
+        padding: .12rem .45rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .batch-sla-status--success {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .batch-sla-status--danger {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .batch-sla-status--warning {
+        background: #fef3c7;
+        color: #a16207;
+    }
+
+    .batch-sla-status--secondary {
+        background: #e5e7eb;
+        color: #4b5563;
     }
 
     .donation-upload-actions {
@@ -414,6 +808,15 @@ if ($canApprove && $canApprovalAction) {
         display: flex;
         flex-wrap: wrap;
         gap: .35rem;
+        position: relative;
+        z-index: 3;
+    }
+
+    .js-open-donation-upload-modal {
+        position: relative;
+        z-index: 4;
+        pointer-events: auto !important;
+        cursor: pointer !important;
     }
 
     .donation-action-form {
@@ -504,12 +907,17 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .donation-file-link {
-        display: inline-block;
+        display: inline;
         max-width: 100%;
         color: #007bff;
         font-size: .85rem;
-        font-weight: 600;
-        overflow-wrap: anywhere;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .donation-file-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
     }
 
     .donation-file-actions {
@@ -1194,7 +1602,7 @@ if ($canApprove && $canApprovalAction) {
                         <div class="col-md-3"><strong>Nominal Donasi</strong><div><?= number_format((float) ($cluster['nominal_pengajuan_area'] ?? 0), 0, ',', '.') ?></div></div>
                         <div class="col-md-3"><strong>Nominal / Homepass</strong><div><?= !is_null($cluster['nominal_per_homepass'] ?? null) ? number_format((float) $cluster['nominal_per_homepass'], 2, ',', '.') : '-' ?></div></div>
                         <div class="col-md-3"><strong>Nominal Approval EMR</strong><div><?= !is_null($cluster['nominal_nego_emr'] ?? null) ? number_format((float) $cluster['nominal_nego_emr'], 0, ',', '.') : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Nominal Release</strong><div><?= !is_null($cluster['nominal_release_finance'] ?? null) ? number_format((float) $cluster['nominal_release_finance'], 0, ',', '.') : '-' ?></div></div>
+                        <div class="col-md-3"><strong>Nominal Pencairan</strong><div><?= !is_null($cluster['nominal_release_finance'] ?? null) ? number_format((float) $cluster['nominal_release_finance'], 0, ',', '.') : '-' ?></div></div>
                     </div>
                     <hr>
                     <div class="row batch-info-grid">
@@ -1231,6 +1639,121 @@ if ($canApprove && $canApprovalAction) {
             </div>
 
             <?php $currentDonationStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? ''))); ?>
+            <div class="card card-outline card-success shadow-sm batch-disbursement-card">
+                <div class="card-header batch-section-header">
+                    <div>
+                        <h3 class="card-title mb-0">Pencairan Donasi</h3>
+                    </div>
+                    <?php if ($canApprove && $canApprovalAction && $currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
+                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modal-set-released">
+                            Set Released
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <div class="row batch-disbursement-grid">
+                        <div class="col-md-3 mb-3">
+                            <div class="batch-disbursement-metric">
+                                <span class="batch-disbursement-label">Status Finance</span>
+                                <strong><?= htmlspecialchars(batchDetailStatusLabel($displayStageStatus)) ?></strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="batch-disbursement-metric">
+                                <span class="batch-disbursement-label">Tanggal Transfer</span>
+                                <strong><?= batchDetailDateText($cluster['released_at'] ?? '') ?></strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="batch-disbursement-metric">
+                                <span class="batch-disbursement-label">Nominal Approval EMR</span>
+                                <strong><?= $approvalNominal !== null ? number_format($approvalNominal, 0, ',', '.') : '-' ?></strong>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="batch-disbursement-metric">
+                                <span class="batch-disbursement-label">Nominal Transfer</span>
+                                <strong><?= $releaseNominal !== null ? number_format($releaseNominal, 0, ',', '.') : '-' ?></strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row align-items-stretch">
+                        <div class="col-lg-4 mb-3 mb-lg-0">
+                            <div class="batch-disbursement-metric h-100">
+                                <span class="batch-disbursement-label">Selisih Transfer</span>
+                                <strong class="<?= $releaseVariance !== null && abs($releaseVariance) > 0 ? 'text-danger' : 'text-success' ?>">
+                                    <?= $releaseVariance !== null ? number_format($releaseVariance, 0, ',', '.') : '-' ?>
+                                </strong>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="batch-disbursement-proof">
+                                <div class="batch-disbursement-label mb-2">Bukti Transfer</div>
+                                <?php if (!empty($cluster['transfer_proof_file_path']) && $isTransferProofImage): ?>
+                                    <a href="<?= base_url($transferProofPath) ?>" target="_blank" class="batch-disbursement-proof__preview">
+                                        <img src="<?= base_url($transferProofPath) ?>" alt="Bukti Transfer">
+                                    </a>
+                                    <a href="<?= base_url($transferProofPath) ?>" target="_blank" class="btn btn-sm btn-outline-success mt-2">Lihat Bukti Transfer</a>
+                                <?php elseif (!empty($cluster['transfer_proof_file_path'])): ?>
+                                    <a href="<?= base_url($transferProofPath) ?>" target="_blank" class="btn btn-sm btn-outline-success">Download Bukti Transfer</a>
+                                <?php else: ?>
+                                    <div class="batch-disbursement-empty">Belum ada bukti transfer.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm batch-sla-card">
+                <div class="card-header batch-sla-card__header">
+                    <h3 class="card-title mb-0">SLA SOP Donasi</h3>
+                    <span class="batch-sla-total-badge">Total SLA 17 Hari Kalender</span>
+                </div>
+                <div class="card-body batch-sla-card__body">
+                    <div class="table-responsive">
+                        <table class="table table-sm batch-sla-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>SOP Process</th>
+                                    <th>PIC</th>
+                                    <th>Durasi SLA</th>
+                                    <th>Target Selesai</th>
+                                    <th>Aktual Selesai</th>
+                                    <th>Sisa Hari</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($slaRows as $slaIndex => $slaRow): ?>
+                                    <tr>
+                                        <td class="batch-sla-no"><?= $slaIndex + 1 ?></td>
+                                        <td class="batch-sla-process"><?= htmlspecialchars((string) $slaRow['name']) ?></td>
+                                        <td>
+                                            <span class="batch-sla-pic batch-sla-pic--<?= htmlspecialchars((string) ($slaRow['pic']['class'] ?? 'default')) ?>">
+                                                <i class="fas fa-<?= htmlspecialchars((string) ($slaRow['pic']['icon'] ?? 'user')) ?>"></i>
+                                                <?= htmlspecialchars((string) ($slaRow['pic']['label'] ?? '-')) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= (int) $slaRow['days'] ?> Hari</td>
+                                        <td><?= batchDetailDateText($slaRow['target_date'] ?? '') ?></td>
+                                        <td><?= batchDetailDateText($slaRow['actual_date'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars((string) ($slaRow['remaining_days'] ?? '-')) ?></td>
+                                        <td>
+                                            <span class="batch-sla-status batch-sla-status--<?= htmlspecialchars((string) ($slaRow['status']['class'] ?? 'secondary')) ?>">
+                                                <i class="fas fa-<?= htmlspecialchars((string) ($slaRow['status']['icon'] ?? 'clock')) ?>"></i>
+                                                <?= htmlspecialchars((string) ($slaRow['status']['label'] ?? '-')) ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <?php
             $preZeynSummary = $donationDocumentSummary['PRE_ZEYN'] ?? [];
             $preZeynRequiredCount = (int) ($preZeynSummary['required'] ?? $cluster['pre_zeyn_doc_total'] ?? 0);
@@ -1238,6 +1761,12 @@ if ($canApprove && $canApprovalAction) {
             $isPreZeynFullApproved = $preZeynRequiredCount > 0 && $preZeynApprovedCount >= $preZeynRequiredCount;
             $preZeynFinanceApprovedCount = (int) ($preZeynSummary['finance_approved'] ?? 0);
             $isPreZeynFinanceFullApproved = $preZeynRequiredCount > 0 && $preZeynFinanceApprovedCount >= $preZeynRequiredCount;
+            $postZeynSummary = $donationDocumentSummary['POST_ZEYN'] ?? [];
+            $postZeynRequiredCount = (int) ($postZeynSummary['required'] ?? $cluster['post_zeyn_doc_total'] ?? 0);
+            $allAstriRequiredCount = $preZeynRequiredCount + $postZeynRequiredCount;
+            $allAstriApprovedCount = (int) ($preZeynSummary['astri_approved'] ?? 0) + (int) ($postZeynSummary['astri_approved'] ?? 0);
+            $allAstriRejectedCount = (int) ($preZeynSummary['astri_rejected'] ?? 0) + (int) ($postZeynSummary['astri_rejected'] ?? 0);
+            $isAllAstriFullApproved = $allAstriRequiredCount > 0 && $allAstriRejectedCount === 0 && $allAstriApprovedCount >= $allAstriRequiredCount;
             ?>
             <?php if ($canApprove && $canApprovalAction): ?>
                 <div class="card card-outline card-warning shadow-sm">
@@ -1257,40 +1786,28 @@ if ($canApprove && $canApprovalAction) {
                                     </form>
                                 </div>
                             <?php elseif ($currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
-                                <div class="col-md-12">
-                                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modal-set-released">
-                                        Set Released
-                                    </button>
-                                </div>
+                                <div class="col-md-12 text-muted">Lengkapi pencairan melalui container Pencairan Donasi.</div>
                             <?php elseif (in_array($currentDonationStage, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)): ?>
                                 <div class="col-md-12">
-                                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
-                                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                        <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
-                                        <input type="hidden" name="redirect_to_detail" value="1">
-                                        <input type="hidden" name="target_stage" value="ASTRI_APPROVED">
-                                        <button type="submit" class="btn btn-success btn-sm">Lock Astri Approved</button>
-                                    </form>
+                                    <?php if ($isAllAstriFullApproved): ?>
+                                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
+                                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                            <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
+                                            <input type="hidden" name="redirect_to_detail" value="1">
+                                            <input type="hidden" name="target_stage" value="ASTRI_APPROVED">
+                                            <button type="submit" class="btn btn-success btn-sm">Lock Astri Approved</button>
+                                        </form>
+                                    <?php elseif ($allAstriRejectedCount > 0): ?>
+                                        <span class="text-muted">Masih ada <?= $allAstriRejectedCount ?> dokumen rejected Astri. Upload revisi dokumen lalu review SITAC ulang.</span>
+                                    <?php else: ?>
+                                        <span class="text-muted">Menunggu semua dokumen Astri full approved.</span>
+                                    <?php endif; ?>
                                 </div>
                             <?php elseif (in_array($currentDonationStage, ['ASTRI_APPROVED', 'PO_DONASI', 'INVOICE'], true)): ?>
                                 <div class="col-md-12">
-                                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/saveDonationPoInvoice') ?>">
-                                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                        <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
-                                        <input type="hidden" name="redirect_to_detail" value="1">
-                                        <div class="row">
-                                            <div class="col-md-4"><label>Nomor PO</label><input type="text" name="po_donasi_number" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_number'] ?? ''), ENT_QUOTES) ?>" required></div>
-                                            <div class="col-md-4"><label>Tanggal PO</label><input type="date" name="po_donasi_date" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_date'] ?? '')) ?>" required></div>
-                                            <div class="col-md-4"><label>Nilai PO</label><input type="text" name="po_donasi_value" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_value'] ?? ''), ENT_QUOTES) ?>" required></div>
-                                            <div class="col-md-4"><label>Status PO</label><input type="text" name="po_donasi_status" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_status'] ?? 'ISSUED'), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Nomor Invoice</label><input type="text" name="invoice_donasi_number" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_number'] ?? ''), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Tanggal Invoice</label><input type="date" name="invoice_donasi_date" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_date'] ?? '')) ?>"></div>
-                                            <div class="col-md-4"><label>Nilai Invoice</label><input type="text" name="invoice_donasi_value" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_value'] ?? ''), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Status Invoice</label><input type="text" name="invoice_donasi_status" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_status'] ?? ''), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Remark Invoice</label><input type="text" name="invoice_donasi_remark" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_remark'] ?? ''), ENT_QUOTES) ?>"></div>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary btn-sm">Simpan PO/Invoice Donasi</button>
-                                    </form>
+                                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-donation-po-invoice">
+                                        <?= !empty($cluster['po_donasi_number']) ? 'Edit PO/Invoice Donasi' : 'Tambah PO Donasi' ?>
+                                    </button>
                                 </div>
                             <?php else: ?>
                                 <div class="col-md-12 text-muted">Tidak ada aksi staging untuk status saat ini.</div>
@@ -1336,6 +1853,40 @@ if ($canApprove && $canApprovalAction) {
                         </div>
                     </div>
                 <?php endif; ?>
+                <?php if (in_array($currentDonationStage, ['ASTRI_APPROVED', 'PO_DONASI', 'INVOICE'], true)): ?>
+                    <div class="modal fade" id="modal-donation-po-invoice" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <form method="post" action="<?= base_url('Batch_Approval_MyRep/saveDonationPoInvoice') ?>">
+                                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                    <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
+                                    <input type="hidden" name="redirect_to_detail" value="1">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title">PO/Invoice Donasi</h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-md-4"><label>Nomor PO</label><input type="text" name="po_donasi_number" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_number'] ?? ''), ENT_QUOTES) ?>" required></div>
+                                            <div class="col-md-4"><label>Tanggal PO</label><input type="date" name="po_donasi_date" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_date'] ?? date('Y-m-d'))) ?>" required></div>
+                                            <div class="col-md-4"><label>Nilai PO</label><input type="text" name="po_donasi_value" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_value'] ?? ''), ENT_QUOTES) ?>" required></div>
+                                            <div class="col-md-4"><label>Status PO</label><input type="text" name="po_donasi_status" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_status'] ?? 'ISSUED'), ENT_QUOTES) ?>"></div>
+                                            <div class="col-md-4"><label>Nomor Invoice</label><input type="text" name="invoice_donasi_number" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_number'] ?? ''), ENT_QUOTES) ?>"></div>
+                                            <div class="col-md-4"><label>Tanggal Invoice</label><input type="date" name="invoice_donasi_date" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_date'] ?? '')) ?>"></div>
+                                            <div class="col-md-4"><label>Nilai Invoice</label><input type="text" name="invoice_donasi_value" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_value'] ?? ''), ENT_QUOTES) ?>"></div>
+                                            <div class="col-md-4"><label>Status Invoice</label><input type="text" name="invoice_donasi_status" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_status'] ?? ''), ENT_QUOTES) ?>"></div>
+                                            <div class="col-md-4"><label>Remark Invoice</label><input type="text" name="invoice_donasi_remark" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_remark'] ?? ''), ENT_QUOTES) ?>"></div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                                        <button type="submit" class="btn btn-primary">Simpan PO/Invoice Donasi</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
             <div class="card card-outline card-primary shadow-sm batch-doc-card">
                 <div class="card-header">
@@ -1362,6 +1913,7 @@ if ($canApprove && $canApprovalAction) {
                                         class="btn btn-sm <?= $batchDocumentCanUpload ? 'btn-primary' : 'btn-outline-primary' ?> js-open-batch-rar-modal"
                                         data-toggle="modal"
                                         data-target="#modal-batch-rar"
+                                        data-role-guard-exempt="1"
                                         data-file-name="<?= htmlspecialchars((string) ($batchDocument['file_name'] ?? ''), ENT_QUOTES) ?>"
                                         data-file-path="<?= htmlspecialchars((string) ($batchDocument['file_path'] ?? ''), ENT_QUOTES) ?>"
                                         data-remark="<?= htmlspecialchars((string) ($batchDocument['remark'] ?? ''), ENT_QUOTES) ?>"
@@ -1369,15 +1921,6 @@ if ($canApprove && $canApprovalAction) {
                                         data-can-upload="<?= $batchDocumentCanUpload ? '1' : '0' ?>">
                                         <?= $batchDocumentCanUpload ? 'Upload RAR' : 'Lihat RAR' ?>
                                     </button>
-                                    <?php if (!empty($cluster['transfer_proof_file_path']) && $isTransferProofImage): ?>
-                                        <div class="batch-transfer-preview">
-                                            <div class="small text-muted mb-2">Preview bukti transfer</div>
-                                            <img src="<?= base_url($transferProofPath) ?>" alt="Bukti Transfer" class="batch-transfer-preview__image">
-                                            <div class="mt-2">
-                                                <a href="<?= base_url($transferProofPath) ?>" target="_blank" class="btn btn-sm btn-outline-secondary">Lihat Gambar</a>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="col-lg-5 mb-3">
@@ -1430,7 +1973,7 @@ if ($canApprove && $canApprovalAction) {
 
             <?php if ($docReady): ?>
                 <?php
-                $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $canTambah, $canApprove, $canApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
+                $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $canDonationUpload, $canApprove, $canApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
                     $safeGroupKey = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $groupKey);
                     $requiredRows = array_filter($rows, static function ($row) {
                         return (int) ($row['is_required'] ?? 1) === 1;
@@ -1456,10 +1999,12 @@ if ($canApprove && $canApprovalAction) {
                     foreach ($rows as $row) {
                         $rowStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
                         $rowFinanceStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
+                        $rowAstriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
+                        $isAstriRejectedRevision = $rowStatus === 'APPROVED' && $rowAstriStatus === 'REJECTED';
                         if ($rowStatus === 'UPLOADED') {
                             $onReviewCount++;
                         }
-                        if ($canTambah && in_array($rowStatus, ['', 'REJECTED'], true)) {
+                        if ($canDonationUpload && (in_array($rowStatus, ['', 'REJECTED'], true) || $isAstriRejectedRevision)) {
                             $bulkUploadRows[] = $row;
                         }
                         if ($canApprove && $canApprovalAction && (int) ($row['id_doc_file'] ?? 0) > 0 && $rowStatus === 'APPROVED') {
@@ -1494,6 +2039,9 @@ if ($canApprove && $canApprovalAction) {
                             <div class="donation-upload-actions">
                                 <span class="donation-count-badge"><?= $approvedCount ?>/<?= $requiredCount ?></span>
                                 <span class="donation-count-badge">Finance <?= $financeApprovedCount ?>/<?= $requiredCount ?></span>
+                                <a href="<?= base_url('Batch_Approval_MyRep/downloadDonationDocumentBundle/' . (int) ($cluster['id_myrep_cluster'] ?? 0) . '/' . rawurlencode($groupKey)) ?>" class="btn btn-sm btn-outline-primary" title="Download dokumen yang sudah approved SITAC dan Finance">
+                                    <i class="fas fa-download mr-1"></i>Download All
+                                </a>
                                 <?php if (!empty($bulkUploadRows)): ?>
                                     <button type="button" class="btn btn-sm btn-outline-success" data-toggle="modal" data-target="#modal-bulk-donation-<?= htmlspecialchars($safeGroupKey) ?>">Bulk Upload</button>
                                 <?php endif; ?>
@@ -1565,7 +2113,7 @@ if ($canApprove && $canApprovalAction) {
                                             $fileId = (int) ($row['id_doc_file'] ?? 0);
                                             $docItemId = (int) ($row['id_doc_item'] ?? 0);
                                             $docName = (string) ($row['doc_name'] ?? '-');
-                                            $isScreenshotEvidenceDoc = strtoupper(trim($docName)) === 'SCREENSHOT EVIDENCE UPLOAD DRM DI ASTRI';
+                                            $isImageDonationDoc = batchDetailIsImageDonationDoc($docName);
                                             $collapseSuffix = htmlspecialchars($safeGroupKey . '-' . $docItemId);
                                             $astriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
                                             $astriStatus = $astriStatus !== '' ? $astriStatus : 'NY';
@@ -1573,7 +2121,7 @@ if ($canApprove && $canApprovalAction) {
                                             ?>
                                             <tr>
                                                 <td><?= $index + 1 ?></td>
-                                                <td class="<?= $isScreenshotEvidenceDoc ? 'donation-file-photo-cell' : '' ?>">
+                                                <td class="<?= $isImageDonationDoc ? 'donation-file-photo-cell' : '' ?>">
                                                     <strong><?= htmlspecialchars($docName) ?></strong>
                                                     <div class="text-muted small"><?= (int) ($row['is_required'] ?? 1) === 1 ? 'Wajib' : 'Opsional' ?></div>
                                                     <?php if (!empty($row['doc_requirement_note'])): ?>
@@ -1585,18 +2133,19 @@ if ($canApprove && $canApprovalAction) {
                                                 <td><span class="badge badge-<?= batchDetailBadgeClass($financeStatusLabel) ?>"><?= htmlspecialchars($financeStatusLabel) ?></span></td>
                                                 <td>
                                                     <?php if (!empty($row['file_name'])): ?>
-                                                        <a href="<?= base_url('Batch_Approval_MyRep/previewDocument/' . $fileId) ?>" target="_blank" class="donation-file-link">
-                                                            <?= htmlspecialchars((string) $row['file_name']) ?>
-                                                        </a>
-                                                        <?php if ($isScreenshotEvidenceDoc): ?>
-                                                            <div class="donation-photo-cell mt-1">
+                                                        <?php if ($isImageDonationDoc): ?>
+                                                            <div class="donation-photo-cell">
                                                                 <img
                                                                     src="<?= base_url('Batch_Approval_MyRep/previewDocument/' . $fileId) ?>"
-                                                                    alt="Screenshot Evidence Upload DRM di Astri"
+                                                                    alt="<?= htmlspecialchars($docName, ENT_QUOTES) ?>"
                                                                     class="donation-photo-thumb js-open-donation-photo"
                                                                     data-image="<?= base_url('Batch_Approval_MyRep/previewDocument/' . $fileId) ?>"
                                                                     data-title="<?= htmlspecialchars($docName, ENT_QUOTES) ?>">
                                                             </div>
+                                                        <?php else: ?>
+                                                            <a href="<?= base_url('Batch_Approval_MyRep/previewDocument/' . $fileId) ?>" target="_blank" class="donation-file-link">
+                                                                <?= htmlspecialchars(batchDetailShortFileName((string) $row['file_name'])) ?>
+                                                            </a>
                                                         <?php endif; ?>
                                                         <div class="donation-file-actions">
                                                             <a href="<?= base_url('Batch_Approval_MyRep/downloadDocument/' . $fileId) ?>" class="btn btn-sm btn-outline-primary">
@@ -1630,38 +2179,44 @@ if ($canApprove && $canApprovalAction) {
                                                 </td>
                                                 <td style="min-width:270px;">
                                                     <div class="donation-action-stack">
-                                                        <?php if ($canTambah && in_array($rawStatus, ['', 'REJECTED'], true)): ?>
+                                                        <?php if ($canDonationUpload && (in_array($rawStatus, ['', 'REJECTED'], true) || ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED'))): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
-                                                            <button
-                                                                type="button"
+                                                            <a
+                                                                href="#modal-donation-upload"
+                                                                role="button"
                                                                 class="btn btn-sm btn-primary js-open-donation-upload-modal"
                                                                 data-toggle="modal"
                                                                 data-target="#modal-donation-upload"
+                                                                data-role-guard-exempt="1"
                                                                 data-doc-item-id="<?= $docItemId ?>"
+                                                                data-group-key="<?= htmlspecialchars((string) $groupKey, ENT_QUOTES) ?>"
                                                                 data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? 'dokumen'), ENT_QUOTES) ?>"
                                                                 data-file-name="<?= htmlspecialchars((string) ($row['file_name'] ?? ''), ENT_QUOTES) ?>"
                                                                 data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>"
                                                                 data-can-not-required="<?= $canMarkNotRequired ? '1' : '0' ?>"
-                                                                data-is-image-doc="<?= strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'SCREENSHOT EVIDENCE UPLOAD DRM DI ASTRI' ? '1' : '0' ?>"
+                                                                data-is-image-doc="<?= batchDetailIsImageDonationDoc($row['doc_name'] ?? '') ? '1' : '0' ?>"
                                                                 data-replace-file="0">
-                                                                Upload
-                                                            </button>
+                                                                <?= $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED' ? 'Upload Revisi Astri' : 'Upload' ?>
+                                                            </a>
                                                         <?php elseif ($canReplaceDonationFile && $rawStatus === 'APPROVED'): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
-                                                            <button
-                                                                type="button"
+                                                            <a
+                                                                href="#modal-donation-upload"
+                                                                role="button"
                                                                 class="btn btn-sm btn-warning js-open-donation-upload-modal"
                                                                 data-toggle="modal"
                                                                 data-target="#modal-donation-upload"
+                                                                data-role-guard-exempt="1"
                                                                 data-doc-item-id="<?= $docItemId ?>"
+                                                                data-group-key="<?= htmlspecialchars((string) $groupKey, ENT_QUOTES) ?>"
                                                                 data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? 'dokumen'), ENT_QUOTES) ?>"
                                                                 data-file-name="<?= htmlspecialchars((string) ($row['file_name'] ?? ''), ENT_QUOTES) ?>"
                                                                 data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>"
                                                                 data-can-not-required="<?= $canMarkNotRequired ? '1' : '0' ?>"
-                                                                data-is-image-doc="<?= strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'SCREENSHOT EVIDENCE UPLOAD DRM DI ASTRI' ? '1' : '0' ?>"
+                                                                data-is-image-doc="<?= batchDetailIsImageDonationDoc($row['doc_name'] ?? '') ? '1' : '0' ?>"
                                                                 data-replace-file="1">
                                                                 Replace File
-                                                            </button>
+                                                            </a>
                                                         <?php endif; ?>
                                                         <?php if ($canApprove && $canApprovalAction && $fileId > 0 && $rawStatus === 'UPLOADED'): ?>
                                                             <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveDonationDocument') ?>" class="d-inline js-donation-ajax-form" data-processing-text="Approving..." data-success-text="Approve">
@@ -1670,7 +2225,22 @@ if ($canApprove && $canApprovalAction) {
                                                                 <input type="hidden" name="id_doc_file" value="<?= $fileId ?>">
                                                                 <button type="submit" class="btn btn-sm btn-success">Approve</button>
                                                             </form>
-                                                            <button type="button" class="btn btn-sm btn-danger" data-toggle="collapse" data-target="#reject-donation-<?= $fileId ?>">Reject</button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-danger js-open-donation-reject-modal"
+                                                                data-role-guard-exempt="1"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-donation-reject"
+                                                                data-action-url="<?= base_url('Batch_Approval_MyRep/rejectDonationDocument') ?>"
+                                                                data-processing-text="Rejecting..."
+                                                                data-success-text="Simpan Reject"
+                                                                data-title="Reject Dokumen"
+                                                                data-submit-label="Simpan Reject"
+                                                                data-file-id="<?= $fileId ?>"
+                                                                data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>"
+                                                                data-placeholder="Alasan reject">
+                                                                Reject
+                                                            </button>
                                                         <?php endif; ?>
                                                         <?php if ($canApprove && $canApprovalAction && $fileId > 0 && $rawStatus === 'APPROVED'): ?>
                                                             <button
@@ -1694,27 +2264,24 @@ if ($canApprove && $canApprovalAction) {
                                                                 <input type="hidden" name="id_doc_file" value="<?= $fileId ?>">
                                                                 <button type="submit" class="btn btn-sm btn-info">Approve Finance</button>
                                                             </form>
-                                                            <button type="button" class="btn btn-sm btn-danger" data-toggle="collapse" data-target="#reject-finance-donation-<?= $fileId ?>">Reject Finance</button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-danger js-open-donation-reject-modal"
+                                                                data-role-guard-exempt="1"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-donation-reject"
+                                                                data-action-url="<?= base_url('Batch_Approval_MyRep/rejectDonationFinanceDocument') ?>"
+                                                                data-processing-text="Rejecting Finance..."
+                                                                data-success-text="Simpan Reject Finance"
+                                                                data-title="Reject Finance Dokumen"
+                                                                data-submit-label="Simpan Reject Finance"
+                                                                data-file-id="<?= $fileId ?>"
+                                                                data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>"
+                                                                data-placeholder="Alasan reject Finance">
+                                                                Reject Finance
+                                                            </button>
                                                         <?php endif; ?>
                                                     </div>
-                                                    <?php if ($canApprove && $canApprovalAction && $fileId > 0 && $rawStatus === 'UPLOADED'): ?>
-                                                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/rejectDonationDocument') ?>" id="reject-donation-<?= $fileId ?>" class="collapse mt-2 donation-action-form js-donation-ajax-form" data-processing-text="Rejecting..." data-success-text="Simpan Reject">
-                                                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                                            <input type="hidden" name="redirect_to_detail" value="1">
-                                                            <input type="hidden" name="id_doc_file" value="<?= $fileId ?>">
-                                                            <textarea name="remark" class="form-control form-control-sm mb-1" rows="2" placeholder="Alasan reject" required></textarea>
-                                                            <button type="submit" class="btn btn-sm btn-danger">Simpan Reject</button>
-                                                        </form>
-                                                    <?php endif; ?>
-                                                    <?php if ($canFinanceApprovalAction && $fileId > 0 && (int) ($row['is_required'] ?? 1) === 1 && $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) !== 'APPROVED'): ?>
-                                                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/rejectDonationFinanceDocument') ?>" id="reject-finance-donation-<?= $fileId ?>" class="collapse mt-2 donation-action-form js-donation-ajax-form" data-processing-text="Rejecting Finance..." data-success-text="Simpan Reject Finance">
-                                                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                                            <input type="hidden" name="redirect_to_detail" value="1">
-                                                            <input type="hidden" name="id_doc_file" value="<?= $fileId ?>">
-                                                            <textarea name="remark" class="form-control form-control-sm mb-1" rows="2" placeholder="Alasan reject Finance" required></textarea>
-                                                            <button type="submit" class="btn btn-sm btn-danger">Simpan Reject Finance</button>
-                                                        </form>
-                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -1728,7 +2295,7 @@ if ($canApprove && $canApprovalAction) {
                                 <div class="modal fade donation-doc-modal" id="modal-bulk-donation-<?= htmlspecialchars($safeGroupKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
                                     <div class="modal-dialog modal-xl" role="document">
                                         <div class="modal-content">
-                                            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadBulkDonationDocuments') ?>" enctype="multipart/form-data" class="js-donation-bulk-upload-form">
+                                            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadBulkDonationDocuments') ?>" enctype="multipart/form-data" class="js-donation-bulk-upload-form" data-role-guard-exempt="1">
                                                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                                 <input type="hidden" name="redirect_to_detail" value="1">
                                                 <input type="hidden" name="group_key" value="<?= htmlspecialchars($groupKey) ?>">
@@ -1764,7 +2331,7 @@ if ($canApprove && $canApprovalAction) {
                                                                         $bulkDocName = (string) ($bulkRow['doc_name'] ?? '-');
                                                                         $bulkRawStatus = strtoupper(trim((string) ($bulkRow['status_file'] ?? '')));
                                                                         $bulkCanNotRequired = strtoupper(trim($bulkDocName)) === 'FORM FREE WIFI & KTP';
-                                                                        $bulkIsImageDoc = strtoupper(trim($bulkDocName)) === 'SCREENSHOT EVIDENCE UPLOAD DRM DI ASTRI';
+                                                                        $bulkIsImageDoc = batchDetailIsImageDonationDoc($bulkDocName);
                                                                         ?>
                                                                         <tr>
                                                                             <td><?= $bulkIndex + 1 ?></td>
@@ -1784,9 +2351,20 @@ if ($canApprove && $canApprovalAction) {
                                                                                 <?php endif; ?>
                                                                             </td>
                                                                             <td>
-                                                                                <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="form-control" <?= $bulkIsImageDoc ? 'accept="image/*"' : '' ?>>
                                                                                 <?php if ($bulkIsImageDoc): ?>
-                                                                                    <div class="text-muted small mt-1">Pilih gambar JPG, JPEG, atau PNG.</div>
+                                                                                    <div class="batch-dropzone js-dropzone batch-dropzone--photo">
+                                                                                        <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="js-dropzone-input" accept="image/*">
+                                                                                        <div class="batch-dropzone-content">
+                                                                                            <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                                                            <div class="batch-dropzone-title">Drop gambar di sini</div>
+                                                                                            <div class="batch-dropzone-text">atau klik area ini untuk pilih gambar</div>
+                                                                                            <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 mb-2">Pilih Gambar</button>
+                                                                                            <div class="batch-dropzone-file js-dropzone-label">Belum ada file dipilih</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="text-muted small mt-1">JPG, JPEG, atau PNG. Maksimal 20 MB.</div>
+                                                                                <?php else: ?>
+                                                                                    <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="form-control">
                                                                                 <?php endif; ?>
                                                                             </td>
                                                                             <td><input type="text" name="bulk_remark_<?= $bulkDocItemId ?>" class="form-control" placeholder="Remark"></td>
@@ -1860,14 +2438,14 @@ if ($canApprove && $canApprovalAction) {
                                                                                 <input type="date" name="astri_submitted_date[<?= $bulkAstriFileId ?>]" id="<?= $bulkAstriDateId ?>" class="form-control js-astri-submitted-date" value="<?= htmlspecialchars($bulkAstriSubmittedDate) ?>" <?= $bulkAstriStatus !== 'NY' ? 'required' : '' ?>>
                                                                             </td>
                                                                             <td>
-                                                                                <select name="astri_status[<?= $bulkAstriFileId ?>]" class="form-control js-astri-status" data-date-input="#<?= $bulkAstriDateId ?>">
+                                                                                <select name="astri_status[<?= $bulkAstriFileId ?>]" class="form-control js-astri-status js-bulk-astri-status" data-date-input="#<?= $bulkAstriDateId ?>" data-remark-input="#bulk_astri_remark_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkAstriFileId ?>">
                                                                                     <?php foreach (['NY', 'ON REVIEW', 'APPROVED', 'REJECTED'] as $astriOption): ?>
                                                                                         <option value="<?= $astriOption ?>" <?= $bulkAstriStatus === $astriOption ? 'selected' : '' ?>><?= $astriOption ?></option>
                                                                                     <?php endforeach; ?>
                                                                                 </select>
                                                                             </td>
                                                                             <td><input type="date" name="astri_approved_date[<?= $bulkAstriFileId ?>]" class="form-control" value="<?= htmlspecialchars($bulkAstriApprovedDate) ?>"></td>
-                                                                            <td><textarea name="astri_remark[<?= $bulkAstriFileId ?>]" class="form-control" rows="2" placeholder="Remark Astri"><?= htmlspecialchars((string) ($bulkAstriRow['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea></td>
+                                                                            <td><textarea name="astri_remark[<?= $bulkAstriFileId ?>]" id="bulk_astri_remark_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkAstriFileId ?>" class="form-control js-bulk-astri-remark" rows="2" placeholder="Remark Astri"><?= htmlspecialchars((string) ($bulkAstriRow['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea></td>
                                                                         </tr>
                                                                     <?php endforeach; ?>
                                                                 </tbody>
@@ -1888,8 +2466,8 @@ if ($canApprove && $canApprovalAction) {
                     </div>
                     <?php
                 };
-                $renderDonationDocumentTable('9 Dokumen Pra-Finance Zeyn', 'PRE_ZEYN', (array) ($preZeynDocumentRows ?? []));
-                $renderDonationDocumentTable('6 Dokumen Setelah Pembayaran', 'POST_ZEYN', (array) ($postZeynDocumentRows ?? []));
+                $renderDonationDocumentTable('Dokumen Tahap 1 Pra-Finance Zeyn', 'PRE_ZEYN', (array) ($preZeynDocumentRows ?? []));
+                $renderDonationDocumentTable('Dokumen Tahap 2 Setelah Pembayaran', 'POST_ZEYN', (array) ($postZeynDocumentRows ?? []));
                 ?>
             <?php endif; ?>
 
@@ -1913,8 +2491,8 @@ if ($canApprove && $canApprovalAction) {
                                     </button>
                                 </form>
                             <?php endif; ?>
-                            <?php if ($postDonasiDocReady && $canTambah && !empty($postDonasiUploadableRows)): ?>
-                                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-post-bulk-upload">
+                            <?php if ($postDonasiDocReady && $canDonationUpload && !empty($postDonasiUploadableRows)): ?>
+                                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-post-bulk-upload" data-role-guard-exempt="1">
                                     Bulk Upload 12 Dokumen
                                 </button>
                             <?php endif; ?>
@@ -1942,7 +2520,7 @@ if ($canApprove && $canApprovalAction) {
                                         <?php
                                         $postStatus = batchDetailDocumentLabel($row);
                                         $postRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
-                                        $postCanUpload = $canTambah && (in_array($postStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postRawStatus === 'REJECTED');
+                                        $postCanUpload = $canDonationUpload && (in_array($postStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postRawStatus === 'REJECTED');
                                         $postCanReview = $canApprove && $canApprovalAction && (
                                             (!empty($row['id_doc_file']) && $postRawStatus === 'UPLOADED')
                                             || ($postStatus === 'LINKED DOKUMENT' && !empty($row['linked_source_file_id']))
@@ -1955,7 +2533,7 @@ if ($canApprove && $canApprovalAction) {
                                             <td>
                                                 <?php if (!empty($row['file_name'])): ?>
                                                     <a href="<?= base_url('Post_Donasi_MyRep/previewDocument/' . (int) $row['id_doc_file']) ?>" target="_blank" class="donation-file-link">
-                                                        <?= htmlspecialchars((string) $row['file_name']) ?>
+                                                        <?= htmlspecialchars(batchDetailShortFileName((string) $row['file_name'])) ?>
                                                     </a>
                                                     <div class="donation-file-actions">
                                                         <a href="<?= base_url('Post_Donasi_MyRep/downloadDocument/' . (int) $row['id_doc_file']) ?>" class="btn btn-sm btn-outline-primary">
@@ -1978,23 +2556,26 @@ if ($canApprove && $canApprovalAction) {
                                                     <div class="small text-primary mt-2">
                                                         Referensi otomatis: <?= htmlspecialchars((string) ($row['linked_source_doc_name'] ?? '-')) ?> (<?= htmlspecialchars((string) ($row['linked_source_flow_type'] ?? '-')) ?>)
                                                     </div>
-                                                    <div class="small text-muted"><?= htmlspecialchars((string) ($row['linked_source_file_name'] ?? '-')) ?></div>
-                                                    <a href="<?= base_url((string) $row['linked_source_preview_path']) ?>" target="_blank" class="btn btn-sm btn-outline-info mt-1">Lihat Referensi</a>
+                                                    <a href="<?= base_url((string) $row['linked_source_preview_path']) ?>" target="_blank" class="btn btn-sm btn-outline-info mt-1">
+                                                        Lihat Referensi -&gt;
+                                                    </a>
                                                 <?php endif; ?>
                                             </td>
                                             <td style="min-width:220px;">
                                                 <?php if ($postCanUpload): ?>
-                                                    <button
-                                                        type="button"
+                                                    <a
+                                                        href="#modal-post-upload"
+                                                        role="button"
                                                         class="btn btn-sm btn-primary js-open-post-upload-modal"
                                                         data-toggle="modal"
                                                         data-target="#modal-post-upload"
+                                                        data-role-guard-exempt="1"
                                                         data-doc-item-id="<?= (int) $row['id_doc_item'] ?>"
                                                         data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
                                                         data-file-name="<?= htmlspecialchars((string) ($row['file_name'] ?? ''), ENT_QUOTES) ?>"
                                                         data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
                                                         Upload
-                                                    </button>
+                                                    </a>
                                                 <?php else: ?>
                                                     <span class="text-muted small">Upload tidak tersedia</span>
                                                 <?php endif; ?>
@@ -2078,8 +2659,8 @@ if ($canApprove && $canApprovalAction) {
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Data Pengajuan</div>
                         <div class="row">
-                            <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="detail_edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['homepass_valsal'] ?? null) ? htmlspecialchars(number_format((float) $cluster['homepass_valsal'], 0, ',', '.')) : '' ?>" readonly></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['hp_donasi'] ?? null) ? htmlspecialchars(number_format((float) $cluster['hp_donasi'], 0, ',', '.')) : '' ?>" required></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>HP VALSAL Astri</label><input type="text" id="detail_edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['homepass_valsal'] ?? null) ? htmlspecialchars(number_format((float) $cluster['homepass_valsal'], 0, ',', '.')) : '' ?>" readonly></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>HP Donasi Astri</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['hp_donasi'] ?? null) ? htmlspecialchars(number_format((float) $cluster['hp_donasi'], 0, ',', '.')) : '' ?>" required></div></div>
                             <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan</label><input type="date" name="submission_date" id="detail_edit_submission_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['submission_date'] ?? '')) ?>"></div></div>
                             <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="detail_edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= strtoupper((string) ($cluster['staging_status'] ?? '')) === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" required></div></div>
@@ -2248,10 +2829,11 @@ if ($canApprove && $canApprovalAction) {
 <div class="modal fade donation-doc-modal" id="modal-donation-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadDonationDocument') ?>" enctype="multipart/form-data" id="donation-upload-form">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadDonationDocument') ?>" enctype="multipart/form-data" id="donation-upload-form" data-role-guard-exempt="1">
                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                 <input type="hidden" name="redirect_to_detail" value="1">
                 <input type="hidden" name="id_doc_item" id="donation_upload_doc_item_id">
+                <input type="hidden" name="group_key" id="donation_upload_group_key">
                 <input type="hidden" name="replace_file" id="donation_upload_replace_file" value="0">
                 <div class="modal-header">
                     <div>
@@ -2300,7 +2882,37 @@ if ($canApprove && $canApprovalAction) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                    <button type="submit" class="btn btn-success" id="donation_upload_submit">Upload Dokumen</button>
+                    <button type="submit" class="btn btn-success" id="donation_upload_submit" data-role-guard-exempt="1">Upload Dokumen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade donation-doc-modal" id="modal-donation-reject" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="#" id="donation-reject-form" class="js-donation-ajax-form" data-processing-text="Rejecting..." data-success-text="Simpan Reject" data-role-guard-exempt="1">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <input type="hidden" name="redirect_to_detail" value="1">
+                <input type="hidden" name="id_doc_file" id="donation_reject_file_id">
+                <div class="modal-header" style="background: linear-gradient(135deg, #dc3545, #7f1d1d);">
+                    <div>
+                        <h4 class="modal-title mb-1" id="donation_reject_title">Reject Dokumen</h4>
+                        <p class="mb-0" style="opacity:.9;" id="donation_reject_doc_name">-</p>
+                    </div>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="donation-doc-modal-panel mb-0">
+                        <label class="font-weight-bold">Remark Reject</label>
+                        <textarea name="remark" id="donation_reject_remark" class="form-control" rows="4" placeholder="Alasan reject" required></textarea>
+                        <small class="form-text text-muted">Remark wajib diisi agar area tahu dokumen mana yang perlu direvisi.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-danger" id="donation_reject_submit">Simpan Reject</button>
                 </div>
             </form>
         </div>
@@ -2311,7 +2923,7 @@ if ($canApprove && $canApprovalAction) {
 <div class="modal fade" id="modal-batch-rar" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content batch-modal">
-            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadDocument') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadDocument') ?>" enctype="multipart/form-data" data-role-guard-exempt="1">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="redirect_to_detail" value="1">
                 <div class="modal-header bg-primary text-white">
@@ -2510,7 +3122,7 @@ if ($canApprove && $canApprovalAction) {
 <div class="modal fade" id="modal-post-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content batch-modal">
-            <form method="post" action="<?= base_url('Post_Donasi_MyRep/uploadDocument') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('Post_Donasi_MyRep/uploadDocument') ?>" enctype="multipart/form-data" data-role-guard-exempt="1">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="id_doc_item" id="post_upload_doc_item_id">
                 <input type="hidden" name="redirect_to_batch_detail" value="1">
@@ -2550,7 +3162,7 @@ if ($canApprove && $canApprovalAction) {
 <div class="modal fade" id="modal-post-bulk-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content batch-modal">
-            <form method="post" action="<?= base_url('Post_Donasi_MyRep/uploadBulkDocuments') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('Post_Donasi_MyRep/uploadBulkDocuments') ?>" enctype="multipart/form-data" data-role-guard-exempt="1">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="redirect_to_batch_detail" value="1">
                 <div class="modal-header bg-primary text-white">
@@ -3116,8 +3728,134 @@ if ($canApprove && $canApprovalAction) {
         }
 
         function cleanupBatchModalBackdrop() {
+            if ($('.modal.show').length > 0) {
+                return;
+            }
+
             $('body').removeClass('modal-open').css('padding-right', '');
             $('.modal-backdrop').remove();
+            if (!donationPhotoLightbox || !donationPhotoLightbox.classList.contains('is-open')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        function restoreDonationUploadButtons() {
+            $('.js-open-donation-upload-modal, #donation_upload_submit')
+                .removeClass('role-action-disabled')
+                .removeAttr('aria-disabled title')
+                .css({
+                    'pointer-events': '',
+                    'opacity': '',
+                    'cursor': ''
+                })
+                .prop('disabled', false)
+                .data('roleBlocked', 0);
+        }
+
+        function ensureDonationUploadModalExists() {
+            if ($('#modal-donation-upload').length) {
+                return;
+            }
+
+            batchUploadDebug('modal missing, append fallback single donation upload modal', {});
+            $('body').append(
+                '<div class="modal fade donation-doc-modal" id="modal-donation-upload" tabindex="-1" role="dialog" aria-hidden="true">' +
+                    '<div class="modal-dialog" role="document">' +
+                        '<div class="modal-content">' +
+                            '<form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadDonationDocument') ?>" enctype="multipart/form-data" id="donation-upload-form" data-role-guard-exempt="1">' +
+                                '<input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">' +
+                                '<input type="hidden" name="redirect_to_detail" value="1">' +
+                                '<input type="hidden" name="id_doc_item" id="donation_upload_doc_item_id">' +
+                                '<input type="hidden" name="group_key" id="donation_upload_group_key">' +
+                                '<input type="hidden" name="replace_file" id="donation_upload_replace_file" value="0">' +
+                                '<div class="modal-header">' +
+                                    '<div>' +
+                                        '<h4 class="modal-title mb-1">Upload Dokumen</h4>' +
+                                        '<p class="mb-0" style="opacity:.9;">Pilih satu file untuk item dokumen donasi yang sedang aktif.</p>' +
+                                    '</div>' +
+                                    '<button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>' +
+                                '</div>' +
+                                '<div class="modal-body">' +
+                                    '<div class="donation-doc-highlight">' +
+                                        '<div class="donation-doc-highlight-title" id="donation_upload_doc_name">-</div>' +
+                                        '<p class="donation-doc-highlight-note" id="donation_upload_doc_note">File yang diupload akan masuk ke dokumen ini dan menggantikan file sebelumnya jika sudah ada.</p>' +
+                                    '</div>' +
+                                    '<div class="alert alert-warning py-2 px-3 small d-none" id="donation_upload_replace_note">Replace file akan mengubah status menjadi ON REVIEW.</div>' +
+                                    '<div class="donation-doc-modal-panel">' +
+                                        '<div class="form-group mb-0">' +
+                                            '<label class="font-weight-bold" id="donation_upload_file_label">Pilih File</label>' +
+                                            '<div class="batch-dropzone js-dropzone" id="donation_upload_dropzone">' +
+                                                '<input type="file" name="file" id="donation_upload_file" class="js-dropzone-input" required>' +
+                                                '<div class="batch-dropzone-content">' +
+                                                    '<div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>' +
+                                                    '<div class="batch-dropzone-title" id="donation_upload_dropzone_title">Drag & drop file di sini</div>' +
+                                                    '<div class="batch-dropzone-text" id="donation_upload_dropzone_text">atau klik area ini untuk memilih file dari perangkat</div>' +
+                                                    '<button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 mb-2" id="donation_upload_choose_label">Pilih File</button>' +
+                                                    '<div class="batch-dropzone-file js-dropzone-label" id="donation_upload_file_name">Belum ada file dipilih</div>' +
+                                                '</div>' +
+                                            '</div>' +
+                                            '<small class="form-text text-muted" id="donation_upload_file_hint">Format mengikuti jenis dokumen. Maksimal dokumen 20 MB.</small>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="donation-doc-modal-panel" id="donation_upload_not_required_panel">' +
+                                        '<div class="form-group mb-0">' +
+                                            '<div class="custom-control custom-checkbox">' +
+                                                '<input type="checkbox" class="custom-control-input" id="donation_upload_not_required" name="is_document_not_required" value="1">' +
+                                                '<label class="custom-control-label font-weight-bold" for="donation_upload_not_required">Tidak dibutuhkan dokumen</label>' +
+                                            '</div>' +
+                                            '<small class="form-text text-muted">Jika dicentang, item tetap dihitung submitted dan tetap melalui proses reject/approve HO.</small>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="donation-doc-modal-panel">' +
+                                        '<div class="form-group mb-0">' +
+                                            '<label class="font-weight-bold">Remark</label>' +
+                                            '<textarea name="remark" id="donation_upload_remark" class="form-control" rows="3" placeholder="Tambahkan catatan singkat jika diperlukan"></textarea>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="modal-footer">' +
+                                    '<button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>' +
+                                    '<button type="submit" class="btn btn-success" id="donation_upload_submit" data-role-guard-exempt="1">Upload Dokumen</button>' +
+                                '</div>' +
+                            '</form>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>'
+            );
+            bindDropzones();
+            restoreDonationUploadButtons();
+        }
+
+        function prepareDonationUploadModal(buttonEl) {
+            ensureDonationUploadModalExists();
+            var $button = $(buttonEl);
+            var isReplace = String($button.data('replace-file')) === '1';
+            var canNotRequired = String($button.data('can-not-required')) === '1';
+            var isImageDoc = String($button.data('is-image-doc')) === '1';
+            var currentFile = $button.data('file-name') || '';
+
+            $('#donation_upload_doc_item_id').val($button.data('doc-item-id') || '');
+            $('#donation_upload_group_key').val($button.data('group-key') || '');
+            $('#donation_upload_replace_file').val(isReplace ? '1' : '0');
+            $('#donation_upload_doc_name').text($button.data('doc-name') || '-');
+            $('#donation_upload_doc_note').text(
+                currentFile
+                    ? 'File yang diupload akan masuk ke dokumen ini dan menggantikan file "' + currentFile + '".'
+                    : 'File yang diupload akan masuk ke dokumen ini dan menggantikan file sebelumnya jika sudah ada.'
+            );
+            $('#donation_upload_replace_note').toggleClass('d-none', !isReplace);
+            $('#donation_upload_remark').val($button.data('remark') || '');
+            $('#donation_upload_file').val('').prop('disabled', false).prop('required', true).attr('accept', isImageDoc ? 'image/*' : '');
+            $('#donation_upload_file_label').text(isImageDoc ? 'Foto Claim' : 'Pilih File');
+            $('#donation_upload_dropzone').toggleClass('batch-dropzone--photo', isImageDoc);
+            $('#donation_upload_dropzone_title').text(isImageDoc ? 'Drop foto claim di sini' : 'Drag & drop file di sini');
+            $('#donation_upload_dropzone_text').text(isImageDoc ? 'atau klik area ini untuk pilih file gambar' : 'atau klik area ini untuk memilih file dari perangkat');
+            $('#donation_upload_choose_label').text(isImageDoc ? 'Pilih Foto' : 'Pilih File');
+            $('#donation_upload_file_hint').text(isImageDoc ? 'Format gambar yang didukung: JPG, JPEG, PNG. Maksimal dokumen 20 MB.' : 'Format mengikuti jenis dokumen. Maksimal dokumen 20 MB.');
+            $('#donation_upload_file_name').text('Belum ada file dipilih');
+            $('#donation_upload_not_required').prop('checked', false);
+            $('#donation_upload_not_required_panel').toggle(canNotRequired);
+            $('#donation_upload_submit').removeClass('btn-warning').addClass('btn-success').text(isReplace ? 'Replace File' : 'Upload Dokumen');
         }
 
         function softRefreshBatchDetail(url, scrollTop) {
@@ -3137,7 +3875,12 @@ if ($canApprove && $canApprovalAction) {
 
                 currentContent.html(freshContent.html());
                 bindDropzones();
+                closeDonationPhotoLightbox();
+                cleanupBatchModalBackdrop();
+                restoreDonationUploadButtons();
                 window.setTimeout(function () {
+                    cleanupBatchModalBackdrop();
+                    restoreDonationUploadButtons();
                     window.scrollTo(0, scrollTop || 0);
                 }, 50);
             }).fail(function () {
@@ -3161,9 +3904,79 @@ if ($canApprove && $canApprovalAction) {
             return false;
         }
 
+        function batchUploadDebug(eventName, payload) {
+            if (!window.console || typeof window.console.log !== 'function') {
+                return;
+            }
+            window.console.log('[Batch Approval Upload Debug] ' + eventName, payload || {});
+        }
+
         $(function () {
             bindDropzones();
             initDonationPhotoDrag(donationPhotoStage);
+            cleanupBatchModalBackdrop();
+            restoreDonationUploadButtons();
+            window.setTimeout(restoreDonationUploadButtons, 150);
+            window.setTimeout(restoreDonationUploadButtons, 600);
+
+            $(document).on('hidden.bs.modal', '.modal', function () {
+                window.setTimeout(cleanupBatchModalBackdrop, 25);
+                window.setTimeout(restoreDonationUploadButtons, 25);
+            });
+
+            $(document).on('show.bs.modal', '.modal', function () {
+                closeDonationPhotoLightbox();
+                $('.modal-backdrop').not(':last').remove();
+            });
+
+            $(window).on('pageshow focus', function () {
+                window.setTimeout(cleanupBatchModalBackdrop, 25);
+                window.setTimeout(restoreDonationUploadButtons, 25);
+            });
+
+            document.addEventListener('click', function (event) {
+                var actionCellEl = event.target && event.target.closest ? event.target.closest('.donation-action-stack') : null;
+                if (actionCellEl) {
+                    batchUploadDebug('capture click donation action stack', {
+                        targetTag: event.target && event.target.tagName,
+                        targetClass: event.target && event.target.className,
+                        targetText: event.target && event.target.textContent ? String(event.target.textContent).trim().slice(0, 80) : '',
+                        stackText: actionCellEl.textContent ? String(actionCellEl.textContent).trim().replace(/\s+/g, ' ').slice(0, 160) : ''
+                    });
+                }
+
+                var buttonEl = event.target && event.target.closest ? event.target.closest('.js-open-donation-upload-modal') : null;
+                if (!buttonEl) {
+                    return;
+                }
+
+                batchUploadDebug('capture click single donation upload', {
+                    tag: buttonEl.tagName,
+                    className: buttonEl.className,
+                    docItemId: buttonEl.getAttribute('data-doc-item-id'),
+                    groupKey: buttonEl.getAttribute('data-group-key'),
+                    docName: buttonEl.getAttribute('data-doc-name'),
+                    replaceFile: buttonEl.getAttribute('data-replace-file'),
+                    href: buttonEl.getAttribute('href'),
+                    roleBlocked: $(buttonEl).data('roleBlocked'),
+                    ariaDisabled: buttonEl.getAttribute('aria-disabled'),
+                    pointerEvents: $(buttonEl).css('pointer-events')
+                });
+                event.preventDefault();
+                event.stopPropagation();
+                if (event.stopImmediatePropagation) {
+                    event.stopImmediatePropagation();
+                }
+                restoreDonationUploadButtons();
+                prepareDonationUploadModal(buttonEl);
+                $('#modal-donation-upload').modal('show');
+                batchUploadDebug('modal show requested single donation upload', {
+                    modalExists: $('#modal-donation-upload').length,
+                    modalVisible: $('#modal-donation-upload').is(':visible'),
+                    hiddenDocItemId: $('#donation_upload_doc_item_id').val(),
+                    hiddenGroupKey: $('#donation_upload_group_key').val()
+                });
+            }, true);
 
             if (donationPhotoImage) {
                 donationPhotoImage.addEventListener('load', function () {
@@ -3231,7 +4044,7 @@ if ($canApprove && $canApprovalAction) {
                 var html = '';
                 history.forEach(function (entry) {
                     html += '<li class="doc-history-item">' +
-                        '<div class="doc-history-title">' + escapeHtml(entry.action_type || '-') + '</div>' +
+                        '<div class="doc-history-title">' + escapeHtml(formatDocHistoryAction(entry)) + '</div>' +
                         '<div class="doc-history-meta">' + escapeHtml(entry.action_at || '-') + ' | ' + escapeHtml(entry.nama_user || 'System') + '</div>' +
                         '<div><strong>File:</strong> ' + escapeHtml(entry.file_name || '-') + '</div>' +
                         '<div><strong>Remark:</strong> ' + escapeHtml(entry.remark || '-') + '</div>' +
@@ -3244,14 +4057,49 @@ if ($canApprove && $canApprovalAction) {
             function syncAstriDateRequirement($statusSelect) {
                 var status = String($statusSelect.val() || 'NY').toUpperCase();
                 var $dateInput = $($statusSelect.data('date-input'));
-                if (!$dateInput.length) {
-                    return;
+                var $remarkInput = $($statusSelect.data('remark-input'));
+
+                if ($dateInput.length) {
+                    $dateInput.prop('required', status !== 'NY');
+                    if (status !== 'NY' && !$dateInput.val()) {
+                        $dateInput.val(new Date().toISOString().slice(0, 10));
+                    }
                 }
 
-                $dateInput.prop('required', status !== 'NY');
-                if (status !== 'NY' && !$dateInput.val()) {
-                    $dateInput.val(new Date().toISOString().slice(0, 10));
+                if ($remarkInput.length) {
+                    $remarkInput.prop('required', status === 'REJECTED');
                 }
+            }
+
+            function validateBulkAstriRejectedRemarks($form) {
+                var invalidRemark = null;
+                $form.find('.js-bulk-astri-status').each(function () {
+                    var $status = $(this);
+                    var status = String($status.val() || '').toUpperCase();
+                    var $remark = $($status.data('remark-input'));
+                    if (status === 'REJECTED' && $remark.length && !$.trim($remark.val())) {
+                        invalidRemark = $remark;
+                        return false;
+                    }
+                });
+
+                if (!invalidRemark) {
+                    return true;
+                }
+
+                alert('Remark Astri wajib diisi jika status dokumen rejected.');
+                invalidRemark.focus();
+                return false;
+            }
+
+            function formatDocHistoryAction(entry) {
+                var actionType = String((entry && entry.action_type) || '').trim();
+                var statusAfter = String((entry && entry.status_after) || '').trim();
+                if (!actionType && statusAfter) {
+                    actionType = 'ASTRI_' + statusAfter.replace(/\s+/g, '_');
+                }
+
+                return actionType ? actionType.replace(/_/g, ' ') : '-';
             }
 
             $(document).on('click', '.js-open-donation-astri-modal', function () {
@@ -3266,6 +4114,9 @@ if ($canApprove && $canApprovalAction) {
             });
 
             $(document).on('change', '.js-astri-status', function () {
+                syncAstriDateRequirement($(this));
+            });
+            $('.js-astri-status').each(function () {
                 syncAstriDateRequirement($(this));
             });
 
@@ -3300,36 +4151,17 @@ if ($canApprove && $canApprovalAction) {
             });
 
             $(document).on('click', '.js-open-donation-upload-modal', function () {
-                var $button = $(this);
-                var isReplace = String($button.data('replace-file')) === '1';
-                var canNotRequired = String($button.data('can-not-required')) === '1';
-                var isImageDoc = String($button.data('is-image-doc')) === '1';
-                var currentFile = $button.data('file-name') || '';
-
-                $('#donation_upload_doc_item_id').val($button.data('doc-item-id') || '');
-                $('#donation_upload_replace_file').val(isReplace ? '1' : '0');
-                $('#donation_upload_doc_name').text($button.data('doc-name') || '-');
-                $('#donation_upload_doc_note').text(
-                    currentFile
-                        ? 'File yang diupload akan masuk ke dokumen ini dan menggantikan file "' + currentFile + '".'
-                        : 'File yang diupload akan masuk ke dokumen ini dan menggantikan file sebelumnya jika sudah ada.'
-                );
-                $('#donation_upload_replace_note').toggleClass('d-none', !isReplace);
-                $('#donation_upload_remark').val($button.data('remark') || '');
-                $('#donation_upload_file').val('').prop('disabled', false).prop('required', true).attr('accept', isImageDoc ? 'image/*' : '');
-                $('#donation_upload_file_label').text(isImageDoc ? 'Foto Claim' : 'Pilih File');
-                $('#donation_upload_dropzone').toggleClass('batch-dropzone--photo', isImageDoc);
-                $('#donation_upload_dropzone_title').text(isImageDoc ? 'Drop foto claim di sini' : 'Drag & drop file di sini');
-                $('#donation_upload_dropzone_text').text(isImageDoc ? 'atau klik area ini untuk pilih file gambar' : 'atau klik area ini untuk memilih file dari perangkat');
-                $('#donation_upload_choose_label').text(isImageDoc ? 'Pilih Foto' : 'Pilih File');
-                $('#donation_upload_file_hint').text(isImageDoc ? 'Format gambar yang didukung: JPG, JPEG, PNG. Maksimal dokumen 20 MB.' : 'Format mengikuti jenis dokumen. Maksimal dokumen 20 MB.');
-                $('#donation_upload_file_name').text('Belum ada file dipilih');
-                $('#donation_upload_not_required').prop('checked', false);
-                $('#donation_upload_not_required_panel').toggle(canNotRequired);
-                $('#donation_upload_submit').removeClass('btn-warning').addClass('btn-success').text(isReplace ? 'Replace File' : 'Upload Dokumen');
+                batchUploadDebug('delegated click single donation upload', {
+                    docItemId: $(this).data('doc-item-id'),
+                    groupKey: $(this).data('group-key'),
+                    docName: $(this).data('doc-name'),
+                    replaceFile: $(this).data('replace-file')
+                });
+                prepareDonationUploadModal(this);
+                $('#modal-donation-upload').modal('show');
             });
 
-            $('#donation_upload_not_required').on('change', function () {
+            $(document).on('change', '#donation_upload_not_required', function () {
                 var checked = $(this).is(':checked');
                 $('#donation_upload_file').prop('disabled', checked).prop('required', !checked);
                 if (checked) {
@@ -3358,6 +4190,14 @@ if ($canApprove && $canApprovalAction) {
                 var originalText = $submitButton.text();
                 var scrollTop = currentBatchDetailScrollTop();
 
+                batchUploadDebug('submit single donation upload', {
+                    action: $form.attr('action'),
+                    docItemId: $('#donation_upload_doc_item_id').val(),
+                    groupKey: $('#donation_upload_group_key').val(),
+                    replaceFile: $('#donation_upload_replace_file').val(),
+                    fileSelected: !!($('#donation_upload_file')[0] && $('#donation_upload_file')[0].files && $('#donation_upload_file')[0].files.length),
+                    notRequired: $('#donation_upload_not_required').is(':checked')
+                });
                 $submitButton.prop('disabled', true).text('Uploading...');
                 $.ajax({
                     url: $form.attr('action'),
@@ -3370,11 +4210,16 @@ if ($canApprove && $canApprovalAction) {
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function (response) {
+                        batchUploadDebug('response single donation upload', response);
                         handleBatchAjaxResponse(response, 'Dokumen berhasil diupload.', scrollTop, function () {
                             $submitButton.prop('disabled', false).text(originalText);
                         });
                     },
-                    error: function () {
+                    error: function (xhr) {
+                        batchUploadDebug('error single donation upload', {
+                            status: xhr && xhr.status,
+                            responseText: xhr && xhr.responseText ? String(xhr.responseText).slice(0, 500) : ''
+                        });
                         alert('Upload gagal. Silakan coba lagi.');
                         $submitButton.prop('disabled', false).text(originalText);
                     }
@@ -3390,6 +4235,10 @@ if ($canApprove && $canApprovalAction) {
                 var originalText = $submitButton.text();
                 var scrollTop = currentBatchDetailScrollTop();
 
+                batchUploadDebug('submit bulk donation upload', {
+                    action: $form.attr('action'),
+                    groupKey: $form.find('input[name="group_key"]').val()
+                });
                 $submitButton.prop('disabled', true).text('Uploading...');
                 $.ajax({
                     url: $form.attr('action'),
@@ -3402,11 +4251,16 @@ if ($canApprove && $canApprovalAction) {
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function (response) {
+                        batchUploadDebug('response bulk donation upload', response);
                         handleBatchAjaxResponse(response, 'Bulk upload berhasil.', scrollTop, function () {
                             $submitButton.prop('disabled', false).text(originalText);
                         });
                     },
-                    error: function () {
+                    error: function (xhr) {
+                        batchUploadDebug('error bulk donation upload', {
+                            status: xhr && xhr.status,
+                            responseText: xhr && xhr.responseText ? String(xhr.responseText).slice(0, 500) : ''
+                        });
                         alert('Bulk upload gagal. Silakan coba lagi.');
                         $submitButton.prop('disabled', false).text(originalText);
                     }
@@ -3421,6 +4275,16 @@ if ($canApprove && $canApprovalAction) {
                 var originalText = $submitButton.text();
                 var processingText = $form.data('processing-text') || 'Memproses...';
                 var scrollTop = currentBatchDetailScrollTop();
+                var $rejectRemark = $form.is('#donation-reject-form') ? $form.find('[name="remark"]') : $();
+
+                if ($rejectRemark.length && !$.trim($rejectRemark.val())) {
+                    alert('Remark reject wajib diisi.');
+                    $rejectRemark.focus();
+                    return;
+                }
+                if ($form.find('.js-bulk-astri-status').length && !validateBulkAstriRejectedRemarks($form)) {
+                    return;
+                }
 
                 $submitButton.prop('disabled', true).text(processingText);
                 $.ajax({
@@ -3445,6 +4309,11 @@ if ($canApprove && $canApprovalAction) {
 
             $(document).on('click', '.js-open-post-upload-modal', function () {
                 var $button = $(this);
+                batchUploadDebug('click post donation upload', {
+                    docItemId: $button.data('doc-item-id'),
+                    docName: $button.data('doc-name'),
+                    fileName: $button.data('file-name')
+                });
                 $('#post_upload_doc_item_id').val($button.data('doc-item-id'));
                 $('#post_upload_doc_name').text($button.data('doc-name') || '-');
                 $('#post_upload_file_name').text($button.data('file-name') || '-');
@@ -3452,11 +4321,41 @@ if ($canApprove && $canApprovalAction) {
                 $('#post_upload_not_required').prop('checked', false);
             });
 
+            $(document).on('click', '.js-open-donation-reject-modal', function () {
+                var $button = $(this);
+                var actionUrl = $button.data('action-url') || '#';
+                var processingText = $button.data('processing-text') || 'Rejecting...';
+                var successText = $button.data('success-text') || 'Simpan Reject';
+                var submitLabel = $button.data('submit-label') || successText;
+
+                $('#donation-reject-form')
+                    .attr('action', actionUrl)
+                    .data('processing-text', processingText)
+                    .data('success-text', successText);
+                $('#donation_reject_file_id').val($button.data('file-id') || '');
+                $('#donation_reject_title').text($button.data('title') || 'Reject Dokumen');
+                $('#donation_reject_doc_name').text($button.data('doc-name') || '-');
+                $('#donation_reject_remark')
+                    .val('')
+                    .attr('placeholder', $button.data('placeholder') || 'Alasan reject');
+                $('#donation_reject_submit').text(submitLabel);
+            });
+
+            $(document).on('shown.bs.modal', '#modal-donation-reject', function () {
+                $('#donation_reject_remark').trigger('focus');
+            });
+
             $(document).on('click', '.js-open-batch-rar-modal', function () {
                 var $button = $(this);
                 var path = $button.data('file-path') || '';
                 var canUpload = String($button.data('can-upload')) === '1';
 
+                batchUploadDebug('click batch rar upload modal', {
+                    canUpload: canUpload,
+                    statusLabel: $button.data('status-label'),
+                    fileName: $button.data('file-name'),
+                    filePath: path
+                });
                 $('#batch_rar_status_label').text($button.data('status-label') || '-');
                 $('#batch_rar_current_file').text($button.data('file-name') || '-');
                 $('#batch_rar_remark').val($button.data('remark') || '');
@@ -3482,4 +4381,3 @@ if ($canApprove && $canApprovalAction) {
         });
     })();
 </script>
-

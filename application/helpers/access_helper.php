@@ -573,6 +573,7 @@ if (!function_exists('has_myrep_role_page_access')) {
             'ATP_HO' => 'atp_ho',
             'RFS_HO' => 'rfs_ho',
             'SITAC_HO' => 'sitac_ho',
+            'FINANCE_HO' => 'finance_ho',
             'DC_HO' => 'dc_ho',
             'QA_HO' => 'qa_ho',
         ];
