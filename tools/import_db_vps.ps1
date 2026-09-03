@@ -101,6 +101,55 @@ function New-ProtectedSshPrivateKeyCopy {
     return $tempKeyPath
 }
 
+function Quote-ProcessArgument {
+    param([string] $Value)
+    if ($Value -notmatch '[\s"]') {
+        return $Value
+    }
+    return '"' + ($Value -replace '\\(?=\\*")', '$0$0' -replace '"', '\"') + '"'
+}
+
+function Quote-BashSingleQuoted {
+    param([string] $Value)
+    return "'" + ($Value -replace "'", "'\''") + "'"
+}
+
+function Invoke-ProcessOutputToFile {
+    param(
+        [string] $FilePath,
+        [string[]] $Arguments,
+        [string] $OutputFile
+    )
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $FilePath
+    $startInfo.Arguments = ($Arguments | ForEach-Object { Quote-ProcessArgument $_ }) -join " "
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    [void] $process.Start()
+
+    $outputStream = [System.IO.File]::Create($OutputFile)
+    try {
+        $process.StandardOutput.BaseStream.CopyTo($outputStream)
+    }
+    finally {
+        $outputStream.Close()
+    }
+
+    $stderr = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+
+    if ($stderr.Trim() -ne "") {
+        Write-Host $stderr.Trim()
+    }
+
+    return $process.ExitCode
+}
+
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $envPath = Join-Path $repoRoot ".env"
 $env = Read-DotEnv $envPath
@@ -174,6 +223,10 @@ $sshArgs = @(
     "-o", "UserKnownHostsFile=$knownHostsFullPath",
     "-o", "StrictHostKeyChecking=yes",
     "-o", "BatchMode=yes",
+    "-o", "ServerAliveInterval=30",
+    "-o", "ServerAliveCountMax=6",
+    "-o", "ConnectTimeout=30",
+    "-C",
     "$RemoteUser@$RemoteHost"
 )
 
@@ -207,9 +260,13 @@ if ($remoteDumpPath -eq "") {
 }
 
 Write-Host "[2/6] Download dump ke $localDumpPath..."
-& scp -i $sshKeyPath -o "UserKnownHostsFile=$knownHostsFullPath" -o "StrictHostKeyChecking=yes" -o "BatchMode=yes" "${RemoteUser}@${RemoteHost}:$remoteDumpPath" $localDumpPath
-if ($LASTEXITCODE -ne 0) {
-    throw "Gagal download dump dari VPS."
+$downloadCommand = "cat " + (Quote-BashSingleQuoted $remoteDumpPath)
+$downloadExitCode = Invoke-ProcessOutputToFile "ssh" ($sshArgs + @($downloadCommand)) $localDumpPath
+if ($downloadExitCode -ne 0) {
+    throw "Gagal download dump dari VPS via SSH stream."
+}
+if (!(Test-Path -LiteralPath $localDumpPath) -or ((Get-Item -LiteralPath $localDumpPath).Length -le 0)) {
+    throw "Dump dari VPS kosong setelah download."
 }
 
 Write-Host "[3/6] Normalize dump untuk MariaDB XAMPP..."
