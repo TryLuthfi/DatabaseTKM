@@ -31,6 +31,12 @@ class Myrep_reject_email_service
             return false;
         }
 
+        foreach (['doc_name', 'file_name', 'remark', 'submitter_user_id', 'rejecter_user_id', 'rejected_at', 'detail_url'] as $overrideKey) {
+            if (array_key_exists($overrideKey, $options)) {
+                $context[$overrideKey] = $options[$overrideKey];
+            }
+        }
+
         $delayMinutes = max(1, (int) $this->envValue('MYREP_REJECT_EMAIL_DELAY_MINUTES', '5'));
         $now = date('Y-m-d H:i:s');
         $scheduledAt = date('Y-m-d H:i:s', time() + ($delayMinutes * 60));

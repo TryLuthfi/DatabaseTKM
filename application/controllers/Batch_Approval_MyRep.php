@@ -1495,6 +1495,11 @@ class Batch_Approval_MyRep extends CI_Controller
             $fileContext = $this->MBatch_Approval_MyRep->getDonationFileContext($fileId);
             $groupLabel = strtoupper(trim((string) ($fileContext['group_label'] ?? '')));
             if (in_array($groupLabel, ['PRE ZEYN DOCUMENT', 'POST PAYMENT ZEYN DOCUMENT'], true) && $astriStatusInput === 'REJECTED') {
+                $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId, [
+                    'remark' => $astriRemark,
+                    'rejecter_user_id' => (int) $this->session->userdata('id_user'),
+                    'rejected_at' => date('Y-m-d H:i:s'),
+                ]);
                 $this->setDonationStageFromSystem($clusterId, 'ASTRI_ON_REVIEW', [
                     'final_astri_approved_at' => null,
                 ]);
@@ -1603,6 +1608,13 @@ class Batch_Approval_MyRep extends CI_Controller
                 'updated_by' => (int) $this->session->userdata('id_user'),
             ]);
             if ($updated) {
+                if ($astriStatus === 'REJECTED') {
+                    $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId, [
+                        'remark' => $astriRemark,
+                        'rejecter_user_id' => (int) $this->session->userdata('id_user'),
+                        'rejected_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
                 $updatedCount++;
             } else {
                 $skippedMessages[] = $docName . ' gagal disimpan.';
