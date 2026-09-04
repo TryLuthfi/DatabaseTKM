@@ -113,7 +113,7 @@
         </div>
         <div class="card card-outline card-primary">
             <div class="card-header text-center">
-                <b>Verifikasi Email Kantor</b>
+                <b>Verifikasi Email</b>
             </div>
             <div class="card-body">
                 <?php if (!empty($reset_link_success)): ?>
