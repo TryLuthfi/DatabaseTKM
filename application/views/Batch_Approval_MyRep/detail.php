@@ -1067,9 +1067,12 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .batch-edit-btn {
+        position: relative;
+        z-index: 25;
         display: inline-flex;
         align-items: center;
         gap: .45rem;
+        pointer-events: auto !important;
         padding: .55rem .95rem;
         border-radius: 999px;
         border: 1px solid rgba(255, 255, 255, 0.65);
@@ -3913,6 +3916,12 @@ if ($canApprove && $canApprovalAction) {
         }
 
         $(function () {
+            $(document).on('click', '.batch-edit-btn', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                $('#modal-batch-edit-detail').modal('show');
+            });
+
             bindDropzones();
             initDonationPhotoDrag(donationPhotoStage);
             cleanupBatchModalBackdrop();
