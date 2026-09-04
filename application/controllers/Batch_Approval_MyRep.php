@@ -377,7 +377,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $hpDonasi = (int) $this->normalizeNumber($this->input->post('hp_donasi'));
         $nominalPengajuanArea = $this->normalizeNumber($this->input->post('nominal_pengajuan_area'));
-        $nominalNegoEmr = $this->normalizeNullableNumber($this->input->post('nominal_nego_emr'));
+        $nominalNegoEmr = $nominalPengajuanArea;
         $nominalReleaseFinance = $this->normalizeNullableNumber($this->input->post('nominal_release_finance'));
         $freeWifiQty = $this->normalizeNullableInt($this->input->post('free_wifi_qty'));
         $freeWifiPeriodMonth = $this->normalizeNullableInt($this->input->post('free_wifi_period_month'));
@@ -394,7 +394,6 @@ class Batch_Approval_MyRep extends CI_Controller
         $remark = trim((string) $this->input->post('remark_batch_approval'));
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         $pics = $this->collectPicsFromPost();
-        $nominalNegoEmr = $nominalPengajuanArea;
 
         if ($clusterId <= 0 || $hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '') {
             $this->session->set_flashdata('error', 'Cluster, HP donasi, nominal area, data penerima, dan data bank wajib diisi.');
@@ -516,7 +515,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $hpDonasi = (int) $this->normalizeNumber($this->input->post('hp_donasi'));
         $nominalPengajuanArea = $this->normalizeNumber($this->input->post('nominal_pengajuan_area'));
-        $nominalNegoEmr = $this->normalizeNullableNumber($this->input->post('nominal_nego_emr'));
+        $nominalNegoEmr = $nominalPengajuanArea;
         $nominalReleaseFinance = $this->normalizeNullableNumber($this->input->post('nominal_release_finance'));
         $freeWifiQty = $this->normalizeNullableInt($this->input->post('free_wifi_qty'));
         $freeWifiPeriodMonth = $this->normalizeNullableInt($this->input->post('free_wifi_period_month'));
@@ -529,12 +528,25 @@ class Batch_Approval_MyRep extends CI_Controller
         $submissionDate = $this->normalizeDate($this->input->post('submission_date'));
         $stagingStatus = strtoupper(trim((string) $this->input->post('staging_status')));
         $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
+        $astriBatchApprovedAt = $this->normalizeDateTimeInput($this->input->post('astri_batch_approved_at'));
         $remark = trim((string) $this->input->post('remark_batch_approval'));
         $pics = $this->collectPicsFromPost();
 
         if ($clusterId <= 0 || $batchId <= 0 || $hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '') {
             $this->session->set_flashdata('error', 'Data update Batch Approval belum lengkap.');
             redirect('Batch_Approval_MyRep');
+            return;
+        }
+
+        if ($astriBatchNumber === '') {
+            $this->session->set_flashdata('error', 'Nomor batch approval Astri wajib diisi.');
+            redirect($this->resolveBatchRedirectPath($clusterId));
+            return;
+        }
+
+        if (empty($astriBatchApprovedAt)) {
+            $this->session->set_flashdata('error', 'Tanggal batch approval wajib diisi.');
+            redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
 
@@ -573,7 +585,8 @@ class Batch_Approval_MyRep extends CI_Controller
             'recipient_period' => $recipientPeriod,
             'free_wifi_qty' => $freeWifiQty,
             'free_wifi_period_month' => $freeWifiPeriodMonth,
-            'astri_batch_number' => $astriBatchNumber !== '' ? $astriBatchNumber : null,
+            'astri_batch_number' => $astriBatchNumber,
+            'astri_batch_approved_at' => $astriBatchApprovedAt,
             'staging_status' => $stagingStatus,
             'submitted_to_ho_at' => $this->resolveStageTimestamp($existing['submitted_to_ho_at'] ?? null, $stagingStatus === 'WAITING HO'),
             'submitted_to_astri_at' => $this->resolveStageTimestamp($existing['submitted_to_astri_at'] ?? null, $stagingStatus === 'WAITING MYREP'),
