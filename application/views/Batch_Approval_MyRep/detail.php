@@ -3916,10 +3916,43 @@ if ($canApprove && $canApprovalAction) {
         }
 
         $(function () {
+            var batchEditDebugPayload = {
+                canEditBatchApproval: <?= json_encode((bool) $canEdit) ?>,
+                userId: <?= json_encode((string) $this->session->userdata('id_user')) ?>,
+                username: <?= json_encode((string) $this->session->userdata('nama_user')) ?>,
+                namaLevel: <?= json_encode((string) $this->session->userdata('nama_level')) ?>,
+                lokasiUser: <?= json_encode((string) $this->session->userdata('lokasi_user')) ?>,
+                homebase: <?= json_encode((string) $this->session->userdata('homebase')) ?>,
+                clusterId: <?= json_encode((string) ($cluster['id_myrep_cluster'] ?? '')) ?>,
+                cityName: <?= json_encode((string) ($cluster['city_name'] ?? '')) ?>,
+                provinceName: <?= json_encode((string) ($cluster['province_name'] ?? '')) ?>,
+                regionalName: <?= json_encode((string) ($cluster['regional_name'] ?? '')) ?>,
+                buttonCount: $('.batch-edit-btn').length,
+                modalCount: $('#modal-batch-edit-detail').length,
+                buttonDisabled: $('.batch-edit-btn').prop('disabled'),
+                buttonPointerEvents: $('.batch-edit-btn').css('pointer-events'),
+                buttonVisible: $('.batch-edit-btn').is(':visible')
+            };
+            console.log('[Batch Approval Edit Debug] page ready', batchEditDebugPayload);
+
             $(document).on('click', '.batch-edit-btn', function (event) {
+                console.log('[Batch Approval Edit Debug] click edit button', {
+                    targetTag: event.target && event.target.tagName,
+                    targetClass: event.target && event.target.className,
+                    buttonDisabled: $(this).prop('disabled'),
+                    buttonAriaDisabled: $(this).attr('aria-disabled'),
+                    buttonPointerEvents: $(this).css('pointer-events'),
+                    modalCount: $('#modal-batch-edit-detail').length,
+                    modalVisibleBefore: $('#modal-batch-edit-detail').is(':visible')
+                });
                 event.preventDefault();
                 event.stopPropagation();
                 $('#modal-batch-edit-detail').modal('show');
+                console.log('[Batch Approval Edit Debug] modal show requested', {
+                    modalVisibleAfterRequest: $('#modal-batch-edit-detail').is(':visible'),
+                    bodyModalOpen: $('body').hasClass('modal-open'),
+                    backdropCount: $('.modal-backdrop').length
+                });
             });
 
             bindDropzones();
