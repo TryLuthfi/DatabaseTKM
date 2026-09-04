@@ -1567,7 +1567,7 @@ if ($canApprove && $canApprovalAction) {
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Informasi Cluster & Batch</h3>
                     <?php if ($canEdit): ?>
-                        <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail">
+                        <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail" data-role-guard-exempt="1">
                             <i class="fas fa-pen"></i>
                             Edit Batch Approval
                         </button>
@@ -2638,7 +2638,7 @@ if ($canApprove && $canApprovalAction) {
 <div class="modal fade" id="modal-batch-edit-detail" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
-            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>" data-role-guard-exempt="1">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
                 <input type="hidden" name="redirect_to_detail" value="1">
