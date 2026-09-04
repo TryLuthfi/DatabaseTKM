@@ -2,13 +2,14 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'TAMBAH') : true;
-$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true;
+$canEdit = isset($canEditBatchApproval) ? (bool) $canEditBatchApproval : (isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true);
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
 $canDonationUpload = (string) $this->session->userdata('nama_level') === 'Super Admin'
     || (isset($this->myrepAccess)
         && method_exists($this->myrepAccess, 'getCurrentRoleKeys')
-        && in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true));
+        && (in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true)
+            || in_array('SITAC_HO', (array) $this->myrepAccess->getCurrentRoleKeys(), true)));
 $canReplaceDonationFile = !empty($canReplaceDonationFile);
 $canFinanceApprovalAction = !empty($canFinanceApprovalAction);
 

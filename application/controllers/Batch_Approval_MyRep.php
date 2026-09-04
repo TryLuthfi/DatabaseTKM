@@ -17,6 +17,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method(), [
                 'previewBatchImport' => 'TAMBAH',
                 'saveImportedBatch' => 'TAMBAH',
+                'updateBatchApproval' => 'VIEW',
                 'uploadDocument' => 'VIEW',
                 'uploadDonationDocument' => 'VIEW',
                 'uploadBulkDonationDocuments' => 'VIEW',
@@ -310,6 +311,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['batchPics'] = $this->MBatch_Approval_MyRep->getBatchPics((int) $cluster['id_batch_approval']);
         $data['docReady'] = $this->MBatch_Approval_MyRep->batchDocumentTablesReady();
         $data['canApprove'] = $this->isApprover();
+        $data['canEditBatchApproval'] = $this->canEditBatchApprovalDetail($cluster);
         $data['canReplaceDonationFile'] = $this->isSitacHoUser();
         $data['canFinanceApprovalAction'] = $this->isFinanceHoUser();
         $data['batchDocument'] = $batchFile;
@@ -505,6 +507,13 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $batchId = (int) $this->input->post('id_batch_approval');
+        $existing = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if (!$this->canEditBatchApprovalDetail($existing)) {
+            $this->session->set_flashdata('error', 'Edit Batch Approval hanya tersedia untuk Super Admin, Admin, SITAC HO, Admin Area, dan SND Area.');
+            redirect($this->resolveBatchRedirectPath($clusterId));
+            return;
+        }
+
         $hpDonasi = (int) $this->normalizeNumber($this->input->post('hp_donasi'));
         $nominalPengajuanArea = $this->normalizeNumber($this->input->post('nominal_pengajuan_area'));
         $nominalNegoEmr = $this->normalizeNullableNumber($this->input->post('nominal_nego_emr'));
@@ -549,7 +558,6 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
         $nominalPerHomepass = $hpDonasi > 0 ? round($nominalPengajuanArea / $hpDonasi, 2) : 0;
-        $existing = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
         $result = $this->MBatch_Approval_MyRep->updateBatchApproval($clusterId, $batchId, [
             'submission_date' => $submissionDate,
             'hp_donasi' => $hpDonasi,
@@ -3487,6 +3495,69 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
         return in_array('ADMIN_AREA', $roleKeys, true) || in_array('SITAC_HO', $roleKeys, true);
+    }
+
+    private function canEditBatchApprovalDetail(array $cluster = [])
+    {
+        $level = strtoupper(trim((string) $this->session->userdata('nama_level')));
+        if (in_array($level, ['SUPER ADMIN', 'ADMIN'], true)) {
+            return true;
+        }
+
+        if (!$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return false;
+        }
+
+        $user = $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', (int) $this->session->userdata('id_user'))
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            return false;
+        }
+
+        $cityName = strtoupper(trim((string) ($cluster['city_name'] ?? '')));
+        $provinceName = strtoupper(trim((string) ($cluster['province_name'] ?? '')));
+        $regionalName = strtoupper(trim((string) ($cluster['regional_name'] ?? '')));
+        if ($cityName === '') {
+            return false;
+        }
+
+        $this->db->from('tb_myrep_pic_mapping_city')->where('UPPER(city_name)', $cityName);
+        if ($provinceName !== '') {
+            $this->db->where('UPPER(province_name)', $provinceName);
+        }
+        if ($regionalName !== '') {
+            $this->db->where('UPPER(regional_name)', $regionalName);
+        }
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+        $this->db->group_start()
+            ->where(myrep_pic_column_contains_sql($this->db, '`sitac_ho`', $nik), null, false)
+            ->or_where(myrep_pic_column_contains_sql($this->db, '`admin_area`', $nik), null, false)
+            ->or_where(myrep_pic_column_contains_sql($this->db, '`snd_area`', $nik), null, false)
+            ->group_end();
+
+        $found = $this->db->select('1 AS hit', false)->limit(1)->get()->row_array();
+        if (!empty($found)) {
+            return true;
+        }
+
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
+        return empty($cluster) && (
+            in_array('SITAC_HO', $roleKeys, true)
+            || in_array('ADMIN_AREA', $roleKeys, true)
+            || in_array('SND_AREA', $roleKeys, true)
+        );
     }
 
     private function hasBatchPermission($actionKey)
