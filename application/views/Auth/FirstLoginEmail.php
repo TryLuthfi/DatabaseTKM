@@ -26,7 +26,7 @@
         }
 
         .login-logo .brand-mark-row {
-            display: inline-flex;
+            display: inline-flex;   
             align-items: center;
             justify-content: space-between;
             width: 100%;
