@@ -13,9 +13,7 @@ class Backup extends CI_Controller
 
     public function index()
     {
-        // Ambil data backup dari database
-        $this->db->order_by('backup_date', 'DESC');
-        $data['backups'] = $this->db->get('backup_history')->result();
+        $data['backups'] = $this->getBackupRows();
         $data['title'] = 'BACKUP DATABASE MYSQL';
         $data['judul'] = 'BACKUP DATABASE MYSQL';
         $data['canImportVps'] = $this->canRunVpsImport();
@@ -78,6 +76,40 @@ class Backup extends CI_Controller
         redirect('Backup');
     }
 
+    private function getBackupRows()
+    {
+        $this->db->order_by('backup_date', 'DESC');
+        $dbBackups = $this->db->get('backup_history')->result();
+        $knownFiles = [];
+        foreach ($dbBackups as $backup) {
+            $backup->source = 'database';
+            $knownFiles[strtolower((string) $backup->filename)] = true;
+        }
+
+        $backupDir = FCPATH . 'backups';
+        $manualBackups = [];
+        foreach (glob($backupDir . DIRECTORY_SEPARATOR . '*.sql') ?: [] as $filePath) {
+            $filename = basename($filePath);
+            if (isset($knownFiles[strtolower($filename)])) {
+                continue;
+            }
+
+            $backup = new stdClass();
+            $backup->id = null;
+            $backup->filename = $filename;
+            $backup->backup_date = date('Y-m-d H:i:s', filemtime($filePath));
+            $backup->source = 'file';
+            $manualBackups[] = $backup;
+        }
+
+        $backups = array_merge($dbBackups, $manualBackups);
+        usort($backups, static function ($a, $b) {
+            return strtotime((string) $b->backup_date) <=> strtotime((string) $a->backup_date);
+        });
+
+        return $backups;
+    }
+
     public function import_local_backup()
     {
         if (!$this->canRunVpsImport()) {
@@ -128,7 +160,21 @@ class Backup extends CI_Controller
         }
 
         if (empty($_FILES['sql_file']['tmp_name']) || !is_uploaded_file($_FILES['sql_file']['tmp_name'])) {
-            $this->session->set_flashdata('error', 'File SQL belum dipilih.');
+            $contentLength = (int) ($this->input->server('CONTENT_LENGTH') ?: 0);
+            $postMaxBytes = $this->iniSizeToBytes((string) ini_get('post_max_size'));
+            $uploadMaxBytes = $this->iniSizeToBytes((string) ini_get('upload_max_filesize'));
+
+            if ($contentLength > 0 && $postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+                $this->session->set_flashdata(
+                    'error',
+                    'File SQL terlalu besar untuk upload PHP. Ukuran request ' . $this->formatBytes($contentLength)
+                    . ', batas post_max_size ' . $this->formatBytes($postMaxBytes)
+                    . '. Naikkan post_max_size dan upload_max_filesize di php.ini XAMPP, lalu restart Apache.'
+                );
+            } else {
+                $limitText = $uploadMaxBytes > 0 ? ' Batas upload saat ini ' . $this->formatBytes($uploadMaxBytes) . '.' : '';
+                $this->session->set_flashdata('error', 'File SQL belum dipilih atau gagal diterima server.' . $limitText);
+            }
             redirect('Backup');
             return;
         }
@@ -187,6 +233,17 @@ class Backup extends CI_Controller
 
         $uploadExitCode = 0;
         $uploadOutput = [];
+        if ($exitCode !== 0) {
+            [$fallbackExitCode, $fallbackOutput] = $this->tryImportLatestCompleteVpsPart($repoRoot);
+            if (!empty($fallbackOutput)) {
+                $output = array_merge($output, ['', '[Fallback dump VPS lokal]'], $fallbackOutput);
+            }
+            if ($fallbackExitCode === 0) {
+                $exitCode = 0;
+                $output[] = '[Fallback] Import memakai dump VPS .part terbaru yang sudah lengkap.';
+            }
+        }
+
         if ($exitCode === 0) {
             [$uploadExitCode, $uploadOutput] = $this->syncRfsEvidenceUploads($repoRoot);
             $clearedCacheFiles = $this->clearChecklistCacheFiles();
@@ -345,6 +402,65 @@ class Backup extends CI_Controller
         return [$exitCode, $output];
     }
 
+    private function tryImportLatestCompleteVpsPart($repoRoot)
+    {
+        if (!$this->isLocalImportAvailable()) {
+            return [1, ['Fallback dilewati: script import lokal tidak tersedia.']];
+        }
+
+        $backupDir = $repoRoot . DIRECTORY_SEPARATOR . 'backups' . DIRECTORY_SEPARATOR . 'VPS';
+        $files = glob($backupDir . DIRECTORY_SEPARATOR . 'databasetkm_com_*_mysql_data.sql.part') ?: [];
+        usort($files, static function ($a, $b) {
+            return filemtime($b) <=> filemtime($a);
+        });
+
+        foreach ($files as $filePath) {
+            if (!$this->mysqlDumpLooksComplete($filePath)) {
+                continue;
+            }
+
+            $output = [
+                '[Fallback] Ditemukan dump VPS lengkap: ' . basename($filePath),
+                '[Fallback] Ukuran file: ' . $this->formatBytes(filesize($filePath)),
+            ];
+
+            $scriptPath = $repoRoot . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'import_db_local_file.ps1';
+            $command = 'powershell -NoProfile -ExecutionPolicy Bypass -File '
+                . escapeshellarg($scriptPath)
+                . ' -DumpPath '
+                . escapeshellarg($filePath);
+
+            [$exitCode, $importOutput] = $this->runShellCommand($command, $repoRoot);
+            return [$exitCode, array_merge($output, $importOutput)];
+        }
+
+        return [1, ['Fallback gagal: tidak ada dump VPS .part terbaru yang lengkap.']];
+    }
+
+    private function mysqlDumpLooksComplete($filePath)
+    {
+        if (!is_file($filePath) || filesize($filePath) <= 0) {
+            return false;
+        }
+
+        $handle = @fopen($filePath, 'rb');
+        if (!$handle) {
+            return false;
+        }
+
+        $size = filesize($filePath);
+        $readSize = min($size, 8192);
+        fseek($handle, -$readSize, SEEK_END);
+        $tail = fread($handle, $readSize);
+        fclose($handle);
+
+        if (!is_string($tail)) {
+            return false;
+        }
+
+        return strpos($tail, '-- Dump completed on ') !== false;
+    }
+
     private function syncRfsEvidenceUploads($repoRoot)
     {
         $keyPath = $repoRoot . DIRECTORY_SEPARATOR . 'tmp_codex_vps_ed25519';
@@ -413,5 +529,44 @@ class Backup extends CI_Controller
         }
 
         return implode("\n", $output);
+    }
+
+    private function iniSizeToBytes($value)
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($value, -1));
+        $number = (float) $value;
+        switch ($unit) {
+            case 'g':
+                $number *= 1024;
+                // no break
+            case 'm':
+                $number *= 1024;
+                // no break
+            case 'k':
+                $number *= 1024;
+                break;
+        }
+
+        return (int) round($number);
+    }
+
+    private function formatBytes($bytes)
+    {
+        $bytes = max(0, (int) $bytes);
+        if ($bytes >= 1073741824) {
+            return round($bytes / 1073741824, 2) . ' GB';
+        }
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . ' MB';
+        }
+        if ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        }
+        return $bytes . ' bytes';
     }
 }

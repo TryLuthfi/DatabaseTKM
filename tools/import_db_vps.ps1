@@ -287,6 +287,7 @@ Write-Host "[2/6] Download dump ke $localDumpPath..."
 $downloadCommand = "cat " + (Quote-BashSingleQuoted $remoteDumpPath)
 $downloadPartPath = "$localDumpPath.part"
 $downloadResult = $null
+$downloadError = ""
 $downloadMaxAttempts = 3
 for ($downloadAttempt = 1; $downloadAttempt -le $downloadMaxAttempts; $downloadAttempt++) {
     if (Test-Path -LiteralPath $downloadPartPath) {
@@ -297,7 +298,19 @@ for ($downloadAttempt = 1; $downloadAttempt -le $downloadMaxAttempts; $downloadA
         Write-Host "[Download] Percobaan $downloadAttempt/$downloadMaxAttempts..."
     }
 
-    $downloadResult = Invoke-ProcessOutputToFile "ssh" ($sshArgs + @($downloadCommand)) $downloadPartPath
+    try {
+        $downloadResult = Invoke-ProcessOutputToFile "ssh" ($sshArgs + @($downloadCommand)) $downloadPartPath
+        $downloadError = ""
+    }
+    catch {
+        $downloadResult = @{
+            ExitCode = 1
+            Error = $_.Exception.Message
+        }
+        $downloadError = $_.Exception.Message
+        Write-Host "[Download] Exception: $downloadError"
+    }
+
     $dumpLooksComplete = Test-MysqlDumpLooksComplete $downloadPartPath
     if ([int] $downloadResult.ExitCode -eq 0 -and $dumpLooksComplete) {
         Move-Item -LiteralPath $downloadPartPath -Destination $localDumpPath -Force
@@ -325,6 +338,8 @@ if (!(Test-MysqlDumpLooksComplete $localDumpPath)) {
     $lastError = ""
     if ($downloadResult -and $downloadResult.Error) {
         $lastError = " Detail SSH: " + $downloadResult.Error
+    } elseif ($downloadError -ne "") {
+        $lastError = " Detail SSH: " + $downloadError
     }
     throw "Gagal download dump dari VPS via SSH stream setelah $downloadMaxAttempts percobaan.$lastError"
 }

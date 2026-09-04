@@ -203,7 +203,7 @@ class MVALSAL_MyRep extends CI_Model
             ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
             ->group_start()
                 ->where('v.id_valsal IS NOT NULL', null, false)
-                ->or_where('UPPER(c.status_current)', 'BAK')
+                ->or_where_in('UPPER(c.status_current)', ['BAK', 'VALSAL'])
             ->group_end()
             ->order_by('c.city_name', 'ASC');
 
@@ -258,7 +258,7 @@ class MVALSAL_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
-            ->where('UPPER(c.status_current)', 'BAK')
+            ->where_in('UPPER(c.status_current)', ['BAK', 'VALSAL'])
             ->where('v.id_valsal IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC');
@@ -316,7 +316,7 @@ class MVALSAL_MyRep extends CI_Model
             ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
             ->group_start()
                 ->where('v.id_valsal IS NOT NULL', null, false)
-                ->or_where('UPPER(c.status_current)', 'BAK')
+                ->or_where_in('UPPER(c.status_current)', ['BAK', 'VALSAL'])
             ->group_end();
 
         if (!$this->applyAllowedCityRestriction('c.city_name')) {

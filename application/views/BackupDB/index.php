@@ -129,10 +129,12 @@
                                                     class="btn btn-success btn-sm">
                                                     Download &nbsp;<i class="fas fa-download"></i>
                                                 </a>
-                                                <a href="<?= base_url('Backup/delete_backup/' . $backup->id) ?>"
-                                                    class="btn btn-danger btn-sm">
-                                                    Delete &nbsp;<i class="fas fa-trash"></i>
-                                                </a>
+                                                <?php if (!empty($backup->id)): ?>
+                                                    <a href="<?= base_url('Backup/delete_backup/' . $backup->id) ?>"
+                                                        class="btn btn-danger btn-sm">
+                                                        Delete &nbsp;<i class="fas fa-trash"></i>
+                                                    </a>
+                                                <?php endif; ?>
                                                 <?php if (!empty($canImportVps)): ?>
                                                     <form method="post" action="<?= base_url('Backup/import_local_backup') ?>" class="d-inline form-import-local-existing">
                                                         <input type="hidden" name="filename" value="<?= htmlspecialchars((string) $backup->filename, ENT_QUOTES, 'UTF-8') ?>">
