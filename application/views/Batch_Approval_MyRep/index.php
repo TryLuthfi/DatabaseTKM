@@ -661,55 +661,20 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                         <div class="card-body">
                             <ul class="nav nav-tabs batch-monitor-tabs" id="batch-monitor-tab" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="batch-ny-drm-tab" data-toggle="tab" href="#batch-ny-drm-pane" role="tab" aria-controls="batch-ny-drm-pane" aria-selected="true">
-                                        Status NY DRM
-                                        <span class="batch-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="batch-all-tab" data-toggle="tab" href="#batch-all-pane" role="tab" aria-controls="batch-all-pane" aria-selected="false">
+                                    <a class="nav-link active" id="batch-all-tab" data-toggle="tab" href="#batch-all-pane" role="tab" aria-controls="batch-all-pane" aria-selected="true">
                                         All Batch Approval
                                         <span class="batch-monitor-tabs__count"><?= number_format(count($clusterRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="batch-ny-drm-tab" data-toggle="tab" href="#batch-ny-drm-pane" role="tab" aria-controls="batch-ny-drm-pane" aria-selected="false">
+                                        Status NY DRM
+                                        <span class="batch-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
                             </ul>
                             <div class="tab-content batch-monitor-tabs__content" id="batch-monitor-tab-content">
-                                <div class="tab-pane fade show active" id="batch-ny-drm-pane" role="tabpanel" aria-labelledby="batch-ny-drm-tab">
-                                    <div class="table-responsive">
-                                        <table id="table_batch_ny_drm" class="table table-bordered table-hover batch-monitor-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>Cluster</th>
-                                                    <th>Regional</th>
-                                                    <th>Kota</th>
-                                                    <th>HP Donasi</th>
-                                                    <th>Nominal Donasi</th>
-                                                    <th>Nominal / Homepass</th>
-                                                    <th>SLA &amp; Aging</th>
-                                                    <th>Staging</th>
-                                                    <th>Dokumen RAR</th>
-                                                    <th>Review Dokumen</th>
-                                                    <th>Status Flow</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php $renderBatchTableRows($nyDrmRows, $docReady, $this->MBatch_Approval_MyRep); ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <th colspan="4" class="text-right">TOTAL</th>
-                                                    <th class="text-right">0</th>
-                                                    <th class="text-right">0</th>
-                                                    <th class="text-right">0</th>
-                                                    <th colspan="6"></th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="tab-pane fade" id="batch-all-pane" role="tabpanel" aria-labelledby="batch-all-tab">
+                                <div class="tab-pane fade show active" id="batch-all-pane" role="tabpanel" aria-labelledby="batch-all-tab">
                                     <div class="table-responsive">
                                         <table id="table_batch_all" class="table table-bordered table-hover batch-monitor-table">
                                             <thead>
@@ -731,6 +696,41 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                             </thead>
                                             <tbody>
                                                 <?php $renderBatchTableRows($clusterRows, $docReady, $this->MBatch_Approval_MyRep); ?>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="4" class="text-right">TOTAL</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="6"></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="batch-ny-drm-pane" role="tabpanel" aria-labelledby="batch-ny-drm-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_batch_ny_drm" class="table table-bordered table-hover batch-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>HP Donasi</th>
+                                                    <th>Nominal Donasi</th>
+                                                    <th>Nominal / Homepass</th>
+                                                    <th>SLA &amp; Aging</th>
+                                                    <th>Staging</th>
+                                                    <th>Dokumen RAR</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderBatchTableRows($nyDrmRows, $docReady, $this->MBatch_Approval_MyRep); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
