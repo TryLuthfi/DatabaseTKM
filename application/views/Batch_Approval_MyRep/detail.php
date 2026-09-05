@@ -1979,6 +1979,11 @@ if ($canApprove && $canApprovalAction) {
                 <?php
                 $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $canDonationUpload, $canApprove, $canApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
                     $safeGroupKey = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $groupKey);
+                    $isPostZeynLocked = $groupKey === 'POST_ZEYN'
+                        && (empty($cluster['released_at'] ?? '') || (float) ($cluster['nominal_release_finance'] ?? 0) <= 0);
+                    $canUploadThisGroup = $canDonationUpload && !$isPostZeynLocked;
+                    $canApproveThisGroup = $canApprove && $canApprovalAction && !$isPostZeynLocked;
+                    $canFinanceApproveThisGroup = $canFinanceApprovalAction && !$isPostZeynLocked;
                     $requiredRows = array_filter($rows, static function ($row) {
                         return (int) ($row['is_required'] ?? 1) === 1;
                     });
@@ -2008,13 +2013,13 @@ if ($canApprove && $canApprovalAction) {
                         if ($rowStatus === 'UPLOADED') {
                             $onReviewCount++;
                         }
-                        if ($canDonationUpload && (in_array($rowStatus, ['', 'REJECTED'], true) || $isAstriRejectedRevision)) {
+                        if ($canUploadThisGroup && (in_array($rowStatus, ['', 'REJECTED'], true) || $isAstriRejectedRevision)) {
                             $bulkUploadRows[] = $row;
                         }
-                        if ($canApprove && $canApprovalAction && (int) ($row['id_doc_file'] ?? 0) > 0 && $rowStatus === 'APPROVED') {
+                        if ($canApproveThisGroup && (int) ($row['id_doc_file'] ?? 0) > 0 && $rowStatus === 'APPROVED') {
                             $bulkAstriRows[] = $row;
                         }
-                        if ($canFinanceApprovalAction && (int) ($row['is_required'] ?? 1) === 1 && (int) ($row['id_doc_file'] ?? 0) > 0 && $rowStatus === 'APPROVED' && $rowFinanceStatus !== 'APPROVED') {
+                        if ($canFinanceApproveThisGroup && (int) ($row['is_required'] ?? 1) === 1 && (int) ($row['id_doc_file'] ?? 0) > 0 && $rowStatus === 'APPROVED' && $rowFinanceStatus !== 'APPROVED') {
                             $bulkFinanceRows[] = $row;
                         }
                     }
@@ -2052,7 +2057,7 @@ if ($canApprove && $canApprovalAction) {
                                 <?php if (!empty($bulkAstriRows)): ?>
                                     <button type="button" class="btn btn-sm btn-outline-dark" data-toggle="modal" data-target="#modal-bulk-astri-<?= htmlspecialchars($safeGroupKey) ?>">Bulk Astri</button>
                                 <?php endif; ?>
-                                <?php if ($canApprove && $canApprovalAction && $onReviewCount > 0): ?>
+                                <?php if ($canApproveThisGroup && $onReviewCount > 0): ?>
                                     <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveAllDonationDocuments') ?>" class="mb-0 d-inline js-donation-ajax-form" data-processing-text="Approving..." data-success-text="Approve All">
                                         <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                         <input type="hidden" name="redirect_to_detail" value="1">
@@ -2060,7 +2065,7 @@ if ($canApprove && $canApprovalAction) {
                                         <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve semua dokumen pada section ini?');">Approve All</button>
                                     </form>
                                 <?php endif; ?>
-                                <?php if ($canFinanceApprovalAction && !empty($bulkFinanceRows)): ?>
+                                <?php if ($canFinanceApproveThisGroup && !empty($bulkFinanceRows)): ?>
                                     <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveAllDonationFinanceDocuments') ?>" class="mb-0 d-inline js-donation-ajax-form" data-processing-text="Approving Finance..." data-success-text="Approve All Finance">
                                         <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                         <input type="hidden" name="redirect_to_detail" value="1">
@@ -2183,7 +2188,7 @@ if ($canApprove && $canApprovalAction) {
                                                 </td>
                                                 <td style="min-width:270px;">
                                                     <div class="donation-action-stack">
-                                                        <?php if ($canDonationUpload && (in_array($rawStatus, ['', 'REJECTED'], true) || ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED'))): ?>
+                                                        <?php if ($canUploadThisGroup && (in_array($rawStatus, ['', 'REJECTED'], true) || ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED'))): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
                                                             <a
                                                                 href="#modal-donation-upload"
@@ -2202,7 +2207,7 @@ if ($canApprove && $canApprovalAction) {
                                                                 data-replace-file="0">
                                                                 <?= $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED' ? 'Upload Revisi Astri' : 'Upload' ?>
                                                             </a>
-                                                        <?php elseif ($canReplaceDonationFile && $rawStatus === 'APPROVED'): ?>
+                                                        <?php elseif (!$isPostZeynLocked && $canReplaceDonationFile && $rawStatus === 'APPROVED'): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
                                                             <a
                                                                 href="#modal-donation-upload"
@@ -2222,7 +2227,7 @@ if ($canApprove && $canApprovalAction) {
                                                                 Replace File
                                                             </a>
                                                         <?php endif; ?>
-                                                        <?php if ($canApprove && $canApprovalAction && $fileId > 0 && $rawStatus === 'UPLOADED'): ?>
+                                                        <?php if ($canApproveThisGroup && $fileId > 0 && $rawStatus === 'UPLOADED'): ?>
                                                             <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveDonationDocument') ?>" class="d-inline js-donation-ajax-form" data-processing-text="Approving..." data-success-text="Approve">
                                                                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                                                 <input type="hidden" name="redirect_to_detail" value="1">
@@ -2246,7 +2251,7 @@ if ($canApprove && $canApprovalAction) {
                                                                 Reject
                                                             </button>
                                                         <?php endif; ?>
-                                                        <?php if ($canApprove && $canApprovalAction && $fileId > 0 && $rawStatus === 'APPROVED'): ?>
+                                                        <?php if ($canApproveThisGroup && $fileId > 0 && $rawStatus === 'APPROVED'): ?>
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-sm btn-outline-primary js-open-donation-astri-modal"
@@ -2261,7 +2266,7 @@ if ($canApprove && $canApprovalAction) {
                                                                 Update Astri
                                                             </button>
                                                         <?php endif; ?>
-                                                        <?php if ($canFinanceApprovalAction && $fileId > 0 && (int) ($row['is_required'] ?? 1) === 1 && $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) !== 'APPROVED'): ?>
+                                                        <?php if ($canFinanceApproveThisGroup && $fileId > 0 && (int) ($row['is_required'] ?? 1) === 1 && $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) !== 'APPROVED'): ?>
                                                             <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveDonationFinanceDocument') ?>" class="d-inline js-donation-ajax-form" data-processing-text="Approving Finance..." data-success-text="Approve Finance">
                                                                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                                                 <input type="hidden" name="redirect_to_detail" value="1">

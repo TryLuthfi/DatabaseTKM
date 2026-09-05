@@ -2835,9 +2835,9 @@ class MBatch_Approval_MyRep extends CI_Model
         $allAstriApproved = (int) ($pre['astri_approved'] ?? 0) + (int) ($post['astri_approved'] ?? 0);
         $allAstriRejected = (int) ($pre['astri_rejected'] ?? 0) + (int) ($post['astri_rejected'] ?? 0);
         $releasedAt = trim((string) ($row['released_at'] ?? ''));
-        $hasPostProgress = $postRequired > 0 && (
-            $releasedAt !== ''
-            || (int) ($post['uploaded'] ?? 0) > 0
+        $hasRelease = $releasedAt !== '' && (float) ($row['nominal_release_finance'] ?? 0) > 0;
+        $hasPostProgress = $postRequired > 0 && $hasRelease && (
+            (int) ($post['uploaded'] ?? 0) > 0
             || (int) ($post['approved'] ?? 0) > 0
             || (int) ($post['finance_approved'] ?? 0) > 0
             || (int) ($post['finance_rejected'] ?? 0) > 0
@@ -2848,6 +2848,19 @@ class MBatch_Approval_MyRep extends CI_Model
         $hasAnyAstriRejected = $allAstriRejected > 0;
         $isTerminalStage = in_array($stagingStatus, ['PO_DONASI', 'INVOICE', 'HOLD', 'REJECTED'], true)
             || ($stagingStatus === 'ASTRI_APPROVED' && !$hasAnyAstriRejected);
+
+        if (!$hasRelease && in_array($stagingStatus, ['WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
+            $preRequired = (int) ($pre['required'] ?? 0);
+            if ($preRequired > 0) {
+                if ((int) ($pre['approved'] ?? 0) < $preRequired) {
+                    return (int) ($pre['uploaded'] ?? 0) >= $preRequired ? 'PRE_ZEYN_DOC_ON_REVIEW' : 'WAITING_PRE_ZEYN_DOC';
+                }
+                if ((int) ($pre['finance_approved'] ?? 0) < (int) ($pre['finance_required'] ?? $preRequired)) {
+                    return 'PRE_ZEYN_FINANCE_ON_REVIEW';
+                }
+                return 'PRE_ZEYN_FINANCE_APPROVED';
+            }
+        }
 
         if (!$isTerminalStage && $hasPostProgress) {
             if ((int) ($post['approved'] ?? 0) < $postRequired) {
