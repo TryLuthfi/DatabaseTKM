@@ -286,14 +286,16 @@ class MBatch_Approval_MyRep extends CI_Model
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_where('UPPER(c.status_current)', 'VALSAL')
+                ->or_group_start()
+                    ->where('UPPER(c.status_current)', 'VALSAL')
+                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->group_end()
             ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->get()
@@ -453,10 +455,12 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         $this->db
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_where('UPPER(c.status_current)', 'VALSAL')
+                ->or_group_start()
+                    ->where('UPPER(c.status_current)', 'VALSAL')
+                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->group_end()
             ->group_end();
 
         if ($this->batchDocumentTablesReady()) {
@@ -545,10 +549,15 @@ class MBatch_Approval_MyRep extends CI_Model
                 'WAITING_BATCH_APPROVAL',
                 'BATCH_APPROVED',
                 'HOLD',
+                'PRE_ZEYN_DOC_ON_REVIEW',
                 'PRE_ZEYN_DOC_APPROVED',
+                'PRE_ZEYN_FINANCE_ON_REVIEW',
+                'PRE_ZEYN_FINANCE_APPROVED',
                 'WAITING_FINANCE_RELEASE',
                 'RELEASED',
+                'POST_ZEYN_DOC_ON_REVIEW',
                 'POST_ZEYN_DOC_APPROVED',
+                'POST_ZEYN_FINANCE_ON_REVIEW',
                 'WAITING_ASTRI_SUBMISSION',
                 'ASTRI_ON_REVIEW',
                 'ASTRI_APPROVED',
@@ -624,12 +633,14 @@ class MBatch_Approval_MyRep extends CI_Model
             ->distinct()
             ->select('c.regional_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_where('UPPER(c.status_current)', 'VALSAL')
+                ->or_group_start()
+                    ->where('UPPER(c.status_current)', 'VALSAL')
+                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->group_end()
             ->group_end()
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
@@ -654,12 +665,14 @@ class MBatch_Approval_MyRep extends CI_Model
             ->distinct()
             ->select('c.regional_name, c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_where('UPPER(c.status_current)', 'VALSAL')
+                ->or_group_start()
+                    ->where('UPPER(c.status_current)', 'VALSAL')
+                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->group_end()
             ->group_end()
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where('c.city_name IS NOT NULL', null, false)
