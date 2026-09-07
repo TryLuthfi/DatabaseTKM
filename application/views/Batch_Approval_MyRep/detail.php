@@ -5,13 +5,14 @@ $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batc
 $canEdit = isset($canEditBatchApproval) ? (bool) $canEditBatchApproval : (isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true);
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
+$canFinanceApprovalAction = !empty($canFinanceApprovalAction);
+$canDonationInternalApprovalAction = isset($canDonationInternalApprovalAction) ? (bool) $canDonationInternalApprovalAction : ($canApprovalAction && !$canFinanceApprovalAction);
 $canDonationUpload = (string) $this->session->userdata('nama_level') === 'Super Admin'
     || (isset($this->myrepAccess)
         && method_exists($this->myrepAccess, 'getCurrentRoleKeys')
         && (in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true)
             || in_array('SITAC_HO', (array) $this->myrepAccess->getCurrentRoleKeys(), true)));
 $canReplaceDonationFile = !empty($canReplaceDonationFile);
-$canFinanceApprovalAction = !empty($canFinanceApprovalAction);
 
 if (!function_exists('batchDetailBadgeClass')) {
     function batchDetailBadgeClass($status)
@@ -220,10 +221,14 @@ if (!function_exists('batchDetailSlaPicMeta')) {
     {
         $pic = strtoupper(trim((string) $pic));
         $map = [
-            'ASTRI' => ['label' => 'Astri', 'class' => 'astri', 'icon' => 'user-astronaut'],
-            'ZEYN' => ['label' => 'Zeyn', 'class' => 'zeyn', 'icon' => 'user-check'],
-            'SITAC HO TEAM' => ['label' => 'SITAC HO Team', 'class' => 'sitac', 'icon' => 'users'],
-            'FINANCE TEAM' => ['label' => 'Finance Team', 'class' => 'finance', 'icon' => 'user-tie'],
+            'AREA' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'MYREP' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'SITAC TKM' => ['label' => 'SITAC TKM', 'class' => 'sitac', 'icon' => 'users'],
+            'FINANCE TKM' => ['label' => 'FINANCE TKM', 'class' => 'finance', 'icon' => 'user-tie'],
+            'ASTRI' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'ZEYN' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'SITAC HO TEAM' => ['label' => 'SITAC TKM', 'class' => 'sitac', 'icon' => 'users'],
+            'FINANCE TEAM' => ['label' => 'FINANCE TKM', 'class' => 'finance', 'icon' => 'user-tie'],
         ];
 
         return $map[$pic] ?? ['label' => ucwords(strtolower($pic)), 'class' => 'default', 'icon' => 'user'];
@@ -410,19 +415,19 @@ $slaStartDate = trim((string) ($cluster['submission_date'] ?? $cluster['astri_in
 $slaRows = [];
 $slaCumulativeDays = 0;
 $slaDefinitions = [
-    ['Pengajuan Donasi Astri & Zeyn', 'Astri', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? ''],
-    ['Release Batch Approval', 'Zeyn', 1, $cluster['astri_batch_approved_at'] ?? ''],
-    ['Upload Dokumen Tahap 1 Pra-Finance Zeyn', 'Zeyn', 2, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'uploaded_at', true)],
-    ['Approve SITAC HO Tahap 1', 'SITAC HO Team', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
-    ['Approve Finance Tahap 1', 'Finance Team', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
-    ['Pembayaran Donasi Finance', 'Finance Team', 2, $cluster['released_at'] ?? ''],
-    ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'Zeyn', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'uploaded_at', true)],
-    ['Approve SITAC HO Tahap 2', 'SITAC HO Team', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
-    ['Approve Finance Tahap 2', 'Finance Team', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
-    ['Submit Final Astri', 'Astri', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_submitted_date', true)],
-    ['Approved Astri', 'Astri', 3, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_approved_date', true, 'astri_status', 'APPROVED')],
-    ['PO Donasi', 'Zeyn', 3, $cluster['po_donasi_date'] ?? ''],
-    ['Invoice Donasi', 'Zeyn', 1, $cluster['invoice_donasi_date'] ?? ''],
+    ['Pengajuan Donasi', 'AREA', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? ''],
+    ['Release Batch Approval', 'MYREP', 1, $cluster['astri_batch_approved_at'] ?? ''],
+    ['Upload Dokumen Tahap 1 Pra-Finance', 'AREA', 2, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'uploaded_at', true)],
+    ['Approve SITAC Tahap 1', 'SITAC TKM', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
+    ['Approve Finance Tahap 1', 'FINANCE TKM', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Pembayaran Donasi', 'FINANCE TKM', 2, $cluster['released_at'] ?? ''],
+    ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'AREA', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'uploaded_at', true)],
+    ['Approve SITAC Tahap 2', 'SITAC TKM', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
+    ['Approve Finance Tahap 2', 'FINANCE TKM', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Submit Final ke Astri', 'MYREP', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_submitted_date', true)],
+    ['Approved Astri', 'MYREP', 3, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_approved_date', true, 'astri_status', 'APPROVED')],
+    ['PO Donasi', 'MYREP', 3, $cluster['po_donasi_date'] ?? ''],
+    ['Invoice Donasi', 'MYREP', 1, $cluster['invoice_donasi_date'] ?? ''],
 ];
 foreach ($slaDefinitions as $slaDefinition) {
     $slaCumulativeDays += (int) $slaDefinition[2];
@@ -679,12 +684,12 @@ if ($canApprove && $canApprovalAction) {
         font-size: .62rem;
     }
 
-    .batch-sla-pic--astri i {
-        background: #0f766e;
+    .batch-sla-pic--area i {
+        background: #65a30d;
     }
 
-    .batch-sla-pic--zeyn i {
-        background: #65a30d;
+    .batch-sla-pic--myrep i {
+        background: #0f766e;
     }
 
     .batch-sla-pic--sitac i {
@@ -1977,12 +1982,12 @@ if ($canApprove && $canApprovalAction) {
 
             <?php if ($docReady): ?>
                 <?php
-                $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $canDonationUpload, $canApprove, $canApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
+                $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $canDonationUpload, $canApprove, $canDonationInternalApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
                     $safeGroupKey = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $groupKey);
                     $isPostZeynLocked = $groupKey === 'POST_ZEYN'
                         && (empty($cluster['released_at'] ?? '') || (float) ($cluster['nominal_release_finance'] ?? 0) <= 0);
                     $canUploadThisGroup = $canDonationUpload && !$isPostZeynLocked;
-                    $canApproveThisGroup = $canApprove && $canApprovalAction && !$isPostZeynLocked;
+                    $canApproveThisGroup = $canApprove && $canDonationInternalApprovalAction && !$isPostZeynLocked;
                     $canFinanceApproveThisGroup = $canFinanceApprovalAction && !$isPostZeynLocked;
                     $requiredRows = array_filter($rows, static function ($row) {
                         return (int) ($row['is_required'] ?? 1) === 1;

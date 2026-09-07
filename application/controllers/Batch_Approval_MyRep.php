@@ -311,6 +311,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['batchPics'] = $this->MBatch_Approval_MyRep->getBatchPics((int) $cluster['id_batch_approval']);
         $data['docReady'] = $this->MBatch_Approval_MyRep->batchDocumentTablesReady();
         $data['canApprove'] = $this->isApprover();
+        $data['canDonationInternalApprovalAction'] = $this->canDonationInternalApprovalAction();
         $data['canEditBatchApproval'] = $this->canEditBatchApprovalDetail($cluster);
         $data['canReplaceDonationFile'] = $this->isSitacHoUser();
         $data['canFinanceApprovalAction'] = $this->isFinanceHoUser();
@@ -1270,7 +1271,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
-        if (!$this->isApprover()) {
+        if (!$this->canDonationInternalApprovalAction()) {
             if ($this->isAjaxRequest()) {
                 $this->jsonResponse(false, 'Anda tidak memiliki akses approve dokumen donasi.', base_url($redirectPath));
                 return;
@@ -1323,7 +1324,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
-        if (!$this->isApprover()) {
+        if (!$this->canDonationInternalApprovalAction()) {
             if ($this->isAjaxRequest()) {
                 $this->jsonResponse(false, 'Anda tidak memiliki akses reject dokumen donasi.', base_url($redirectPath));
                 return;
@@ -1394,7 +1395,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $groupKey = strtoupper(trim((string) $this->input->post('group_key')));
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
-        if (!$this->isApprover()) {
+        if (!$this->canDonationInternalApprovalAction()) {
             if ($this->isAjaxRequest()) {
                 $this->jsonResponse(false, 'Anda tidak memiliki akses approve all dokumen donasi.', base_url($redirectPath));
                 return;
@@ -1543,7 +1544,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
-        if (!$this->isApprover()) {
+        if (!$this->canDonationInternalApprovalAction()) {
             if ($this->isAjaxRequest()) {
                 $this->jsonResponse(false, 'Anda tidak memiliki akses update status Astri.', base_url($redirectPath));
                 return;
@@ -1637,7 +1638,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $groupKey = strtoupper(trim((string) $this->input->post('group_key')));
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
-        if (!$this->isApprover()) {
+        if (!$this->canDonationInternalApprovalAction()) {
             if ($this->isAjaxRequest()) {
                 $this->jsonResponse(false, 'Anda tidak memiliki akses update status Astri.', base_url($redirectPath));
                 return;
@@ -3597,6 +3598,19 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         return in_array('SITAC_HO', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
+    }
+
+    private function canDonationInternalApprovalAction()
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        if ($this->isFinanceHoUser()) {
+            return false;
+        }
+
+        return $this->isApprover();
     }
 
     private function isFinanceHoUser()
