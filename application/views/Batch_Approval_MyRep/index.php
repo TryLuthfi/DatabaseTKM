@@ -350,7 +350,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
         ?>
-        <tr>
+        <tr data-stage-code="<?= htmlspecialchars($batchStageCode, ENT_QUOTES) ?>">
             <td><?= $index + 1 ?></td>
             <td>
                 <?php if (!empty($row['id_myrep_cluster']) && !$isWaitingInputStage): ?>
@@ -613,7 +613,11 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                 ]);
                                 $stageUrl = base_url('Batch_Approval_MyRep' . (!empty($stageFilterQuery) ? '?' . http_build_query($stageFilterQuery) : ''));
                                 ?>
-                                <a href="<?= $stageUrl ?>" class="batch-stage-summary-item batch-stage-summary-item--<?= batchBadgeClass($stageCode) ?>">
+                                <a
+                                    href="<?= $stageUrl ?>"
+                                    class="batch-stage-summary-item batch-stage-summary-item--<?= batchBadgeClass($stageCode) ?> js-stage-summary-filter<?= $selectedStatus === $stageCode ? ' is-active' : '' ?>"
+                                    data-stage-code="<?= htmlspecialchars((string) $stageCode, ENT_QUOTES) ?>"
+                                    data-stage-label="<?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode), ENT_QUOTES) ?>">
                                     <span class="batch-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode)) ?></span>
                                     <span class="batch-stage-summary-item__count"><?= number_format((int) ($stageData['count'] ?? 0), 0, ',', '.') ?></span>
                                     <span class="batch-stage-summary-item__meta">
@@ -1680,6 +1684,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         text-decoration: none;
         transform: translateY(-1px);
         box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    .batch-stage-summary-item.is-active {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18), 0 16px 30px rgba(15, 23, 42, 0.10);
     }
 
     .batch-stage-summary-item--success {
@@ -3065,8 +3074,24 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             if ($.fn.DataTable) {
                 try {
                     var batchTables = [];
+                    var batchAllTable = null;
+                    var activeSummaryStageFilter = batchSelectedStatus || '';
+
+                    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                        if (!settings || !settings.nTable || settings.nTable.id !== 'table_batch_all') {
+                            return true;
+                        }
+                        if (!activeSummaryStageFilter) {
+                            return true;
+                        }
+
+                        var rowNode = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex].nTr : null;
+                        var rowStageCode = rowNode ? String($(rowNode).data('stage-code') || '').toUpperCase().trim() : '';
+                        return rowStageCode === String(activeSummaryStageFilter).toUpperCase().trim();
+                    });
+
                     ['#table_batch_ny_drm', '#table_batch_all'].forEach(function (selector) {
-                        batchTables.push($(selector).DataTable({
+                        var table = $(selector).DataTable({
                             responsive: false,
                             scrollX: true,
                             autoWidth: false,
@@ -3099,7 +3124,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             language: {
                                 emptyTable: 'Belum ada pengajuan Batch Approval.'
                             }
-                        }));
+                        });
+                        batchTables.push(table);
+                        if (selector === '#table_batch_all') {
+                            batchAllTable = table;
+                        }
                     });
 
                     $('a[data-toggle="tab"][href^="#batch-"]').on('shown.bs.tab', function () {
@@ -3107,6 +3136,55 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             table.columns.adjust();
                         });
                     });
+
+                    function updateSummaryStageUrl(stageCode) {
+                        if (!window.history || !window.history.pushState) {
+                            return;
+                        }
+
+                        var url = new URL(window.location.href);
+                        if (stageCode) {
+                            url.searchParams.set('status', stageCode);
+                        } else {
+                            url.searchParams.delete('status');
+                        }
+                        window.history.pushState({ batchStageFilter: stageCode || '' }, '', url.toString());
+                    }
+
+                    function applySummaryStageFilter(stageCode, updateUrl) {
+                        activeSummaryStageFilter = String(stageCode || '').toUpperCase().trim();
+                        batchSelectedStatus = activeSummaryStageFilter;
+                        $('select[name="status"]').val(activeSummaryStageFilter);
+                        $('.js-stage-summary-filter').toggleClass('is-active', false);
+                        if (activeSummaryStageFilter) {
+                            $('.js-stage-summary-filter[data-stage-code="' + activeSummaryStageFilter.replace(/"/g, '\\"') + '"]').addClass('is-active');
+                        }
+                        $('#batch-all-tab').tab('show');
+
+                        if (batchAllTable) {
+                            batchAllTable.draw();
+                            batchAllTable.columns.adjust();
+                        } else {
+                            $('#table_batch_all tbody tr').each(function () {
+                                var rowStageCode = String($(this).data('stage-code') || '').toUpperCase().trim();
+                                $(this).toggle(!activeSummaryStageFilter || rowStageCode === activeSummaryStageFilter);
+                            });
+                        }
+
+                        if (updateUrl) {
+                            updateSummaryStageUrl(activeSummaryStageFilter);
+                        }
+                    }
+
+                    $('.js-stage-summary-filter').on('click', function (event) {
+                        event.preventDefault();
+                        var stageCode = String($(this).data('stage-code') || '').toUpperCase().trim();
+                        applySummaryStageFilter(stageCode, true);
+                    });
+
+                    if (activeSummaryStageFilter) {
+                        applySummaryStageFilter(activeSummaryStageFilter, false);
+                    }
                 } catch (error) {
                     console.error('DataTable Batch Approval gagal diinisialisasi:', error);
                 }
