@@ -209,7 +209,7 @@ if (!empty($summaryRows)) {
                     <div class="myrep-hero__top">
                         <div>
                             <div class="h4 font-weight-bold mb-1">Status List Project MyRep</div>
-                            <div class="text-white-50">Dashboard utama untuk memantau flow project dari BAK sampai ATP.</div>
+                            <div class="text-white-50">Dashboard utama untuk memantau flow project dari NTP sampai ATP.</div>
                         </div>
                         <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
                             <div class="myrep-toggle">
@@ -338,6 +338,7 @@ if (!empty($summaryRows)) {
                                 <thead>
                                     <tr>
                                         <th>KOTA</th>
+                                        <th>NTP</th>
                                         <th>BAK</th>
                                         <th>VALSAL</th>
                                         <th>BATCH</th>
@@ -353,6 +354,7 @@ if (!empty($summaryRows)) {
                                     <?php foreach ($summaryRows as $summaryRow): ?>
                                         <tr>
                                             <td class="text-left"><?= htmlspecialchars((string) ($summaryRow['city_name'] ?? '-')) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['ntp'] ?? 0)) ?></td>
                                             <td><?= myrepDashNumber((float) ($summaryRow['bak'] ?? 0)) ?></td>
                                             <td><?= myrepDashNumber((float) ($summaryRow['valsal'] ?? 0)) ?></td>
                                             <td><?= myrepDashNumber((float) ($summaryRow['batch'] ?? 0)) ?></td>
@@ -365,12 +367,13 @@ if (!empty($summaryRows)) {
                                         </tr>
                                     <?php endforeach; ?>
                                     <?php if (empty($clusterStageSummaryRows)): ?>
-                                        <tr><td colspan="10" class="text-center text-muted">Memuat rekap project...</td></tr>
+                                        <tr><td colspan="11" class="text-center text-muted">Memuat rekap project...</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                                 <tfoot id="myrep-city-stage-summary-foot" class="<?= empty($summaryFooter) ? 'd-none' : '' ?>">
                                         <tr class="font-weight-bold">
                                             <th class="text-left">TOTAL</th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['ntp'] ?? 0)) ?></th>
                                             <th><?= myrepDashNumber((float) ($summaryFooter['bak'] ?? 0)) ?></th>
                                             <th><?= myrepDashNumber((float) ($summaryFooter['valsal'] ?? 0)) ?></th>
                                             <th><?= myrepDashNumber((float) ($summaryFooter['batch'] ?? 0)) ?></th>
@@ -452,7 +455,7 @@ if (!empty($summaryRows)) {
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                                 <?php if ($canDeleteCluster && (int) ($row['id_myrep_cluster'] ?? 0) > 0): ?>
-                                                    <form method="post" action="<?= base_url('MyRepublik_Project/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini? Seluruh flow MyRep dari BAK sampai Checklist Dokument akan ikut terhapus.');">
+                                                    <form method="post" action="<?= base_url('MyRepublik_Project/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini? Seluruh flow MyRep dari NTP/BAK sampai Checklist Dokument akan ikut terhapus.');">
                                                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
                                                         <button type="submit" class="btn btn-sm btn-danger">Hapus Cluster</button>
                                                     </form>
@@ -585,7 +588,7 @@ if (!empty($summaryRows)) {
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Import Cutoff MyRep (Tahap BAK)</h5>
+                <h5 class="modal-title">Import Cutoff MyRep (Tahap NTP/BAK)</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -594,7 +597,7 @@ if (!empty($summaryRows)) {
                 <div class="upload-dropzone" id="myrep-cutoff-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
                     <input type="file" id="myrep-cutoff-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
                     <div><strong>Drag & drop file CSV/XLSX di sini</strong></div>
-                    <div class="text-muted small">Atau klik area ini untuk pilih file template CSV khusus BAK, termasuk 6 status checklist dan flow NRO.</div>
+                    <div class="text-muted small">Atau klik area ini untuk pilih file template CSV dari NTP sampai Checklist, termasuk 6 status checklist dan flow NRO.</div>
                     <div id="myrep-cutoff-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
                 </div>
                 <div class="mt-3">
@@ -722,6 +725,7 @@ if (!empty($summaryRows)) {
             bodyRows.forEach(function (row) {
                 bodyHtml += '<tr>'
                     + '<td class="text-left">' + escapeHtml(row.city_name || '-') + '</td>'
+                    + '<td>' + formatNumber(row.ntp || 0) + '</td>'
                     + '<td>' + formatNumber(row.bak || 0) + '</td>'
                     + '<td>' + formatNumber(row.valsal || 0) + '</td>'
                     + '<td>' + formatNumber(row.batch || 0) + '</td>'
@@ -733,13 +737,14 @@ if (!empty($summaryRows)) {
                     + '<td>' + formatNumber(row.total || 0) + '</td>'
                     + '</tr>';
             });
-            $('#myrep-city-stage-summary-body').html(bodyHtml || '<tr><td colspan="10" class="text-center text-muted">Belum ada data rekap project.</td></tr>');
+            $('#myrep-city-stage-summary-body').html(bodyHtml || '<tr><td colspan="11" class="text-center text-muted">Belum ada data rekap project.</td></tr>');
 
             if (footer) {
                 $('#myrep-city-stage-summary-foot')
                     .removeClass('d-none')
                     .html('<tr class="font-weight-bold">'
                         + '<th class="text-left">TOTAL</th>'
+                        + '<th>' + formatNumber(footer.ntp || 0) + '</th>'
                         + '<th>' + formatNumber(footer.bak || 0) + '</th>'
                         + '<th>' + formatNumber(footer.valsal || 0) + '</th>'
                         + '<th>' + formatNumber(footer.batch || 0) + '</th>'
@@ -1007,7 +1012,7 @@ if (!empty($summaryRows)) {
                 return false;
             }
 
-            if (!confirm('Hapus ' + checkedCount + ' cluster MyRep yang tercentang? Seluruh flow dari BAK sampai Checklist Dokument ikut terhapus.')) {
+            if (!confirm('Hapus ' + checkedCount + ' cluster MyRep yang tercentang? Seluruh flow dari NTP/BAK sampai Checklist Dokument ikut terhapus.')) {
                 event.preventDefault();
                 return false;
             }

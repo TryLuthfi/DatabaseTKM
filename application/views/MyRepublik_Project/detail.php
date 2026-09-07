@@ -541,7 +541,7 @@ $canQuickUpdate = !empty($canQuickUpdate);
 
 <?php if ($canQuickUpdate): ?>
 <?php
-$quickStatusOptions = ['DRAFT', 'BA OPEN', 'BAK', 'VALSAL', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE', 'REJECTED', 'HOLD'];
+$quickStatusOptions = ['DRAFT', 'NTP', 'BA OPEN', 'BAK', 'VALSAL', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE', 'REJECTED', 'HOLD'];
 $quickStagingOptions = ['', 'DRAFT', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED', 'REJECTED'];
 $quickRfsOptions = [
     '' => '-',

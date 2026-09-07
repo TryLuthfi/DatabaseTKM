@@ -5,6 +5,7 @@ class MyRepublik_Project extends CI_Controller
 {
     private $importAllowedStatuses = [
         'DRAFT',
+        'NTP',
         'BA OPEN',
         'BAK',
         'VALSAL',
@@ -228,7 +229,7 @@ class MyRepublik_Project extends CI_Controller
 
         $mainfeederId = (int) ($row['id_mainfeeder'] ?? 0);
         if ($canDeleteCluster && (int) ($row['id_myrep_cluster'] ?? 0) > 0) {
-            $actionHtml .= '<form method="post" action="' . base_url('MyRepublik_Project/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini? Seluruh flow MyRep dari BAK sampai Checklist Dokument akan ikut terhapus.\');">'
+            $actionHtml .= '<form method="post" action="' . base_url('MyRepublik_Project/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini? Seluruh flow MyRep dari NTP/BAK sampai Checklist Dokument akan ikut terhapus.\');">'
                 . '<input type="hidden" name="cluster_id" value="' . (int) $row['id_myrep_cluster'] . '">'
                 . '<button type="submit" class="btn btn-sm btn-danger">Hapus Cluster</button>'
                 . '</form>';
@@ -432,7 +433,7 @@ class MyRepublik_Project extends CI_Controller
         $this->session->set_flashdata(
             $deleted ? 'success' : 'error',
             $deleted
-                ? 'Cluster berhasil dihapus. Flow MyRep dari BAK sampai Checklist Dokument ikut terhapus.'
+                ? 'Cluster berhasil dihapus. Flow MyRep dari NTP/BAK sampai Checklist Dokument ikut terhapus.'
                 : 'Gagal menghapus cluster MyRep.'
         );
         redirect('MyRepublik_Project');
@@ -505,7 +506,7 @@ class MyRepublik_Project extends CI_Controller
         $this->session->set_flashdata(
             $deletedCount > 0 ? 'success' : 'error',
             $deletedCount > 0
-                ? ('Berhasil menghapus ' . $deletedCount . ' dari ' . count($clusterIds) . ' cluster MyRep yang dipilih. Flow dari BAK sampai Checklist Dokument ikut terhapus.')
+                ? ('Berhasil menghapus ' . $deletedCount . ' dari ' . count($clusterIds) . ' cluster MyRep yang dipilih. Flow dari NTP/BAK sampai Checklist Dokument ikut terhapus.')
                 : 'Tidak ada data cluster MyRep yang berhasil dihapus.'
         );
         redirect('MyRepublik_Project');
@@ -1211,6 +1212,7 @@ class MyRepublik_Project extends CI_Controller
         $headers = array_merge($headers, $this->buildPoTerminImportHeaders());
 
         $exampleRowMaps = [
+            ['status_current' => 'NTP', 'city_name' => 'MALANG', 'district_name' => 'KLOJEN', 'village_name' => 'KAUMAN', 'cluster_name' => 'Cluster NTP A', 'cluster_code' => 'CL-NTP-A', 'hp_plan' => '120', 'nomor_ntp' => 'NTP-MLG-001', 'tanggal_ntp' => '2026-05-01', 'remark_general' => 'Contoh cluster NTP belum BAK'],
             ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'KLOJEN', 'village_name' => 'KAUMAN', 'cluster_name' => 'Cluster A', 'cluster_code' => 'CL-A', 'hp_plan' => '120', 'homepass_bak' => '120', 'ba_open_date' => '2026-05-01', 'bak_date' => '2026-05-03', 'nomor_ntp' => 'NTP-MLG-001', 'tanggal_ntp' => '2026-05-04', 'remark_general' => 'Contoh cluster BAK 1'],
             ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'BLIMBING', 'village_name' => 'POLOWIJEN', 'cluster_name' => 'Cluster B', 'cluster_code' => 'CL-B', 'hp_plan' => '95', 'homepass_bak' => '95', 'ba_open_date' => '2026-05-02', 'bak_date' => '2026-05-04', 'remark_general' => 'Contoh cluster BAK 2'],
             ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'LOWOKWARU', 'village_name' => 'MOJOLANGU', 'cluster_name' => 'Cluster C', 'cluster_code' => 'CL-C', 'hp_plan' => '140', 'homepass_bak' => '140', 'ba_open_date' => '2026-05-03', 'bak_date' => '2026-05-05', 'remark_general' => 'Contoh cluster BAK 3'],
@@ -1892,6 +1894,7 @@ class MyRepublik_Project extends CI_Controller
             if (!isset($rows[$cityName])) {
                 $rows[$cityName] = [
                     'city_name' => $cityName,
+                    'ntp' => 0,
                     'bak' => 0,
                     'valsal' => 0,
                     'batch' => 0,
@@ -1908,7 +1911,9 @@ class MyRepublik_Project extends CI_Controller
             $statusDisplay = strtoupper(trim((string) ($clusterRow['status_current_display'] ?? $statusCurrent)));
             $statusDrm = strtoupper(trim((string) ($clusterRow['status_drm'] ?? '')));
 
-            if (in_array($statusCurrent, ['DRAFT', 'BA OPEN', 'BAK'], true)) {
+            if (in_array($statusCurrent, ['DRAFT', 'NTP'], true)) {
+                $rows[$cityName]['ntp'] += $homepassValue;
+            } elseif (in_array($statusCurrent, ['BA OPEN', 'BAK'], true)) {
                 $rows[$cityName]['bak'] += $homepassValue;
             } elseif ($statusCurrent === 'VALSAL') {
                 $rows[$cityName]['valsal'] += $homepassValue;
@@ -1940,6 +1945,7 @@ class MyRepublik_Project extends CI_Controller
 
         $totalRow = [
             'city_name' => 'TOTAL',
+            'ntp' => 0,
             'bak' => 0,
             'valsal' => 0,
             'batch' => 0,
@@ -1952,6 +1958,7 @@ class MyRepublik_Project extends CI_Controller
         ];
 
         foreach ($result as $row) {
+            $totalRow['ntp'] += (int) ($row['ntp'] ?? 0);
             $totalRow['bak'] += (int) ($row['bak'] ?? 0);
             $totalRow['valsal'] += (int) ($row['valsal'] ?? 0);
             $totalRow['batch'] += (int) ($row['batch'] ?? 0);
@@ -1982,7 +1989,7 @@ class MyRepublik_Project extends CI_Controller
         $hpDrm = (float) ($clusterRow['homepass_drm'] ?? 0);
         $hpRfs = (float) ($clusterRow['homepass_rfs'] ?? 0);
 
-        if (in_array($status, ['DRAFT', 'BA OPEN', 'BAK'], true)) {
+        if (in_array($status, ['DRAFT', 'NTP', 'BA OPEN', 'BAK'], true)) {
             return $hpBak > 0 ? $hpBak : $hpPlan;
         }
 
@@ -2101,6 +2108,17 @@ class MyRepublik_Project extends CI_Controller
     private function upsertImportedBak($clusterId, array $row, $userId)
     {
         if (!$this->db->table_exists('tb_myrep_bak')) {
+            return;
+        }
+
+        $statusCurrent = $this->resolveImportStatusCurrent($row);
+        if ($statusCurrent === 'NTP') {
+            return;
+        }
+
+        $needsStage = $this->quickStageAtLeast($statusCurrent, 'BAK')
+            || $this->quickHasAnyPayload($row, ['ba_open_date', 'bak_date', 'homepass_bak']);
+        if (!$needsStage) {
             return;
         }
 
@@ -4566,6 +4584,7 @@ class MyRepublik_Project extends CI_Controller
     {
         $order = [
             'DRAFT',
+            'NTP',
             'BA OPEN',
             'BAK',
             'VALSAL',
@@ -4934,6 +4953,17 @@ class MyRepublik_Project extends CI_Controller
             || !empty($this->extractRfsClaimsFromRow($row));
         if ($hasRfsAtp) {
             return 'RFS';
+        }
+
+        $hasBak = $this->quickHasAnyPayload($row, ['ba_open_date', 'bak_date', 'homepass_bak']);
+        if ($hasBak) {
+            return 'BAK';
+        }
+
+        $hasNtp = trim((string) ($row['nomor_ntp'] ?? '')) !== ''
+            || $this->normalizeDate((string) ($row['tanggal_ntp'] ?? '')) !== null;
+        if ($hasNtp) {
+            return 'NTP';
         }
 
         return 'BAK';

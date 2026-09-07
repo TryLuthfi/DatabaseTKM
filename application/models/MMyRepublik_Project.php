@@ -5,6 +5,7 @@ class MMyRepublik_Project extends CI_Model
 {
     private $statusOrder = [
         'DRAFT',
+        'NTP',
         'BA OPEN',
         'BAK',
         'VALSAL',
@@ -617,6 +618,13 @@ class MMyRepublik_Project extends CI_Model
 
         if (!$isLegacy) {
             $timeline[] = [
+                'stage' => 'NTP',
+                'status' => strtoupper(trim((string) ($cluster['status_current'] ?? ''))) === 'NTP' ? 'NTP' : (!empty($cluster['ntp_name']) || !empty($cluster['ntp_date']) ? 'DONE' : 'NOT STARTED'),
+                'date' => $cluster['ntp_date'] ?? null,
+                'summary' => 'Nomor/tanggal NTP sebagai gate awal sebelum proses BAK.',
+            ];
+
+            $timeline[] = [
                 'stage' => 'BAK',
                 'status' => (string) ($cluster['status_bak'] ?? 'NOT STARTED'),
                 'date' => $cluster['bak_date'] ?? $cluster['ba_open_date'] ?? null,
@@ -886,7 +894,7 @@ class MMyRepublik_Project extends CI_Model
         $hpDrm = (float) ($row['homepass_drm'] ?? 0);
         $hpRfs = (float) ($row['homepass_rfs'] ?? 0);
 
-        if (in_array($status, ['DRAFT', 'BA OPEN', 'BAK'], true)) {
+        if (in_array($status, ['DRAFT', 'NTP', 'BA OPEN', 'BAK'], true)) {
             return $hpBak > 0 ? $hpBak : $hpPlan;
         }
 
