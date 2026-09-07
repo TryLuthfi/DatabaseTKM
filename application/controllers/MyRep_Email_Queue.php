@@ -7,6 +7,7 @@ class MyRep_Email_Queue extends CI_Controller
     {
         parent::__construct();
         $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function processRejectQueue()
@@ -21,12 +22,17 @@ class MyRep_Email_Queue extends CI_Controller
 
         $limit = (int) $this->input->get('limit');
         $result = $this->myrepRejectEmail->processDueQueues($limit > 0 ? $limit : null);
+        $telegramResult = $this->myrepNotifier->processDueQueues($limit > 0 ? $limit : null);
 
         if ($this->input->is_cli_request()) {
             echo 'processed=' . (int) $result['processed']
                 . ' sent=' . (int) $result['sent']
                 . ' failed=' . (int) $result['failed']
-                . ' skipped=' . (int) $result['skipped'] . PHP_EOL;
+                . ' skipped=' . (int) $result['skipped']
+                . ' telegram_processed=' . (int) $telegramResult['processed']
+                . ' telegram_sent=' . (int) $telegramResult['sent']
+                . ' telegram_failed=' . (int) $telegramResult['failed']
+                . ' telegram_skipped=' . (int) $telegramResult['skipped'] . PHP_EOL;
             return;
         }
 
@@ -35,6 +41,7 @@ class MyRep_Email_Queue extends CI_Controller
             ->set_output(json_encode([
                 'status' => true,
                 'data' => $result,
+                'telegram' => $telegramResult,
             ]));
     }
 

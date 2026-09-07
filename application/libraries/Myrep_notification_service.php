@@ -7,6 +7,7 @@ class Myrep_notification_service
     private $ci;
     private $config;
     private $cityPicMappingCache = [];
+    private $queueTablesEnsured = false;
 
     public function __construct()
     {
@@ -31,7 +32,151 @@ class Myrep_notification_service
         }
 
         $message = $this->buildMessage($moduleName, $eventName, $payload, $recipient);
-        return $this->sendTelegramMessage($message);
+        return $this->sendTelegramMessage($message, (string) $moduleName);
+    }
+
+    public function enqueueDelayed($moduleName, $eventName, array $payload = [], array $options = [])
+    {
+        if (empty($this->config['enabled']) || !$this->ensureQueueTables()) {
+            return false;
+        }
+
+        $moduleName = trim((string) $moduleName);
+        $eventName = trim((string) $eventName);
+        $clusterId = (int) ($payload['cluster_id'] ?? $payload['cluster_ref_id'] ?? 0);
+        if ($moduleName === '' || $eventName === '' || $clusterId <= 0) {
+            return false;
+        }
+
+        $delayMinutes = max(1, (int) ($options['delay_minutes'] ?? $this->config['queue_delay_minutes']));
+        $groupKey = strtoupper(trim((string) ($options['group_key'] ?? $payload['group_key'] ?? '')));
+        $groupLabel = trim((string) ($options['group_label'] ?? $payload['group_label'] ?? ''));
+        $documentLabels = $this->normalizeQueueDocumentLabels($options['document_labels'] ?? ($payload['document_label'] ?? []));
+        $now = date('Y-m-d H:i:s');
+        $scheduledAt = date('Y-m-d H:i:s', time() + ($delayMinutes * 60));
+
+        $queue = $this->ci->db
+            ->from('tb_myrep_telegram_notification_queue')
+            ->where('module_name', $moduleName)
+            ->where('event_name', $eventName)
+            ->where('cluster_ref_id', $clusterId)
+            ->where('group_key', $groupKey)
+            ->where('status_queue', 'PENDING')
+            ->order_by('id_queue', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (!empty($queue['id_queue'])) {
+            $mergedLabels = array_values(array_unique(array_merge(
+                $this->decodeQueueDocumentLabels((string) ($queue['document_labels'] ?? '')),
+                $documentLabels
+            )));
+            $payload = array_merge($this->decodeQueuePayload((string) ($queue['payload_json'] ?? '')), $payload);
+
+            return (bool) $this->ci->db
+                ->where('id_queue', (int) $queue['id_queue'])
+                ->update('tb_myrep_telegram_notification_queue', [
+                    'group_label' => $groupLabel !== '' ? $groupLabel : (string) ($queue['group_label'] ?? ''),
+                    'document_labels' => json_encode($mergedLabels),
+                    'payload_json' => json_encode($payload),
+                    'scheduled_at' => $scheduledAt,
+                    'updated_at' => $now,
+                ]);
+        }
+
+        return (bool) $this->ci->db->insert('tb_myrep_telegram_notification_queue', [
+            'module_name' => $moduleName,
+            'event_name' => $eventName,
+            'cluster_ref_id' => $clusterId,
+            'group_key' => $groupKey,
+            'group_label' => $groupLabel,
+            'document_labels' => json_encode($documentLabels),
+            'payload_json' => json_encode($payload),
+            'status_queue' => 'PENDING',
+            'attempts' => 0,
+            'scheduled_at' => $scheduledAt,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    public function processDueQueues($limit = null)
+    {
+        if (empty($this->config['enabled']) || !$this->ensureQueueTables()) {
+            return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
+        }
+
+        $limit = $limit === null ? (int) $this->config['queue_process_limit'] : (int) $limit;
+        $limit = max(1, min(50, $limit));
+
+        $queues = (array) $this->ci->db
+            ->from('tb_myrep_telegram_notification_queue')
+            ->where('status_queue', 'PENDING')
+            ->where('scheduled_at <=', date('Y-m-d H:i:s'))
+            ->order_by('scheduled_at', 'ASC')
+            ->limit($limit)
+            ->get()
+            ->result_array();
+
+        $result = ['processed' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
+        foreach ($queues as $queue) {
+            $result['processed']++;
+            $queueId = (int) ($queue['id_queue'] ?? 0);
+            if ($queueId <= 0) {
+                $result['skipped']++;
+                continue;
+            }
+
+            $this->ci->db
+                ->where('id_queue', $queueId)
+                ->where('status_queue', 'PENDING')
+                ->update('tb_myrep_telegram_notification_queue', [
+                    'status_queue' => 'PROCESSING',
+                    'attempts' => (int) ($queue['attempts'] ?? 0) + 1,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+            if ($this->ci->db->affected_rows() <= 0) {
+                $result['skipped']++;
+                continue;
+            }
+
+            $payload = $this->decodeQueuePayload((string) ($queue['payload_json'] ?? ''));
+            $payload['document_label'] = $this->buildQueuedDocumentLabel(
+                (string) ($queue['group_key'] ?? ''),
+                (string) ($queue['group_label'] ?? ''),
+                $this->decodeQueueDocumentLabels((string) ($queue['document_labels'] ?? ''))
+            );
+            $payload['timestamp'] = date('Y-m-d H:i:s');
+
+            $sent = $this->notify((string) ($queue['module_name'] ?? ''), (string) ($queue['event_name'] ?? ''), $payload);
+            if ($sent) {
+                $this->ci->db
+                    ->where('id_queue', $queueId)
+                    ->update('tb_myrep_telegram_notification_queue', [
+                        'status_queue' => 'SENT',
+                        'sent_at' => date('Y-m-d H:i:s'),
+                        'last_error' => null,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+                $result['sent']++;
+                continue;
+            }
+
+            $attempts = (int) ($queue['attempts'] ?? 0) + 1;
+            $this->ci->db
+                ->where('id_queue', $queueId)
+                ->update('tb_myrep_telegram_notification_queue', [
+                    'status_queue' => $attempts >= 3 ? 'FAILED' : 'PENDING',
+                    'scheduled_at' => date('Y-m-d H:i:s', time() + 300),
+                    'last_error' => 'Telegram notification failed.',
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+            $result['failed']++;
+        }
+
+        return $result;
     }
 
     private function getRoute($moduleName, $eventName)
@@ -559,11 +704,16 @@ class Myrep_notification_service
         return '<a href="tg://user?id=' . rawurlencode($telegramUserId) . '">' . $name . '</a>';
     }
 
-    private function sendTelegramMessage($message)
+    private function sendTelegramMessage($message, $moduleName = '')
     {
+        $chatId = $this->resolveChatId($moduleName);
+        if ($chatId === '') {
+            return false;
+        }
+
         $endpoint = 'https://api.telegram.org/bot' . $this->config['bot_token'] . '/sendMessage';
         $payload = http_build_query([
-            'chat_id' => $this->config['chat_id'],
+            'chat_id' => $chatId,
             'text' => $message,
             'parse_mode' => 'HTML',
             'disable_web_page_preview' => 'true',
@@ -615,7 +765,20 @@ class Myrep_notification_service
             'enabled' => $this->normalizeBooleanEnv($env['TELEGRAM_MYREP_NOTIFICATION_ENABLED'] ?? ($env['TELEGRAM_CHECKLIST_MYREP_ENABLED'] ?? true)),
             'bot_token' => trim((string) ($env['TELEGRAM_BOT_TOKEN'] ?? '')),
             'chat_id' => trim((string) ($env['TELEGRAM_CHAT_ID_CHECKLIST_MYREP'] ?? ($env['TELEGRAM_CHAT_ID'] ?? ''))),
+            'donation_chat_id' => trim((string) ($env['TELEGRAM_CHAT_ID_DONASI_MYREP'] ?? '')),
+            'queue_delay_minutes' => max(1, (int) ($env['TELEGRAM_MYREP_QUEUE_DELAY_MINUTES'] ?? 3)),
+            'queue_process_limit' => max(1, (int) ($env['TELEGRAM_MYREP_QUEUE_PROCESS_LIMIT'] ?? 10)),
         ];
+    }
+
+    private function resolveChatId($moduleName)
+    {
+        $moduleName = strtolower(trim((string) $moduleName));
+        if ($moduleName === 'batch_approval_myrep' && trim((string) ($this->config['donation_chat_id'] ?? '')) !== '') {
+            return trim((string) $this->config['donation_chat_id']);
+        }
+
+        return trim((string) ($this->config['chat_id'] ?? ''));
     }
 
     private function normalizeBooleanEnv($value)
@@ -663,5 +826,84 @@ class Myrep_notification_service
     private function escapeTelegramText($text)
     {
         return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function ensureQueueTables()
+    {
+        if ($this->queueTablesEnsured) {
+            return true;
+        }
+
+        $this->ci->db->query("CREATE TABLE IF NOT EXISTS `tb_myrep_telegram_notification_queue` (
+            `id_queue` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `module_name` VARCHAR(100) NOT NULL,
+            `event_name` VARCHAR(100) NOT NULL,
+            `cluster_ref_id` INT UNSIGNED NOT NULL,
+            `group_key` VARCHAR(50) NOT NULL DEFAULT '',
+            `group_label` VARCHAR(150) NULL,
+            `document_labels` TEXT NULL,
+            `payload_json` TEXT NULL,
+            `status_queue` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+            `attempts` INT UNSIGNED NOT NULL DEFAULT 0,
+            `scheduled_at` DATETIME NOT NULL,
+            `sent_at` DATETIME NULL,
+            `last_error` TEXT NULL,
+            `created_at` DATETIME NOT NULL,
+            `updated_at` DATETIME NOT NULL,
+            PRIMARY KEY (`id_queue`),
+            KEY `idx_myrep_telegram_queue_due` (`status_queue`, `scheduled_at`),
+            KEY `idx_myrep_telegram_queue_group` (`module_name`, `event_name`, `cluster_ref_id`, `group_key`, `status_queue`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->queueTablesEnsured = $this->ci->db->table_exists('tb_myrep_telegram_notification_queue');
+        return $this->queueTablesEnsured;
+    }
+
+    private function normalizeQueueDocumentLabels($labels)
+    {
+        $labels = is_array($labels) ? $labels : [$labels];
+        $normalized = [];
+        foreach ($labels as $label) {
+            $label = trim((string) $label);
+            if ($label !== '') {
+                $normalized[] = $label;
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    private function decodeQueueDocumentLabels($json)
+    {
+        $decoded = json_decode((string) $json, true);
+        return $this->normalizeQueueDocumentLabels(is_array($decoded) ? $decoded : []);
+    }
+
+    private function decodeQueuePayload($json)
+    {
+        $decoded = json_decode((string) $json, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function buildQueuedDocumentLabel($groupKey, $groupLabel, array $documentLabels)
+    {
+        $groupKey = strtoupper(trim((string) $groupKey));
+        $groupLabel = trim((string) $groupLabel);
+        if ($groupLabel === '') {
+            $groupLabel = $groupKey === 'POST_ZEYN' ? 'Dokumen Tahap 2' : ($groupKey === 'PRE_ZEYN' ? 'Dokumen Tahap 1' : 'Dokumen Donasi');
+        }
+
+        $count = count($documentLabels);
+        if ($count <= 0) {
+            return 'Upload ' . $groupLabel;
+        }
+
+        $displayLabels = array_slice($documentLabels, 0, 5);
+        $label = 'Upload ' . $groupLabel . ' (' . $count . ' dokumen): ' . implode(', ', $displayLabels);
+        if ($count > count($displayLabels)) {
+            $label .= ', +' . ($count - count($displayLabels)) . ' dokumen lain';
+        }
+
+        return $label;
     }
 }

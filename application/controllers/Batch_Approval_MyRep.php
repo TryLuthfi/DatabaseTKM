@@ -1121,6 +1121,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $message = $fileId > 0 ? 'Dokumen donasi berhasil diupload.' : 'Dokumen donasi gagal disimpan.';
         if ($fileId > 0) {
+            $this->queueDonationUploadNotification($clusterId, (string) ($context['group_label'] ?? $groupKey), [(string) ($context['doc_name'] ?? 'Dokumen Donasi')]);
             $this->syncDonationUploadReviewStage($clusterId, (string) ($context['group_label'] ?? ''));
             $this->handleUploadSuccess($message, $redirectPath);
         } else {
@@ -1165,6 +1166,8 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $uploaded = 0;
         $errors = [];
+        $uploadedDocNames = [];
+        $uploadedGroupLabel = '';
         foreach ($rows as $row) {
             $docItemId = (int) ($row['id_doc_item'] ?? 0);
             if ($this->isPostDonationActionLocked($clusterId, (string) ($row['group_label'] ?? $groupKey))) {
@@ -1230,9 +1233,17 @@ class Batch_Approval_MyRep extends CI_Controller
             ]);
             if ($fileId > 0) {
                 $uploaded++;
+                $uploadedDocNames[] = $docName;
+                if ($uploadedGroupLabel === '') {
+                    $uploadedGroupLabel = (string) ($row['group_label'] ?? $groupKey);
+                }
             } else {
                 $errors[] = $docName . ': gagal disimpan.';
             }
+        }
+
+        if ($uploaded > 0) {
+            $this->queueDonationUploadNotification($clusterId, $uploadedGroupLabel !== '' ? $uploadedGroupLabel : $groupKey, $uploadedDocNames);
         }
 
         if ($uploaded > 0 && empty($errors)) {
@@ -3829,6 +3840,45 @@ class Batch_Approval_MyRep extends CI_Controller
             'nominal_per_homepass' => $nominalPerHomepass,
             'sender_name' => (string) $this->session->userdata('nama_user'),
             'detail_url' => base_url('Batch_Approval_MyRep/detail/' . $clusterId),
+        ]);
+    }
+
+    private function queueDonationUploadNotification($clusterId, $groupKeyOrLabel, array $documentLabels)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || empty($documentLabels)) {
+            return;
+        }
+
+        $cluster = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if (empty($cluster)) {
+            return;
+        }
+
+        $groupKeyOrLabel = strtoupper(trim((string) $groupKeyOrLabel));
+        $groupKey = in_array($groupKeyOrLabel, ['POST_ZEYN', 'POST PAYMENT ZEYN DOCUMENT'], true) ? 'POST_ZEYN' : 'PRE_ZEYN';
+        $groupLabel = $groupKey === 'POST_ZEYN' ? 'Dokumen Tahap 2' : 'Dokumen Tahap 1';
+        $homepass = (int) ($cluster['hp_donasi'] ?? 0);
+        $donationTotal = (float) ($cluster['nominal_pengajuan_area'] ?? 0);
+
+        $this->myrepNotifier->enqueueDelayed('Batch_Approval_MyRep', 'document_masuk', [
+            'module_label' => 'Batch Approval',
+            'cluster_id' => $clusterId,
+            'group_key' => $groupKey,
+            'group_label' => $groupLabel,
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'homepass' => $homepass,
+            'donation_total' => $donationTotal,
+            'nominal_per_homepass' => $homepass > 0 ? ($donationTotal / $homepass) : 0,
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('Batch_Approval_MyRep/detail/' . $clusterId),
+        ], [
+            'delay_minutes' => 3,
+            'group_key' => $groupKey,
+            'group_label' => $groupLabel,
+            'document_labels' => $documentLabels,
         ]);
     }
 }
