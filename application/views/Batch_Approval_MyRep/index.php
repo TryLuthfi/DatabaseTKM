@@ -343,6 +343,15 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $batchDocLabel = $hasBatch ? batchDocLabel($row) : 'BELUM ADA DOC';
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
         $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
+        $batchPics = $hasBatch ? (array) $batchModel->getBatchPics((int) ($row['id_batch_approval'] ?? 0)) : [];
+        $myrepPicNames = [];
+        foreach ($batchPics as $batchPic) {
+            $myrepPicName = trim((string) ($batchPic['pic_name'] ?? ''));
+            if ($myrepPicName !== '') {
+                $myrepPicNames[] = $myrepPicName;
+            }
+        }
+        $myrepPicLabel = !empty($myrepPicNames) ? implode(', ', array_unique($myrepPicNames)) : '';
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
         $useReleaseNominal = in_array($batchStageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
@@ -383,18 +392,21 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
             <td>
+                <div class="batch-pic-summary">
+                    <div><strong>Area:</strong> <?= htmlspecialchars($uploadBy !== '' ? $uploadBy : '-') ?></div>
+                    <div><strong>HO:</strong> <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
+                    <div><strong>MyRep:</strong> <?= htmlspecialchars($myrepPicLabel !== '' ? $myrepPicLabel : '-') ?></div>
+                </div>
+            </td>
+            <td>
                 <div class="batch-doc-status-stack">
                     <div class="batch-doc-status-stack__item">
-                        <span class="batch-doc-name">RAR :</span>
+                        <span class="batch-doc-name">RAR:</span>
                         <span class="badge badge-<?= batchBadgeClass($batchDocLabel) ?> batch-doc-status-badge">
                             <?= htmlspecialchars($batchDocLabel) ?>
                         </span>
                     </div>
                 </div>
-            </td>
-            <td>
-                <div>Upload by : <?= htmlspecialchars($uploadBy !== '' ? $uploadBy : '-') ?></div>
-                <div>PIC approval : <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
@@ -430,7 +442,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                             data-astri_batch_number="<?= htmlspecialchars((string) ($row['astri_batch_number'] ?? ''), ENT_QUOTES) ?>"
                             data-staging_status="<?= htmlspecialchars((string) ($row['staging_status'] ?? 'DRAFT'), ENT_QUOTES) ?>"
                             data-remark_batch_approval="<?= htmlspecialchars((string) ($row['remark_batch_approval'] ?? ''), ENT_QUOTES) ?>"
-                            data-pics='<?= htmlspecialchars(json_encode($batchModel->getBatchPics((int) ($row["id_batch_approval"] ?? 0))), ENT_QUOTES) ?>'>
+                            data-pics='<?= htmlspecialchars(json_encode($batchPics), ENT_QUOTES) ?>'>
                             Edit
                         </button>
                     <?php endif; ?>
@@ -692,7 +704,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>Nominal / Homepass</th>
                                                     <th>SLA &amp; Aging</th>
                                                     <th>Staging</th>
-                                                    <th>Dokumen RAR</th>
+                                                    <th>PIC</th>
                                                     <th>Review Dokumen</th>
                                                     <th>Status Flow</th>
                                                     <th>Aksi</th>
@@ -727,7 +739,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>Nominal / Homepass</th>
                                                     <th>SLA &amp; Aging</th>
                                                     <th>Staging</th>
-                                                    <th>Dokumen RAR</th>
+                                                    <th>PIC</th>
                                                     <th>Review Dokumen</th>
                                                     <th>Status Flow</th>
                                                     <th>Aksi</th>
@@ -1858,6 +1870,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         justify-self: start;
         min-width: 74px;
         text-align: center;
+    }
+
+    .batch-pic-summary {
+        display: grid;
+        gap: .2rem;
+        min-width: 180px;
+        font-size: .84rem;
+        line-height: 1.35;
     }
 
     .batch-sla-aging-cell {
