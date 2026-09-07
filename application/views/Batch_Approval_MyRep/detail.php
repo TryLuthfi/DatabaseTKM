@@ -1791,7 +1791,7 @@ if ($canApprove && $canApprovalAction) {
                                         <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
                                         <input type="hidden" name="redirect_to_detail" value="1">
                                         <input type="hidden" name="target_stage" value="WAITING_FINANCE_RELEASE">
-                                        <button type="submit" class="btn btn-success btn-sm">Ajukan ke Finance</button>
+                                        <button type="submit" class="btn btn-success btn-sm">Proses Pengajuan Saku</button>
                                     </form>
                                 </div>
                             <?php elseif ($currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>

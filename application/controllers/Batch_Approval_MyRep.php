@@ -861,7 +861,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $batchPayload['pre_zeyn_doc_approved_at'] = $submittedAt;
             $batchPayload['finance_submitted_at'] = $submittedAt;
             $batchPayload['submitted_to_finance_at'] = $submittedAt;
-            $successMessage = 'Pengajuan finance berhasil dicatat.';
+            $successMessage = 'Proses pengajuan saku berhasil dicatat.';
         } elseif ($currentStage === 'WAITING_FINANCE_RELEASE' && $targetStage === 'RELEASED') {
             if (!$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved($clusterId, 'PRE_ZEYN')) {
                 $this->session->set_flashdata('error', 'Finance tidak boleh release donasi karena dokumen pra-finance belum full approved Finance.');
