@@ -532,6 +532,14 @@ class Batch_Approval_MyRep extends CI_Controller
         $astriBatchApprovedAt = $this->normalizeDateTimeInput($this->input->post('astri_batch_approved_at'));
         $remark = trim((string) $this->input->post('remark_batch_approval'));
         $pics = $this->collectPicsFromPost();
+        $stagingStatus = $this->normalizeStagingStatus($stagingStatus, false);
+        $batchApprovalRequiredStages = [
+            'DRAFT',
+            'WAITING_INPUT',
+            'WAITING INPUT',
+            'WAITING_BATCH_APPROVAL',
+        ];
+        $isBatchApprovalRequired = !in_array($stagingStatus, $batchApprovalRequiredStages, true);
 
         if ($clusterId <= 0 || $batchId <= 0 || $hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '') {
             $this->session->set_flashdata('error', 'Data update Batch Approval belum lengkap.');
@@ -539,13 +547,13 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
 
-        if ($astriBatchNumber === '') {
+        if ($isBatchApprovalRequired && $astriBatchNumber === '') {
             $this->session->set_flashdata('error', 'Nomor batch approval Astri wajib diisi.');
             redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
 
-        if (empty($astriBatchApprovedAt)) {
+        if ($isBatchApprovalRequired && empty($astriBatchApprovedAt)) {
             $this->session->set_flashdata('error', 'Tanggal batch approval wajib diisi.');
             redirect($this->resolveBatchRedirectPath($clusterId));
             return;
@@ -562,7 +570,6 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $userId = (int) $this->session->userdata('id_user');
-        $stagingStatus = $this->normalizeStagingStatus($stagingStatus, false);
         $gateError = $this->validateDonationStageGate($clusterId, $stagingStatus);
         if ($gateError !== '') {
             $redirectPath = $this->resolveBatchRedirectPath($clusterId);
