@@ -540,10 +540,17 @@ class Batch_Approval_MyRep extends CI_Controller
             'WAITING_BATCH_APPROVAL',
         ];
         $isBatchApprovalRequired = !in_array($stagingStatus, $batchApprovalRequiredStages, true);
+        $isBaseDataRequired = !in_array($stagingStatus, ['DRAFT', 'WAITING_INPUT', 'WAITING INPUT', 'WAITING_BATCH_APPROVAL'], true);
 
-        if ($clusterId <= 0 || $batchId <= 0 || $hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '') {
+        if ($clusterId <= 0 || $batchId <= 0) {
             $this->session->set_flashdata('error', 'Data update Batch Approval belum lengkap.');
             redirect('Batch_Approval_MyRep');
+            return;
+        }
+
+        if ($isBaseDataRequired && ($hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '')) {
+            $this->session->set_flashdata('error', 'Data update Batch Approval belum lengkap.');
+            redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
 
