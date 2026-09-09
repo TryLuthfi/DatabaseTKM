@@ -2206,7 +2206,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         '<button type="button" class="btn btn-sm btn-outline-dark js-history-doc" data-toggle="modal" data-target="#modal-valsal-history-doc" data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" data-doc_name="' + docName + '" data-history="' + escapeHtml(JSON.stringify(doc.history || [])) + '">History</button>';
                 }
 
-                if (docStatusRaw === 'REJECTED' && <?= $canTambah ? 'true' : 'false' ?>) {
+                var hasUploadedFile = !!(doc.id_doc_file && doc.file_path);
+                var canUploadFromDetail = !hasUploadedFile || docStatusRaw === 'REJECTED';
+
+                if (canUploadFromDetail && <?= $canTambah ? 'true' : 'false' ?>) {
+                    var uploadButtonLabel = docStatusRaw === 'REJECTED' ? 'Re-Upload' : 'Upload';
                     actionParts.push(
                         '<button type="button" class="btn btn-sm btn-outline-info btn-block js-detail-reupload-doc" ' +
                             'data-cluster_id="' + Number(doc.id_myrep_cluster || 0) + '" ' +
@@ -2215,7 +2219,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             'data-doc_name="' + docName + '" ' +
                             'data-doc_status="' + statusLabel + '" ' +
                             'data-doc_remark="' + remarkValue + '">' +
-                            'Re-Upload' +
+                            uploadButtonLabel +
                         '</button>'
                     );
                 }
