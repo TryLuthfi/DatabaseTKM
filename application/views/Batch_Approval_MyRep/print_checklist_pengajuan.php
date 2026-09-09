@@ -189,16 +189,16 @@ $submissionDetails = [
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 58px;
-            height: 58px;
+            width: 68px;
+            min-height: 34px;
+            padding: 6px 8px;
             border: 3px solid #64748b;
-            border-radius: 50%;
+            border-radius: 4px;
             color: #64748b;
             font-size: 8px;
             font-weight: 900;
             text-align: center;
             text-transform: uppercase;
-            transform: rotate(-8deg);
         }
 
         .stamp.approved {
@@ -214,15 +214,6 @@ $submissionDetails = [
         .stamp.rejected {
             border-color: #b91c1c;
             color: #b91c1c;
-        }
-
-        .stamp-small {
-            width: 52px;
-            height: 52px;
-            border-width: 3px;
-            font-size: 8px;
-            margin: 0 auto 5px;
-            transform: rotate(-7deg);
         }
 
         .section {
@@ -373,9 +364,9 @@ $submissionDetails = [
         }
 
         .signature-box {
-            min-height: 88px;
+            min-height: 68px;
             border: 1px solid #cbd5e1;
-            padding: 7px;
+            padding: 12px 7px 8px;
             text-align: center;
         }
 
@@ -385,19 +376,11 @@ $submissionDetails = [
             text-transform: uppercase;
         }
 
-        .signature-answer {
-            margin: 4px auto 6px;
-            color: #475569;
-            font-size: 8px;
-            font-weight: 800;
-        }
-
         .signature-name {
             display: inline-block;
             min-width: 150px;
-            margin-top: 5px;
-            padding-top: 4px;
-            border-top: 1px solid #0f172a;
+            margin-top: 2px;
+            padding-top: 0;
             font-size: 8px;
             font-weight: 900;
         }
@@ -528,13 +511,9 @@ $submissionDetails = [
                 <?php foreach (['sitac', 'finance'] as $signatureKey): ?>
                     <?php
                     $signature = (array) ($signatures[$signatureKey] ?? []);
-                    $signatureStatus = strtoupper(trim((string) ($signature['status'] ?? 'ON REVIEW')));
-                    $signatureStampClass = strtolower(str_replace(' ', '-', $signatureStatus));
                     ?>
                     <div class="signature-box">
                         <div class="signature-role"><?= batchPrintText($signature['label'] ?? '-') ?></div>
-                        <div class="signature-answer">Jawaban: <?= batchPrintText($signature['answer'] ?? '-') ?></div>
-                        <div class="stamp stamp-small <?= batchPrintText($signatureStampClass) ?>"><?= batchPrintText($signatureStatus) ?></div>
                         <div class="signature-name"><?= batchPrintText($signature['name'] ?? '-') ?></div>
                     </div>
                 <?php endforeach; ?>

@@ -2052,7 +2052,7 @@ if ($canApprove && $canApprovalAction) {
                         'Status Finance' => htmlspecialchars(batchDetailStatusLabel($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? '-')),
                         'Aging Doc' => batchDetailAgingText($docStartDate),
                     ];
-                    $showPrintChecklistPengajuan = $groupKey === 'PRE_ZEYN' && $currentDonationStage === 'PRE_ZEYN_FINANCE_APPROVED';
+                    $showPrintChecklistPengajuan = $groupKey === 'PRE_ZEYN' && $requiredCount > 0 && $financeApprovedCount >= $requiredCount;
                     ?>
                     <div class="card donation-upload-panel mb-3">
                         <div class="card-header d-flex align-items-center justify-content-between">

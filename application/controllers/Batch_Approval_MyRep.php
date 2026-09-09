@@ -3737,8 +3737,8 @@ class Batch_Approval_MyRep extends CI_Controller
                 'answer' => $this->buildDonationChecklistAnswer($sitacStatus),
             ],
             'finance' => [
-                'label' => 'Finance',
-                'name' => $this->resolveLatestDonationApprovalUserName($rows, 'finance_approved_by', 'finance_approved_at'),
+                'label' => 'COST CONTROL',
+                'name' => $this->resolveMasterUserNameById(202),
                 'status' => $financeStatus,
                 'answer' => $this->buildDonationChecklistAnswer($financeStatus),
             ],
@@ -3813,6 +3813,24 @@ class Batch_Approval_MyRep extends CI_Controller
             ->select('nama_karyawan, username_user, nik')
             ->from('tb_master_user_new')
             ->where('id', $latestUserId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return (string) ($user['nama_karyawan'] ?? $user['username_user'] ?? $user['nik'] ?? '-');
+    }
+
+    private function resolveMasterUserNameById($userId)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new')) {
+            return '-';
+        }
+
+        $user = $this->db
+            ->select('nama_karyawan, username_user, nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
             ->limit(1)
             ->get()
             ->row_array();
