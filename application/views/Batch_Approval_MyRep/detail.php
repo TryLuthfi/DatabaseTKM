@@ -3927,10 +3927,6 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
         }
 
         function batchUploadDebug(eventName, payload) {
-            if (!window.console || typeof window.console.log !== 'function') {
-                return;
-            }
-            window.console.log('[Batch Approval Upload Debug] ' + eventName, payload || {});
         }
 
         $(function () {
@@ -4349,7 +4345,9 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                 $('#post_upload_not_required').prop('checked', false);
             });
 
-            $(document).on('click', '.js-open-donation-reject-modal', function () {
+            $(document).on('click', '.js-open-donation-reject-modal', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 var $button = $(this);
                 var actionUrl = $button.data('action-url') || '#';
                 var processingText = $button.data('processing-text') || 'Rejecting...';
@@ -4367,6 +4365,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                     .val('')
                     .attr('placeholder', $button.data('placeholder') || 'Alasan reject');
                 $('#donation_reject_submit').text(submitLabel);
+                $('#modal-donation-reject').modal('show');
             });
 
             $(document).on('shown.bs.modal', '#modal-donation-reject', function () {
