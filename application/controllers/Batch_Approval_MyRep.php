@@ -2601,6 +2601,8 @@ class Batch_Approval_MyRep extends CI_Controller
             'PO DONASI' => 'PO_DONASI',
             'INVOICE' => 'INVOICE',
             'DITOLAK' => 'REJECTED',
+            'NEED REVISE' => 'NEED_REVISE',
+            'PERLU REVISI' => 'NEED_REVISE',
             'NY DOK' => 'WAITING_POST_ZEYN_DOC',
             'ASTRI' => 'ASTRI_ON_REVIEW',
             'APPROVE' => 'ASTRI_APPROVED',
@@ -2621,6 +2623,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'BATCH_APPROVED',
             'HOLD',
             'REJECTED',
+            'NEED_REVISE',
             'WAITING_PRE_ZEYN_DOC',
             'PRE_ZEYN_DOC_ON_REVIEW',
             'PRE_ZEYN_DOC_APPROVED',
@@ -2677,6 +2680,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'WAITING DOC' => 'Menunggu Dokumen Post Donasi',
             'COMPLETED' => 'Done',
             'REJECTED' => 'Ditolak',
+            'NEED_REVISE' => 'Need Revise',
         ];
 
         return $labels[$status] ?? ($status !== '' ? ucwords(strtolower(str_replace('_', ' ', $status))) : 'Draft');
@@ -3004,6 +3008,10 @@ class Batch_Approval_MyRep extends CI_Controller
         $stagingStatus = strtoupper(trim((string) $stagingStatus));
         if (in_array($stagingStatus, ['REJECTED', 'HOLD', 'RELEASED'], true)) {
             return $stagingStatus;
+        }
+
+        if ($stagingStatus === 'NEED_REVISE') {
+            return 'WAITING HO';
         }
 
         if (in_array($stagingStatus, [
@@ -3411,7 +3419,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $summary = $this->MBatch_Approval_MyRep->getDonationDocumentSummary($clusterId);
 
         if (in_array($groupKeyOrLabel, ['PRE_ZEYN', 'PRE ZEYN DOCUMENT'], true)
-            && $currentStage === 'BATCH_APPROVED') {
+            && in_array($currentStage, ['BATCH_APPROVED', 'PRE_ZEYN_DOC_APPROVED', 'PRE_ZEYN_FINANCE_ON_REVIEW', 'PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE'], true)) {
             $preSummary = $summary['PRE_ZEYN'] ?? [];
             $required = (int) ($preSummary['required'] ?? 0);
             if ($required > 0
@@ -3427,7 +3435,7 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         if (in_array($groupKeyOrLabel, ['POST_ZEYN', 'POST PAYMENT ZEYN DOCUMENT'], true)
-            && in_array($currentStage, ['PRE_ZEYN_FINANCE_APPROVED', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
+            && in_array($currentStage, ['PRE_ZEYN_FINANCE_APPROVED', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
             if ($this->isPostDonationActionLocked($clusterId, $groupKeyOrLabel)) {
                 return false;
             }

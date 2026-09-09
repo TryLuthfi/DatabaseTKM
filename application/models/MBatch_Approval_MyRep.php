@@ -538,7 +538,7 @@ class MBatch_Approval_MyRep extends CI_Model
 
         if ($status !== '') {
             $normalizedStatus = strtoupper($status);
-            $displayOnlyStatuses = ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC'];
+            $displayOnlyStatuses = ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE'];
             if (in_array($normalizedStatus, $displayOnlyStatuses, true)) {
                 // Filtered after document summaries are calculated.
             } elseif (in_array($normalizedStatus, [
@@ -611,7 +611,7 @@ class MBatch_Approval_MyRep extends CI_Model
         }
         unset($row);
 
-        if (in_array(strtoupper($status), ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC'], true)) {
+        if (in_array(strtoupper($status), ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE'], true)) {
             $rows = array_values(array_filter($rows, static function ($row) use ($status) {
                 return strtoupper((string) ($row['display_staging_status'] ?? '')) === strtoupper($status);
             }));
@@ -2407,7 +2407,7 @@ class MBatch_Approval_MyRep extends CI_Model
             if ($hasFile && $statusFile === 'APPROVED' && $isRequired && $financeStatus === 'APPROVED') {
                 $map[$clusterId][$key]['finance_approved']++;
             }
-            if ($hasFile && $isRequired && $financeStatus === 'REJECTED') {
+            if ($hasFile && $financeStatus === 'REJECTED') {
                 $map[$clusterId][$key]['finance_rejected']++;
             }
             if ($hasFile && $statusFile === 'APPROVED' && $isRequired && !in_array($financeStatus, ['APPROVED', 'REJECTED'], true)) {
@@ -2838,6 +2838,10 @@ class MBatch_Approval_MyRep extends CI_Model
         $allAstriRejected = (int) ($pre['astri_rejected'] ?? 0) + (int) ($post['astri_rejected'] ?? 0);
         $releasedAt = trim((string) ($row['released_at'] ?? ''));
         $hasRelease = $releasedAt !== '' && (float) ($row['nominal_release_finance'] ?? 0) > 0;
+        $hasSitacOrFinanceRejectedDocument = (int) ($pre['rejected'] ?? 0) > 0
+            || (int) ($pre['finance_rejected'] ?? 0) > 0
+            || (int) ($post['rejected'] ?? 0) > 0
+            || (int) ($post['finance_rejected'] ?? 0) > 0;
         $hasPostProgress = $postRequired > 0 && $hasRelease && (
             (int) ($post['uploaded'] ?? 0) > 0
             || (int) ($post['approved'] ?? 0) > 0
@@ -2851,7 +2855,11 @@ class MBatch_Approval_MyRep extends CI_Model
         $isTerminalStage = in_array($stagingStatus, ['PO_DONASI', 'INVOICE', 'HOLD', 'REJECTED'], true)
             || ($stagingStatus === 'ASTRI_APPROVED' && !$hasAnyAstriRejected);
 
-        if (!$hasRelease && in_array($stagingStatus, ['WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
+        if ($hasSitacOrFinanceRejectedDocument && !in_array($stagingStatus, ['HOLD', 'REJECTED'], true)) {
+            return 'NEED_REVISE';
+        }
+
+        if (!$hasRelease && in_array($stagingStatus, ['PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
             $preRequired = (int) ($pre['required'] ?? 0);
             if ($preRequired > 0) {
                 if ((int) ($pre['approved'] ?? 0) < $preRequired) {
@@ -2902,8 +2910,12 @@ class MBatch_Approval_MyRep extends CI_Model
             }
         }
 
-        if ($stagingStatus === 'PRE_ZEYN_DOC_APPROVED' || $stagingStatus === 'PRE_ZEYN_FINANCE_ON_REVIEW') {
+        if ($stagingStatus === 'PRE_ZEYN_DOC_APPROVED' || $stagingStatus === 'PRE_ZEYN_FINANCE_ON_REVIEW' || $stagingStatus === 'PRE_ZEYN_FINANCE_APPROVED') {
             $pre = $donationSummary['PRE_ZEYN'] ?? [];
+            $preRequired = (int) ($pre['required'] ?? 0);
+            if ($preRequired > 0 && (int) ($pre['approved'] ?? 0) < $preRequired) {
+                return (int) ($pre['uploaded'] ?? 0) >= $preRequired ? 'PRE_ZEYN_DOC_ON_REVIEW' : 'WAITING_PRE_ZEYN_DOC';
+            }
             $preFinanceRequired = (int) ($pre['finance_required'] ?? $pre['required'] ?? 0);
             if ($preFinanceRequired > 0 && (int) ($pre['finance_approved'] ?? 0) >= $preFinanceRequired) {
                 return 'PRE_ZEYN_FINANCE_APPROVED';

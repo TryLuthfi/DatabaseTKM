@@ -33,6 +33,7 @@ if (!function_exists('batchStageLabel')) {
             'WAITING DOC' => 'Menunggu Dokumen Post Donasi',
             'COMPLETED' => 'Done',
             'REJECTED' => 'Ditolak',
+            'NEED_REVISE' => 'Need Revise',
             'WAITING INPUT' => 'Menunggu Pengajuan',
         ];
 
@@ -54,6 +55,7 @@ $statusOptions = [
     'POST_ZEYN_DOC_ON_REVIEW' => batchStageLabel('POST_ZEYN_DOC_ON_REVIEW'),
     'POST_ZEYN_DOC_APPROVED' => batchStageLabel('POST_ZEYN_DOC_APPROVED'),
     'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
+    'NEED_REVISE' => batchStageLabel('NEED_REVISE'),
     'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
@@ -81,6 +83,7 @@ $donationStageOrder = [
     'POST_ZEYN_DOC_ON_REVIEW' => batchStageLabel('POST_ZEYN_DOC_ON_REVIEW'),
     'POST_ZEYN_DOC_APPROVED' => batchStageLabel('POST_ZEYN_DOC_APPROVED'),
     'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
+    'NEED_REVISE' => batchStageLabel('NEED_REVISE'),
     'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
@@ -205,6 +208,7 @@ if (!function_exists('batchBadgeClass')) {
             case 'ASTRI_ON_REVIEW':
                 return 'warning';
             case 'REJECTED':
+            case 'NEED_REVISE':
                 return 'danger';
             case 'WAITING HO':
             case 'WAITING MYREP':

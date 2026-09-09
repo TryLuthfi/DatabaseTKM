@@ -32,6 +32,7 @@ if (!function_exists('batchDetailBadgeClass')) {
             case 'INVOICE':
                 return 'success';
             case 'REJECTED':
+            case 'NEED_REVISE':
                 return 'danger';
             case 'HOLD':
                 return 'warning';
@@ -90,6 +91,7 @@ if (!function_exists('batchDetailStatusLabel')) {
             'WAITING DOC' => 'Menunggu Dokumen Post Donasi',
             'COMPLETED' => 'Done',
             'REJECTED' => 'Ditolak',
+            'NEED_REVISE' => 'Need Revise',
             'WAITING INPUT' => 'Menunggu Pengajuan',
         ];
 
@@ -360,6 +362,8 @@ if (!function_exists('batchDetailStageMeta')) {
                 return ['percent' => 100, 'class' => 'bg-success', 'label' => 'Batch approval selesai'];
             case 'REJECTED':
                 return ['percent' => 100, 'class' => 'bg-danger', 'label' => 'Batch approval ditolak'];
+            case 'NEED_REVISE':
+                return ['percent' => 45, 'class' => 'bg-danger', 'label' => 'Dokumen perlu direvisi'];
             default:
                 return ['percent' => 10, 'class' => 'bg-secondary', 'label' => 'Draft'];
         }
@@ -405,6 +409,7 @@ $statusOptions = [
     'PO_DONASI' => batchDetailStatusLabel('PO_DONASI'),
     'INVOICE' => batchDetailStatusLabel('INVOICE'),
     'REJECTED' => batchDetailStatusLabel('REJECTED'),
+    'NEED_REVISE' => batchDetailStatusLabel('NEED_REVISE'),
 ];
 $currentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? 'DRAFT')));
 $stageButtonTarget = '';
