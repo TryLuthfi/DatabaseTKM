@@ -3929,6 +3929,26 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
         function batchUploadDebug(eventName, payload) {
         }
 
+        function prepareDonationRejectModal(buttonEl) {
+            var $button = $(buttonEl);
+            var actionUrl = $button.data('action-url') || '#';
+            var processingText = $button.data('processing-text') || 'Rejecting...';
+            var successText = $button.data('success-text') || 'Simpan Reject';
+            var submitLabel = $button.data('submit-label') || successText;
+
+            $('#donation-reject-form')
+                .attr('action', actionUrl)
+                .data('processing-text', processingText)
+                .data('success-text', successText);
+            $('#donation_reject_file_id').val($button.data('file-id') || '');
+            $('#donation_reject_title').text($button.data('title') || 'Reject Dokumen');
+            $('#donation_reject_doc_name').text($button.data('doc-name') || '-');
+            $('#donation_reject_remark')
+                .val('')
+                .attr('placeholder', $button.data('placeholder') || 'Alasan reject');
+            $('#donation_reject_submit').text(submitLabel);
+        }
+
         $(function () {
             $(document).on('click', '.batch-edit-btn', function (event) {
                 event.preventDefault();
@@ -3967,6 +3987,18 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                         targetText: event.target && event.target.textContent ? String(event.target.textContent).trim().slice(0, 80) : '',
                         stackText: actionCellEl.textContent ? String(actionCellEl.textContent).trim().replace(/\s+/g, ' ').slice(0, 160) : ''
                     });
+                }
+
+                var rejectButtonEl = event.target && event.target.closest ? event.target.closest('.js-open-donation-reject-modal') : null;
+                if (rejectButtonEl) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (event.stopImmediatePropagation) {
+                        event.stopImmediatePropagation();
+                    }
+                    prepareDonationRejectModal(rejectButtonEl);
+                    $('#modal-donation-reject').modal('show');
+                    return;
                 }
 
                 var buttonEl = event.target && event.target.closest ? event.target.closest('.js-open-donation-upload-modal') : null;
@@ -4348,23 +4380,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
             $(document).on('click', '.js-open-donation-reject-modal', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                var $button = $(this);
-                var actionUrl = $button.data('action-url') || '#';
-                var processingText = $button.data('processing-text') || 'Rejecting...';
-                var successText = $button.data('success-text') || 'Simpan Reject';
-                var submitLabel = $button.data('submit-label') || successText;
-
-                $('#donation-reject-form')
-                    .attr('action', actionUrl)
-                    .data('processing-text', processingText)
-                    .data('success-text', successText);
-                $('#donation_reject_file_id').val($button.data('file-id') || '');
-                $('#donation_reject_title').text($button.data('title') || 'Reject Dokumen');
-                $('#donation_reject_doc_name').text($button.data('doc-name') || '-');
-                $('#donation_reject_remark')
-                    .val('')
-                    .attr('placeholder', $button.data('placeholder') || 'Alasan reject');
-                $('#donation_reject_submit').text(submitLabel);
+                prepareDonationRejectModal(this);
                 $('#modal-donation-reject').modal('show');
             });
 
