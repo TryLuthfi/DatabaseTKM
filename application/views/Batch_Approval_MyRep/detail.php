@@ -2015,10 +2015,11 @@ if ($canApprove && $canApprovalAction) {
                         $rowFinanceStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
                         $rowAstriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
                         $isAstriRejectedRevision = $rowStatus === 'APPROVED' && $rowAstriStatus === 'REJECTED';
+                        $isFinanceRejectedRevision = $rowStatus === 'APPROVED' && $rowFinanceStatus === 'REJECTED';
                         if ($rowStatus === 'UPLOADED') {
                             $onReviewCount++;
                         }
-                        if ($canUploadThisGroup && (in_array($rowStatus, ['', 'REJECTED'], true) || $isAstriRejectedRevision)) {
+                        if ($canUploadThisGroup && (in_array($rowStatus, ['', 'REJECTED'], true) || $isAstriRejectedRevision || $isFinanceRejectedRevision)) {
                             $bulkUploadRows[] = $row;
                         }
                         if ($canApproveThisGroup && (int) ($row['id_doc_file'] ?? 0) > 0 && $rowStatus === 'APPROVED') {
@@ -2131,6 +2132,8 @@ if ($canApprove && $canApprovalAction) {
                                             $collapseSuffix = htmlspecialchars($safeGroupKey . '-' . $docItemId);
                                             $astriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
                                             $astriStatus = $astriStatus !== '' ? $astriStatus : 'NY';
+                                            $financeStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
+                                            $financeStatus = $financeStatus !== '' ? $financeStatus : 'NY';
                                             $financeStatusLabel = batchDetailFinanceDocumentLabel($row);
                                             ?>
                                             <tr>
@@ -2193,7 +2196,8 @@ if ($canApprove && $canApprovalAction) {
                                                 </td>
                                                 <td style="min-width:270px;">
                                                     <div class="donation-action-stack">
-                                                        <?php if ($canUploadThisGroup && (in_array($rawStatus, ['', 'REJECTED'], true) || ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED'))): ?>
+                                                        <?php $isFinanceRejectedRevision = $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) === 'REJECTED'; ?>
+                                                        <?php if ($canUploadThisGroup && (in_array($rawStatus, ['', 'REJECTED'], true) || ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED') || $isFinanceRejectedRevision)): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
                                                             <a
                                                                 href="#modal-donation-upload"
@@ -2210,7 +2214,7 @@ if ($canApprove && $canApprovalAction) {
                                                                 data-can-not-required="<?= $canMarkNotRequired ? '1' : '0' ?>"
                                                                 data-is-image-doc="<?= batchDetailIsImageDonationDoc($row['doc_name'] ?? '') ? '1' : '0' ?>"
                                                                 data-replace-file="0">
-                                                                <?= $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED' ? 'Upload Revisi Astri' : 'Upload' ?>
+                                                                <?= $isFinanceRejectedRevision ? 'Upload Revisi Finance' : ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED' ? 'Upload Revisi Astri' : 'Upload') ?>
                                                             </a>
                                                         <?php elseif (!$isPostZeynLocked && $canReplaceDonationFile && $rawStatus === 'APPROVED'): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
@@ -2271,16 +2275,20 @@ if ($canApprove && $canApprovalAction) {
                                                                 Update Astri
                                                             </button>
                                                         <?php endif; ?>
-                                                        <?php if ($canFinanceApproveThisGroup && $fileId > 0 && (int) ($row['is_required'] ?? 1) === 1 && $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) !== 'APPROVED'): ?>
+                                                        <?php $canFinanceActThisDoc = $canFinanceApproveThisGroup && $fileId > 0 && (int) ($row['is_required'] ?? 1) === 1 && $rawStatus === 'APPROVED'; ?>
+                                                        <?php if ($canFinanceActThisDoc && $financeStatus !== 'APPROVED'): ?>
                                                             <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveDonationFinanceDocument') ?>" class="d-inline js-donation-ajax-form" data-processing-text="Approving Finance..." data-success-text="Approve Finance">
                                                                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                                                 <input type="hidden" name="redirect_to_detail" value="1">
                                                                 <input type="hidden" name="id_doc_file" value="<?= $fileId ?>">
                                                                 <button type="submit" class="btn btn-sm btn-info">Approve Finance</button>
                                                             </form>
+                                                        <?php endif; ?>
+                                                        <?php if ($canFinanceActThisDoc && $financeStatus !== 'REJECTED'): ?>
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-sm btn-danger js-open-donation-reject-modal"
+                                                                onclick="return openDonationFinanceRejectModal(this);"
                                                                 data-role-guard-exempt="1"
                                                                 data-toggle="modal"
                                                                 data-target="#modal-donation-reject"
@@ -3912,6 +3920,12 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
 
         function handleBatchAjaxResponse(response, successFallbackMessage, scrollTop, onFailure) {
             if (response && response.status) {
+                $('.js-donation-ajax-form button[type="submit"]').prop('disabled', false).each(function () {
+                    var restoreText = $(this).closest('form').data('success-text');
+                    if (restoreText) {
+                        $(this).text(restoreText);
+                    }
+                });
                 $('.modal.show').modal('hide');
                 cleanupBatchModalBackdrop();
                 alert(response.message || successFallbackMessage || 'Data berhasil diperbarui.');
@@ -3929,7 +3943,46 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
         function batchUploadDebug(eventName, payload) {
         }
 
+        function ensureDonationRejectModal() {
+            if ($('#modal-donation-reject').length) {
+                return;
+            }
+
+            $('body').append(
+                '<div class="modal fade donation-doc-modal" id="modal-donation-reject" tabindex="-1" role="dialog" aria-hidden="true">' +
+                    '<div class="modal-dialog" role="document">' +
+                        '<div class="modal-content">' +
+                            '<form method="post" action="#" id="donation-reject-form" class="js-donation-ajax-form" data-processing-text="Rejecting..." data-success-text="Simpan Reject" data-role-guard-exempt="1">' +
+                                '<input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">' +
+                                '<input type="hidden" name="redirect_to_detail" value="1">' +
+                                '<input type="hidden" name="id_doc_file" id="donation_reject_file_id">' +
+                                '<div class="modal-header" style="background: linear-gradient(135deg, #dc3545, #7f1d1d);">' +
+                                    '<div>' +
+                                        '<h4 class="modal-title mb-1" id="donation_reject_title">Reject Dokumen</h4>' +
+                                        '<p class="mb-0" style="opacity:.9;" id="donation_reject_doc_name">-</p>' +
+                                    '</div>' +
+                                    '<button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>' +
+                                '</div>' +
+                                '<div class="modal-body">' +
+                                    '<div class="donation-doc-modal-panel mb-0">' +
+                                        '<label class="font-weight-bold">Remark Reject</label>' +
+                                        '<textarea name="remark" id="donation_reject_remark" class="form-control" rows="4" placeholder="Alasan reject" required></textarea>' +
+                                        '<small class="form-text text-muted">Remark wajib diisi agar area tahu dokumen mana yang perlu direvisi.</small>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="modal-footer">' +
+                                    '<button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>' +
+                                    '<button type="submit" class="btn btn-danger" id="donation_reject_submit">Simpan Reject</button>' +
+                                '</div>' +
+                            '</form>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>'
+            );
+        }
+
         function prepareDonationRejectModal(buttonEl) {
+            ensureDonationRejectModal();
             var $button = $(buttonEl);
             var actionUrl = $button.data('action-url') || '#';
             var processingText = $button.data('processing-text') || 'Rejecting...';
@@ -3946,8 +3999,30 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
             $('#donation_reject_remark')
                 .val('')
                 .attr('placeholder', $button.data('placeholder') || 'Alasan reject');
-            $('#donation_reject_submit').text(submitLabel);
+            $('#donation_reject_submit').prop('disabled', false).text(submitLabel);
         }
+
+        function openDonationFinanceRejectModal(buttonEl) {
+            if (window.console && typeof window.console.log === 'function') {
+                window.console.log('[Batch Approval Finance Reject Debug] click', {
+                    fileId: buttonEl ? buttonEl.getAttribute('data-file-id') : '',
+                    actionUrl: buttonEl ? buttonEl.getAttribute('data-action-url') : '',
+                    modalCount: $('#modal-donation-reject').length,
+                    hasBootstrapModal: !!($.fn && $.fn.modal)
+                });
+            }
+
+            prepareDonationRejectModal(buttonEl);
+            var $modal = $('#modal-donation-reject');
+            if ($.fn && $.fn.modal && $modal.length) {
+                $modal.modal('show');
+            } else if ($modal.length) {
+                $modal.show().addClass('show').attr('aria-hidden', 'false');
+                $('body').addClass('modal-open');
+            }
+            return false;
+        }
+        window.openDonationFinanceRejectModal = openDonationFinanceRejectModal;
 
         $(function () {
             $(document).on('click', '.batch-edit-btn', function (event) {
@@ -3991,6 +4066,9 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
 
                 var rejectButtonEl = event.target && event.target.closest ? event.target.closest('.js-open-donation-reject-modal') : null;
                 if (rejectButtonEl) {
+                    if (rejectButtonEl.getAttribute('data-action-url') && rejectButtonEl.getAttribute('data-action-url').indexOf('rejectDonationFinanceDocument') !== -1) {
+                        return;
+                    }
                     event.preventDefault();
                     event.stopPropagation();
                     if (event.stopImmediatePropagation) {

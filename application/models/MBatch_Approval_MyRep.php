@@ -1825,6 +1825,11 @@ class MBatch_Approval_MyRep extends CI_Model
             return false;
         }
 
+        $currentFinanceStatus = strtoupper(trim((string) ($file['finance_status'] ?? 'NY')));
+        if ($currentFinanceStatus === $status) {
+            return false;
+        }
+
         $now = $reviewedAt ?: date('Y-m-d H:i:s');
         $payload = [
             'finance_status' => $status,
@@ -1833,23 +1838,6 @@ class MBatch_Approval_MyRep extends CI_Model
             'finance_approved_by' => (int) $userId,
             'finance_approved_at' => $status === 'APPROVED' ? $now : null,
         ];
-        if ($status === 'REJECTED') {
-            $payload['status_file'] = 'REJECTED';
-            $payload['remark'] = (string) $remark;
-            $payload['approved_by'] = null;
-            $payload['approved_at'] = null;
-            $payload['reviewed_at'] = $now;
-            if ($this->tableHasField('tb_myrep_flow_doc_file', 'astri_status')) {
-                $payload['astri_status'] = 'NY';
-                $payload['astri_submitted_date'] = null;
-                if ($this->tableHasField('tb_myrep_flow_doc_file', 'astri_approved_date')) {
-                    $payload['astri_approved_date'] = null;
-                }
-                $payload['astri_status_updated_at'] = null;
-                $payload['astri_remark'] = null;
-            }
-        }
-
         $result = $this->db
             ->where('id_doc_file', (int) $fileId)
             ->update('tb_myrep_flow_doc_file', $payload);

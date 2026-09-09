@@ -1068,12 +1068,13 @@ class Batch_Approval_MyRep extends CI_Controller
         $canStandardUpload = $this->canUploadDonationDocument();
         $canUploadByStatus = $canStandardUpload && in_array($rawStatus, ['', 'REJECTED'], true);
         $canUploadAstriRejectedRevision = $canStandardUpload && $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED';
+        $canUploadFinanceRejectedRevision = $canStandardUpload && $rawStatus === 'APPROVED' && $financeStatus === 'REJECTED';
         $canReplaceApprovedFile = $rawStatus === 'APPROVED' && $isReplaceApprovedFile && $this->isSitacHoUser();
-        if (!$canUploadByStatus && !$canUploadAstriRejectedRevision && !$canReplaceApprovedFile) {
+        if (!$canUploadByStatus && !$canUploadAstriRejectedRevision && !$canUploadFinanceRejectedRevision && !$canReplaceApprovedFile) {
             $message = !$canStandardUpload && !$canReplaceApprovedFile
                 ? 'Upload dokumen hanya tersedia untuk Admin Area, SITAC HO, dan Super Admin.'
                 : ($rawStatus === 'APPROVED'
-                ? 'Dokumen approved hanya bisa di-replace oleh akun SITAC HO, kecuali dokumen rejected Astri untuk revisi area.'
+                ? 'Dokumen approved hanya bisa di-replace oleh akun SITAC HO, kecuali dokumen rejected Astri/Finance untuk revisi area.'
                 : 'Dokumen hanya bisa diupload saat status belum upload atau rejected.');
             $this->handleUploadError($message, $redirectPath);
             return;
@@ -1194,9 +1195,10 @@ class Batch_Approval_MyRep extends CI_Controller
             $astriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
             $financeStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
             $canUploadAstriRejectedRevision = $rawStatus === 'APPROVED' && $astriStatus === 'REJECTED';
+            $canUploadFinanceRejectedRevision = $rawStatus === 'APPROVED' && $financeStatus === 'REJECTED';
             $fieldName = 'bulk_file_' . $docItemId;
             $isNoDocumentRequired = (int) $this->input->post('bulk_not_required_' . $docItemId) === 1;
-            if ($docItemId <= 0 || (!in_array($rawStatus, ['', 'REJECTED'], true) && !$canUploadAstriRejectedRevision)) {
+            if ($docItemId <= 0 || (!in_array($rawStatus, ['', 'REJECTED'], true) && !$canUploadAstriRejectedRevision && !$canUploadFinanceRejectedRevision)) {
                 continue;
             }
 
