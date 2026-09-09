@@ -1719,11 +1719,12 @@ class MBatch_Approval_MyRep extends CI_Model
         $preserveExistingFile = !empty($data['preserve_existing_file']) && $incomingFileName === '' && $incomingFilePath === '' && $existing;
         $preserveFinanceApproval = !empty($data['preserve_finance_approval']) && $existing;
         $preserveAstriRejected = !empty($data['preserve_astri_rejected']) && $existing;
+        $isDocumentNotRequired = !empty($data['is_document_not_required']);
 
         $payload = [
             'file_name' => $preserveExistingFile ? (string) ($existing['file_name'] ?? '') : $incomingFileName,
             'file_path' => $preserveExistingFile ? (string) ($existing['file_path'] ?? '') : $incomingFilePath,
-            'is_document_not_required' => !empty($data['is_document_not_required']) ? 1 : 0,
+            'is_document_not_required' => $isDocumentNotRequired ? 1 : 0,
             'status_file' => (string) $data['status_file'],
             'remark' => (string) ($data['remark'] ?? ''),
             'uploaded_by' => (int) $data['uploaded_by'],
@@ -1733,11 +1734,11 @@ class MBatch_Approval_MyRep extends CI_Model
             'approved_at' => null,
         ];
         if ($this->tableHasField('tb_myrep_flow_doc_file', 'finance_status')) {
-            $payload['finance_status'] = $preserveFinanceApproval ? (string) ($existing['finance_status'] ?? 'APPROVED') : 'NY';
-            $payload['finance_remark'] = $preserveFinanceApproval ? ($existing['finance_remark'] ?? null) : null;
-            $payload['finance_reviewed_at'] = $preserveFinanceApproval ? ($existing['finance_reviewed_at'] ?? null) : null;
+            $payload['finance_status'] = $preserveFinanceApproval ? (string) ($existing['finance_status'] ?? 'APPROVED') : ($isDocumentNotRequired ? 'APPROVED' : 'NY');
+            $payload['finance_remark'] = $preserveFinanceApproval ? ($existing['finance_remark'] ?? null) : ($isDocumentNotRequired ? 'Dokumen tidak dibutuhkan.' : null);
+            $payload['finance_reviewed_at'] = $preserveFinanceApproval ? ($existing['finance_reviewed_at'] ?? null) : ($isDocumentNotRequired ? $payload['uploaded_at'] : null);
             $payload['finance_approved_by'] = $preserveFinanceApproval ? ($existing['finance_approved_by'] ?? null) : null;
-            $payload['finance_approved_at'] = $preserveFinanceApproval ? ($existing['finance_approved_at'] ?? null) : null;
+            $payload['finance_approved_at'] = $preserveFinanceApproval ? ($existing['finance_approved_at'] ?? null) : ($isDocumentNotRequired ? $payload['uploaded_at'] : null);
         }
         if ($this->tableHasField('tb_myrep_flow_doc_file', 'astri_status')) {
             $payload['astri_status'] = $preserveAstriRejected ? 'REJECTED' : 'NY';

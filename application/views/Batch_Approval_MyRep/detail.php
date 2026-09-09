@@ -7,6 +7,7 @@ $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
 $canFinanceApprovalAction = !empty($canFinanceApprovalAction);
 $canDonationInternalApprovalAction = isset($canDonationInternalApprovalAction) ? (bool) $canDonationInternalApprovalAction : ($canApprovalAction && !$canFinanceApprovalAction);
+$canSubmitDonationFinanceRequest = isset($canSubmitDonationFinanceRequest) ? (bool) $canSubmitDonationFinanceRequest : $canDonationInternalApprovalAction;
 $canDonationUpload = (string) $this->session->userdata('nama_level') === 'Super Admin'
     || (isset($this->myrepAccess)
         && method_exists($this->myrepAccess, 'getCurrentRoleKeys')
@@ -1777,7 +1778,7 @@ if ($canApprove && $canApprovalAction) {
             $allAstriRejectedCount = (int) ($preZeynSummary['astri_rejected'] ?? 0) + (int) ($postZeynSummary['astri_rejected'] ?? 0);
             $isAllAstriFullApproved = $allAstriRequiredCount > 0 && $allAstriRejectedCount === 0 && $allAstriApprovedCount >= $allAstriRequiredCount;
             ?>
-            <?php if ($canApprove && $canApprovalAction): ?>
+            <?php if (($canApprove && $canApprovalAction) || $canSubmitDonationFinanceRequest): ?>
                 <div class="card card-outline card-warning shadow-sm">
                     <div class="card-header">
                         <h3 class="card-title mb-0">Aksi Staging Donasi</h3>
@@ -1786,13 +1787,17 @@ if ($canApprove && $canApprovalAction) {
                         <div class="row">
                             <?php if ($currentDonationStage === 'PRE_ZEYN_FINANCE_APPROVED' && $isPreZeynFinanceFullApproved): ?>
                                 <div class="col-md-12">
-                                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
-                                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                        <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
-                                        <input type="hidden" name="redirect_to_detail" value="1">
-                                        <input type="hidden" name="target_stage" value="WAITING_FINANCE_RELEASE">
-                                        <button type="submit" class="btn btn-success btn-sm">Proses Pengajuan Saku</button>
-                                    </form>
+                                    <?php if ($canSubmitDonationFinanceRequest): ?>
+                                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
+                                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                            <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
+                                            <input type="hidden" name="redirect_to_detail" value="1">
+                                            <input type="hidden" name="target_stage" value="WAITING_FINANCE_RELEASE">
+                                            <button type="submit" class="btn btn-success btn-sm">Proses Pengajuan Saku</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span class="text-muted">Menunggu SITAC HO atau Admin Area memproses pengajuan saku.</span>
+                                    <?php endif; ?>
                                 </div>
                             <?php elseif ($currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
                                 <div class="col-md-12 text-muted">Lengkapi pencairan melalui container Pencairan Donasi.</div>
@@ -1982,7 +1987,7 @@ if ($canApprove && $canApprovalAction) {
 
             <?php if ($docReady): ?>
                 <?php
-                $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $canDonationUpload, $canApprove, $canDonationInternalApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
+                $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $currentDonationStage, $canDonationUpload, $canApprove, $canDonationInternalApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
                     $safeGroupKey = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $groupKey);
                     $isPostZeynLocked = $groupKey === 'POST_ZEYN'
                         && (empty($cluster['released_at'] ?? '') || (float) ($cluster['nominal_release_finance'] ?? 0) <= 0);
@@ -2047,6 +2052,7 @@ if ($canApprove && $canApprovalAction) {
                         'Status Finance' => htmlspecialchars(batchDetailStatusLabel($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? '-')),
                         'Aging Doc' => batchDetailAgingText($docStartDate),
                     ];
+                    $showPrintChecklistPengajuan = $groupKey === 'PRE_ZEYN' && $currentDonationStage === 'PRE_ZEYN_FINANCE_APPROVED';
                     ?>
                     <div class="card donation-upload-panel mb-3">
                         <div class="card-header d-flex align-items-center justify-content-between">
@@ -2482,6 +2488,13 @@ if ($canApprove && $canApprovalAction) {
                                             </form>
                                         </div>
                                     </div>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($showPrintChecklistPengajuan): ?>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <a href="<?= base_url('Batch_Approval_MyRep/printChecklistPengajuan/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-dark">
+                                        <i class="fas fa-print mr-1"></i>PRINT CHECKLIST PENGAJUAN
+                                    </a>
                                 </div>
                             <?php endif; ?>
                         </div>

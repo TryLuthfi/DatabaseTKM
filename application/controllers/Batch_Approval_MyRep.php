@@ -16,6 +16,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $this->myrepAccess->enforceView('Batch_Approval_MyRep');
             $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method(), [
                 'previewBatchImport' => 'TAMBAH',
+                'printChecklistPengajuan' => 'VIEW',
                 'saveImportedBatch' => 'TAMBAH',
                 'updateBatchApproval' => 'VIEW',
                 'uploadDocument' => 'VIEW',
@@ -312,6 +313,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['docReady'] = $this->MBatch_Approval_MyRep->batchDocumentTablesReady();
         $data['canApprove'] = $this->isApprover();
         $data['canDonationInternalApprovalAction'] = $this->canDonationInternalApprovalAction();
+        $data['canSubmitDonationFinanceRequest'] = $this->canSubmitDonationFinanceRequest();
         $data['canEditBatchApproval'] = $this->canEditBatchApprovalDetail($cluster);
         $data['canReplaceDonationFile'] = $this->isSitacHoUser();
         $data['canFinanceApprovalAction'] = $this->isFinanceHoUser();
@@ -360,6 +362,46 @@ class Batch_Approval_MyRep extends CI_Controller
         $this->load->view('Batch_Approval_MyRep/detail', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function printChecklistPengajuan($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MBatch_Approval_MyRep->batchTablesReady() || !$this->MBatch_Approval_MyRep->batchDocumentTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel Batch Approval atau dokumen belum tersedia.');
+            redirect('Batch_Approval_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            redirect('Batch_Approval_MyRep');
+            return;
+        }
+
+        $cluster = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if (empty($cluster) || empty($cluster['id_batch_approval'])) {
+            $this->session->set_flashdata('error', 'Detail Batch Approval tidak ditemukan.');
+            redirect('Batch_Approval_MyRep');
+            return;
+        }
+
+        $documentRows = $this->MBatch_Approval_MyRep->getDonationDocumentRows($clusterId, 'PRE_ZEYN');
+        $data = [
+            'title' => 'Print Checklist Pengajuan Donasi',
+            'cluster' => $cluster,
+            'documentRows' => $documentRows,
+            'printStatus' => $this->resolveDonationChecklistPrintStatus($documentRows),
+            'signatures' => $this->buildDonationChecklistSignatures($documentRows),
+            'printedAt' => date('Y-m-d H:i:s'),
+            'printedBy' => (string) ($this->session->userdata('nama_user') ?: $this->session->userdata('username_user') ?: '-'),
+        ];
+
+        $this->load->view('Batch_Approval_MyRep/print_checklist_pengajuan', $data);
     }
 
     public function saveBatchApproval()
@@ -812,7 +854,15 @@ class Batch_Approval_MyRep extends CI_Controller
         $targetStage = strtoupper(trim((string) $this->input->post('target_stage')));
         $isAreaAllowedInitialDecision = $currentStage === 'WAITING_BATCH_APPROVAL'
             && in_array($targetStage, ['BATCH_APPROVED', 'HOLD', 'REJECTED'], true);
-        if (!$this->isApprover() && !$isAreaAllowedInitialDecision) {
+        $isFinanceRequestSubmission = $targetStage === 'WAITING_FINANCE_RELEASE';
+
+        if ($isFinanceRequestSubmission && !$this->canSubmitDonationFinanceRequest()) {
+            $this->session->set_flashdata('error', 'Hanya SITAC HO dan Admin Area yang bisa memproses pengajuan saku.');
+            redirect($redirectPath);
+            return;
+        }
+
+        if (!$this->isApprover() && !$isAreaAllowedInitialDecision && !$isFinanceRequestSubmission) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses mengubah staging Batch Approval.');
             redirect($redirectPath);
             return;
@@ -3627,6 +3677,147 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         return $this->isApprover();
+    }
+
+    private function canSubmitDonationFinanceRequest()
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
+        return in_array('SITAC_HO', $roleKeys, true) || in_array('ADMIN_AREA', $roleKeys, true);
+    }
+
+    private function resolveDonationChecklistPrintStatus(array $rows)
+    {
+        $requiredCount = 0;
+        $financeApprovedCount = 0;
+
+        foreach ($rows as $row) {
+            $isRequired = (int) ($row['is_required'] ?? 1) === 1;
+            $sitacStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
+            $financeStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
+
+            if ($sitacStatus === 'REJECTED' || $financeStatus === 'REJECTED') {
+                return 'REJECTED';
+            }
+
+            if (!$isRequired) {
+                continue;
+            }
+
+            $requiredCount++;
+            if ($sitacStatus === 'APPROVED' && $financeStatus === 'APPROVED') {
+                $financeApprovedCount++;
+            }
+        }
+
+        if ($requiredCount > 0 && $financeApprovedCount >= $requiredCount) {
+            return 'APPROVED';
+        }
+
+        return 'ON REVIEW';
+    }
+
+    private function buildDonationChecklistSignatures(array $rows)
+    {
+        $sitacStatus = $this->resolveDonationChecklistLayerStatus($rows, 'status_file');
+        $financeStatus = $this->resolveDonationChecklistLayerStatus($rows, 'finance_status');
+
+        return [
+            'sitac' => [
+                'label' => 'SITAC HO',
+                'name' => $this->resolveLatestDonationApprovalUserName($rows, 'approved_by', 'approved_at'),
+                'status' => $sitacStatus,
+                'answer' => $this->buildDonationChecklistAnswer($sitacStatus),
+            ],
+            'finance' => [
+                'label' => 'Finance',
+                'name' => $this->resolveLatestDonationApprovalUserName($rows, 'finance_approved_by', 'finance_approved_at'),
+                'status' => $financeStatus,
+                'answer' => $this->buildDonationChecklistAnswer($financeStatus),
+            ],
+        ];
+    }
+
+    private function resolveDonationChecklistLayerStatus(array $rows, $statusField)
+    {
+        $requiredCount = 0;
+        $approvedCount = 0;
+
+        foreach ($rows as $row) {
+            $isRequired = (int) ($row['is_required'] ?? 1) === 1;
+            $status = strtoupper(trim((string) ($row[$statusField] ?? '')));
+
+            if ($status === 'REJECTED') {
+                return 'REJECTED';
+            }
+
+            if (!$isRequired) {
+                continue;
+            }
+
+            $requiredCount++;
+            if ($status === 'APPROVED') {
+                $approvedCount++;
+            }
+        }
+
+        if ($requiredCount > 0 && $approvedCount >= $requiredCount) {
+            return 'APPROVED';
+        }
+
+        return 'ON REVIEW';
+    }
+
+    private function buildDonationChecklistAnswer($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        if ($status === 'APPROVED') {
+            return 'Disetujui';
+        }
+        if ($status === 'REJECTED') {
+            return 'Ditolak';
+        }
+        return 'Dalam Review';
+    }
+
+    private function resolveLatestDonationApprovalUserName(array $rows, $userField, $dateField)
+    {
+        $latestUserId = 0;
+        $latestTimestamp = 0;
+
+        foreach ($rows as $row) {
+            $userId = (int) ($row[$userField] ?? 0);
+            if ($userId <= 0) {
+                continue;
+            }
+
+            $timestamp = strtotime((string) ($row[$dateField] ?? '')) ?: 0;
+            if ($timestamp >= $latestTimestamp) {
+                $latestTimestamp = $timestamp;
+                $latestUserId = $userId;
+            }
+        }
+
+        if ($latestUserId <= 0 || !$this->db->table_exists('tb_master_user_new')) {
+            return '-';
+        }
+
+        $user = $this->db
+            ->select('nama_karyawan, username_user, nik')
+            ->from('tb_master_user_new')
+            ->where('id', $latestUserId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return (string) ($user['nama_karyawan'] ?? $user['username_user'] ?? $user['nik'] ?? '-');
     }
 
     private function isFinanceHoUser()
