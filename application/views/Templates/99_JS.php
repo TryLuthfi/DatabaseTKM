@@ -1,3 +1,6 @@
+<?php $currentController = (string) $this->uri->segment(1); ?>
+
+<?php if ($currentController !== 'Batch_Approval_MyRep'): ?>
 <!-- OPTIONAL SCRIPTS -->
 <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
 
@@ -7,12 +10,15 @@
 <script src="<?= base_url('assets') ?>/plugins/raphael/raphael.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/jquery-mapael/jquery.mapael.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/jquery-mapael/maps/usa_states.min.js"></script>
+<?php endif; ?>
 <!-- Input Mask -->
 <!-- <script src="<?= base_url('assets') ?>/plugins/moment/moment.min.js"></script> -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/inputmask/min/jquery.inputmask.bundle.min.js"></script>
+<?php if ($currentController !== 'Batch_Approval_MyRep'): ?>
 <!-- ChartJS -->
 <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
+<?php endif; ?>
 <!-- DataTables -->
 <script src="<?= base_url('assets') ?>/plugins/datatables/jquery.dataTables.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>

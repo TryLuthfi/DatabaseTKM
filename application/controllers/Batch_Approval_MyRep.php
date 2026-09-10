@@ -15,6 +15,7 @@ class Batch_Approval_MyRep extends CI_Controller
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('Batch_Approval_MyRep');
             $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method(), [
+                'tableData' => 'VIEW',
                 'previewBatchImport' => 'TAMBAH',
                 'printChecklistPengajuan' => 'VIEW',
                 'saveImportedBatch' => 'TAMBAH',
@@ -60,16 +61,98 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['cityOptionsByRegional'] = $this->MBatch_Approval_MyRep->getCityOptionsByRegional();
         $data['regionalOptionsByCity'] = $this->MBatch_Approval_MyRep->getRegionalOptionsByCity();
         $data['eligibleClusterOptions'] = $this->MBatch_Approval_MyRep->getEligibleClusterOptions();
-        $data['clusterRows'] = $data['isReady']
+        $summaryRows = $data['isReady']
             ? $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus)
             : [];
-        $data['clusterReviewPicMap'] = $this->MBatch_Approval_MyRep->getBatchClusterReviewPicMap($data['clusterRows']);
+        $data['summaryRows'] = $summaryRows;
+        $data['clusterRows'] = [];
+        $data['clusterReviewPicMap'] = [];
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Batch_Approval_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function tableData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        if (!$this->MBatch_Approval_MyRep->batchTablesReady()) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $tab = strtolower(trim((string) $this->input->post('tab')));
+        if (!in_array($tab, ['all', 'ny_drm'], true)) {
+            $tab = 'all';
+        }
+
+        $searchPayload = $this->input->post('search');
+        $searchValue = is_array($searchPayload) ? trim((string) ($searchPayload['value'] ?? '')) : '';
+        $orderPayload = $this->input->post('order');
+        $order = [];
+        if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+            $order = [
+                'column' => $orderPayload[0]['column'] ?? null,
+                'dir' => $orderPayload[0]['dir'] ?? 'asc',
+            ];
+        }
+        $start = max(0, (int) $this->input->post('start'));
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        try {
+            $rows = $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus);
+            if ($tab === 'ny_drm') {
+                $rows = array_values(array_filter($rows, function ($row) {
+                    return $this->isNyDrmBatchRow($row);
+                }));
+            }
+
+            $recordsTotal = count($rows);
+            if ($searchValue !== '') {
+                $needle = strtoupper($searchValue);
+                $rows = array_values(array_filter($rows, function ($row) use ($needle) {
+                    $haystack = implode(' ', [
+                        $row['cluster_name'] ?? '',
+                        $row['cluster_code'] ?? '',
+                        $row['regional_name'] ?? '',
+                        $row['city_name'] ?? '',
+                        $row['status_current'] ?? '',
+                        $row['display_staging_status'] ?? '',
+                        $this->getIndonesianStagingLabel((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? '')),
+                    ]);
+
+                    return strpos(strtoupper($haystack), $needle) !== false;
+                }));
+            }
+
+            $recordsFiltered = count($rows);
+            $rows = $this->sortBatchApprovalTableRows($rows, $order);
+            $totals = $this->calculateBatchApprovalTableTotals($rows);
+            $pageRows = array_slice($rows, $start, $length);
+            $clusterReviewPicMap = $this->MBatch_Approval_MyRep->getBatchClusterReviewPicMap($pageRows);
+
+            $data = [];
+            $no = $start + 1;
+            foreach ($pageRows as $row) {
+                $data[] = $this->buildBatchApprovalTableRow($row, $no++, $clusterReviewPicMap);
+            }
+
+            $this->jsonDataTableResponse($recordsTotal, $recordsFiltered, $data, ['totals' => $totals]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Batch Approval tableData failed: ' . $e->getMessage());
+            $this->jsonDataTableResponse(0, 0, []);
+        }
     }
 
     public function downloadReport()
@@ -3659,6 +3742,358 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         return true;
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data, array $extra = [])
+    {
+        $payload = [
+            'draw' => (int) $this->input->post('draw'),
+            'recordsTotal' => (int) $recordsTotal,
+            'recordsFiltered' => (int) $recordsFiltered,
+            'data' => $data,
+        ];
+        if (!empty($extra)) {
+            $payload = array_merge($payload, $extra);
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($payload));
+    }
+
+    private function buildBatchApprovalTableRow(array $row, $no, array $clusterReviewPicMap)
+    {
+        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
+        $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $stageLabel = $hasBatch ? $this->getIndonesianStagingLabel($stageCode) : $this->getIndonesianStagingLabel('WAITING INPUT');
+        $isWaitingInputStage = !$hasBatch || $stageCode === 'WAITING INPUT';
+        $batchDocLabel = $hasBatch ? $this->getBatchListDocLabel($row) : 'BELUM ADA DOC';
+        $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
+        $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
+        $batchPics = $hasBatch ? (array) $this->MBatch_Approval_MyRep->getBatchPics((int) ($row['id_batch_approval'] ?? 0)) : [];
+        $myrepPicNames = [];
+        foreach ($batchPics as $batchPic) {
+            $picName = trim((string) ($batchPic['pic_name'] ?? ''));
+            if ($picName !== '') {
+                $myrepPicNames[] = $picName;
+            }
+        }
+
+        $nominalRelease = $row['nominal_release_finance'] ?? null;
+        $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
+        $useReleaseNominal = in_array($stageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
+        $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
+        $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
+        $slaInfo = $this->getBatchListSlaInfo($row);
+        $canEdit = $hasBatch && $this->canEditBatchApprovalDetail($row);
+        $canHapus = $hasBatch && $this->hasBatchPermission('HAPUS');
+
+        $clusterName = htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8');
+        if (!empty($row['id_myrep_cluster']) && !$isWaitingInputStage) {
+            $clusterHtml = '<a href="' . base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) . '" class="font-weight-bold">' . $clusterName . '</a>';
+        } else {
+            $clusterHtml = '<strong>' . $clusterName . '</strong>';
+        }
+        if (!empty($row['cluster_code'])) {
+            $clusterHtml .= '<div class="text-muted small">' . htmlspecialchars((string) $row['cluster_code'], ENT_QUOTES, 'UTF-8') . '</div>';
+        }
+
+        $picHtml = '<div class="batch-pic-summary">'
+            . '<div><strong>Area:</strong> ' . htmlspecialchars($uploadBy !== '' ? $uploadBy : '-', ENT_QUOTES, 'UTF-8') . '</div>'
+            . '<div><strong>HO:</strong> ' . htmlspecialchars($picApproval !== '' ? $picApproval : '-', ENT_QUOTES, 'UTF-8') . '</div>'
+            . '<div><strong>MyRep:</strong> ' . htmlspecialchars(!empty($myrepPicNames) ? implode(', ', array_unique($myrepPicNames)) : '-', ENT_QUOTES, 'UTF-8') . '</div>'
+            . '</div>';
+
+        $docHtml = '<div class="batch-doc-status-stack"><div class="batch-doc-status-stack__item">'
+            . '<span class="batch-doc-name">RAR:</span> '
+            . '<span class="badge badge-' . $this->getBatchListBadgeClass($batchDocLabel) . ' batch-doc-status-badge">'
+            . htmlspecialchars($batchDocLabel, ENT_QUOTES, 'UTF-8')
+            . '</span></div></div>';
+
+        $slaHtml = '<div class="batch-sla-aging-cell">'
+            . '<span class="badge badge-' . $this->getBatchListSlaBadgeClass($slaInfo) . '">SLA 17 Hari</span> '
+            . '<span class="badge badge-' . $this->getBatchListAgingBadgeClass($slaInfo['aging_days']) . '">'
+            . (($slaInfo['aging_days'] === null) ? 'Aging -' : 'Aging ' . (int) $slaInfo['aging_days'] . ' Hari')
+            . '</span></div>';
+
+        $actionHtml = '';
+        if ($hasBatch) {
+            if ($canEdit) {
+                $actionHtml .= $this->buildBatchApprovalEditButton($row, $batchPics);
+            }
+            $actionHtml .= ' <a href="' . base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) . '" class="btn btn-sm btn-outline-secondary mt-1">Detail</a>';
+            if ($canHapus) {
+                $actionHtml .= ' <form method="post" action="' . base_url('Batch_Approval_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus data Batch Approval ini? Cluster MyRep tetap tersimpan.\');">'
+                    . '<input type="hidden" name="cluster_id" value="' . (int) $row['id_myrep_cluster'] . '">'
+                    . '<button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Batch</button>'
+                    . '</form>';
+            }
+        } elseif ($this->hasBatchPermission('TAMBAH')) {
+            $actionHtml = '<button type="button" class="btn btn-sm btn-outline-primary js-start-batch" data-toggle="modal" data-target="#modal-batch-create" data-cluster_id="' . (int) $row['id_myrep_cluster'] . '" data-city_name="' . htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '">Input Batch</button>';
+        } else {
+            $actionHtml = '<span class="text-muted small">Menunggu proses tahap berikutnya</span>';
+        }
+
+        return [
+            $no,
+            $clusterHtml,
+            htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
+            number_format($hpDonasi, 0, ',', '.'),
+            number_format($displayNominalDonasi, 0, ',', '.'),
+            $displayNominalPerHomepass !== null ? number_format($displayNominalPerHomepass, 0, ',', '.') : '-',
+            $slaHtml,
+            '<span class="badge badge-' . $this->getBatchListBadgeClass($stageCode) . '">' . htmlspecialchars($stageLabel, ENT_QUOTES, 'UTF-8') . '</span>',
+            $picHtml,
+            $docHtml,
+            '<span class="badge badge-' . $this->getBatchListBadgeClass($row['status_current'] ?? 'DRAFT') . '">' . htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT'), ENT_QUOTES, 'UTF-8') . '</span>',
+            $actionHtml,
+        ];
+    }
+
+    private function calculateBatchApprovalTableTotals(array $rows)
+    {
+        $totals = [
+            'hp_donasi' => 0,
+            'nominal_donasi' => 0,
+            'nominal_per_homepass' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+            $nominalRelease = $row['nominal_release_finance'] ?? null;
+            $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
+            $useReleaseNominal = in_array($stageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+            $nominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
+            $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
+
+            $totals['hp_donasi'] += $hpDonasi;
+            $totals['nominal_donasi'] += $nominalDonasi;
+        }
+
+        $totals['nominal_per_homepass'] = $totals['hp_donasi'] > 0
+            ? $totals['nominal_donasi'] / $totals['hp_donasi']
+            : 0;
+
+        return $totals;
+    }
+
+    private function sortBatchApprovalTableRows(array $rows, array $order)
+    {
+        $column = isset($order['column']) ? (int) $order['column'] : 0;
+        $dir = strtolower((string) ($order['dir'] ?? 'asc')) === 'desc' ? -1 : 1;
+        if ($column <= 0) {
+            return $rows;
+        }
+
+        usort($rows, function ($left, $right) use ($column, $dir) {
+            $leftValue = $this->getBatchApprovalSortValue($left, $column);
+            $rightValue = $this->getBatchApprovalSortValue($right, $column);
+
+            if (is_numeric($leftValue) && is_numeric($rightValue)) {
+                $result = $leftValue <=> $rightValue;
+            } else {
+                $result = strnatcasecmp((string) $leftValue, (string) $rightValue);
+            }
+
+            return $result * $dir;
+        });
+
+        return $rows;
+    }
+
+    private function getBatchApprovalSortValue(array $row, $column)
+    {
+        $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $nominalRelease = $row['nominal_release_finance'] ?? null;
+        $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
+        $useReleaseNominal = in_array($stageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $nominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
+        $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
+
+        switch ((int) $column) {
+            case 1:
+                return $row['cluster_name'] ?? '';
+            case 2:
+                return $row['regional_name'] ?? '';
+            case 3:
+                return $row['city_name'] ?? '';
+            case 4:
+                return $hpDonasi;
+            case 5:
+                return $nominalDonasi;
+            case 6:
+                return $hpDonasi > 0 ? $nominalDonasi / $hpDonasi : 0;
+            case 8:
+                return $this->getIndonesianStagingLabel($stageCode);
+            case 11:
+                return $row['status_current'] ?? '';
+            default:
+                return $row['created_at'] ?? '';
+        }
+    }
+
+    private function buildBatchApprovalEditButton(array $row, array $batchPics)
+    {
+        $attrs = [
+            'id_myrep_cluster' => (int) ($row['id_myrep_cluster'] ?? 0),
+            'id_batch_approval' => (int) ($row['id_batch_approval'] ?? 0),
+            'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+            'regional_name' => (string) ($row['regional_name'] ?? ''),
+            'province_name' => (string) ($row['province_name'] ?? ''),
+            'city_name' => (string) ($row['city_name'] ?? ''),
+            'district_name' => (string) ($row['district_name'] ?? ''),
+            'village_name' => (string) ($row['village_name'] ?? ''),
+            'submission_date' => (string) ($row['submission_date'] ?? ''),
+            'homepass_valsal' => (int) ($row['homepass_valsal'] ?? 0),
+            'hp_donasi' => (int) ($row['hp_donasi'] ?? 0),
+            'nominal_pengajuan_area' => (string) ($row['nominal_pengajuan_area'] ?? ''),
+            'nominal_nego_emr' => (string) ($row['nominal_nego_emr'] ?? ''),
+            'nominal_release_finance' => (string) ($row['nominal_release_finance'] ?? ''),
+            'bank_name' => (string) ($row['bank_name'] ?? ''),
+            'bank_account_number' => (string) ($row['bank_account_number'] ?? ''),
+            'recipient_name' => (string) ($row['recipient_name'] ?? ''),
+            'recipient_phone' => (string) ($row['recipient_phone'] ?? ''),
+            'recipient_position' => (string) ($row['recipient_position'] ?? ''),
+            'recipient_period' => (string) ($row['recipient_period'] ?? ''),
+            'free_wifi_qty' => (string) ($row['free_wifi_qty'] ?? ''),
+            'free_wifi_period_month' => (string) ($row['free_wifi_period_month'] ?? ''),
+            'astri_batch_number' => (string) ($row['astri_batch_number'] ?? ''),
+            'staging_status' => (string) ($row['staging_status'] ?? 'DRAFT'),
+            'remark_batch_approval' => (string) ($row['remark_batch_approval'] ?? ''),
+        ];
+
+        $html = '<button type="button" class="btn btn-sm btn-outline-primary js-edit-batch" data-toggle="modal" data-target="#modal-batch-edit" data-role-guard-exempt="1"';
+        foreach ($attrs as $key => $value) {
+            $html .= ' data-' . $key . '="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        $html .= " data-pics='" . htmlspecialchars(json_encode($batchPics), ENT_QUOTES, 'UTF-8') . "'>Edit</button>";
+
+        return $html;
+    }
+
+    private function isNyDrmBatchRow(array $row)
+    {
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $stage = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
+
+        return !in_array($currentStatus, ['DRM', 'RFS', 'ATP', 'DONE'], true)
+            && (!$hasBatch || (!in_array($stage, ['COMPLETED', 'INVOICE'], true) && $stage !== 'REJECTED'));
+    }
+
+    private function getBatchListDocLabel(array $row)
+    {
+        if ((int) ($row['batch_doc_not_required'] ?? 0) === 1) {
+            return 'TIDAK BUTUH DOKUMENT';
+        }
+
+        $status = strtoupper(trim((string) ($row['batch_doc_status'] ?? '')));
+        if ($status === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        if ($status !== '') {
+            return $status;
+        }
+
+        return !empty($row['batch_doc_file_name']) ? 'UPLOADED' : 'BELUM UPLOAD';
+    }
+
+    private function getBatchListSlaInfo(array $row)
+    {
+        $approvedValsalDate = trim((string) ($row['valsal_approved_at'] ?? ''));
+        if ($approvedValsalDate === '') {
+            $approvedValsalDate = trim((string) ($row['valsal_date'] ?? ''));
+        }
+
+        if ($approvedValsalDate === '' || $approvedValsalDate === '0000-00-00') {
+            return ['start_date' => null, 'aging_days' => null];
+        }
+
+        $approvalEmrDate = trim((string) ($row['submitted_to_finance_at'] ?? ''));
+        return [
+            'start_date' => substr($approvedValsalDate, 0, 10),
+            'aging_days' => $this->countBatchListCalendarDays($approvedValsalDate, $approvalEmrDate !== '' ? $approvalEmrDate : date('Y-m-d')),
+        ];
+    }
+
+    private function countBatchListCalendarDays($startDateString, $endDateString = null)
+    {
+        if (empty($startDateString) || $startDateString === '0000-00-00') {
+            return null;
+        }
+
+        try {
+            $start = new DateTimeImmutable(substr((string) $startDateString, 0, 10));
+            $end = new DateTimeImmutable(substr((string) ($endDateString ?: date('Y-m-d')), 0, 10));
+        } catch (Exception $e) {
+            return null;
+        }
+
+        return $start > $end ? 0 : (int) $start->diff($end)->days;
+    }
+
+    private function getBatchListSlaBadgeClass(array $slaInfo)
+    {
+        if (($slaInfo['aging_days'] ?? null) === null) {
+            return 'secondary';
+        }
+
+        return (int) $slaInfo['aging_days'] > 17 ? 'danger' : 'success';
+    }
+
+    private function getBatchListAgingBadgeClass($agingDays)
+    {
+        if ($agingDays === null) {
+            return 'secondary';
+        }
+
+        return (int) $agingDays > 17 ? 'danger' : 'success';
+    }
+
+    private function getBatchListBadgeClass($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'APPROVED':
+            case 'RELEASED':
+            case 'DONE BATCH APPROVAL':
+            case 'COMPLETED':
+            case 'BATCH_APPROVED':
+            case 'PRE_ZEYN_DOC_APPROVED':
+            case 'PRE_ZEYN_FINANCE_APPROVED':
+            case 'POST_ZEYN_DOC_APPROVED':
+            case 'ASTRI_APPROVED':
+            case 'PO_DONASI':
+            case 'INVOICE':
+                return 'success';
+            case 'WAITING INPUT':
+            case 'WAITING_BATCH_APPROVAL':
+            case 'WAITING_ASTRI_SUBMISSION':
+                return 'info';
+            case 'HOLD':
+            case 'WAITING DOC':
+            case 'WAITING_PRE_ZEYN_DOC':
+            case 'PRE_ZEYN_DOC_ON_REVIEW':
+            case 'PRE_ZEYN_FINANCE_ON_REVIEW':
+            case 'WAITING_FINANCE_RELEASE':
+            case 'WAITING_POST_ZEYN_DOC':
+            case 'POST_ZEYN_DOC_ON_REVIEW':
+            case 'POST_ZEYN_FINANCE_ON_REVIEW':
+            case 'ASTRI_ON_REVIEW':
+            case 'ON REVIEW':
+                return 'warning';
+            case 'REJECTED':
+            case 'NEED_REVISE':
+                return 'danger';
+            case 'WAITING HO':
+            case 'WAITING MYREP':
+            case 'WAITING FINANCE':
+                return 'info';
+            default:
+                return 'secondary';
+        }
     }
 
     private function isSitacHoUser()

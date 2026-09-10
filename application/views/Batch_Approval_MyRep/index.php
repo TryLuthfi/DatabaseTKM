@@ -104,6 +104,7 @@ $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
 $clusterReviewPicMap = isset($clusterReviewPicMap) && is_array($clusterReviewPicMap) ? $clusterReviewPicMap : [];
+$summaryRows = isset($summaryRows) && is_array($summaryRows) ? $summaryRows : $clusterRows;
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -114,7 +115,7 @@ foreach ($eligibleClusterOptions as $clusterOption) {
 
 asort($createCityOptions);
 
-foreach ($clusterRows as $row) {
+foreach ($summaryRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
     $batchStatus = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
     $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
@@ -421,6 +422,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                             class="btn btn-sm btn-outline-primary js-edit-batch"
                             data-toggle="modal"
                             data-target="#modal-batch-edit"
+                            data-role-guard-exempt="1"
                             data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
                             data-id_batch_approval="<?= (int) ($row['id_batch_approval'] ?? 0) ?>"
                             data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
@@ -468,9 +470,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                 <?php endif; ?>
 
                 <?php if ($hasBatch && $canHapus): ?>
-                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta Batch Approval dan seluruh flow MyRep terkait?');">
+                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus data Batch Approval ini? Cluster MyRep tetap tersimpan.');">
                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Batch</button>
                     </form>
                 <?php endif; ?>
             </td>
@@ -480,7 +482,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
 };
 ?>
 
-<div class="content-wrapper">
+<main class="content-wrapper" role="main">
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
@@ -683,7 +685,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                 <li class="nav-item">
                                     <a class="nav-link active" id="batch-all-tab" data-toggle="tab" href="#batch-all-pane" role="tab" aria-controls="batch-all-pane" aria-selected="true">
                                         All Batch Approval
-                                        <span class="batch-monitor-tabs__count"><?= number_format(count($clusterRows), 0, ',', '.') ?></span>
+                                        <span class="batch-monitor-tabs__count"><?= number_format(count($summaryRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -714,9 +716,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>Aksi</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                <?php $renderBatchTableRows($clusterRows, $docReady, $this->MBatch_Approval_MyRep); ?>
-                                            </tbody>
+                                            <tbody></tbody>
                                             <tfoot>
                                                 <tr>
                                                     <th colspan="4" class="text-right">TOTAL</th>
@@ -749,9 +749,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>Aksi</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                <?php $renderBatchTableRows($nyDrmRows, $docReady, $this->MBatch_Approval_MyRep); ?>
-                                            </tbody>
+                                            <tbody></tbody>
                                             <tfoot>
                                                 <tr>
                                                     <th colspan="4" class="text-right">TOTAL</th>
@@ -771,7 +769,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             </div>
         </div>
     </section>
-</div>
+</main>
 
 <?php if ($isReady): ?>
     <div class="modal fade" id="modal-batch-import" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1004,7 +1002,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
     <div class="modal fade" id="modal-batch-edit" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
-                <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>">
+                <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>" data-role-guard-exempt="1">
                     <input type="hidden" name="cluster_id" id="edit_id_myrep_cluster">
                     <input type="hidden" name="id_batch_approval" id="edit_id_batch_approval">
                     <div class="modal-header budget-modal__header">
@@ -2143,6 +2141,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         var batchPreviewImportUrl = '<?= base_url('Batch_Approval_MyRep/previewBatchImport') ?>';
         var batchSaveImportUrl = '<?= base_url('Batch_Approval_MyRep/saveImportedBatch') ?>';
         var batchDownloadReportUrl = '<?= base_url('Batch_Approval_MyRep/downloadReport') ?>';
+        var batchTableDataUrl = '<?= base_url('Batch_Approval_MyRep/tableData') ?>';
         var batchCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
         var batchRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
         var batchSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
@@ -3101,27 +3100,43 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var batchAllTable = null;
                     var activeSummaryStageFilter = batchSelectedStatus || '';
 
-                    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                        if (!settings || !settings.nTable || settings.nTable.id !== 'table_batch_all') {
-                            return true;
-                        }
-                        if (!activeSummaryStageFilter) {
-                            return true;
-                        }
-
-                        var rowNode = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex].nTr : null;
-                        var rowStageCode = rowNode ? String($(rowNode).data('stage-code') || '').toUpperCase().trim() : '';
-                        return rowStageCode === String(activeSummaryStageFilter).toUpperCase().trim();
-                    });
-
-                    ['#table_batch_ny_drm', '#table_batch_all'].forEach(function (selector) {
+                    [
+                        { selector: '#table_batch_all', tab: 'all' },
+                        { selector: '#table_batch_ny_drm', tab: 'ny_drm' }
+                    ].forEach(function (config) {
+                        var selector = config.selector;
                         var table = $(selector).DataTable({
+                            processing: true,
+                            serverSide: true,
+                            deferRender: true,
+                            pageLength: 10,
                             responsive: false,
                             scrollX: true,
                             autoWidth: false,
                             order: [[0, 'asc']],
+                            ajax: {
+                                url: batchTableDataUrl,
+                                type: 'POST',
+                                data: function (data) {
+                                    data.city = $('select[name="city"]').val() || '';
+                                    data.status = selector === '#table_batch_all' ? activeSummaryStageFilter : batchSelectedStatus;
+                                    data.tab = config.tab;
+                                }
+                            },
                             footerCallback: function (row, data, start, end, display) {
                                 var api = this.api();
+                                var json = api.ajax && api.ajax.json ? api.ajax.json() : null;
+                                if (json && json.totals) {
+                                    var totalKeys = ['hp_donasi', 'nominal_donasi', 'nominal_per_homepass'];
+                                    [4, 5, 6].forEach(function (colIdx, keyIdx) {
+                                        var value = Number(json.totals[totalKeys[keyIdx]] || 0);
+                                        $(api.column(colIdx).footer()).html(
+                                            value.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                                        );
+                                    });
+                                    return;
+                                }
+
                                 var parseNumber = function (value) {
                                     if (typeof value === 'string') {
                                         value = value.replace(/<[^>]*>/g, '');
@@ -3186,7 +3201,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         $('#batch-all-tab').tab('show');
 
                         if (batchAllTable) {
-                            batchAllTable.draw();
+                            batchAllTable.ajax.reload(null, true);
                             batchAllTable.columns.adjust();
                         } else {
                             $('#table_batch_all tbody tr').each(function () {
