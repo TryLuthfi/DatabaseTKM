@@ -4145,7 +4145,8 @@ class Batch_Approval_MyRep extends CI_Controller
         $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
         return in_array('SITAC_HO', $roleKeys, true)
             || in_array('ADMIN_AREA', $roleKeys, true)
-            || in_array('SM_AREA', $roleKeys, true);
+            || in_array('SM_AREA', $roleKeys, true)
+            || in_array('FINANCE_HO', $roleKeys, true);
     }
 
     private function resolveDonationChecklistPrintStatus(array $rows)
