@@ -3670,6 +3670,9 @@ class Batch_Approval_MyRep extends CI_Controller
         if (strpos($docName, 'SCREENSHOT') !== false) {
             return 'jpg|jpeg|png';
         }
+        if ($groupLabel === 'PRE ZEYN DOCUMENT') {
+            return 'pdf';
+        }
         if ($groupLabel === 'POST PAYMENT ZEYN DOCUMENT') {
             return 'pdf';
         }

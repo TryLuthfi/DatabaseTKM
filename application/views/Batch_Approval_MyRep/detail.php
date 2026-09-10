@@ -2365,6 +2365,7 @@ if ($canApprove && $canApprovalAction) {
                                                                         $bulkRawStatus = strtoupper(trim((string) ($bulkRow['status_file'] ?? '')));
                                                                         $bulkCanNotRequired = strtoupper(trim($bulkDocName)) === 'FORM FREE WIFI & KTP';
                                                                         $bulkIsImageDoc = batchDetailIsImageDonationDoc($bulkDocName);
+                                                                        $bulkAllowedKind = $bulkIsImageDoc ? 'image' : 'pdf';
                                                                         ?>
                                                                         <tr>
                                                                             <td><?= $bulkIndex + 1 ?></td>
@@ -2386,7 +2387,7 @@ if ($canApprove && $canApprovalAction) {
                                                                             <td>
                                                                                 <?php if ($bulkIsImageDoc): ?>
                                                                                     <div class="batch-dropzone js-dropzone batch-dropzone--photo">
-                                                                                        <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="js-dropzone-input" accept="image/*">
+                                                                                        <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="js-dropzone-input js-donation-bulk-file" accept="image/*" data-allowed-kind="<?= $bulkAllowedKind ?>">
                                                                                         <div class="batch-dropzone-content">
                                                                                             <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                                                                             <div class="batch-dropzone-title">Drop gambar di sini</div>
@@ -2397,7 +2398,8 @@ if ($canApprove && $canApprovalAction) {
                                                                                     </div>
                                                                                     <div class="text-muted small mt-1">JPG, JPEG, atau PNG. Maksimal 20 MB.</div>
                                                                                 <?php else: ?>
-                                                                                    <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="form-control">
+                                                                                    <input type="file" name="bulk_file_<?= $bulkDocItemId ?>" id="bulk_file_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkDocItemId ?>" class="form-control js-donation-bulk-file" accept=".pdf,application/pdf" data-allowed-kind="<?= $bulkAllowedKind ?>">
+                                                                                    <div class="text-muted small mt-1">Only PDF. Maksimal 20 MB.</div>
                                                                                 <?php endif; ?>
                                                                             </td>
                                                                             <td><input type="text" name="bulk_remark_<?= $bulkDocItemId ?>" class="form-control" placeholder="Remark"></td>
@@ -2894,7 +2896,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                         <div class="form-group mb-0">
                             <label class="font-weight-bold" id="donation_upload_file_label">Pilih File</label>
                             <div class="batch-dropzone js-dropzone" id="donation_upload_dropzone">
-                                <input type="file" name="file" id="donation_upload_file" class="js-dropzone-input" required>
+                                <input type="file" name="file" id="donation_upload_file" class="js-dropzone-input js-donation-single-file" required>
                                 <div class="batch-dropzone-content">
                                     <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                     <div class="batch-dropzone-title" id="donation_upload_dropzone_title">Drag & drop file di sini</div>
@@ -2904,6 +2906,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                                 </div>
                             </div>
                             <small class="form-text text-muted" id="donation_upload_file_hint">Format mengikuti jenis dokumen. Maksimal dokumen 20 MB.</small>
+                            <div class="alert alert-danger py-2 px-3 small mt-2 d-none" id="donation_upload_file_error"></div>
                         </div>
                     </div>
                     <div class="donation-doc-modal-panel" id="donation_upload_not_required_panel">
@@ -3625,6 +3628,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                         input.files = e.dataTransfer.files;
                         label.textContent = e.dataTransfer.files[0].name;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
 
@@ -3634,6 +3638,88 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                         : 'Belum ada file dipilih';
                 });
             });
+        }
+
+        function getDonationFileExtension(file) {
+            var name = file && file.name ? String(file.name) : '';
+            var parts = name.split('.');
+            return parts.length > 1 ? parts.pop().toLowerCase() : '';
+        }
+
+        function isValidDonationUploadFile(file, allowedKind) {
+            if (!file) {
+                return true;
+            }
+
+            var kind = String(allowedKind || 'pdf').toLowerCase();
+            var extension = getDonationFileExtension(file);
+            var type = String(file.type || '').toLowerCase();
+
+            if (kind === 'image') {
+                return ['jpg', 'jpeg', 'png'].indexOf(extension) !== -1
+                    || ['image/jpeg', 'image/png'].indexOf(type) !== -1;
+            }
+
+            return extension === 'pdf' || type === 'application/pdf';
+        }
+
+        function donationUploadRuleMessage(allowedKind) {
+            return String(allowedKind || 'pdf').toLowerCase() === 'image'
+                ? 'Dokumen ini hanya menerima gambar JPG, JPEG, atau PNG.'
+                : 'Dokumen ini hanya menerima file PDF.';
+        }
+
+        function validateSingleDonationUploadFile(showAlert) {
+            var input = document.getElementById('donation_upload_file');
+            var submitButton = document.getElementById('donation_upload_submit');
+            var errorBox = document.getElementById('donation_upload_file_error');
+            if (!input || !submitButton) {
+                return true;
+            }
+
+            var file = input.files && input.files.length ? input.files[0] : null;
+            var allowedKind = input.getAttribute('data-allowed-kind') || 'pdf';
+            var isValid = isValidDonationUploadFile(file, allowedKind);
+            var message = isValid ? '' : donationUploadRuleMessage(allowedKind);
+
+            submitButton.disabled = !isValid;
+            if (errorBox) {
+                errorBox.textContent = message;
+                errorBox.classList.toggle('d-none', isValid);
+            }
+
+            if (!isValid && showAlert) {
+                alert(message);
+            }
+
+            return isValid;
+        }
+
+        function validateBulkDonationUploadFiles($form, showAlert) {
+            var invalidInput = null;
+            var invalidMessage = '';
+
+            $form.find('.js-donation-bulk-file').each(function () {
+                var input = this;
+                if (input.disabled || !input.files || !input.files.length) {
+                    return;
+                }
+
+                var allowedKind = input.getAttribute('data-allowed-kind') || 'pdf';
+                if (!isValidDonationUploadFile(input.files[0], allowedKind)) {
+                    invalidInput = input;
+                    invalidMessage = donationUploadRuleMessage(allowedKind);
+                    return false;
+                }
+            });
+
+            $form.find('.js-donation-bulk-upload-submit').prop('disabled', !!invalidInput);
+            if (invalidInput && showAlert) {
+                alert(invalidMessage);
+                invalidInput.focus();
+            }
+
+            return !invalidInput;
         }
 
         function normalizeFormattedNumber(value, decimals) {
@@ -3833,7 +3919,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                                         '<div class="form-group mb-0">' +
                                             '<label class="font-weight-bold" id="donation_upload_file_label">Pilih File</label>' +
                                             '<div class="batch-dropzone js-dropzone" id="donation_upload_dropzone">' +
-                                                '<input type="file" name="file" id="donation_upload_file" class="js-dropzone-input" required>' +
+                                                '<input type="file" name="file" id="donation_upload_file" class="js-dropzone-input js-donation-single-file" required>' +
                                                 '<div class="batch-dropzone-content">' +
                                                     '<div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>' +
                                                     '<div class="batch-dropzone-title" id="donation_upload_dropzone_title">Drag & drop file di sini</div>' +
@@ -3843,6 +3929,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                                                 '</div>' +
                                             '</div>' +
                                             '<small class="form-text text-muted" id="donation_upload_file_hint">Format mengikuti jenis dokumen. Maksimal dokumen 20 MB.</small>' +
+                                            '<div class="alert alert-danger py-2 px-3 small mt-2 d-none" id="donation_upload_file_error"></div>' +
                                         '</div>' +
                                     '</div>' +
                                     '<div class="donation-doc-modal-panel" id="donation_upload_not_required_panel">' +
@@ -3893,17 +3980,24 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
             );
             $('#donation_upload_replace_note').toggleClass('d-none', !isReplace);
             $('#donation_upload_remark').val($button.data('remark') || '');
-            $('#donation_upload_file').val('').prop('disabled', false).prop('required', true).attr('accept', isImageDoc ? 'image/*' : '');
+            var allowedKind = isImageDoc ? 'image' : 'pdf';
+            $('#donation_upload_file')
+                .val('')
+                .prop('disabled', false)
+                .prop('required', true)
+                .attr('accept', isImageDoc ? 'image/*' : '.pdf,application/pdf')
+                .attr('data-allowed-kind', allowedKind);
             $('#donation_upload_file_label').text(isImageDoc ? 'Foto Claim' : 'Pilih File');
             $('#donation_upload_dropzone').toggleClass('batch-dropzone--photo', isImageDoc);
             $('#donation_upload_dropzone_title').text(isImageDoc ? 'Drop foto claim di sini' : 'Drag & drop file di sini');
             $('#donation_upload_dropzone_text').text(isImageDoc ? 'atau klik area ini untuk pilih file gambar' : 'atau klik area ini untuk memilih file dari perangkat');
             $('#donation_upload_choose_label').text(isImageDoc ? 'Pilih Foto' : 'Pilih File');
-            $('#donation_upload_file_hint').text(isImageDoc ? 'Format gambar yang didukung: JPG, JPEG, PNG. Maksimal dokumen 20 MB.' : 'Format mengikuti jenis dokumen. Maksimal dokumen 20 MB.');
+            $('#donation_upload_file_hint').text(isImageDoc ? 'Format gambar yang didukung: JPG, JPEG, PNG. Maksimal dokumen 20 MB.' : 'Only PDF. Maksimal dokumen 20 MB.');
+            $('#donation_upload_file_error').addClass('d-none').text('');
             $('#donation_upload_file_name').text('Belum ada file dipilih');
             $('#donation_upload_not_required').prop('checked', false);
             $('#donation_upload_not_required_panel').toggle(canNotRequired);
-            $('#donation_upload_submit').removeClass('btn-warning').addClass('btn-success').text(isReplace ? 'Replace File' : 'Upload Dokumen');
+            $('#donation_upload_submit').prop('disabled', false).removeClass('btn-warning').addClass('btn-success').text(isReplace ? 'Replace File' : 'Upload Dokumen');
         }
 
         function softRefreshBatchDetail(url, scrollTop) {
@@ -4319,9 +4413,16 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                 if (checked) {
                     $('#donation_upload_file').val('');
                     $('#donation_upload_file_name').text('Tidak dibutuhkan dokumen');
+                    $('#donation_upload_file_error').addClass('d-none').text('');
+                    $('#donation_upload_submit').prop('disabled', false);
                 } else {
                     $('#donation_upload_file_name').text('Belum ada file dipilih');
+                    validateSingleDonationUploadFile(false);
                 }
+            });
+
+            $(document).on('change', '#donation_upload_file', function () {
+                validateSingleDonationUploadFile(true);
             });
 
             $(document).on('change', '.js-bulk-donation-not-required', function () {
@@ -4331,10 +4432,18 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                 if ($checkbox.is(':checked')) {
                     $fileInput.val('');
                 }
+                validateBulkDonationUploadFiles($checkbox.closest('form'), false);
+            });
+
+            $(document).on('change', '.js-donation-bulk-file', function () {
+                validateBulkDonationUploadFiles($(this).closest('form'), true);
             });
 
             $(document).on('submit', '#donation-upload-form', function (event) {
                 event.preventDefault();
+                if (!$('#donation_upload_not_required').is(':checked') && !validateSingleDonationUploadFile(true)) {
+                    return;
+                }
 
                 var form = this;
                 var $form = $(form);
@@ -4383,6 +4492,9 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
 
                 var form = this;
                 var $form = $(form);
+                if (!validateBulkDonationUploadFiles($form, true)) {
+                    return;
+                }
                 var $submitButton = $form.find('.js-donation-bulk-upload-submit');
                 var originalText = $submitButton.text();
                 var scrollTop = currentBatchDetailScrollTop();
