@@ -2868,6 +2868,9 @@ class MBatch_Approval_MyRep extends CI_Model
                 if ((int) ($pre['finance_approved'] ?? 0) < (int) ($pre['finance_required'] ?? $preRequired)) {
                     return 'PRE_ZEYN_FINANCE_ON_REVIEW';
                 }
+                if ($stagingStatus === 'WAITING_FINANCE_RELEASE') {
+                    return 'WAITING_FINANCE_RELEASE';
+                }
                 return 'PRE_ZEYN_FINANCE_APPROVED';
             }
         }
