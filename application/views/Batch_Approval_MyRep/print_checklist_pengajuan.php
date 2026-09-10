@@ -88,6 +88,8 @@ $submissionDetails = [
     <style>
         * {
             box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         body {
@@ -127,7 +129,7 @@ $submissionDetails = [
 
         .header {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 68px;
+            grid-template-columns: minmax(0, 1fr) 90px;
             gap: 12px;
             align-items: start;
             padding-bottom: 8px;
@@ -189,16 +191,17 @@ $submissionDetails = [
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 68px;
-            min-height: 34px;
-            padding: 6px 8px;
-            border: 3px solid #64748b;
+            width: 90px;
+            min-height: 52px;
+            padding: 10px 12px;
+            border: 4px solid #64748b;
             border-radius: 4px;
             color: #64748b;
-            font-size: 8px;
+            font-size: 13px;
             font-weight: 900;
             text-align: center;
             text-transform: uppercase;
+            line-height: 1.1;
         }
 
         .stamp.approved {
@@ -225,6 +228,7 @@ $submissionDetails = [
             margin: 0 0 4px;
             padding: 4px 6px;
             background: #0f172a;
+            box-shadow: inset 0 0 0 999px #0f172a;
             color: #fff;
             font-size: 9px;
             font-weight: 900;

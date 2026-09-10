@@ -479,8 +479,9 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $documentRows = $this->MBatch_Approval_MyRep->getDonationDocumentRows($clusterId, 'PRE_ZEYN');
+        $clusterName = trim((string) ($cluster['cluster_name'] ?? ''));
         $data = [
-            'title' => 'Print Checklist Pengajuan Donasi',
+            'title' => 'Checklist pengajuan donasi' . ($clusterName !== '' ? ' - ' . $clusterName : ''),
             'cluster' => $cluster,
             'documentRows' => $documentRows,
             'printStatus' => $this->resolveDonationChecklistPrintStatus($documentRows),
@@ -4142,7 +4143,9 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
-        return in_array('SITAC_HO', $roleKeys, true) || in_array('ADMIN_AREA', $roleKeys, true);
+        return in_array('SITAC_HO', $roleKeys, true)
+            || in_array('ADMIN_AREA', $roleKeys, true)
+            || in_array('SM_AREA', $roleKeys, true);
     }
 
     private function resolveDonationChecklistPrintStatus(array $rows)
