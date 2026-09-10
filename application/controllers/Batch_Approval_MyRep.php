@@ -62,7 +62,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['regionalOptionsByCity'] = $this->MBatch_Approval_MyRep->getRegionalOptionsByCity();
         $data['eligibleClusterOptions'] = $this->MBatch_Approval_MyRep->getEligibleClusterOptions();
         $summaryRows = $data['isReady']
-            ? $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus)
+            ? $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, '')
             : [];
         $data['summaryRows'] = $summaryRows;
         $data['clusterRows'] = [];
@@ -111,7 +111,12 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         try {
-            $rows = $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus);
+            $rows = $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, '');
+            if ($selectedStatus !== '') {
+                $rows = array_values(array_filter($rows, static function ($row) use ($selectedStatus) {
+                    return strtoupper((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? '')) === $selectedStatus;
+                }));
+            }
             if ($tab === 'ny_drm') {
                 $rows = array_values(array_filter($rows, function ($row) {
                     return $this->isNyDrmBatchRow($row);
