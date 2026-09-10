@@ -938,7 +938,11 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
 
-        $currentStage = strtoupper(trim((string) ($batch['staging_status'] ?? 'DRAFT')));
+        $storedStage = strtoupper(trim((string) ($batch['staging_status'] ?? 'DRAFT')));
+        $currentStage = strtoupper(trim((string) ($batch['display_staging_status'] ?? $storedStage)));
+        if ($currentStage === '') {
+            $currentStage = $storedStage !== '' ? $storedStage : 'DRAFT';
+        }
         $targetStage = strtoupper(trim((string) $this->input->post('target_stage')));
         $isAreaAllowedInitialDecision = $currentStage === 'WAITING_BATCH_APPROVAL'
             && in_array($targetStage, ['BATCH_APPROVED', 'HOLD', 'REJECTED'], true);
