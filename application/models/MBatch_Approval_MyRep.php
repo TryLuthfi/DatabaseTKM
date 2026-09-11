@@ -2402,7 +2402,7 @@ class MBatch_Approval_MyRep extends CI_Model
             if ($isRequired) {
                 $map[$clusterId][$key]['finance_required']++;
             }
-            if ($hasFile) {
+            if ($hasFile && $isRequired) {
                 $map[$clusterId][$key]['uploaded']++;
             }
             if ($hasFile && $statusFile === 'APPROVED' && $isRequired) {
