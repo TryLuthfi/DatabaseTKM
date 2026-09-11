@@ -2307,6 +2307,7 @@ class MBatch_Approval_MyRep extends CI_Model
     {
         return [
             'PRE_ZEYN' => [
+                'package_exists' => 0,
                 'required' => 0,
                 'uploaded' => 0,
                 'approved' => 0,
@@ -2320,6 +2321,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 'astri_rejected' => 0,
             ],
             'POST_ZEYN' => [
+                'package_exists' => 0,
                 'required' => 0,
                 'uploaded' => 0,
                 'approved' => 0,
@@ -2348,6 +2350,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 g.group_label,
                 i.id_doc_item,
                 i.is_required,
+                p.id_doc_package,
                 f.id_doc_file,
                 f.status_file
             ', false)
@@ -2381,6 +2384,10 @@ class MBatch_Approval_MyRep extends CI_Model
             $key = $groupLabel === $this->donationDocGroups['POST_ZEYN'] ? 'POST_ZEYN' : 'PRE_ZEYN';
             if (!isset($map[$clusterId][$key])) {
                 continue;
+            }
+
+            if ((int) ($row['id_doc_package'] ?? 0) > 0) {
+                $map[$clusterId][$key]['package_exists'] = 1;
             }
 
             if ((int) ($row['is_required'] ?? 1) === 1) {
@@ -2833,6 +2840,7 @@ class MBatch_Approval_MyRep extends CI_Model
         $post = $donationSummary['POST_ZEYN'] ?? [];
         $postRequired = (int) ($post['required'] ?? 0);
         $postFinanceRequired = (int) ($post['finance_required'] ?? $postRequired);
+        $postPackageExists = !empty($post['package_exists']);
         $allAstriRequired = (int) ($pre['required'] ?? 0) + (int) ($post['required'] ?? 0);
         $allAstriApproved = (int) ($pre['astri_approved'] ?? 0) + (int) ($post['astri_approved'] ?? 0);
         $allAstriRejected = (int) ($pre['astri_rejected'] ?? 0) + (int) ($post['astri_rejected'] ?? 0);
@@ -2843,7 +2851,8 @@ class MBatch_Approval_MyRep extends CI_Model
             || (int) ($post['rejected'] ?? 0) > 0
             || (int) ($post['finance_rejected'] ?? 0) > 0;
         $hasPostProgress = $postRequired > 0 && $hasRelease && (
-            (int) ($post['uploaded'] ?? 0) > 0
+            $postPackageExists
+            || (int) ($post['uploaded'] ?? 0) > 0
             || (int) ($post['approved'] ?? 0) > 0
             || (int) ($post['finance_approved'] ?? 0) > 0
             || (int) ($post['finance_rejected'] ?? 0) > 0
@@ -2928,7 +2937,7 @@ class MBatch_Approval_MyRep extends CI_Model
             }
         }
 
-        if ($stagingStatus === 'RELEASED') {
+        if ($stagingStatus === 'RELEASED' && $postPackageExists) {
             if ($postRequired > 0) {
                 if ((int) ($post['approved'] ?? 0) < $postRequired) {
                     if ((int) ($post['uploaded'] ?? 0) >= $postRequired) {
