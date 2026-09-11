@@ -640,7 +640,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $batchId = (int) $this->input->post('id_batch_approval');
         $existing = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
         if (!$this->canEditBatchApprovalDetail($existing)) {
-            $this->session->set_flashdata('error', 'Edit Batch Approval hanya tersedia untuk Super Admin, Admin, SITAC HO, Admin Area, dan SND Area.');
+            $this->session->set_flashdata('error', 'Edit Batch Approval hanya tersedia untuk Super Admin, Admin, SITAC HO, Admin Area, SND Area, dan Finance HO.');
             redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
@@ -4368,6 +4368,7 @@ class Batch_Approval_MyRep extends CI_Controller
             ->where(myrep_pic_column_contains_sql($this->db, '`sitac_ho`', $nik), null, false)
             ->or_where(myrep_pic_column_contains_sql($this->db, '`admin_area`', $nik), null, false)
             ->or_where(myrep_pic_column_contains_sql($this->db, '`snd_area`', $nik), null, false)
+            ->or_where(myrep_pic_column_contains_sql($this->db, '`finance_ho`', $nik), null, false)
             ->group_end();
 
         $found = $this->db->select('1 AS hit', false)->limit(1)->get()->row_array();
@@ -4384,6 +4385,7 @@ class Batch_Approval_MyRep extends CI_Controller
             in_array('SITAC_HO', $roleKeys, true)
             || in_array('ADMIN_AREA', $roleKeys, true)
             || in_array('SND_AREA', $roleKeys, true)
+            || in_array('FINANCE_HO', $roleKeys, true)
         );
     }
 
