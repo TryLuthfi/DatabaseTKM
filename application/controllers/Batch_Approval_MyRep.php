@@ -1674,7 +1674,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $groupLabel = strtoupper(trim((string) ($context['group_label'] ?? '')));
             $this->setDonationStageFromSystem($clusterId, $groupLabel === 'POST PAYMENT ZEYN DOCUMENT' ? 'RELEASED' : 'BATCH_APPROVED');
             $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
-            $this->sendBatchNotification('document_revised', $clusterDetail, 'Reject Finance - ' . (string) ($context['doc_name'] ?? 'Dokumen Donasi'));
+            $this->sendBatchNotification('document_rejected', $clusterDetail, 'Reject Finance - ' . (string) ($context['doc_name'] ?? 'Dokumen Donasi'));
         }
 
         $this->handleDonationAjaxOrRedirect((bool) $result, $result ? 'Dokumen donasi berhasil di-reject Finance.' : 'Gagal reject Finance dokumen donasi.', $redirectPath);

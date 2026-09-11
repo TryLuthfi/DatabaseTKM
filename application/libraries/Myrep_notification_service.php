@@ -210,7 +210,7 @@ class Myrep_notification_service
                 ->row_array();
         }
 
-        if (in_array($normalizedEvent, ['full_upload', 'batch_revised', 'propose_donation'], true) && $normalizedModule === 'batch_approval_myrep') {
+        if (in_array($normalizedEvent, ['full_upload', 'batch_revised', 'propose_donation', 'document_rejected'], true) && $normalizedModule === 'batch_approval_myrep') {
             return $this->ci->db
                 ->from('tb_myrep_notification_route')
                 ->where('module_name', (string) $moduleName)
@@ -528,6 +528,8 @@ class Myrep_notification_service
                 return '✅ <b>NEW CLUSTER</b>';
             case 'document_revised':
                 return '🔵 <b>REVISED DOCUMENT</b>';
+            case 'document_rejected':
+                return '🔴 <b>REJECTED DOCUMENT</b>';
             case 'claim_rfs_approved':
                 return '🚀 <b>CLAIM RFS</b>';
             case 'document_masuk':
