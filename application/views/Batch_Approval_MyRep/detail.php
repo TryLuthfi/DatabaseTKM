@@ -1,6 +1,7 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$this->session->unset_userdata(['success', 'error']);
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'TAMBAH') : true;
 $canEdit = isset($canEditBatchApproval) ? (bool) $canEditBatchApproval : (isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true);
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;

@@ -1,6 +1,7 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$this->session->unset_userdata(['success', 'error']);
 if (!function_exists('batchStageLabel')) {
     function batchStageLabel($status)
     {
