@@ -2870,7 +2870,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return 'NEED_REVISE';
         }
 
-        if (!$hasRelease && in_array($stagingStatus, ['PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
+        if (!$hasRelease && in_array($stagingStatus, ['PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
             $preRequired = (int) ($pre['required'] ?? 0);
             if ($preRequired > 0) {
                 if ((int) ($pre['approved'] ?? 0) < $preRequired) {
@@ -2879,7 +2879,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 if ((int) ($pre['finance_approved'] ?? 0) < (int) ($pre['finance_required'] ?? $preRequired)) {
                     return 'PRE_ZEYN_FINANCE_ON_REVIEW';
                 }
-                if ($stagingStatus === 'WAITING_FINANCE_RELEASE') {
+                if (in_array($stagingStatus, ['WAITING_FINANCE_RELEASE', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
                     return 'WAITING_FINANCE_RELEASE';
                 }
                 return 'PRE_ZEYN_FINANCE_APPROVED';
