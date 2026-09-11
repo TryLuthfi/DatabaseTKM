@@ -20,6 +20,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 'printChecklistPengajuan' => 'VIEW',
                 'saveImportedBatch' => 'TAMBAH',
                 'updateBatchApproval' => 'VIEW',
+                'updateStagingProgress' => 'VIEW',
                 'uploadDocument' => 'VIEW',
                 'uploadDonationDocument' => 'VIEW',
                 'uploadBulkDonationDocuments' => 'VIEW',
@@ -948,6 +949,9 @@ class Batch_Approval_MyRep extends CI_Controller
         $isAreaAllowedInitialDecision = $currentStage === 'WAITING_BATCH_APPROVAL'
             && in_array($targetStage, ['BATCH_APPROVED', 'HOLD', 'REJECTED'], true);
         $isFinanceRequestSubmission = $targetStage === 'WAITING_FINANCE_RELEASE';
+        $isFinanceReleaseAction = $currentStage === 'WAITING_FINANCE_RELEASE'
+            && $targetStage === 'RELEASED'
+            && $this->isFinanceHoUser();
 
         if ($isFinanceRequestSubmission && !$this->canSubmitDonationFinanceRequest()) {
             $this->session->set_flashdata('error', 'Hanya SITAC HO dan Admin Area yang bisa memproses pengajuan saku.');
@@ -955,7 +959,7 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
 
-        if (!$this->isApprover() && !$isAreaAllowedInitialDecision && !$isFinanceRequestSubmission) {
+        if (!$this->isApprover() && !$isAreaAllowedInitialDecision && !$isFinanceRequestSubmission && !$isFinanceReleaseAction) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses mengubah staging Batch Approval.');
             redirect($redirectPath);
             return;
