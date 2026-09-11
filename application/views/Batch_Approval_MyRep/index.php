@@ -361,7 +361,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $myrepPicLabel = !empty($myrepPicNames) ? implode(', ', array_unique($myrepPicNames)) : '';
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
-        $useReleaseNominal = in_array($batchStageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $useReleaseNominal = in_array($batchStageCode, ['RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'ASTRI_APPROVED', 'PO_DONASI', 'INVOICE', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
         $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;

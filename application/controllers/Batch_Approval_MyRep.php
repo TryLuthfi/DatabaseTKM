@@ -1020,6 +1020,11 @@ class Batch_Approval_MyRep extends CI_Controller
             $batchPayload['submitted_to_finance_at'] = $submittedAt;
             $successMessage = 'Proses pengajuan saku berhasil dicatat.';
         } elseif ($currentStage === 'WAITING_FINANCE_RELEASE' && $targetStage === 'RELEASED') {
+            if (!$this->isFinanceHoUser()) {
+                $this->session->set_flashdata('error', 'Hanya Finance HO yang bisa set released donasi.');
+                redirect($redirectPath);
+                return;
+            }
             if (!$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved($clusterId, 'PRE_ZEYN')) {
                 $this->session->set_flashdata('error', 'Finance tidak boleh release donasi karena dokumen pra-finance belum full approved Finance.');
                 redirect($redirectPath);
@@ -3795,7 +3800,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
-        $useReleaseNominal = in_array($stageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $useReleaseNominal = in_array($stageCode, ['RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'ASTRI_APPROVED', 'PO_DONASI', 'INVOICE', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
         $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
@@ -3878,7 +3883,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
             $nominalRelease = $row['nominal_release_finance'] ?? null;
             $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
-            $useReleaseNominal = in_array($stageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+            $useReleaseNominal = in_array($stageCode, ['RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'ASTRI_APPROVED', 'PO_DONASI', 'INVOICE', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
             $nominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
             $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
 
@@ -3922,7 +3927,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
-        $useReleaseNominal = in_array($stageCode, ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $useReleaseNominal = in_array($stageCode, ['RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'ASTRI_APPROVED', 'PO_DONASI', 'INVOICE', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
         $nominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
 

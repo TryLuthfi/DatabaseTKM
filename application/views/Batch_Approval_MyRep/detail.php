@@ -1660,7 +1660,7 @@ if ($canApprove && $canApprovalAction) {
                     <div>
                         <h3 class="card-title mb-0">Pencairan Donasi</h3>
                     </div>
-                    <?php if ($canApprove && $canApprovalAction && $currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
+                    <?php if ($canFinanceApprovalAction && $currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
                         <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modal-set-released">
                             Set Released
                         </button>
