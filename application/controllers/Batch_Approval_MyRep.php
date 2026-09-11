@@ -1531,7 +1531,12 @@ class Batch_Approval_MyRep extends CI_Controller
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
         if ($result) {
-            $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId);
+            $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId, [
+                'source_type' => 'DONATION_SITAC',
+                'remark' => $remark,
+                'rejecter_user_id' => (int) $this->session->userdata('id_user'),
+                'rejected_at' => date('Y-m-d H:i:s'),
+            ]);
             $groupLabel = strtoupper(trim((string) ($context['group_label'] ?? '')));
             if ($groupLabel === 'PRE ZEYN DOCUMENT') {
                 $this->setDonationStageFromSystem($clusterId, 'BATCH_APPROVED');
@@ -1660,7 +1665,12 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $result = $fileId > 0 && $this->MBatch_Approval_MyRep->updateDonationFinanceStatus($fileId, 'REJECTED', (int) $this->session->userdata('id_user'), $remark);
         if ($result) {
-            $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId);
+            $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId, [
+                'source_type' => 'DONATION_FINANCE',
+                'remark' => $remark,
+                'rejecter_user_id' => (int) $this->session->userdata('id_user'),
+                'rejected_at' => date('Y-m-d H:i:s'),
+            ]);
             $groupLabel = strtoupper(trim((string) ($context['group_label'] ?? '')));
             $this->setDonationStageFromSystem($clusterId, $groupLabel === 'POST PAYMENT ZEYN DOCUMENT' ? 'RELEASED' : 'BATCH_APPROVED');
             $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
@@ -1767,6 +1777,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $groupLabel = strtoupper(trim((string) ($fileContext['group_label'] ?? '')));
             if (in_array($groupLabel, ['PRE ZEYN DOCUMENT', 'POST PAYMENT ZEYN DOCUMENT'], true) && $astriStatusInput === 'REJECTED') {
                 $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId, [
+                    'source_type' => 'DONATION_ASTRI',
                     'remark' => $astriRemark,
                     'rejecter_user_id' => (int) $this->session->userdata('id_user'),
                     'rejected_at' => date('Y-m-d H:i:s'),
@@ -1891,6 +1902,7 @@ class Batch_Approval_MyRep extends CI_Controller
             if ($updated) {
                 if ($astriStatus === 'REJECTED') {
                     $this->myrepRejectEmail->enqueueReject('Batch_Approval_MyRep', $fileId, [
+                        'source_type' => 'DONATION_ASTRI',
                         'remark' => $astriRemark,
                         'rejecter_user_id' => (int) $this->session->userdata('id_user'),
                         'rejected_at' => date('Y-m-d H:i:s'),
