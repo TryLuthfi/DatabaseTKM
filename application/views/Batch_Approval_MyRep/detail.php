@@ -416,6 +416,7 @@ $stageButtonTarget = '';
 $stageButtonLabel = '';
 $releaseNominal = !is_null($cluster['nominal_release_finance'] ?? null) ? (float) $cluster['nominal_release_finance'] : null;
 $approvalNominal = !is_null($cluster['nominal_nego_emr'] ?? null) ? (float) $cluster['nominal_nego_emr'] : null;
+$releaseNominalDefault = $releaseNominal !== null ? $releaseNominal : $approvalNominal;
 $releaseVariance = $releaseNominal !== null && $approvalNominal !== null ? $releaseNominal - $approvalNominal : null;
 $slaStartDate = trim((string) ($cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? $cluster['created_at'] ?? ''));
 $slaRows = [];
@@ -1851,7 +1852,7 @@ if ($canApprove && $canApprovalAction) {
                                         <label>Tanggal Release</label>
                                         <input type="date" name="released_at" class="form-control mb-2" value="<?= date('Y-m-d') ?>" required>
                                         <label>Nominal Release</label>
-                                        <input type="text" name="nominal_release_finance" inputmode="decimal" class="form-control js-number-format mb-2" data-decimals="0" required>
+                                        <input type="text" name="nominal_release_finance" inputmode="decimal" class="form-control js-number-format mb-2" data-decimals="0" value="<?= $releaseNominalDefault !== null ? htmlspecialchars(number_format((float) $releaseNominalDefault, 0, ',', '.')) : '' ?>" required>
                                         <label>Bukti Transfer</label>
                                         <div class="batch-dropzone js-dropzone batch-dropzone--photo">
                                             <input type="file" name="transfer_proof" class="js-dropzone-input" accept="image/*" required>
@@ -3141,7 +3142,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                     </div>
                     <div class="form-group">
                         <label>Nominal Pencairan</label>
-                        <input type="text" name="nominal_release_finance" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_release_finance'] ?? '')) ?>" required>
+                        <input type="text" name="nominal_release_finance" class="form-control js-number-format" data-decimals="0" value="<?= $releaseNominalDefault !== null ? htmlspecialchars(number_format((float) $releaseNominalDefault, 0, ',', '.')) : '' ?>" required>
                     </div>
                     <div class="form-group mb-0">
                         <label>Foto Transfer</label>
