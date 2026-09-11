@@ -2840,12 +2840,14 @@ class MBatch_Approval_MyRep extends CI_Model
         $post = $donationSummary['POST_ZEYN'] ?? [];
         $postRequired = (int) ($post['required'] ?? 0);
         $postFinanceRequired = (int) ($post['finance_required'] ?? $postRequired);
+        $prePackageExists = !empty($pre['package_exists']);
         $postPackageExists = !empty($post['package_exists']);
+        $hasNewDonationWorkflow = $prePackageExists || $postPackageExists;
         $allAstriRequired = (int) ($pre['required'] ?? 0) + (int) ($post['required'] ?? 0);
         $allAstriApproved = (int) ($pre['astri_approved'] ?? 0) + (int) ($post['astri_approved'] ?? 0);
         $allAstriRejected = (int) ($pre['astri_rejected'] ?? 0) + (int) ($post['astri_rejected'] ?? 0);
         $releasedAt = trim((string) ($row['released_at'] ?? ''));
-        $hasRelease = $releasedAt !== '' && (float) ($row['nominal_release_finance'] ?? 0) > 0;
+        $hasRelease = $releasedAt !== '' || (float) ($row['nominal_release_finance'] ?? 0) > 0;
         $hasSitacOrFinanceRejectedDocument = (int) ($pre['rejected'] ?? 0) > 0
             || (int) ($pre['finance_rejected'] ?? 0) > 0
             || (int) ($post['rejected'] ?? 0) > 0
@@ -2937,7 +2939,7 @@ class MBatch_Approval_MyRep extends CI_Model
             }
         }
 
-        if ($stagingStatus === 'RELEASED' && $postPackageExists) {
+        if ($stagingStatus === 'RELEASED' && $hasNewDonationWorkflow && $hasRelease) {
             if ($postRequired > 0) {
                 if ((int) ($post['approved'] ?? 0) < $postRequired) {
                     if ((int) ($post['uploaded'] ?? 0) >= $postRequired) {
@@ -2971,6 +2973,9 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         if (in_array($stagingStatus, ['RELEASED', 'DONE BATCH APPROVAL'], true) && $postDocTotal > 0) {
+            if (!$hasNewDonationWorkflow) {
+                return 'COMPLETED';
+            }
             return $postDocApproved >= $postDocTotal ? 'COMPLETED' : 'WAITING DOC';
         }
 
