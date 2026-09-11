@@ -7,7 +7,7 @@ if (!function_exists('batchStageLabel')) {
         $status = strtoupper(trim((string) $status));
         $labels = [
             'DRAFT' => 'Draft',
-            'WAITING HO' => 'Menunggu Review HO',
+            'WAITING HO' => 'Menunggu Nomor Batch Approval',
             'WAITING MYREP' => 'Menunggu Review EMR',
             'WAITING FINANCE' => 'Menunggu Finance',
             'WAITING_BATCH_APPROVAL' => 'Menunggu Nomor Batch Approval',
@@ -42,6 +42,7 @@ if (!function_exists('batchStageLabel')) {
 }
 $statusOptions = [
     'DRAFT' => batchStageLabel('DRAFT'),
+    'WAITING_BATCH_APPROVAL' => batchStageLabel('WAITING_BATCH_APPROVAL'),
     'BATCH_APPROVED' => batchStageLabel('BATCH_APPROVED'),
     'HOLD' => batchStageLabel('HOLD'),
     'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
@@ -2391,7 +2392,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         }
 
         function toggleStageFields(prefix) {
-            var stageValue = $('#' + prefix + '_staging_status').val() || 'WAITING HO';
+            var stageValue = $('#' + prefix + '_staging_status').val() || 'WAITING_BATCH_APPROVAL';
             var showEmr = ['WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL'].indexOf(stageValue) !== -1;
             var showFinance = ['WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL'].indexOf(stageValue) !== -1;
 

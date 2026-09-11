@@ -2988,12 +2988,12 @@ class MBatch_Approval_MyRep extends CI_Model
         $stagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? '')));
 
         if ($hasBatch
-            && in_array($stagingStatus, ['', 'DRAFT', 'WAITING_BATCH_APPROVAL'], true)
+            && in_array($stagingStatus, ['', 'DRAFT', 'WAITING HO', 'WAITING_BATCH_APPROVAL'], true)
             && (trim((string) ($row['astri_batch_number'] ?? '')) !== '' || trim((string) ($row['astri_batch_approved_at'] ?? '')) !== '')) {
             return 'BATCH_APPROVED';
         }
 
-        if ($hasBatch && ($stagingStatus === '' || $stagingStatus === 'DRAFT')) {
+        if ($hasBatch && in_array($stagingStatus, ['', 'DRAFT', 'WAITING HO'], true)) {
             return 'WAITING_BATCH_APPROVAL';
         }
 

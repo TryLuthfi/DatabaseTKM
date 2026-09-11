@@ -65,7 +65,7 @@ if (!function_exists('batchDetailStatusLabel')) {
         $status = strtoupper(trim((string) $status));
         $labels = [
             'DRAFT' => 'Draft',
-            'WAITING HO' => 'Menunggu Review HO',
+            'WAITING HO' => 'Menunggu Nomor Batch Approval',
             'WAITING MYREP' => 'Menunggu Review EMR',
             'WAITING FINANCE' => 'Menunggu Finance',
             'WAITING_BATCH_APPROVAL' => 'Menunggu Nomor Batch Approval',
@@ -349,7 +349,7 @@ if (!function_exists('batchDetailStageMeta')) {
             case 'HOLD':
                 return ['percent' => 10, 'class' => 'bg-warning', 'label' => 'Pengajuan donasi hold'];
             case 'WAITING HO':
-                return ['percent' => 25, 'class' => 'bg-info', 'label' => 'Menunggu review HO'];
+                return ['percent' => 10, 'class' => 'bg-info', 'label' => 'Menunggu nomor batch approval'];
             case 'WAITING MYREP':
                 return ['percent' => 50, 'class' => 'bg-primary', 'label' => 'Menunggu approval EMR'];
             case 'WAITING FINANCE':
@@ -471,7 +471,7 @@ foreach ((array) $postDonasiRows as $postDocRow) {
     }
 }
 if ($canApprove && $canApprovalAction) {
-    if ($currentStage === 'WAITING HO') {
+    if ($currentStage === 'WAITING_BATCH_APPROVAL') {
         $stageButtonTarget = '#modal-stage-to-myrep';
         $stageButtonLabel = 'Edit Staging';
     } elseif ($currentStage === 'WAITING MYREP') {
@@ -3793,7 +3793,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
         }
 
         function toggleStageFields() {
-            var stageValue = $('#detail_edit_staging_status').val() || 'WAITING HO';
+            var stageValue = $('#detail_edit_staging_status').val() || 'WAITING_BATCH_APPROVAL';
             var showEmr = ['WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL'].indexOf(stageValue) !== -1;
             var showFinance = ['WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL'].indexOf(stageValue) !== -1;
             var batchOptionalStages = ['DRAFT', 'WAITING_INPUT', 'WAITING INPUT', 'WAITING_BATCH_APPROVAL'];

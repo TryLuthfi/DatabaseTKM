@@ -734,7 +734,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'astri_batch_number' => $astriBatchNumber,
             'astri_batch_approved_at' => $astriBatchApprovedAt,
             'staging_status' => $stagingStatus,
-            'submitted_to_ho_at' => $this->resolveStageTimestamp($existing['submitted_to_ho_at'] ?? null, $stagingStatus === 'WAITING HO'),
+            'submitted_to_ho_at' => $this->resolveStageTimestamp($existing['submitted_to_ho_at'] ?? null, $stagingStatus === 'WAITING_BATCH_APPROVAL'),
             'submitted_to_astri_at' => $this->resolveStageTimestamp($existing['submitted_to_astri_at'] ?? null, $stagingStatus === 'WAITING MYREP'),
             'submitted_to_finance_at' => $this->resolveStageTimestamp($existing['submitted_to_finance_at'] ?? null, $stagingStatus === 'WAITING FINANCE'),
             'released_at' => $this->resolveStageTimestamp($existing['released_at'] ?? null, $stagingStatus === 'RELEASED'),
@@ -2558,7 +2558,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 continue;
             }
 
-            $stagingStatus = $this->normalizeStagingStatus((string) ($row['staging_status'] ?? 'WAITING HO'), true);
+            $stagingStatus = $this->normalizeStagingStatus((string) ($row['staging_status'] ?? 'WAITING_BATCH_APPROVAL'), true);
             $hpDonasi = (int) $this->normalizeNumber($row['hp_donasi'] ?? 0);
             $nominalPengajuanArea = $this->normalizeNumber($row['nominal_pengajuan_area'] ?? 0);
             $nominalNegoEmr = $this->normalizeNullableNumber($row['nominal_nego_emr'] ?? '');
@@ -2662,7 +2662,8 @@ class Batch_Approval_MyRep extends CI_Controller
         $status = strtoupper(trim((string) $status));
         $labelMap = [
             'DRAFT' => 'DRAFT',
-            'MENUNGGU REVIEW HO' => 'WAITING HO',
+            'WAITING HO' => 'WAITING_BATCH_APPROVAL',
+            'MENUNGGU REVIEW HO' => 'WAITING_BATCH_APPROVAL',
             'MENUNGGU REVIEW EMR' => 'WAITING MYREP',
             'MENUNGGU FINANCE' => 'WAITING FINANCE',
             'MENUNGGU BATCH APPROVAL' => 'WAITING_BATCH_APPROVAL',
@@ -2747,7 +2748,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $status = strtoupper(trim((string) $status));
         $labels = [
             'DRAFT' => 'Draft',
-            'WAITING HO' => 'Menunggu Review HO',
+            'WAITING HO' => 'Menunggu Nomor Batch Approval',
             'WAITING MYREP' => 'Menunggu Review EMR',
             'WAITING FINANCE' => 'Menunggu Finance',
             'WAITING_BATCH_APPROVAL' => 'Menunggu Nomor Batch Approval',
