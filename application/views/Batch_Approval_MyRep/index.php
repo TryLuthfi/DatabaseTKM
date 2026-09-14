@@ -18,7 +18,7 @@ if (!function_exists('batchStageLabel')) {
             'PRE_ZEYN_DOC_ON_REVIEW' => 'On Review Dokumen Tahap 1',
             'PRE_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 1',
             'PRE_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 1',
-            'PRE_ZEYN_FINANCE_APPROVED' => 'Approved Finance Dokumen Tahap 1',
+            'PRE_ZEYN_FINANCE_APPROVED' => 'ON PROSES PENGAJUAN SAKU',
             'WAITING_SAKU_FINANCE_APPROVAL' => 'Menunggu Approval Saku Finance',
             'WAITING_FINANCE_RELEASE' => 'Menunggu Pembayaran Finance',
             'RELEASED' => 'Donasi Dibayarkan',

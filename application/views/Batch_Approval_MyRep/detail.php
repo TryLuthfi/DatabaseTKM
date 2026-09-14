@@ -78,7 +78,7 @@ if (!function_exists('batchDetailStatusLabel')) {
             'PRE_ZEYN_DOC_ON_REVIEW' => 'On Review Dokumen Tahap 1',
             'PRE_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 1',
             'PRE_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 1',
-            'PRE_ZEYN_FINANCE_APPROVED' => 'Approved Finance Dokumen Tahap 1',
+            'PRE_ZEYN_FINANCE_APPROVED' => 'ON PROSES PENGAJUAN SAKU',
             'WAITING_SAKU_FINANCE_APPROVAL' => 'Menunggu Approval Saku Finance',
             'WAITING_FINANCE_RELEASE' => 'Menunggu Pembayaran Finance',
             'RELEASED' => 'Donasi Dibayarkan',
@@ -329,7 +329,7 @@ if (!function_exists('batchDetailStageMeta')) {
             case 'PRE_ZEYN_FINANCE_ON_REVIEW':
                 return ['percent' => 45, 'class' => 'bg-warning', 'label' => 'Dokumen pra-finance review Finance'];
             case 'PRE_ZEYN_FINANCE_APPROVED':
-                return ['percent' => 50, 'class' => 'bg-success', 'label' => 'Dokumen pra-finance approved Finance'];
+                return ['percent' => 50, 'class' => 'bg-success', 'label' => 'ON PROSES PENGAJUAN SAKU'];
             case 'WAITING_SAKU_FINANCE_APPROVAL':
                 return ['percent' => 52, 'class' => 'bg-warning', 'label' => 'Menunggu approval Saku Finance'];
             case 'WAITING_FINANCE_RELEASE':
