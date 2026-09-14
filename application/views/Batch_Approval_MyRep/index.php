@@ -42,6 +42,40 @@ if (!function_exists('batchStageLabel')) {
         return $labels[$status] ?? ($status !== '' ? ucwords(strtolower(str_replace('_', ' ', $status))) : 'Draft');
     }
 }
+if (!function_exists('batchStagePicMeta')) {
+    function batchStagePicMeta($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $picMap = [
+            'DRAFT' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'WAITING_BATCH_APPROVAL' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'BATCH_APPROVED' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'WAITING_PRE_ZEYN_DOC' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'NEED_REVISE' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'PRE_ZEYN_DOC_ON_REVIEW' => ['label' => 'SITAC HO', 'class' => 'sitac', 'icon' => 'users'],
+            'PRE_ZEYN_DOC_APPROVED' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
+            'PRE_ZEYN_FINANCE_ON_REVIEW' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
+            'PRE_ZEYN_FINANCE_APPROVED' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'WAITING_SAKU_FINANCE_APPROVAL' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
+            'WAITING_FINANCE_RELEASE' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
+            'RELEASED' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'WAITING_POST_ZEYN_DOC' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'POST_ZEYN_DOC_ON_REVIEW' => ['label' => 'SITAC HO', 'class' => 'sitac', 'icon' => 'users'],
+            'POST_ZEYN_DOC_APPROVED' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
+            'POST_ZEYN_FINANCE_ON_REVIEW' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
+            'WAITING_ASTRI_SUBMISSION' => ['label' => 'SITAC HO', 'class' => 'sitac', 'icon' => 'users'],
+            'ASTRI_ON_REVIEW' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'ASTRI_APPROVED' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'PO_DONASI' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'INVOICE' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'COMPLETED' => ['label' => '', 'class' => 'none', 'icon' => ''],
+            'HOLD' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+            'REJECTED' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
+        ];
+
+        return $picMap[$status] ?? ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'];
+    }
+}
 $statusOptions = [
     'DRAFT' => batchStageLabel('DRAFT'),
     'WAITING_BATCH_APPROVAL' => batchStageLabel('WAITING_BATCH_APPROVAL'),
@@ -632,6 +666,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                         <div class="batch-stage-summary-grid">
                             <?php foreach ($orderedDonationStageSummary as $stageCode => $stageData): ?>
                                 <?php
+                                $stagePic = batchStagePicMeta($stageCode);
                                 $stageFilterQuery = array_filter([
                                     'city' => $selectedCity,
                                     'status' => $stageCode,
@@ -643,7 +678,15 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                     class="batch-stage-summary-item batch-stage-summary-item--<?= batchBadgeClass($stageCode) ?> js-stage-summary-filter<?= $selectedStatus === $stageCode ? ' is-active' : '' ?>"
                                     data-stage-code="<?= htmlspecialchars((string) $stageCode, ENT_QUOTES) ?>"
                                     data-stage-label="<?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode), ENT_QUOTES) ?>">
-                                    <span class="batch-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode)) ?></span>
+                                    <span class="batch-stage-summary-item__head">
+                                        <span class="batch-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode)) ?></span>
+                                        <?php if (trim((string) ($stagePic['label'] ?? '')) !== ''): ?>
+                                            <span class="batch-stage-summary-pic batch-stage-summary-pic--<?= htmlspecialchars((string) ($stagePic['class'] ?? 'area')) ?>">
+                                                <i class="fas fa-<?= htmlspecialchars((string) ($stagePic['icon'] ?? 'user')) ?>"></i>
+                                                <?= htmlspecialchars((string) ($stagePic['label'] ?? 'AREA')) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </span>
                                     <span class="batch-stage-summary-item__count"><?= number_format((int) ($stageData['count'] ?? 0), 0, ',', '.') ?></span>
                                     <span class="batch-stage-summary-item__meta">
                                         HP <?= number_format((float) ($stageData['hp'] ?? 0), 0, ',', '.') ?>
@@ -1657,11 +1700,54 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .batch-stage-summary-item__label {
-        min-height: 34px;
         color: #475569;
         font-size: .76rem;
         font-weight: 900;
         text-transform: uppercase;
+    }
+
+    .batch-stage-summary-item__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        min-height: 34px;
+        gap: .5rem;
+    }
+
+    .batch-stage-summary-pic {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        padding: .16rem .42rem;
+        border-radius: 999px;
+        background: #eef2f7;
+        color: #475569;
+        font-size: .63rem;
+        font-weight: 900;
+        line-height: 1.2;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .batch-stage-summary-pic--area {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    .batch-stage-summary-pic--sitac {
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+    .batch-stage-summary-pic--finance {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .batch-stage-summary-pic--myrep {
+        background: #eef2ff;
+        color: #4338ca;
     }
 
     .batch-stage-summary-item__count {

@@ -1868,7 +1868,7 @@ if ($canApprove && $canApprovalAction) {
                                             Proses Pengajuan Saku
                                         </button>
                                     <?php else: ?>
-                                        <span class="text-muted">Menunggu Admin Area memproses pengajuan Saku.</span>
+                                        <span class="text-muted">Menunggu user Area memproses pengajuan Saku.</span>
                                     <?php endif; ?>
                                 </div>
                             <?php elseif ($currentDonationStage === 'WAITING_SAKU_FINANCE_APPROVAL'): ?>

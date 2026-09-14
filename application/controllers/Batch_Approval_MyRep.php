@@ -957,7 +957,7 @@ class Batch_Approval_MyRep extends CI_Controller
             && $this->isFinanceHoUser();
 
         if ($isSakuFinanceRequestSubmission && !$this->canSubmitSakuFinanceRequest()) {
-            $this->session->set_flashdata('error', 'Hanya Admin Area dan Super Admin yang bisa memproses pengajuan saku.');
+            $this->session->set_flashdata('error', 'Hanya user Area dan Super Admin yang bisa memproses pengajuan saku.');
             redirect($redirectPath);
             return;
         }
@@ -4300,7 +4300,14 @@ class Batch_Approval_MyRep extends CI_Controller
             return false;
         }
 
-        return in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
+        $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
+        foreach (['RPM_AREA', 'SM_AREA', 'SPV_AREA', 'SND_AREA', 'ADMIN_AREA'] as $areaRoleKey) {
+            if (in_array($areaRoleKey, $roleKeys, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveDonationChecklistPrintStatus(array $rows)
