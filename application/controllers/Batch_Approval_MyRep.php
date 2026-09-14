@@ -32,6 +32,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 'approveAllDonationFinanceDocuments' => 'APPROVAL',
                 'updateDonationAstriStatus' => 'APPROVAL',
                 'bulkUpdateDonationAstriStatus' => 'APPROVAL',
+                'reviewSakuFinanceApproval' => 'APPROVAL',
                 'saveDonationPoInvoice' => 'APPROVAL',
             ]);
         }
@@ -403,6 +404,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['canApprove'] = $this->isApprover();
         $data['canDonationInternalApprovalAction'] = $this->canDonationInternalApprovalAction();
         $data['canSubmitDonationFinanceRequest'] = $this->canSubmitDonationFinanceRequest();
+        $data['canSubmitSakuFinanceRequest'] = $this->canSubmitSakuFinanceRequest();
         $data['canEditBatchApproval'] = $this->canEditBatchApprovalDetail($cluster);
         $data['canReplaceDonationFile'] = $this->isSitacHoUser();
         $data['canFinanceApprovalAction'] = $this->isFinanceHoUser();
@@ -521,7 +523,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $bankName = trim((string) $this->input->post('bank_name'));
         $bankAccountNumber = trim((string) $this->input->post('bank_account_number'));
         $submissionDate = $this->normalizeDate($this->input->post('submission_date'));
-        $stagingStatus = 'BATCH_APPROVED';
+        $stagingStatus = 'DRAFT';
         $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
         $astriBatchApprovedAt = $this->normalizeDateTimeInput($this->input->post('astri_batch_approved_at')) ?: date('Y-m-d H:i:s');
         $remark = trim((string) $this->input->post('remark_batch_approval'));
@@ -548,7 +550,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $cluster = $this->MBatch_Approval_MyRep->getBatchCandidateById($clusterId);
         if (empty($cluster)) {
-            $this->session->set_flashdata('error', 'Cluster belum memenuhi syarat (VALSAL DONE/APPROVED) atau tidak termasuk city mapping user.');
+            $this->session->set_flashdata('error', 'Cluster belum memenuhi syarat RAB DONE atau tidak termasuk city mapping user.');
             redirect('Batch_Approval_MyRep');
             return;
         }
@@ -948,10 +950,17 @@ class Batch_Approval_MyRep extends CI_Controller
         $targetStage = strtoupper(trim((string) $this->input->post('target_stage')));
         $isAreaAllowedInitialDecision = $currentStage === 'WAITING_BATCH_APPROVAL'
             && in_array($targetStage, ['BATCH_APPROVED', 'HOLD', 'REJECTED'], true);
+        $isSakuFinanceRequestSubmission = $targetStage === 'WAITING_SAKU_FINANCE_APPROVAL';
         $isFinanceRequestSubmission = $targetStage === 'WAITING_FINANCE_RELEASE';
         $isFinanceReleaseAction = $currentStage === 'WAITING_FINANCE_RELEASE'
             && $targetStage === 'RELEASED'
             && $this->isFinanceHoUser();
+
+        if ($isSakuFinanceRequestSubmission && !$this->canSubmitSakuFinanceRequest()) {
+            $this->session->set_flashdata('error', 'Hanya Admin Area dan Super Admin yang bisa memproses pengajuan saku.');
+            redirect($redirectPath);
+            return;
+        }
 
         if ($isFinanceRequestSubmission && !$this->canSubmitDonationFinanceRequest()) {
             $this->session->set_flashdata('error', 'Hanya SITAC HO dan Admin Area yang bisa memproses pengajuan saku.');
@@ -959,7 +968,7 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
 
-        if (!$this->isApprover() && !$isAreaAllowedInitialDecision && !$isFinanceRequestSubmission && !$isFinanceReleaseAction) {
+        if (!$this->isApprover() && !$isAreaAllowedInitialDecision && !$isSakuFinanceRequestSubmission && !$isFinanceRequestSubmission && !$isFinanceReleaseAction) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses mengubah staging Batch Approval.');
             redirect($redirectPath);
             return;
@@ -1005,7 +1014,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 $batchPayload['rejected_remark'] = $remark;
                 $successMessage = 'Pengajuan donasi ditandai Ditolak.';
             }
-        } elseif (in_array($currentStage, ['BATCH_APPROVED', 'PRE_ZEYN_DOC_APPROVED', 'PRE_ZEYN_FINANCE_ON_REVIEW', 'PRE_ZEYN_FINANCE_APPROVED'], true) && $targetStage === 'WAITING_FINANCE_RELEASE') {
+        } elseif ($currentStage === 'PRE_ZEYN_FINANCE_APPROVED' && $targetStage === 'WAITING_SAKU_FINANCE_APPROVAL') {
             if (!$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved($clusterId, 'PRE_ZEYN')) {
                 $this->session->set_flashdata('error', 'Finance belum bisa diajukan karena 9 dokumen pra-finance belum full approved Finance.');
                 redirect($redirectPath);
@@ -1018,11 +1027,16 @@ class Batch_Approval_MyRep extends CI_Controller
             }
 
             $submittedAt = date('Y-m-d H:i:s');
-            $batchPayload['staging_status'] = 'WAITING_FINANCE_RELEASE';
+            $batchPayload['staging_status'] = 'WAITING_SAKU_FINANCE_APPROVAL';
             $batchPayload['pre_zeyn_doc_approved_at'] = $submittedAt;
-            $batchPayload['finance_submitted_at'] = $submittedAt;
-            $batchPayload['submitted_to_finance_at'] = $submittedAt;
-            $successMessage = 'Proses pengajuan saku berhasil dicatat.';
+            $batchPayload['saku_finance_approval_status'] = 'ON REVIEW';
+            $batchPayload['saku_finance_request_remark'] = trim((string) $this->input->post('saku_request_remark')) ?: null;
+            $batchPayload['saku_finance_requested_at'] = $submittedAt;
+            $batchPayload['saku_finance_requested_by'] = $userId;
+            $batchPayload['saku_finance_review_remark'] = null;
+            $batchPayload['saku_finance_reviewed_at'] = null;
+            $batchPayload['saku_finance_reviewed_by'] = null;
+            $successMessage = 'Pengajuan Saku berhasil dikirim ke approval Finance.';
         } elseif ($currentStage === 'WAITING_FINANCE_RELEASE' && $targetStage === 'RELEASED') {
             if (!$this->isFinanceHoUser()) {
                 $this->session->set_flashdata('error', 'Hanya Finance HO yang bisa set released donasi.');
@@ -1101,12 +1115,97 @@ class Batch_Approval_MyRep extends CI_Controller
             ]
         );
 
-        if ($result && $targetStage === 'WAITING_FINANCE_RELEASE' && in_array($currentStage, ['BATCH_APPROVED', 'PRE_ZEYN_DOC_APPROVED', 'PRE_ZEYN_FINANCE_ON_REVIEW', 'PRE_ZEYN_FINANCE_APPROVED'], true)) {
+        if ($result && $targetStage === 'WAITING_SAKU_FINANCE_APPROVAL' && $currentStage === 'PRE_ZEYN_FINANCE_APPROVED') {
             $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
             $this->sendBatchNotification('propose_donation', $clusterDetail, 'PROPOSE DONATION - EMR');
         }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? $successMessage : 'Gagal memperbarui staging Batch Approval.');
+        redirect($redirectPath);
+    }
+
+    public function reviewSakuFinanceApproval()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $batchId = (int) $this->input->post('id_batch_approval');
+        $redirectPath = $this->resolveBatchRedirectPath($clusterId);
+
+        if (!$this->isFinanceHoUser()) {
+            $this->session->set_flashdata('error', 'Hanya Finance HO dan Super Admin yang bisa review pengajuan Saku.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $batch = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if ($clusterId <= 0 || $batchId <= 0 || empty($batch) || (int) ($batch['id_batch_approval'] ?? 0) !== $batchId) {
+            $this->session->set_flashdata('error', 'Data Batch Approval tidak ditemukan.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $approvalStatus = strtoupper(trim((string) ($batch['saku_finance_approval_status'] ?? 'NY')));
+        $currentStage = strtoupper(trim((string) ($batch['display_staging_status'] ?? $batch['staging_status'] ?? '')));
+        if ($approvalStatus !== 'ON REVIEW' && $currentStage !== 'WAITING_SAKU_FINANCE_APPROVAL') {
+            $this->session->set_flashdata('error', 'Pengajuan Saku tidak sedang menunggu approval Finance.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $action = strtoupper(trim((string) $this->input->post('action_type')));
+        $remark = trim((string) $this->input->post('saku_review_remark'));
+        if (!in_array($action, ['APPROVE', 'REJECT'], true)) {
+            $this->session->set_flashdata('error', 'Action approval Saku tidak valid.');
+            redirect($redirectPath);
+            return;
+        }
+        if ($action === 'REJECT' && $remark === '') {
+            $this->session->set_flashdata('error', 'Remark reject approval Saku wajib diisi.');
+            redirect($redirectPath);
+            return;
+        }
+
+        if (!$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved($clusterId, 'PRE_ZEYN')) {
+            $this->session->set_flashdata('error', 'Approval Saku belum bisa diproses karena dokumen pra-finance belum full approved Finance.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $reviewedAt = date('Y-m-d H:i:s');
+        $userId = (int) $this->session->userdata('id_user');
+        $targetStage = $action === 'APPROVE' ? 'WAITING_FINANCE_RELEASE' : 'PRE_ZEYN_FINANCE_APPROVED';
+        $batchPayload = [
+            'staging_status' => $targetStage,
+            'saku_finance_approval_status' => $action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+            'saku_finance_review_remark' => $remark !== '' ? $remark : null,
+            'saku_finance_reviewed_at' => $reviewedAt,
+            'saku_finance_reviewed_by' => $userId,
+            'updated_by' => $userId,
+        ];
+
+        if ($action === 'APPROVE') {
+            $batchPayload['finance_submitted_at'] = $reviewedAt;
+            $batchPayload['submitted_to_finance_at'] = $reviewedAt;
+        }
+
+        $result = $this->MBatch_Approval_MyRep->updateBatchStage(
+            $clusterId,
+            $batchId,
+            $batchPayload,
+            [
+                'status_current' => $this->mapClusterStatusFromStaging($targetStage),
+                'updated_by' => $userId,
+            ]
+        );
+
+        $message = $action === 'APPROVE'
+            ? 'Pengajuan Saku disetujui Finance dan status menjadi Menunggu Pembayaran Finance.'
+            : 'Pengajuan Saku ditolak Finance. Status kembali ke Approved Finance Dokumen Tahap 1.';
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? $message : 'Gagal review approval Saku.');
         redirect($redirectPath);
     }
 
@@ -2405,6 +2504,9 @@ class Batch_Approval_MyRep extends CI_Controller
 
     public function previewBatchImport()
     {
+        $this->jsonResponse(false, 'Import Batch Approval dimatikan. Import hanya melalui halaman list project.');
+        return;
+
         if (empty($this->session->userdata('id_user'))) {
             $this->jsonResponse(false, 'Session login tidak ditemukan.');
             return;
@@ -2506,6 +2608,9 @@ class Batch_Approval_MyRep extends CI_Controller
 
     public function saveImportedBatch()
     {
+        $this->jsonResponse(false, 'Import Batch Approval dimatikan. Import hanya melalui halaman list project.');
+        return;
+
         if (empty($this->session->userdata('id_user'))) {
             $this->jsonResponse(false, 'Session login tidak ditemukan.');
             return;
@@ -2699,6 +2804,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'APPROVED DOKUMEN TAHAP 1' => 'PRE_ZEYN_DOC_APPROVED',
             'ON REVIEW FINANCE DOKUMEN TAHAP 1' => 'PRE_ZEYN_FINANCE_ON_REVIEW',
             'APPROVED FINANCE DOKUMEN TAHAP 1' => 'PRE_ZEYN_FINANCE_APPROVED',
+            'MENUNGGU APPROVAL SAKU FINANCE' => 'WAITING_SAKU_FINANCE_APPROVAL',
             'MENUNGGU PEMBAYARAN FINANCE' => 'WAITING_FINANCE_RELEASE',
             'DONASI DIBAYARKAN' => 'RELEASED',
             'MENUNGGU DOKUMEN SETELAH BAYAR ZEYN' => 'WAITING_POST_ZEYN_DOC',
@@ -2744,6 +2850,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'PRE_ZEYN_DOC_APPROVED',
             'PRE_ZEYN_FINANCE_ON_REVIEW',
             'PRE_ZEYN_FINANCE_APPROVED',
+            'WAITING_SAKU_FINANCE_APPROVAL',
             'WAITING_FINANCE_SUBMISSION',
             'WAITING_FINANCE_RELEASE',
             'RELEASED',
@@ -2780,6 +2887,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'PRE_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 1',
             'PRE_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 1',
             'PRE_ZEYN_FINANCE_APPROVED' => 'Approved Finance Dokumen Tahap 1',
+            'WAITING_SAKU_FINANCE_APPROVAL' => 'Menunggu Approval Saku Finance',
             'WAITING_FINANCE_RELEASE' => 'Menunggu Pembayaran Finance',
             'RELEASED' => 'Donasi Dibayarkan',
             'WAITING_POST_ZEYN_DOC' => 'NY Dokumen Tahap 2',
@@ -3121,6 +3229,10 @@ class Batch_Approval_MyRep extends CI_Controller
     private function mapClusterStatusFromStaging($stagingStatus)
     {
         $stagingStatus = strtoupper(trim((string) $stagingStatus));
+        if ($stagingStatus === 'DRAFT') {
+            return 'RAB DONE';
+        }
+
         if (in_array($stagingStatus, ['REJECTED', 'HOLD', 'RELEASED'], true)) {
             return $stagingStatus;
         }
@@ -3130,6 +3242,7 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         if (in_array($stagingStatus, [
+            'WAITING_SAKU_FINANCE_APPROVAL',
             'WAITING_FINANCE_RELEASE',
             'PRE_ZEYN_DOC_APPROVED',
             'PRE_ZEYN_FINANCE_ON_REVIEW',
@@ -3714,7 +3827,7 @@ class Batch_Approval_MyRep extends CI_Controller
     private function validateDonationStageGate($clusterId, $targetStage)
     {
         $targetStage = strtoupper(trim((string) $targetStage));
-        if (in_array($targetStage, ['WAITING_FINANCE_RELEASE', 'RELEASED'], true)
+        if (in_array($targetStage, ['WAITING_SAKU_FINANCE_APPROVAL', 'WAITING_FINANCE_RELEASE', 'RELEASED'], true)
             && !$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved((int) $clusterId, 'PRE_ZEYN')) {
             return 'Status belum bisa lanjut ke finance/release karena 9 dokumen pra-finance belum full approved Finance.';
         }
@@ -4093,6 +4206,7 @@ class Batch_Approval_MyRep extends CI_Controller
         switch (strtoupper(trim((string) $status))) {
             case 'APPROVED':
             case 'RELEASED':
+            case 'RAB DONE':
             case 'DONE BATCH APPROVAL':
             case 'COMPLETED':
             case 'BATCH_APPROVED':
@@ -4112,6 +4226,7 @@ class Batch_Approval_MyRep extends CI_Controller
             case 'WAITING_PRE_ZEYN_DOC':
             case 'PRE_ZEYN_DOC_ON_REVIEW':
             case 'PRE_ZEYN_FINANCE_ON_REVIEW':
+            case 'WAITING_SAKU_FINANCE_APPROVAL':
             case 'WAITING_FINANCE_RELEASE':
             case 'WAITING_POST_ZEYN_DOC':
             case 'POST_ZEYN_DOC_ON_REVIEW':
@@ -4172,6 +4287,19 @@ class Batch_Approval_MyRep extends CI_Controller
             || in_array('ADMIN_AREA', $roleKeys, true)
             || in_array('SM_AREA', $roleKeys, true)
             || in_array('FINANCE_HO', $roleKeys, true);
+    }
+
+    private function canSubmitSakuFinanceRequest()
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        return in_array('ADMIN_AREA', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
     }
 
     private function resolveDonationChecklistPrintStatus(array $rows)

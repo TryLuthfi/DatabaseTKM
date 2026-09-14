@@ -42,6 +42,7 @@ class MBatch_Approval_MyRep extends CI_Model
     {
         parent::__construct();
         $this->ensureFinanceApprovalSchema();
+        $this->ensureRabSchema();
         $this->ensureDonationDocumentDefinitions();
         if ($this->shouldRestrictCityByUser()) {
             $this->getCurrentUserAllowedCitySet();
@@ -63,9 +64,87 @@ class MBatch_Approval_MyRep extends CI_Model
 
         if ($this->db->table_exists('tb_myrep_pic_mapping_city')) {
             $this->addColumnIfMissing('tb_myrep_pic_mapping_city', 'finance_ho', "ALTER TABLE `tb_myrep_pic_mapping_city` ADD COLUMN `finance_ho` VARCHAR(255) NULL AFTER `sitac_ho`");
+            $this->addColumnIfMissing('tb_myrep_pic_mapping_city', 'planning_ho', "ALTER TABLE `tb_myrep_pic_mapping_city` ADD COLUMN `planning_ho` VARCHAR(255) NULL AFTER `sitac_ho`");
+        }
+
+        if ($this->db->table_exists('tb_myrep_batch_approval')) {
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_approval_status', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_approval_status` VARCHAR(50) NOT NULL DEFAULT 'NY' AFTER `remark_batch_approval`");
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_request_remark', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_request_remark` TEXT NULL AFTER `saku_finance_approval_status`");
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_requested_at', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_requested_at` DATETIME NULL AFTER `saku_finance_request_remark`");
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_requested_by', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_requested_by` INT(11) NULL AFTER `saku_finance_requested_at`");
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_review_remark', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_review_remark` TEXT NULL AFTER `saku_finance_requested_by`");
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_reviewed_at', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_reviewed_at` DATETIME NULL AFTER `saku_finance_review_remark`");
+            $this->addColumnIfMissing('tb_myrep_batch_approval', 'saku_finance_reviewed_by', "ALTER TABLE `tb_myrep_batch_approval` ADD COLUMN `saku_finance_reviewed_by` INT(11) NULL AFTER `saku_finance_reviewed_at`");
         }
 
         $this->ensureFileLogActionTypeSchema();
+    }
+
+    private function ensureRabSchema()
+    {
+        $this->ensureClusterStatusCurrentSupportsRabDone();
+
+        if (!$this->db->table_exists('tb_myrep_rab')) {
+            $this->db->query("
+                CREATE TABLE `tb_myrep_rab` (
+                    `id_myrep_rab` INT(11) NOT NULL AUTO_INCREMENT,
+                    `id_myrep_cluster` INT(11) NOT NULL,
+                    `id_drm` INT(11) DEFAULT NULL,
+                    `id_drm_boq` INT(11) DEFAULT NULL,
+                    `id_apd_boq_file` INT(11) DEFAULT NULL,
+                    `rab_status` VARCHAR(50) NOT NULL DEFAULT 'RAB DONE',
+                    `detail_rab` TEXT NULL,
+                    `rab_done_at` DATETIME DEFAULT NULL,
+                    `rab_done_by` INT(11) DEFAULT NULL,
+                    `cancelled_at` DATETIME DEFAULT NULL,
+                    `cancelled_by` INT(11) DEFAULT NULL,
+                    `cancel_reason` TEXT NULL,
+                    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id_myrep_rab`),
+                    UNIQUE KEY `uniq_myrep_rab_cluster` (`id_myrep_cluster`),
+                    KEY `idx_myrep_rab_status` (`rab_status`),
+                    KEY `idx_myrep_rab_drm_boq` (`id_drm_boq`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        }
+    }
+
+    private function ensureClusterStatusCurrentSupportsRabDone()
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster') || !$this->db->field_exists('status_current', 'tb_myrep_cluster')) {
+            return;
+        }
+
+        $row = $this->db->query(
+            "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tb_myrep_cluster' AND COLUMN_NAME = 'status_current' LIMIT 1"
+        )->row_array();
+        $columnType = strtoupper((string) ($row['COLUMN_TYPE'] ?? ''));
+        if ($columnType !== '' && strpos($columnType, "'RAB DONE'") === false) {
+            $this->db->query("
+                ALTER TABLE `tb_myrep_cluster`
+                MODIFY COLUMN `status_current` ENUM(
+                    'DRAFT',
+                    'NTP',
+                    'BA OPEN',
+                    'BAK',
+                    'VALSAL',
+                    'WAITING HO',
+                    'WAITING MYREP',
+                    'WAITING FINANCE',
+                    'RELEASED',
+                    'DONE BATCH APPROVAL',
+                    'DRM',
+                    'RAB DONE',
+                    'RFS',
+                    'ATP',
+                    'CHECKLIST DOKUMENT',
+                    'DONE',
+                    'REJECTED',
+                    'HOLD'
+                ) NOT NULL DEFAULT 'DRAFT'
+            ");
+        }
     }
 
     private function ensureFileLogActionTypeSchema()
@@ -288,14 +367,12 @@ class MBatch_Approval_MyRep extends CI_Model
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_group_start()
-                    ->where('UPPER(c.status_current)', 'VALSAL')
-                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
-                ->group_end()
+                ->or_where('rab.id_myrep_rab IS NOT NULL', null, false)
             ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->get()
@@ -340,6 +417,10 @@ class MBatch_Approval_MyRep extends CI_Model
                 v.valsal_date,
                 v.homepass_valsal,
                 v.status_valsal,
+                rab.id_myrep_rab,
+                rab.rab_status,
+                rab.detail_rab,
+                rab.rab_done_at,
                 t.year_num,
                 t.month_num
             ')
@@ -347,8 +428,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
-            ->where('UPPER(c.status_current)', 'VALSAL')
+            ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'inner', false)
             ->where('ba.id_batch_approval IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC');
@@ -412,12 +492,17 @@ class MBatch_Approval_MyRep extends CI_Model
                 ba.transfer_proof_file_name,
                 ba.transfer_proof_file_path,
                 ba.remark_batch_approval,
+                rab.id_myrep_rab,
+                rab.rab_status,
+                rab.detail_rab,
+                rab.rab_done_at,
                 t.year_num,
                 t.month_num
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false)
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
 
         $optionalBatchColumns = [
@@ -441,6 +526,13 @@ class MBatch_Approval_MyRep extends CI_Model
             'invoice_donasi_value',
             'invoice_donasi_status',
             'invoice_donasi_remark',
+            'saku_finance_approval_status',
+            'saku_finance_request_remark',
+            'saku_finance_requested_at',
+            'saku_finance_requested_by',
+            'saku_finance_review_remark',
+            'saku_finance_reviewed_at',
+            'saku_finance_reviewed_by',
         ];
         foreach ($optionalBatchColumns as $optionalBatchColumn) {
             if ($this->tableHasField('tb_myrep_batch_approval', $optionalBatchColumn)) {
@@ -457,10 +549,7 @@ class MBatch_Approval_MyRep extends CI_Model
         $this->db
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_group_start()
-                    ->where('UPPER(c.status_current)', 'VALSAL')
-                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
-                ->group_end()
+                ->or_where('rab.id_myrep_rab IS NOT NULL', null, false)
             ->group_end();
 
         if ($this->batchDocumentTablesReady()) {
@@ -553,6 +642,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 'PRE_ZEYN_DOC_APPROVED',
                 'PRE_ZEYN_FINANCE_ON_REVIEW',
                 'PRE_ZEYN_FINANCE_APPROVED',
+                'WAITING_SAKU_FINANCE_APPROVAL',
                 'WAITING_FINANCE_RELEASE',
                 'RELEASED',
                 'POST_ZEYN_DOC_ON_REVIEW',
@@ -635,12 +725,10 @@ class MBatch_Approval_MyRep extends CI_Model
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_group_start()
-                    ->where('UPPER(c.status_current)', 'VALSAL')
-                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
-                ->group_end()
+                ->or_where('rab.id_myrep_rab IS NOT NULL', null, false)
             ->group_end()
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
@@ -667,12 +755,10 @@ class MBatch_Approval_MyRep extends CI_Model
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false)
             ->group_start()
                 ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_group_start()
-                    ->where('UPPER(c.status_current)', 'VALSAL')
-                    ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
-                ->group_end()
+                ->or_where('rab.id_myrep_rab IS NOT NULL', null, false)
             ->group_end()
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where('c.city_name IS NOT NULL', null, false)
@@ -724,12 +810,12 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         $row = $this->db
-            ->select('c.*, v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.id_batch_approval')
+            ->select('c.*, v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.id_batch_approval, rab.id_myrep_rab, rab.rab_status, rab.detail_rab, rab.rab_done_at')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'inner', false)
             ->where('c.id_myrep_cluster', (int) $clusterId)
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->get()
             ->row_array();
 
@@ -2605,6 +2691,7 @@ class MBatch_Approval_MyRep extends CI_Model
             'atp_ho',
             'rfs_ho',
             'sitac_ho',
+            'planning_ho',
             'dc_ho',
             'qa_ho',
         ];
@@ -2848,6 +2935,7 @@ class MBatch_Approval_MyRep extends CI_Model
         $allAstriRejected = (int) ($pre['astri_rejected'] ?? 0) + (int) ($post['astri_rejected'] ?? 0);
         $releasedAt = trim((string) ($row['released_at'] ?? ''));
         $hasRelease = $releasedAt !== '' || (float) ($row['nominal_release_finance'] ?? 0) > 0;
+        $sakuFinanceApprovalStatus = strtoupper(trim((string) ($row['saku_finance_approval_status'] ?? 'NY')));
         $hasSitacOrFinanceRejectedDocument = (int) ($pre['rejected'] ?? 0) > 0
             || (int) ($pre['finance_rejected'] ?? 0) > 0
             || (int) ($post['rejected'] ?? 0) > 0
@@ -2870,7 +2958,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return 'NEED_REVISE';
         }
 
-        if (!$hasRelease && in_array($stagingStatus, ['PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
+        if (!$hasRelease && in_array($stagingStatus, ['PRE_ZEYN_FINANCE_APPROVED', 'WAITING_SAKU_FINANCE_APPROVAL', 'WAITING_FINANCE_RELEASE', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
             $preRequired = (int) ($pre['required'] ?? 0);
             if ($preRequired > 0) {
                 if ((int) ($pre['approved'] ?? 0) < $preRequired) {
@@ -2878,6 +2966,12 @@ class MBatch_Approval_MyRep extends CI_Model
                 }
                 if ((int) ($pre['finance_approved'] ?? 0) < (int) ($pre['finance_required'] ?? $preRequired)) {
                     return 'PRE_ZEYN_FINANCE_ON_REVIEW';
+                }
+                if ($stagingStatus === 'WAITING_SAKU_FINANCE_APPROVAL' || $sakuFinanceApprovalStatus === 'ON REVIEW') {
+                    return 'WAITING_SAKU_FINANCE_APPROVAL';
+                }
+                if ($sakuFinanceApprovalStatus === 'REJECTED') {
+                    return 'PRE_ZEYN_FINANCE_APPROVED';
                 }
                 if (in_array($stagingStatus, ['WAITING_FINANCE_RELEASE', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
                     return 'WAITING_FINANCE_RELEASE';
@@ -2988,12 +3082,12 @@ class MBatch_Approval_MyRep extends CI_Model
         $stagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? '')));
 
         if ($hasBatch
-            && in_array($stagingStatus, ['', 'DRAFT', 'WAITING HO', 'WAITING_BATCH_APPROVAL'], true)
+            && in_array($stagingStatus, ['', 'WAITING HO', 'WAITING_BATCH_APPROVAL'], true)
             && (trim((string) ($row['astri_batch_number'] ?? '')) !== '' || trim((string) ($row['astri_batch_approved_at'] ?? '')) !== '')) {
             return 'BATCH_APPROVED';
         }
 
-        if ($hasBatch && in_array($stagingStatus, ['', 'DRAFT', 'WAITING HO'], true)) {
+        if ($hasBatch && in_array($stagingStatus, ['', 'WAITING HO'], true)) {
             return 'WAITING_BATCH_APPROVAL';
         }
 

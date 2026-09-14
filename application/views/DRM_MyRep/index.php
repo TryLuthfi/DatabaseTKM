@@ -2,16 +2,18 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $selectedProjectType = strtoupper(trim((string) ($selectedProjectType ?? '')));
-$statusOptions = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED', 'RELEASED', 'DRM', 'IMPLEMENTASI', 'RFS', 'ATP', 'CHECKLIST', 'DONE', 'DONE BATCH APPROVAL'];
+$statusOptions = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED', 'VALSAL', 'DRM', 'RAB DONE', 'IMPLEMENTASI', 'RFS', 'ATP', 'CHECKLIST', 'DONE', 'DONE BATCH APPROVAL'];
 $today = date('Y-m-d');
 $summaryNyDrm = 0;
 $summaryOnProses = 0;
 $summaryDone = 0;
 $summaryRejected = 0;
+$summaryRabDone = 0;
 $summaryNyDrmHp = 0;
 $summaryOnProsesHp = 0;
 $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
+$summaryRabDoneHp = 0;
 $createCityOptions = [];
 $nyDrmRows = [];
 $nyAtpRows = [];
@@ -38,8 +40,9 @@ foreach ($clusterRows as $row) {
     $clusterBoqStatus = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
     $subfeederBoqStatus = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? '')));
     $atpStatus = strtoupper(trim((string) ($row['stage_atp_status'] ?? '')));
+    $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
 
-    if (!$hasDrm && $currentStatus === 'DONE BATCH APPROVAL') {
+    if (!$hasDrm && in_array($currentStatus, ['VALSAL', 'DONE BATCH APPROVAL'], true)) {
         $nyDrmRows[] = $row;
     }
 
@@ -47,7 +50,7 @@ foreach ($clusterRows as $row) {
         $nyAtpRows[] = $row;
     }
 
-    if (!$hasDrm && in_array($currentStatus, ['RELEASED', 'DONE BATCH APPROVAL'], true)) {
+    if (!$hasDrm && in_array($currentStatus, ['VALSAL', 'DONE BATCH APPROVAL'], true)) {
         $summaryNyDrm++;
         $summaryNyDrmHp += $homepassBase;
     }
@@ -65,6 +68,11 @@ foreach ($clusterRows as $row) {
     if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
         $summaryRejected++;
         $summaryRejectedHp += $summaryHomepass;
+    }
+
+    if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+        $summaryRabDone++;
+        $summaryRabDoneHp += $summaryHomepass;
     }
 }
 
@@ -116,7 +124,7 @@ $drmStatusSummaryByTab = [
     'ny_atp' => $buildDrmStatusSummary($nyAtpRows),
     'all' => $buildDrmStatusSummary($allDrmRows),
 ];
-$drmActiveStatusSummary = $drmStatusSummaryByTab['ny_drm'];
+$drmActiveStatusSummary = $drmStatusSummaryByTab['all'];
 $drmWaitingInputCount = (int) ($drmActiveStatusSummary['waitingInputCount'] ?? 0);
 $drmWaitingHoCount = (int) ($drmActiveStatusSummary['waitingHoCount'] ?? 0);
 $drmApprovedCount = (int) ($drmActiveStatusSummary['approvedCount'] ?? 0);
@@ -129,6 +137,7 @@ if (!function_exists('drmBadgeClass')) {
             case 'DONE':
             case 'COMPLETE':
             case 'APPROVED':
+            case 'RAB DONE':
             case 'TIDAK DIBUTUHKAN':
             case 'NOT REQUIRED':
             case 'DRM':
@@ -207,6 +216,7 @@ $renderDrmTableRows = static function (array $rows) {
                 </div>
             </td>
             <td><?= (int) ($row['doc_approved'] ?? 0) ?>/<?= (int) ($row['doc_total'] ?? 0) ?> approved</td>
+            <td><span class="badge badge-<?= drmBadgeClass($row['rab_status'] ?? '') ?>"><?= htmlspecialchars(!empty($row['rab_status']) ? (string) $row['rab_status'] : 'BELUM RAB DONE') ?></span></td>
             <td><span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span></td>
             <td>
                 <?php if ($isMainfeeder): ?>
@@ -248,6 +258,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                     <th>HP DRM</th>
                     <th>Status DRM</th>
                     <th>Progress Dokumen</th>
+                    <th>Status RAB</th>
                     <th>Status Flow</th>
                     <th>Aksi</th>
                 </tr>
@@ -260,7 +271,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                     <th colspan="4" class="text-right">TOTAL</th>
                     <th class="text-right">0</th>
                     <th class="text-right">0</th>
-                    <th colspan="4"></th>
+                    <th colspan="5"></th>
                 </tr>
             </tfoot>
         </table>
@@ -358,7 +369,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
             </div>
 
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md">
                     <div class="small-box bg-info shadow-sm drm-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryNyDrm, 0, ',', '.') ?></h3>
@@ -368,7 +379,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                         <div class="icon"><i class="fas fa-layer-group"></i></div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md">
                     <div class="small-box bg-primary shadow-sm drm-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryOnProses, 0, ',', '.') ?></h3>
@@ -378,7 +389,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                         <div class="icon"><i class="fas fa-folder-open"></i></div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md">
                     <div class="small-box bg-success shadow-sm drm-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryDone, 0, ',', '.') ?></h3>
@@ -388,7 +399,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                         <div class="icon"><i class="fas fa-check-circle"></i></div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md">
                     <div class="small-box bg-danger shadow-sm drm-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryRejected, 0, ',', '.') ?></h3>
@@ -396,6 +407,16 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                             <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryRejectedHp, 0, ',', '.') ?></p>
                         </div>
                         <div class="icon"><i class="fas fa-times-circle"></i></div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="small-box bg-success shadow-sm drm-summary-box">
+                        <div class="inner">
+                            <h3><?= number_format($summaryRabDone, 0, ',', '.') ?></h3>
+                            <p>RAB DONE</p>
+                            <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryRabDoneHp, 0, ',', '.') ?></p>
+                        </div>
+                        <div class="icon"><i class="fas fa-clipboard-check"></i></div>
                     </div>
                 </div>
             </div>
@@ -432,7 +453,13 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                     <div class="drm-tab-section__label">Flow</div>
                                     <ul class="nav nav-tabs drm-monitor-tabs" id="drm-monitor-tab" role="tablist">
                                         <li class="nav-item">
-                                            <a class="nav-link active" id="drm-ny-drm-tab" data-toggle="tab" href="#drm-ny-drm-pane" role="tab" aria-controls="drm-ny-drm-pane" aria-selected="true">
+                                            <a class="nav-link active" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="true">
+                                                All DRM
+                                                <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="drm-ny-drm-tab" data-toggle="tab" href="#drm-ny-drm-pane" role="tab" aria-controls="drm-ny-drm-pane" aria-selected="false">
                                                 NY DRM
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
                                             </a>
@@ -441,12 +468,6 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                             <a class="nav-link" id="drm-ny-atp-tab" data-toggle="tab" href="#drm-ny-atp-pane" role="tab" aria-controls="drm-ny-atp-pane" aria-selected="false">
                                                 NY ATP
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($nyAtpRows), 0, ',', '.') ?></span>
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="false">
-                                                All DRM
-                                                <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
                                     </ul>
@@ -474,14 +495,14 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                 </div>
                             </div>
                             <div class="tab-content drm-monitor-tabs__content" id="drm-monitor-tab-content">
-                                <div class="tab-pane fade show active" id="drm-ny-drm-pane" role="tabpanel" aria-labelledby="drm-ny-drm-tab">
+                                <div class="tab-pane fade show active" id="drm-all-pane" role="tabpanel" aria-labelledby="drm-all-tab">
+                                    <?php $renderDrmTable('table_drm_all', $allDrmRows); ?>
+                                </div>
+                                <div class="tab-pane fade" id="drm-ny-drm-pane" role="tabpanel" aria-labelledby="drm-ny-drm-tab">
                                     <?php $renderDrmTable('table_drm_ny_drm', $nyDrmRows); ?>
                                 </div>
                                 <div class="tab-pane fade" id="drm-ny-atp-pane" role="tabpanel" aria-labelledby="drm-ny-atp-tab">
                                     <?php $renderDrmTable('table_drm_ny_atp', $nyAtpRows); ?>
-                                </div>
-                                <div class="tab-pane fade" id="drm-all-pane" role="tabpanel" aria-labelledby="drm-all-tab">
-                                    <?php $renderDrmTable('table_drm_all', $allDrmRows); ?>
                                 </div>
                             </div>
                         </div>
@@ -1482,14 +1503,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 };
 
                 function getActiveDrmTableSelector() {
-                    var href = $('#drm-monitor-tab .nav-link.active').attr('href') || '#drm-ny-drm-pane';
+                    var href = $('#drm-monitor-tab .nav-link.active').attr('href') || '#drm-all-pane';
                     if (href === '#drm-ny-atp-pane') {
                         return '#table_drm_ny_atp';
                     }
-                    if (href === '#drm-all-pane') {
-                        return '#table_drm_all';
+                    if (href === '#drm-ny-drm-pane') {
+                        return '#table_drm_ny_drm';
                     }
-                    return '#table_drm_ny_drm';
+                    return '#table_drm_all';
                 }
 
                 function updateDrmStatusCounts(tab) {

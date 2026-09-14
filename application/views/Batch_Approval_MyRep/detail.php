@@ -9,6 +9,7 @@ $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermissi
 $canFinanceApprovalAction = !empty($canFinanceApprovalAction);
 $canDonationInternalApprovalAction = isset($canDonationInternalApprovalAction) ? (bool) $canDonationInternalApprovalAction : ($canApprovalAction && !$canFinanceApprovalAction);
 $canSubmitDonationFinanceRequest = isset($canSubmitDonationFinanceRequest) ? (bool) $canSubmitDonationFinanceRequest : $canDonationInternalApprovalAction;
+$canSubmitSakuFinanceRequest = isset($canSubmitSakuFinanceRequest) ? (bool) $canSubmitSakuFinanceRequest : $canSubmitDonationFinanceRequest;
 $canDonationUpload = (string) $this->session->userdata('nama_level') === 'Super Admin'
     || (isset($this->myrepAccess)
         && method_exists($this->myrepAccess, 'getCurrentRoleKeys')
@@ -48,6 +49,7 @@ if (!function_exists('batchDetailBadgeClass')) {
             case 'WAITING_PRE_ZEYN_DOC':
             case 'PRE_ZEYN_DOC_ON_REVIEW':
             case 'PRE_ZEYN_FINANCE_ON_REVIEW':
+            case 'WAITING_SAKU_FINANCE_APPROVAL':
             case 'WAITING_FINANCE_RELEASE':
             case 'WAITING_POST_ZEYN_DOC':
             case 'POST_ZEYN_DOC_ON_REVIEW':
@@ -77,6 +79,7 @@ if (!function_exists('batchDetailStatusLabel')) {
             'PRE_ZEYN_DOC_APPROVED' => 'Approved Dokumen Tahap 1',
             'PRE_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 1',
             'PRE_ZEYN_FINANCE_APPROVED' => 'Approved Finance Dokumen Tahap 1',
+            'WAITING_SAKU_FINANCE_APPROVAL' => 'Menunggu Approval Saku Finance',
             'WAITING_FINANCE_RELEASE' => 'Menunggu Pembayaran Finance',
             'RELEASED' => 'Donasi Dibayarkan',
             'WAITING_POST_ZEYN_DOC' => 'NY Dokumen Tahap 2',
@@ -327,6 +330,8 @@ if (!function_exists('batchDetailStageMeta')) {
                 return ['percent' => 45, 'class' => 'bg-warning', 'label' => 'Dokumen pra-finance review Finance'];
             case 'PRE_ZEYN_FINANCE_APPROVED':
                 return ['percent' => 50, 'class' => 'bg-success', 'label' => 'Dokumen pra-finance approved Finance'];
+            case 'WAITING_SAKU_FINANCE_APPROVAL':
+                return ['percent' => 52, 'class' => 'bg-warning', 'label' => 'Menunggu approval Saku Finance'];
             case 'WAITING_FINANCE_RELEASE':
                 return ['percent' => 55, 'class' => 'bg-warning', 'label' => 'Menunggu pembayaran donasi'];
             case 'RELEASED':
@@ -398,6 +403,7 @@ $statusOptions = [
     'PRE_ZEYN_DOC_APPROVED' => batchDetailStatusLabel('PRE_ZEYN_DOC_APPROVED'),
     'PRE_ZEYN_FINANCE_ON_REVIEW' => batchDetailStatusLabel('PRE_ZEYN_FINANCE_ON_REVIEW'),
     'PRE_ZEYN_FINANCE_APPROVED' => batchDetailStatusLabel('PRE_ZEYN_FINANCE_APPROVED'),
+    'WAITING_SAKU_FINANCE_APPROVAL' => batchDetailStatusLabel('WAITING_SAKU_FINANCE_APPROVAL'),
     'WAITING_FINANCE_RELEASE' => batchDetailStatusLabel('WAITING_FINANCE_RELEASE'),
     'RELEASED' => batchDetailStatusLabel('RELEASED'),
     'WAITING_POST_ZEYN_DOC' => batchDetailStatusLabel('WAITING_POST_ZEYN_DOC'),
@@ -1655,7 +1661,17 @@ if ($canApprove && $canApprovalAction) {
                 </div>
             </div>
 
-            <?php $currentDonationStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? ''))); ?>
+            <?php
+            $currentDonationStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? '')));
+            $sakuFinanceStatus = strtoupper(trim((string) ($cluster['saku_finance_approval_status'] ?? 'NY')));
+            $sakuFinanceLabel = $sakuFinanceStatus === 'ON REVIEW'
+                ? 'Menunggu Approval'
+                : ($sakuFinanceStatus === 'APPROVED' ? 'Approved' : ($sakuFinanceStatus === 'REJECTED' ? 'Rejected' : 'Belum Diajukan'));
+            $sakuFinanceBadgeClass = $sakuFinanceStatus === 'APPROVED'
+                ? 'success'
+                : ($sakuFinanceStatus === 'REJECTED' ? 'danger' : ($sakuFinanceStatus === 'ON REVIEW' ? 'warning' : 'secondary'));
+            $isSakuWaitingFinanceApproval = $currentDonationStage === 'WAITING_SAKU_FINANCE_APPROVAL' || $sakuFinanceStatus === 'ON REVIEW';
+            ?>
             <div class="card card-outline card-success shadow-sm batch-disbursement-card">
                 <div class="card-header batch-section-header">
                     <div>
@@ -1722,6 +1738,59 @@ if ($canApprove && $canApprovalAction) {
                 </div>
             </div>
 
+            <div class="card card-outline card-info shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Approval Saku Finance</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row batch-info-grid">
+                        <div class="col-md-3 mb-3">
+                            <strong>Status Approval</strong>
+                            <div><span class="badge badge-<?= htmlspecialchars($sakuFinanceBadgeClass) ?>"><?= htmlspecialchars($sakuFinanceLabel) ?></span></div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <strong>Tanggal Request</strong>
+                            <div><?= batchDetailDateText($cluster['saku_finance_requested_at'] ?? '', 'd/m/Y H:i') ?></div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <strong>Tanggal Review</strong>
+                            <div><?= batchDetailDateText($cluster['saku_finance_reviewed_at'] ?? '', 'd/m/Y H:i') ?></div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <strong>Status Flow</strong>
+                            <div><?= htmlspecialchars(batchDetailStatusLabel($displayStageStatus)) ?></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <strong>Remark Detail Saku</strong>
+                            <div class="text-muted"><?= nl2br(htmlspecialchars(trim((string) ($cluster['saku_finance_request_remark'] ?? '')) !== '' ? (string) $cluster['saku_finance_request_remark'] : '-')) ?></div>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Remark Review Finance</strong>
+                            <div class="text-muted"><?= nl2br(htmlspecialchars(trim((string) ($cluster['saku_finance_review_remark'] ?? '')) !== '' ? (string) $cluster['saku_finance_review_remark'] : '-')) ?></div>
+                        </div>
+                    </div>
+                    <?php if ($isSakuWaitingFinanceApproval && $canFinanceApprovalAction): ?>
+                        <hr>
+                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/reviewSakuFinanceApproval') ?>">
+                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                            <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
+                            <input type="hidden" name="redirect_to_detail" value="1">
+                            <div class="form-group">
+                                <label>Remark Review Finance</label>
+                                <textarea name="saku_review_remark" class="form-control" rows="2" placeholder="Wajib diisi jika reject"></textarea>
+                            </div>
+                            <button type="submit" name="action_type" value="APPROVE" class="btn btn-success btn-sm">Approve Pengajuan Saku</button>
+                            <button type="submit" name="action_type" value="REJECT" class="btn btn-danger btn-sm">Reject Pengajuan Saku</button>
+                        </form>
+                    <?php elseif ($isSakuWaitingFinanceApproval): ?>
+                        <hr>
+                        <div class="text-muted">Menunggu Finance HO review pengajuan Saku.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <div class="card shadow-sm batch-sla-card">
                 <div class="card-header batch-sla-card__header">
                     <h3 class="card-title mb-0">SLA SOP Donasi</h3>
@@ -1785,7 +1854,7 @@ if ($canApprove && $canApprovalAction) {
             $allAstriRejectedCount = (int) ($preZeynSummary['astri_rejected'] ?? 0) + (int) ($postZeynSummary['astri_rejected'] ?? 0);
             $isAllAstriFullApproved = $allAstriRequiredCount > 0 && $allAstriRejectedCount === 0 && $allAstriApprovedCount >= $allAstriRequiredCount;
             ?>
-            <?php if (($canApprove && $canApprovalAction) || $canSubmitDonationFinanceRequest): ?>
+            <?php if (($canApprove && $canApprovalAction) || $canSubmitSakuFinanceRequest): ?>
                 <div class="card card-outline card-warning shadow-sm">
                     <div class="card-header">
                         <h3 class="card-title mb-0">Aksi Staging Donasi</h3>
@@ -1794,18 +1863,16 @@ if ($canApprove && $canApprovalAction) {
                         <div class="row">
                             <?php if ($currentDonationStage === 'PRE_ZEYN_FINANCE_APPROVED' && $isPreZeynFinanceFullApproved): ?>
                                 <div class="col-md-12">
-                                    <?php if ($canSubmitDonationFinanceRequest): ?>
-                                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
-                                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                            <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
-                                            <input type="hidden" name="redirect_to_detail" value="1">
-                                            <input type="hidden" name="target_stage" value="WAITING_FINANCE_RELEASE">
-                                            <button type="submit" class="btn btn-success btn-sm">Proses Pengajuan Saku</button>
-                                        </form>
+                                    <?php if ($canSubmitSakuFinanceRequest): ?>
+                                        <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modal-request-saku-finance">
+                                            Proses Pengajuan Saku
+                                        </button>
                                     <?php else: ?>
-                                        <span class="text-muted">Menunggu SITAC HO atau Admin Area memproses pengajuan saku.</span>
+                                        <span class="text-muted">Menunggu Admin Area memproses pengajuan Saku.</span>
                                     <?php endif; ?>
                                 </div>
+                            <?php elseif ($currentDonationStage === 'WAITING_SAKU_FINANCE_APPROVAL'): ?>
+                                <div class="col-md-12 text-muted">Menunggu approval Saku Finance.</div>
                             <?php elseif ($currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
                                 <div class="col-md-12 text-muted">Lengkapi pencairan melalui container Pencairan Donasi.</div>
                             <?php elseif (in_array($currentDonationStage, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)): ?>
@@ -1836,6 +1903,37 @@ if ($canApprove && $canApprovalAction) {
                         </div>
                     </div>
                 </div>
+                <?php if ($currentDonationStage === 'PRE_ZEYN_FINANCE_APPROVED' && $isPreZeynFinanceFullApproved && $canSubmitSakuFinanceRequest): ?>
+                    <div class="modal fade" id="modal-request-saku-finance" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
+                                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                    <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
+                                    <input type="hidden" name="redirect_to_detail" value="1">
+                                    <input type="hidden" name="target_stage" value="WAITING_SAKU_FINANCE_APPROVAL">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title">Proses Pengajuan Saku</h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="form-group">
+                                            <label>Remark Detail Saku</label>
+                                            <textarea name="saku_request_remark" class="form-control" rows="3" placeholder="Opsional"></textarea>
+                                        </div>
+                                        <div class="alert alert-light border mb-0">
+                                            Setelah disimpan, status menjadi Menunggu Approval Saku Finance dan perlu direview Finance HO.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                                        <button type="submit" class="btn btn-success">Kirim ke Finance</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <?php if ($currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
                     <div class="modal fade" id="modal-set-released" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog" role="document">

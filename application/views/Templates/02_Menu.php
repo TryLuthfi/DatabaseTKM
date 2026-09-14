@@ -755,17 +755,17 @@ $forceVisibleControllerMap = [
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="<?= base_url('Batch_Approval_MyRep') ?>"
-                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Batch_Approval_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
-                                            <i class="far fa-dot-circle nav-icon"></i>
-                                            <p>Batch Approval</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
                                         <a href="<?= base_url('DRM_MyRep') ?>"
                                             class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'DRM_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>DRM</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Batch_Approval_MyRep') ?>"
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Batch_Approval_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Batch Approval</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

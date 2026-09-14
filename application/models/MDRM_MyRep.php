@@ -12,9 +12,102 @@ class MDRM_MyRep extends CI_Model
     public function __construct()
     {
         parent::__construct();
+        $this->ensureRabSchema();
         if ($this->shouldRestrictCityByUser()) {
             $this->getCurrentUserAllowedCitySet();
         }
+    }
+
+    private function ensureRabSchema()
+    {
+        $this->ensureClusterStatusCurrentSupportsRabDone();
+
+        if (!$this->db->table_exists('tb_myrep_rab')) {
+            $this->db->query("
+                CREATE TABLE `tb_myrep_rab` (
+                    `id_myrep_rab` INT(11) NOT NULL AUTO_INCREMENT,
+                    `id_myrep_cluster` INT(11) NOT NULL,
+                    `id_drm` INT(11) DEFAULT NULL,
+                    `id_drm_boq` INT(11) DEFAULT NULL,
+                    `id_apd_boq_file` INT(11) DEFAULT NULL,
+                    `rab_status` VARCHAR(50) NOT NULL DEFAULT 'RAB DONE',
+                    `detail_rab` TEXT NULL,
+                    `rab_done_at` DATETIME DEFAULT NULL,
+                    `rab_done_by` INT(11) DEFAULT NULL,
+                    `cancelled_at` DATETIME DEFAULT NULL,
+                    `cancelled_by` INT(11) DEFAULT NULL,
+                    `cancel_reason` TEXT NULL,
+                    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id_myrep_rab`),
+                    UNIQUE KEY `uniq_myrep_rab_cluster` (`id_myrep_cluster`),
+                    KEY `idx_myrep_rab_status` (`rab_status`),
+                    KEY `idx_myrep_rab_drm_boq` (`id_drm_boq`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        }
+
+        if ($this->db->table_exists('tb_myrep_rab')) {
+            $columns = [
+                'id_drm' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_drm` INT(11) DEFAULT NULL AFTER `id_myrep_cluster`",
+                'id_drm_boq' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_drm_boq` INT(11) DEFAULT NULL AFTER `id_drm`",
+                'id_apd_boq_file' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_apd_boq_file` INT(11) DEFAULT NULL AFTER `id_drm_boq`",
+                'rab_status' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `rab_status` VARCHAR(50) NOT NULL DEFAULT 'RAB DONE' AFTER `id_apd_boq_file`",
+                'detail_rab' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `detail_rab` TEXT NULL AFTER `rab_status`",
+                'rab_done_at' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `rab_done_at` DATETIME DEFAULT NULL AFTER `detail_rab`",
+                'rab_done_by' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `rab_done_by` INT(11) DEFAULT NULL AFTER `rab_done_at`",
+                'cancelled_at' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `cancelled_at` DATETIME DEFAULT NULL AFTER `rab_done_by`",
+                'cancelled_by' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `cancelled_by` INT(11) DEFAULT NULL AFTER `cancelled_at`",
+                'cancel_reason' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `cancel_reason` TEXT NULL AFTER `cancelled_by`",
+            ];
+            foreach ($columns as $columnName => $sql) {
+                if (!$this->db->field_exists($columnName, 'tb_myrep_rab')) {
+                    $this->db->query($sql);
+                }
+            }
+        }
+    }
+
+    private function ensureClusterStatusCurrentSupportsRabDone()
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster') || !$this->db->field_exists('status_current', 'tb_myrep_cluster')) {
+            return;
+        }
+
+        $row = $this->db->query(
+            "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tb_myrep_cluster' AND COLUMN_NAME = 'status_current' LIMIT 1"
+        )->row_array();
+        $columnType = strtoupper((string) ($row['COLUMN_TYPE'] ?? ''));
+        if ($columnType !== '' && strpos($columnType, "'RAB DONE'") === false) {
+            $this->db->query("
+                ALTER TABLE `tb_myrep_cluster`
+                MODIFY COLUMN `status_current` ENUM(
+                    'DRAFT',
+                    'NTP',
+                    'BA OPEN',
+                    'BAK',
+                    'VALSAL',
+                    'WAITING HO',
+                    'WAITING MYREP',
+                    'WAITING FINANCE',
+                    'RELEASED',
+                    'DONE BATCH APPROVAL',
+                    'DRM',
+                    'RAB DONE',
+                    'RFS',
+                    'ATP',
+                    'CHECKLIST DOKUMENT',
+                    'DONE',
+                    'REJECTED',
+                    'HOLD'
+                ) NOT NULL DEFAULT 'DRAFT'
+            ");
+        }
+    }
+
+    public function rabTablesReady()
+    {
+        return $this->db->table_exists('tb_myrep_rab');
     }
 
     public function drmTablesReady()
@@ -95,9 +188,8 @@ class MDRM_MyRep extends CI_Model
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
-            ->where('UPPER(ba.staging_status)', 'RELEASED')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC')
@@ -128,13 +220,12 @@ class MDRM_MyRep extends CI_Model
         }
 
         $query = $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, v.homepass_valsal, d.id_drm, t.year_num, t.month_num')
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, v.homepass_valsal AS hp_donasi, NULL AS released_at, v.homepass_valsal, d.id_drm, t.year_num, t.month_num', false)
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where('UPPER(ba.staging_status)', 'RELEASED')
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->where('d.id_drm IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC');
@@ -166,13 +257,12 @@ class MDRM_MyRep extends CI_Model
             : 'NULL AS rfs_cluster_id';
 
         $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', ba.hp_donasi, ba.released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', v.homepass_valsal AS hp_donasi, NULL AS released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
-            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
-            ->where('UPPER(ba.staging_status)', 'RELEASED');
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false);
 
         if ($this->db->table_exists('tb_rfs_myrep_cluster') && $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster') && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')) {
             $this->db
@@ -217,7 +307,7 @@ class MDRM_MyRep extends CI_Model
 
         $filterByDisplayStatus = false;
         if ($status !== '') {
-            if (in_array($status, ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
+            if (in_array($status, ['VALSAL', 'RAB DONE', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
                 $this->db->where('UPPER(c.status_current)', $status);
             } else {
                 $filterByDisplayStatus = true;
@@ -232,6 +322,7 @@ class MDRM_MyRep extends CI_Model
 
         $docSummaryMap = $this->getDocumentSummaryMap(array_column($rows, 'id_myrep_cluster'));
         $boqStatusMap = $this->getDrmBoqStatusMap(array_column($rows, 'id_myrep_cluster'));
+        $rabStatusMap = $this->getRabStatusMap(array_column($rows, 'id_myrep_cluster'));
         $scopeRequirementStatusMap = $this->getScopeRequirementStatusMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
             $row['project_type'] = 'CLUSTER';
@@ -247,6 +338,9 @@ class MDRM_MyRep extends CI_Model
                 $row['drm_subfeeder_status'] = $scopeRequirementStatusMap[$clusterId]['SUBFEEDER'];
             }
             $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
+            $row['rab_status'] = $rabStatusMap[$clusterId]['rab_status'] ?? '';
+            $row['detail_rab'] = $rabStatusMap[$clusterId]['detail_rab'] ?? '';
+            $row['rab_done_at'] = $rabStatusMap[$clusterId]['rab_done_at'] ?? '';
         }
         unset($row);
 
@@ -376,6 +470,9 @@ class MDRM_MyRep extends CI_Model
             $row['drm_cluster_status'] = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
             $row['drm_subfeeder_status'] = '';
             $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
+            $row['rab_status'] = '';
+            $row['detail_rab'] = '';
+            $row['rab_done_at'] = '';
         }
         unset($row);
 
@@ -455,9 +552,8 @@ class MDRM_MyRep extends CI_Model
             ->distinct()
             ->select('c.regional_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
-            ->where('UPPER(ba.staging_status)', 'RELEASED')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
             ->order_by('c.regional_name', 'ASC')
@@ -492,9 +588,8 @@ class MDRM_MyRep extends CI_Model
             ->distinct()
             ->select('c.regional_name, c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where($this->collatedUpperInSql('c.status_current', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
-            ->where('UPPER(ba.staging_status)', 'RELEASED')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->where('c.regional_name IS NOT NULL', null, false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.regional_name) !=", '')
@@ -552,12 +647,12 @@ class MDRM_MyRep extends CI_Model
         }
 
         $row = $this->db
-            ->select('c.*, ba.id_batch_approval, ba.hp_donasi, ba.released_at, d.id_drm')
+            ->select('c.*, v.id_valsal, v.homepass_valsal AS hp_donasi, NULL AS released_at, d.id_drm', false)
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
-            ->where('UPPER(ba.staging_status)', 'RELEASED')
+            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->get()
             ->row_array();
 
@@ -578,8 +673,12 @@ class MDRM_MyRep extends CI_Model
             ->select('
                 c.*,
                 ba.id_batch_approval,
-                ba.hp_donasi,
+                COALESCE(ba.hp_donasi, v.homepass_valsal, 0) AS hp_donasi,
                 ba.released_at,
+                v.id_valsal,
+                v.valsal_date,
+                v.homepass_valsal,
+                v.status_valsal,
                 d.id_drm,
                 d.drm_date,
                 d.homepass_drm,
@@ -595,6 +694,7 @@ class MDRM_MyRep extends CI_Model
             ', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
@@ -614,8 +714,55 @@ class MDRM_MyRep extends CI_Model
         $row['doc_approved'] = $summary['approved'];
         $row['doc_rejected'] = $summary['rejected'];
         $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
+        $rab = $this->getRabByClusterId((int) $clusterId);
+        $row['rab_status'] = (string) ($rab['rab_status'] ?? '');
+        $row['detail_rab'] = (string) ($rab['detail_rab'] ?? '');
+        $row['rab_done_at'] = (string) ($rab['rab_done_at'] ?? '');
+        $row['rab_done_by'] = (int) ($rab['rab_done_by'] ?? 0);
 
         return $row;
+    }
+
+    public function getRabByClusterId($clusterId, $activeOnly = true)
+    {
+        if (!$this->rabTablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->from('tb_myrep_rab')
+            ->where('id_myrep_cluster', (int) $clusterId);
+        if ($activeOnly) {
+            $this->db->where('UPPER(rab_status)', 'RAB DONE');
+        }
+
+        return (array) $this->db
+            ->order_by('id_myrep_rab', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    private function getRabStatusMap($clusterIds)
+    {
+        $clusterIds = array_values(array_unique(array_filter(array_map('intval', (array) $clusterIds))));
+        if (empty($clusterIds) || !$this->rabTablesReady()) {
+            return [];
+        }
+
+        $rows = (array) $this->db
+            ->select('id_myrep_cluster, rab_status, detail_rab, rab_done_at')
+            ->from('tb_myrep_rab')
+            ->where('UPPER(rab_status)', 'RAB DONE')
+            ->where_in('id_myrep_cluster', $clusterIds)
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) ($row['id_myrep_cluster'] ?? 0)] = $row;
+        }
+        return $map;
     }
 
     public function getBoqMasterItems()
@@ -937,6 +1084,115 @@ class MDRM_MyRep extends CI_Model
         $this->db->trans_complete();
 
         return $this->db->trans_status();
+    }
+
+    public function ensureDrmHeaderForCluster($clusterId, $userId = 0)
+    {
+        if (!$this->drmTablesReady()) {
+            return 0;
+        }
+
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        if ($clusterId <= 0) {
+            return 0;
+        }
+
+        $existing = $this->db
+            ->select('id_drm')
+            ->from('tb_myrep_drm')
+            ->where('id_myrep_cluster', $clusterId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($existing['id_drm'])) {
+            return (int) $existing['id_drm'];
+        }
+
+        $cluster = $this->db
+            ->select('c.id_myrep_cluster, c.status_current, c.hp_plan, v.homepass_valsal, v.valsal_date')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where('c.id_myrep_cluster', $clusterId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (empty($cluster)) {
+            return 0;
+        }
+
+        $boq = $this->db->table_exists('tb_myrep_drm_boq')
+            ? (array) $this->db
+                ->select('submitted_at, created_by, updated_by')
+                ->from('tb_myrep_drm_boq')
+                ->where('id_myrep_cluster', $clusterId)
+                ->order_by('id_drm_boq', 'DESC')
+                ->limit(1)
+                ->get()
+                ->row_array()
+            : [];
+        $now = date('Y-m-d H:i:s');
+        $sourceDate = trim((string) ($boq['submitted_at'] ?? $cluster['valsal_date'] ?? ''));
+        $timestamp = $sourceDate !== '' ? strtotime($sourceDate) : false;
+        $homepassDrm = (int) ($cluster['homepass_valsal'] ?? 0);
+        if ($homepassDrm <= 0) {
+            $homepassDrm = (int) ($cluster['hp_plan'] ?? 0);
+        }
+        $actorId = $userId > 0 ? $userId : (int) ($boq['updated_by'] ?? $boq['created_by'] ?? 0);
+
+        $this->db->trans_start();
+        $this->db->insert('tb_myrep_drm', $this->normalizeDrmPayloadForStorage([
+            'id_myrep_cluster' => $clusterId,
+            'drm_date' => $timestamp ? date('Y-m-d', $timestamp) : date('Y-m-d'),
+            'homepass_drm' => max(0, $homepassDrm),
+            'status_drm' => 'DRAFT',
+            'remark_drm' => 'Auto-created to link existing APD BOQ/BOQ data.',
+            'created_by' => $actorId > 0 ? $actorId : null,
+            'updated_by' => $actorId > 0 ? $actorId : null,
+            'created_at' => $timestamp ? date('Y-m-d H:i:s', $timestamp) : $now,
+            'updated_at' => $now,
+        ]));
+        $drmId = (int) $this->db->insert_id();
+
+        if ($drmId > 0 && $this->db->table_exists('tb_myrep_drm_boq')) {
+            $this->db
+                ->where('id_myrep_cluster', $clusterId)
+                ->group_start()
+                    ->where('id_drm IS NULL', null, false)
+                    ->or_where('id_drm', 0)
+                ->group_end()
+                ->update('tb_myrep_drm_boq', [
+                    'id_drm' => $drmId,
+                    'updated_by' => $actorId > 0 ? $actorId : null,
+                ]);
+        }
+
+        if ($drmId > 0 && $this->db->table_exists('tb_myrep_flow_doc_package') && $this->db->field_exists('ref_process_id', 'tb_myrep_flow_doc_package')) {
+            $this->db
+                ->where('id_myrep_cluster', $clusterId)
+                ->where_in('flow_type', ['DRM', 'DRM_SUBFEEDER'])
+                ->group_start()
+                    ->where('ref_process_id IS NULL', null, false)
+                    ->or_where('ref_process_id', 0)
+                ->group_end()
+                ->update('tb_myrep_flow_doc_package', [
+                    'ref_process_id' => $drmId,
+                    'updated_by' => $actorId > 0 ? $actorId : null,
+                ]);
+        }
+
+        if ($drmId > 0 && in_array(strtoupper(trim((string) ($cluster['status_current'] ?? ''))), ['VALSAL', 'RELEASED', 'DONE BATCH APPROVAL'], true)) {
+            $this->db
+                ->where('id_myrep_cluster', $clusterId)
+                ->update('tb_myrep_cluster', [
+                    'status_current' => 'DRM',
+                    'updated_by' => $actorId > 0 ? $actorId : null,
+                ]);
+        }
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status() ? $drmId : 0;
     }
 
     public function getTargetByCity($cityName)
@@ -1372,6 +1628,9 @@ class MDRM_MyRep extends CI_Model
         if ($clusterId <= 0 || empty($items)) {
             return false;
         }
+        if ($drmId <= 0) {
+            $drmId = $this->ensureDrmHeaderForCluster($clusterId, $userId);
+        }
 
         $existing = $this->getDrmBoqHeader($clusterId, $scopeType);
         if (!empty($existing) && strtoupper((string) ($existing['review_status'] ?? '')) === 'APPROVED') {
@@ -1531,6 +1790,70 @@ class MDRM_MyRep extends CI_Model
         }
 
         $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    public function checklistRabDone($clusterId, $userId, $detailRab)
+    {
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $detailRab = trim((string) $detailRab);
+        if ($clusterId <= 0 || $detailRab === '' || !$this->rabTablesReady() || !$this->drmBoqTablesReady()) {
+            return false;
+        }
+
+        $cluster = $this->getDrmByClusterId($clusterId);
+        $boqHeader = $this->getDrmBoqHeader($clusterId, 'CLUSTER');
+        $apdBoqFile = $this->getApdBoqDocumentFile($clusterId, 'CLUSTER');
+        if (empty($boqHeader['id_drm_boq']) || strtoupper(trim((string) ($boqHeader['review_status'] ?? ''))) !== 'APPROVED') {
+            return false;
+        }
+        $drmId = (int) ($cluster['id_drm'] ?? 0);
+        if ($drmId <= 0) {
+            $drmId = $this->ensureDrmHeaderForCluster($clusterId, $userId);
+            if ($drmId <= 0) {
+                return false;
+            }
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $payload = [
+            'id_myrep_cluster' => $clusterId,
+            'id_drm' => $drmId,
+            'id_drm_boq' => (int) ($boqHeader['id_drm_boq'] ?? 0),
+            'id_apd_boq_file' => !empty($apdBoqFile['id_doc_file']) ? (int) $apdBoqFile['id_doc_file'] : null,
+            'rab_status' => 'RAB DONE',
+            'detail_rab' => $detailRab,
+            'rab_done_at' => $now,
+            'rab_done_by' => $userId > 0 ? $userId : null,
+            'cancelled_at' => null,
+            'cancelled_by' => null,
+            'cancel_reason' => null,
+            'updated_at' => $now,
+        ];
+
+        $this->db->trans_start();
+        $existing = $this->db
+            ->select('id_myrep_rab')
+            ->from('tb_myrep_rab')
+            ->where('id_myrep_cluster', $clusterId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($existing['id_myrep_rab'])) {
+            $this->db->where('id_myrep_rab', (int) $existing['id_myrep_rab'])->update('tb_myrep_rab', $payload);
+        } else {
+            $payload['created_at'] = $now;
+            $this->db->insert('tb_myrep_rab', $payload);
+        }
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_cluster', [
+                'status_current' => 'RAB DONE',
+                'updated_by' => $userId > 0 ? $userId : null,
+            ]);
+        $this->db->trans_complete();
+
         return $this->db->trans_status();
     }
 
@@ -1758,8 +2081,55 @@ class MDRM_MyRep extends CI_Model
             }
         }
 
+        if ($result && $this->normalizeDrmScopeType($scopeType) === 'CLUSTER') {
+            $this->cancelRabDone($clusterId, (int) $userId, $remark !== '' ? $remark : 'BOQ Cluster rejected');
+        }
+
         $this->db->trans_complete();
         return $this->db->trans_status();
+    }
+
+    private function cancelRabDone($clusterId, $userId, $reason = '')
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || !$this->rabTablesReady()) {
+            return false;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(rab_status)', 'RAB DONE')
+            ->update('tb_myrep_rab', [
+                'rab_status' => 'CANCELLED',
+                'cancelled_at' => $now,
+                'cancelled_by' => (int) $userId > 0 ? (int) $userId : null,
+                'cancel_reason' => trim((string) $reason) !== '' ? trim((string) $reason) : null,
+                'updated_at' => $now,
+            ]);
+
+        if ($this->db->table_exists('tb_myrep_batch_approval')) {
+            $existingBatch = $this->db
+                ->select('id_batch_approval')
+                ->from('tb_myrep_batch_approval')
+                ->where('id_myrep_cluster', $clusterId)
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($existingBatch['id_batch_approval'])) {
+                return true;
+            }
+        }
+
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(status_current)', 'RAB DONE')
+            ->update('tb_myrep_cluster', [
+                'status_current' => 'DRM',
+                'updated_by' => (int) $userId > 0 ? (int) $userId : null,
+            ]);
+
+        return true;
     }
 
     public function getDrmFileById($fileId)
@@ -2131,6 +2501,7 @@ class MDRM_MyRep extends CI_Model
             'atp_ho',
             'rfs_ho',
             'sitac_ho',
+            'planning_ho',
             'dc_ho',
             'qa_ho',
         ];

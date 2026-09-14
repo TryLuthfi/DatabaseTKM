@@ -159,9 +159,12 @@ class DRM_MyRep extends CI_Controller
         $data['cluster'] = $cluster;
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
         $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
+        $data['rabReady'] = $this->MDRM_MyRep->rabTablesReady();
         $data['subfeederReady'] = $this->MDRM_MyRep->drmSubfeederReady();
         $data['scopeRequirementReady'] = $this->MDRM_MyRep->drmScopeRequirementTablesReady();
         $data['canApprove'] = $this->isApprover();
+        $data['canChecklistRabDone'] = $this->canChecklistRabDone();
+        $data['rabDetail'] = $this->MDRM_MyRep->getRabByClusterId($clusterId, false);
         $subfeederRequirement = $data['scopeRequirementReady']
             ? $this->MDRM_MyRep->getScopeRequirement($clusterId, 'SUBFEEDER')
             : ['requirement_status' => 'REQUIRED'];
@@ -1793,6 +1796,37 @@ class DRM_MyRep extends CI_Controller
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
+    public function checklistRabDone()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->canChecklistRabDone()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses checklist RAB DONE.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $detailRab = trim((string) $this->input->post('detail_rab'));
+        if ($detailRab === '') {
+            $this->session->set_flashdata('error', 'Detail RAB wajib diisi.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->checklistRabDone(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            $detailRab
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Checklist RAB DONE berhasil disimpan.' : 'Gagal checklist RAB DONE. Pastikan APD BOQ Cluster sudah approved.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
     public function deleteCluster()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -2273,6 +2307,19 @@ class DRM_MyRep extends CI_Controller
     {
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function canChecklistRabDone()
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        return in_array('PLANNING_HO', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
     }
 
     private function isSubfeederNotRequiredWorkflowLocked($clusterId)

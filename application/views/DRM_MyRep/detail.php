@@ -5,6 +5,14 @@ $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'EDIT') : true;
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'APPROVAL') : true;
+$rabDetail = (array) ($rabDetail ?? []);
+$rabStatus = strtoupper(trim((string) ($rabDetail['rab_status'] ?? $cluster['rab_status'] ?? '')));
+$isRabDone = $rabStatus === 'RAB DONE';
+$clusterBoqHeaderForRab = (array) ($drmScopes['CLUSTER']['boqHeader'] ?? []);
+$canShowRabDoneButton = !empty($rabReady)
+    && !empty($canChecklistRabDone)
+    && !$isRabDone
+    && strtoupper(trim((string) ($clusterBoqHeaderForRab['review_status'] ?? ''))) === 'APPROVED';
 
 if (!function_exists('drmDetailBadgeClass')) {
     function drmDetailBadgeClass($status)
@@ -149,6 +157,10 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
                 .drm-info-grid > div {
                     margin-bottom: 1rem;
+                }
+
+                .drm-rab-detail {
+                    white-space: pre-wrap;
                 }
 
                 .drm-scope-tabs .nav-link {
@@ -414,6 +426,15 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                         <div class="col-md-2"><strong>HP Donasi</strong><div><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div></div>
                         <div class="col-md-2"><strong>HP DRM</strong><div><?= !is_null($cluster['homepass_drm'] ?? null) ? number_format((float) $cluster['homepass_drm'], 0, ',', '.') : '-' ?></div></div>
                         <div class="col-md-3"><strong>Tanggal DRM</strong><div><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div></div>
+                        <div class="col-md-3">
+                            <strong>Status RAB</strong>
+                            <div>
+                                <span class="badge badge-<?= drmDetailBadgeClass($isRabDone ? 'APPROVED' : '') ?>"><?= htmlspecialchars($isRabDone ? 'RAB DONE' : 'BELUM RAB DONE') ?></span>
+                            </div>
+                            <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
+                                <div class="small text-muted mt-1"><?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
+                            <?php endif; ?>
+                        </div>
                         <div class="col-md-4">
                             <strong>Screenshoot Astri</strong>
                             <div>
@@ -837,6 +858,34 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                             <?php endif; ?>
                                         </div>
                                     </div>
+                                    <?php if ($scopeKey === 'CLUSTER'): ?>
+                                        <div class="card card-outline card-success shadow-sm mt-3">
+                                            <div class="card-header d-flex justify-content-between align-items-center">
+                                                <h3 class="card-title mb-0">RAB Cluster</h3>
+                                                <span class="badge badge-<?= drmDetailBadgeClass($isRabDone ? 'APPROVED' : '') ?>"><?= htmlspecialchars($isRabDone ? 'RAB DONE' : 'BELUM RAB DONE') ?></span>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-8">
+                                                        <strong>Detail RAB</strong>
+                                                        <div class="drm-rab-detail mt-1"><?= $isRabDone && !empty($rabDetail['detail_rab']) ? nl2br(htmlspecialchars((string) $rabDetail['detail_rab'])) : '-' ?></div>
+                                                        <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
+                                                            <div class="small text-muted mt-2">Checklist: <?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                                                        <?php if ($canShowRabDoneButton): ?>
+                                                            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-rab-done">Checklist RAB DONE</button>
+                                                        <?php elseif ($isRabDone): ?>
+                                                            <span class="text-success font-weight-bold">RAB sudah selesai.</span>
+                                                        <?php else: ?>
+                                                            <span class="text-muted small">Checklist RAB DONE tersedia setelah APD BOQ/BOQ Cluster approved dan user memiliki akses Planning HO.</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                             <?php $tabIndex++; ?>
@@ -945,6 +994,35 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
         </div>
     </div>
 </div>
+
+<?php if ($canShowRabDoneButton): ?>
+<div class="modal fade" id="modal-rab-done" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/checklistRabDone') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Checklist RAB DONE</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        Status RAB dapat disimpan karena APD BOQ/BOQ Cluster sudah approved. Subfeeder tidak menjadi syarat.
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Detail RAB</label>
+                        <textarea name="detail_rab" rows="5" class="form-control" required placeholder="Isi detail RAB"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Simpan checklist RAB DONE untuk cluster ini?');">Simpan RAB DONE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ($canEdit): ?>
 <div class="modal fade" id="modal-drm-edit" tabindex="-1" role="dialog" aria-hidden="true">

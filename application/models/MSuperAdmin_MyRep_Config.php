@@ -14,6 +14,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'atp_ho',
         'rfs_ho',
         'sitac_ho',
+        'planning_ho',
         'finance_ho',
         'dc_ho',
         'qa_ho',
@@ -51,6 +52,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'ATP_HO',
         'RFS_HO',
         'SITAC_HO',
+        'PLANNING_HO',
         'FINANCE_HO',
         'DC_HO',
         'QA_HO',
@@ -178,7 +180,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
             return [];
         }
-        $this->ensureFinanceHoMappingColumn();
+        $this->ensureCityPicExtraMappingColumns();
 
         $tableName = 'tb_myrep_pic_mapping_city';
 
@@ -265,7 +267,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
             return $this->cityPicRoleColumns;
         }
-        $this->ensureFinanceHoMappingColumn();
+        $this->ensureCityPicExtraMappingColumns();
 
         $availableColumns = [];
         foreach ($this->cityPicRoleColumns as $columnName) {
@@ -282,7 +284,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
             return ['ok' => false, 'updated' => 0, 'failed' => []];
         }
-        $this->ensureFinanceHoMappingColumn();
+        $this->ensureCityPicExtraMappingColumns();
 
         $this->db->trans_begin();
         $updated = 0;
@@ -322,10 +324,24 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         return ['ok' => empty($failed), 'updated' => $updated, 'failed' => $failed];
     }
 
-    private function ensureFinanceHoMappingColumn()
+    private function ensureCityPicExtraMappingColumns()
     {
         if ($this->db->table_exists('tb_myrep_pic_mapping_city') && !$this->db->field_exists('finance_ho', 'tb_myrep_pic_mapping_city')) {
             $this->db->query("ALTER TABLE `tb_myrep_pic_mapping_city` ADD COLUMN `finance_ho` VARCHAR(255) NULL AFTER `sitac_ho`");
+        }
+        if ($this->db->table_exists('tb_myrep_pic_mapping_city') && !$this->db->field_exists('planning_ho', 'tb_myrep_pic_mapping_city')) {
+            $afterColumn = $this->db->field_exists('sitac_ho', 'tb_myrep_pic_mapping_city') ? 'sitac_ho' : 'rfs_ho';
+            $this->db->query("ALTER TABLE `tb_myrep_pic_mapping_city` ADD COLUMN `planning_ho` VARCHAR(255) NULL AFTER `" . $afterColumn . "`");
+        }
+        if ($this->db->table_exists('tb_myrep_pic_mapping_city') && $this->db->field_exists('planning_ho', 'tb_myrep_pic_mapping_city')) {
+            $this->db->query("
+                UPDATE `tb_myrep_pic_mapping_city`
+                SET `planning_ho` = CASE
+                    WHEN `planning_ho` IS NULL OR TRIM(`planning_ho`) = '' THEN '9808925'
+                    WHEN FIND_IN_SET('9808925', REPLACE(REPLACE(`planning_ho`, ';', ','), '|', ',')) = 0 THEN CONCAT(`planning_ho`, ',9808925')
+                    ELSE `planning_ho`
+                END
+            ");
         }
     }
 
