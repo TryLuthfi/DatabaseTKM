@@ -1048,11 +1048,25 @@ class MBatch_Approval_MyRep extends CI_Model
 
         $clusterLocationSelect = $this->buildClusterLocationSelect('c');
 
-        $row = $this->db
+        $this->db
             ->select('c.*,' . $clusterLocationSelect . ', v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.*', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left');
+
+        if ($this->db->table_exists('tb_master_user_new')) {
+            $this->db
+                ->select('COALESCE(u_saku_request.nama_karyawan, u_saku_request.username_user, u_saku_request.nik) AS saku_finance_requested_by_name', false)
+                ->select('COALESCE(u_saku_review.nama_karyawan, u_saku_review.username_user, u_saku_review.nik) AS saku_finance_reviewed_by_name', false)
+                ->join('tb_master_user_new u_saku_request', 'u_saku_request.id = ba.saku_finance_requested_by', 'left')
+                ->join('tb_master_user_new u_saku_review', 'u_saku_review.id = ba.saku_finance_reviewed_by', 'left');
+        } else {
+            $this->db
+                ->select('NULL AS saku_finance_requested_by_name', false)
+                ->select('NULL AS saku_finance_reviewed_by_name', false);
+        }
+
+        $row = $this->db
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
             ->row_array();

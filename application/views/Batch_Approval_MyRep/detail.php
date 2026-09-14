@@ -1744,19 +1744,27 @@ if ($canApprove && $canApprovalAction) {
                 </div>
                 <div class="card-body">
                     <div class="row batch-info-grid">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <strong>Status Approval</strong>
                             <div><span class="badge badge-<?= htmlspecialchars($sakuFinanceBadgeClass) ?>"><?= htmlspecialchars($sakuFinanceLabel) ?></span></div>
                         </div>
                         <div class="col-md-3 mb-3">
+                            <strong>Diajukan Oleh</strong>
+                            <div><?= htmlspecialchars(trim((string) ($cluster['saku_finance_requested_by_name'] ?? '')) !== '' ? (string) $cluster['saku_finance_requested_by_name'] : '-') ?></div>
+                        </div>
+                        <div class="col-md-2 mb-3">
                             <strong>Tanggal Request</strong>
                             <div><?= batchDetailDateText($cluster['saku_finance_requested_at'] ?? '', 'd/m/Y H:i') ?></div>
                         </div>
                         <div class="col-md-3 mb-3">
+                            <strong>Direview Oleh</strong>
+                            <div><?= htmlspecialchars(trim((string) ($cluster['saku_finance_reviewed_by_name'] ?? '')) !== '' ? (string) $cluster['saku_finance_reviewed_by_name'] : '-') ?></div>
+                        </div>
+                        <div class="col-md-2 mb-3">
                             <strong>Tanggal Review</strong>
                             <div><?= batchDetailDateText($cluster['saku_finance_reviewed_at'] ?? '', 'd/m/Y H:i') ?></div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-12 mb-3">
                             <strong>Status Flow</strong>
                             <div><?= htmlspecialchars(batchDetailStatusLabel($displayStageStatus)) ?></div>
                         </div>
