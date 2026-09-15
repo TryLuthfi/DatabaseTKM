@@ -257,12 +257,16 @@ class MDRM_MyRep extends CI_Model
             : 'NULL AS rfs_cluster_id';
 
         $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', v.homepass_valsal AS hp_donasi, NULL AS released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', COALESCE(v.homepass_valsal, d.homepass_drm, c.hp_plan, 0) AS hp_donasi, NULL AS released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false);
+            ->group_start()
+                ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->or_where('d.id_drm IS NOT NULL', null, false)
+                ->or_where($this->collatedUpperInSql('c.status_current', ['DRM', 'RAB DONE', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
+            ->group_end();
 
         if ($this->db->table_exists('tb_rfs_myrep_cluster') && $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster') && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')) {
             $this->db
