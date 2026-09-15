@@ -35,6 +35,7 @@ if (!function_exists('batchDetailBadgeClass')) {
                 return 'success';
             case 'REJECTED':
             case 'NEED_REVISE':
+            case 'NEED_REVISE_ASTRI':
                 return 'danger';
             case 'HOLD':
                 return 'warning';
@@ -88,6 +89,7 @@ if (!function_exists('batchDetailStatusLabel')) {
             'POST_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 2',
             'WAITING_ASTRI_SUBMISSION' => 'Menunggu Submit Astri',
             'ASTRI_ON_REVIEW' => 'On Review Astri',
+            'NEED_REVISE_ASTRI' => 'NEED REVISI ASTRI',
             'ASTRI_APPROVED' => 'Approved Astri',
             'PO_DONASI' => 'PO Donasi',
             'INVOICE' => 'Invoice',
@@ -346,6 +348,8 @@ if (!function_exists('batchDetailStageMeta')) {
                 return ['percent' => 85, 'class' => 'bg-info', 'label' => 'Menunggu submit final Astri'];
             case 'ASTRI_ON_REVIEW':
                 return ['percent' => 90, 'class' => 'bg-warning', 'label' => 'Final Astri on review'];
+            case 'NEED_REVISE_ASTRI':
+                return ['percent' => 90, 'class' => 'bg-danger', 'label' => 'NEED REVISI ASTRI'];
             case 'ASTRI_APPROVED':
                 return ['percent' => 95, 'class' => 'bg-success', 'label' => 'Final Astri approved'];
             case 'PO_DONASI':
@@ -412,6 +416,7 @@ $statusOptions = [
     'POST_ZEYN_FINANCE_ON_REVIEW' => batchDetailStatusLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
     'WAITING_ASTRI_SUBMISSION' => batchDetailStatusLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchDetailStatusLabel('ASTRI_ON_REVIEW'),
+    'NEED_REVISE_ASTRI' => batchDetailStatusLabel('NEED_REVISE_ASTRI'),
     'ASTRI_APPROVED' => batchDetailStatusLabel('ASTRI_APPROVED'),
     'PO_DONASI' => batchDetailStatusLabel('PO_DONASI'),
     'INVOICE' => batchDetailStatusLabel('INVOICE'),
@@ -1883,7 +1888,7 @@ if ($canApprove && $canApprovalAction) {
                                 <div class="col-md-12 text-muted">Menunggu approval Saku Finance.</div>
                             <?php elseif ($currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
                                 <div class="col-md-12 text-muted">Lengkapi pencairan melalui container Pencairan Donasi.</div>
-                            <?php elseif (in_array($currentDonationStage, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)): ?>
+                            <?php elseif (in_array($currentDonationStage, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true)): ?>
                                 <div class="col-md-12">
                                     <?php if ($isAllAstriFullApproved): ?>
                                         <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">

@@ -28,6 +28,7 @@ if (!function_exists('batchStageLabel')) {
             'POST_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 2',
             'WAITING_ASTRI_SUBMISSION' => 'Menunggu Submit Astri',
             'ASTRI_ON_REVIEW' => 'On Review Astri',
+            'NEED_REVISE_ASTRI' => 'NEED REVISI ASTRI',
             'ASTRI_APPROVED' => 'Approved Astri',
             'PO_DONASI' => 'PO Donasi',
             'INVOICE' => 'Invoice',
@@ -65,6 +66,7 @@ if (!function_exists('batchStagePicMeta')) {
             'POST_ZEYN_FINANCE_ON_REVIEW' => ['label' => 'FINANCE', 'class' => 'finance', 'icon' => 'user-tie'],
             'WAITING_ASTRI_SUBMISSION' => ['label' => 'SITAC HO', 'class' => 'sitac', 'icon' => 'users'],
             'ASTRI_ON_REVIEW' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
+            'NEED_REVISE_ASTRI' => ['label' => 'AREA', 'class' => 'area', 'icon' => 'map-marker-alt'],
             'ASTRI_APPROVED' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
             'PO_DONASI' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
             'INVOICE' => ['label' => 'MYREP', 'class' => 'myrep', 'icon' => 'user-check'],
@@ -96,6 +98,7 @@ $statusOptions = [
     'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
     'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
+    'NEED_REVISE_ASTRI' => batchStageLabel('NEED_REVISE_ASTRI'),
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
     'PO_DONASI' => batchStageLabel('PO_DONASI'),
     'INVOICE' => batchStageLabel('INVOICE'),
@@ -126,6 +129,7 @@ $donationStageOrder = [
     'POST_ZEYN_FINANCE_ON_REVIEW' => batchStageLabel('POST_ZEYN_FINANCE_ON_REVIEW'),
     'WAITING_ASTRI_SUBMISSION' => batchStageLabel('WAITING_ASTRI_SUBMISSION'),
     'ASTRI_ON_REVIEW' => batchStageLabel('ASTRI_ON_REVIEW'),
+    'NEED_REVISE_ASTRI' => batchStageLabel('NEED_REVISE_ASTRI'),
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
     'PO_DONASI' => batchStageLabel('PO_DONASI'),
     'INVOICE' => batchStageLabel('INVOICE'),
@@ -251,6 +255,7 @@ if (!function_exists('batchBadgeClass')) {
                 return 'warning';
             case 'REJECTED':
             case 'NEED_REVISE':
+            case 'NEED_REVISE_ASTRI':
                 return 'danger';
             case 'WAITING HO':
             case 'WAITING MYREP':

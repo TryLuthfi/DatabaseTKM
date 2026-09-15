@@ -1090,7 +1090,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $batchPayload['transfer_proof_file_name'] = $fileData['file_name'];
             $batchPayload['transfer_proof_file_path'] = 'uploads/myrep_batch_transfer/' . $fileData['file_name'];
             $successMessage = 'Staging berhasil diubah ke Donasi Dibayarkan.';
-        } elseif (in_array($currentStage, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true) && $targetStage === 'ASTRI_APPROVED') {
+        } elseif (in_array($currentStage, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true) && $targetStage === 'ASTRI_APPROVED') {
             if (!$this->MBatch_Approval_MyRep->areAllDonationDocumentsAstriApproved($clusterId)) {
                 $this->session->set_flashdata('error', 'Astri belum bisa completed karena masih ada dokumen yang belum approved Astri.');
                 redirect($redirectPath);
@@ -1881,7 +1881,7 @@ class Batch_Approval_MyRep extends CI_Controller
                     'rejecter_user_id' => (int) $this->session->userdata('id_user'),
                     'rejected_at' => date('Y-m-d H:i:s'),
                 ]);
-                $this->setDonationStageFromSystem($clusterId, 'ASTRI_ON_REVIEW', [
+                $this->setDonationStageFromSystem($clusterId, 'NEED_REVISE_ASTRI', [
                     'final_astri_approved_at' => null,
                 ]);
             } elseif ($groupLabel === 'POST PAYMENT ZEYN DOCUMENT' && in_array($astriStatusInput, ['ON REVIEW', 'APPROVED'], true)) {
@@ -2017,7 +2017,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $summary = $this->MBatch_Approval_MyRep->getDonationDocumentSummary($clusterId);
             $totalRejected = (int) ($summary['PRE_ZEYN']['astri_rejected'] ?? 0) + (int) ($summary['POST_ZEYN']['astri_rejected'] ?? 0);
             if ($totalRejected > 0) {
-                $this->setDonationStageFromSystem($clusterId, 'ASTRI_ON_REVIEW', [
+                $this->setDonationStageFromSystem($clusterId, 'NEED_REVISE_ASTRI', [
                     'final_astri_approved_at' => null,
                 ]);
             } elseif ($groupKey === 'POST_ZEYN' && (int) ($summary['POST_ZEYN']['required'] ?? 0) > 0 && (int) ($summary['POST_ZEYN']['astri_submitted'] ?? 0) > 0) {
@@ -2817,6 +2817,8 @@ class Batch_Approval_MyRep extends CI_Controller
             'ON REVIEW FINANCE DOKUMEN TAHAP 2' => 'POST_ZEYN_FINANCE_ON_REVIEW',
             'MENUNGGU SUBMIT ASTRI' => 'WAITING_ASTRI_SUBMISSION',
             'REVIEW ASTRI' => 'ASTRI_ON_REVIEW',
+            'NEED REVISI ASTRI' => 'NEED_REVISE_ASTRI',
+            'NEED REVISI ASRI' => 'NEED_REVISE_ASTRI',
             'ASTRI DISETUJUI' => 'ASTRI_APPROVED',
             'ON REVIEW ASTRI' => 'ASTRI_ON_REVIEW',
             'APPROVED ASTRI' => 'ASTRI_APPROVED',
@@ -2897,6 +2899,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'POST_ZEYN_FINANCE_ON_REVIEW' => 'On Review Finance Dokumen Tahap 2',
             'WAITING_ASTRI_SUBMISSION' => 'Menunggu Submit Astri',
             'ASTRI_ON_REVIEW' => 'On Review Astri',
+            'NEED_REVISE_ASTRI' => 'NEED REVISI ASTRI',
             'ASTRI_APPROVED' => 'Approved Astri',
             'PO_DONASI' => 'PO Donasi',
             'INVOICE' => 'Invoice',
@@ -3259,6 +3262,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'POST_ZEYN_FINANCE_ON_REVIEW',
             'WAITING_ASTRI_SUBMISSION',
             'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
             'ASTRI_APPROVED',
             'PO_DONASI',
             'INVOICE',
@@ -3664,7 +3668,7 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         if (in_array($groupKeyOrLabel, ['POST_ZEYN', 'POST PAYMENT ZEYN DOCUMENT'], true)
-            && in_array($currentStage, ['PRE_ZEYN_FINANCE_APPROVED', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)) {
+            && in_array($currentStage, ['PRE_ZEYN_FINANCE_APPROVED', 'RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true)) {
             if ($this->isPostDonationActionLocked($clusterId, $groupKeyOrLabel)) {
                 return false;
             }
@@ -3724,7 +3728,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 if ($financeRequired > 0 && (int) ($postSummary['finance_approved'] ?? 0) >= $financeRequired) {
                     return $this->setDonationStageFromSystem(
                         $clusterId,
-                        (int) ($postSummary['astri_rejected'] ?? 0) > 0 ? 'ASTRI_ON_REVIEW' : 'WAITING_ASTRI_SUBMISSION',
+                        (int) ($postSummary['astri_rejected'] ?? 0) > 0 ? 'NEED_REVISE_ASTRI' : 'WAITING_ASTRI_SUBMISSION',
                         ['post_zeyn_doc_approved_at' => date('Y-m-d H:i:s')]
                     );
                 }
@@ -3833,7 +3837,7 @@ class Batch_Approval_MyRep extends CI_Controller
             return 'Status belum bisa lanjut ke finance/release karena 9 dokumen pra-finance belum full approved Finance.';
         }
 
-        if (in_array($targetStage, ['POST_ZEYN_DOC_APPROVED', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW'], true)
+        if (in_array($targetStage, ['POST_ZEYN_DOC_APPROVED', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true)
             && !$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved((int) $clusterId, 'POST_ZEYN')) {
             return 'Status belum bisa lanjut ke Astri karena 6 dokumen setelah pembayaran belum full approved Finance.';
         }
@@ -4237,6 +4241,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 return 'warning';
             case 'REJECTED':
             case 'NEED_REVISE':
+            case 'NEED_REVISE_ASTRI':
                 return 'danger';
             case 'WAITING HO':
             case 'WAITING MYREP':

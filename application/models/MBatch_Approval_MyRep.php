@@ -627,7 +627,7 @@ class MBatch_Approval_MyRep extends CI_Model
 
         if ($status !== '') {
             $normalizedStatus = strtoupper($status);
-            $displayOnlyStatuses = ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE'];
+            $displayOnlyStatuses = ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE', 'NEED_REVISE_ASTRI'];
             if (in_array($normalizedStatus, $displayOnlyStatuses, true)) {
                 // Filtered after document summaries are calculated.
             } elseif (in_array($normalizedStatus, [
@@ -651,6 +651,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 'WAITING_ASTRI_SUBMISSION',
                 'ASTRI_ON_REVIEW',
                 'ASTRI_APPROVED',
+                'NEED_REVISE_ASTRI',
                 'PO_DONASI',
                 'INVOICE',
                 'DONE BATCH APPROVAL',
@@ -701,7 +702,7 @@ class MBatch_Approval_MyRep extends CI_Model
         }
         unset($row);
 
-        if (in_array(strtoupper($status), ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE'], true)) {
+        if (in_array(strtoupper($status), ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
             $rows = array_values(array_filter($rows, static function ($row) use ($status) {
                 return strtoupper((string) ($row['display_staging_status'] ?? '')) === strtoupper($status);
             }));
@@ -3005,7 +3006,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 return 'POST_ZEYN_FINANCE_ON_REVIEW';
             }
             if ($hasAnyAstriRejected) {
-                return 'ASTRI_ON_REVIEW';
+                return 'NEED_REVISE_ASTRI';
             }
             if ($allAstriRequired > 0 && $allAstriApproved >= $allAstriRequired) {
                 return 'ASTRI_APPROVED';
@@ -3071,13 +3072,17 @@ class MBatch_Approval_MyRep extends CI_Model
             }
         }
 
-        if ($stagingStatus === 'WAITING_ASTRI_SUBMISSION' || $stagingStatus === 'ASTRI_ON_REVIEW') {
+        if ($stagingStatus === 'WAITING_ASTRI_SUBMISSION' || $stagingStatus === 'ASTRI_ON_REVIEW' || $stagingStatus === 'NEED_REVISE_ASTRI') {
             if ($hasAnyAstriRejected) {
-                return 'ASTRI_ON_REVIEW';
+                return 'NEED_REVISE_ASTRI';
             }
             if ($allAstriRequired > 0 && $allAstriApproved >= $allAstriRequired) {
                 return 'ASTRI_APPROVED';
             }
+            if ((int) ($post['astri_submitted'] ?? 0) > 0 || (int) ($pre['astri_submitted'] ?? 0) > 0) {
+                return 'ASTRI_ON_REVIEW';
+            }
+            return 'WAITING_ASTRI_SUBMISSION';
         }
 
         if (in_array($stagingStatus, ['RELEASED', 'DONE BATCH APPROVAL'], true) && $postDocTotal > 0) {
