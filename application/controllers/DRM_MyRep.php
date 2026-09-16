@@ -16,6 +16,7 @@ class DRM_MyRep extends CI_Controller
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('DRM_MyRep');
             $this->myrepAccess->enforceByMethod('DRM_MyRep', (string) $this->router->fetch_method(), [
+                'tableData' => 'VIEW',
                 'approveBoq' => 'APPROVAL',
                 'rejectBoq' => 'APPROVAL',
                 'previewDrmImport' => 'TAMBAH',
@@ -58,6 +59,90 @@ class DRM_MyRep extends CI_Controller
         $this->load->view('DRM_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function tableData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        if (!$this->MDRM_MyRep->drmTablesReady()) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $selectedProjectType = strtoupper(trim((string) $this->input->post('project_type')));
+        if (!in_array($selectedProjectType, ['CLUSTER', 'MAINFEEDER', 'FWA'], true)) {
+            $selectedProjectType = '';
+        }
+
+        $tab = strtolower(trim((string) $this->input->post('tab')));
+        if (!in_array($tab, ['all', 'ny_batch', 'ny_atp'], true)) {
+            $tab = 'all';
+        }
+
+        $statusFilter = strtolower(trim((string) $this->input->post('status_filter')));
+        if (!in_array($statusFilter, ['waiting_input', 'waiting_ho', 'approved', 'rejected'], true)) {
+            $statusFilter = '';
+        }
+
+        $rabFilter = strtolower(trim((string) $this->input->post('rab_filter')));
+        if (!in_array($rabFilter, ['belum_rab', 'rab_done'], true)) {
+            $rabFilter = '';
+        }
+
+        $stageFilter = strtolower(trim((string) $this->input->post('stage_filter')));
+        if (!in_array($stageFilter, ['ny_batch', 'on_proses_drm', 'done_drm', 'rab_done', 'rejected'], true)) {
+            $stageFilter = '';
+        }
+
+        $searchPayload = $this->input->post('search');
+        $searchValue = is_array($searchPayload) ? trim((string) ($searchPayload['value'] ?? '')) : '';
+        $orderPayload = $this->input->post('order');
+        $order = [];
+        if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+            $order = [
+                'column' => $orderPayload[0]['column'] ?? null,
+                'dir' => $orderPayload[0]['dir'] ?? 'asc',
+            ];
+        }
+
+        $start = max(0, (int) $this->input->post('start'));
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        try {
+            $rows = $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus, '', [], [], '', '', $selectedProjectType);
+            $tabRows = $this->filterDrmTableRows($rows, $tab, '', '', '');
+            $searchedRows = $this->applyDrmTableSearch($tabRows, $searchValue);
+            $filteredRows = $this->filterDrmTableRows($searchedRows, $tab, $statusFilter, $rabFilter, $stageFilter);
+            $summary = [
+                'status' => $this->summarizeDrmStatusRows($filteredRows),
+                'rab' => $this->summarizeDrmRabRows($filteredRows),
+            ];
+
+            $recordsTotal = count($tabRows);
+            $recordsFiltered = count($filteredRows);
+            $this->sortDrmTableRows($filteredRows, $order);
+            $pageRows = array_slice($filteredRows, $start, $length);
+
+            $data = [];
+            $no = $start + 1;
+            foreach ($pageRows as $row) {
+                $data[] = $this->buildDrmTableRow($row, $no++);
+            }
+
+            $this->jsonDataTableResponse($recordsTotal, $recordsFiltered, $data, ['summary' => $summary]);
+        } catch (\Throwable $e) {
+            log_message('error', 'DRM tableData failed: ' . $e->getMessage());
+            $this->jsonDataTableResponse(0, 0, []);
+        }
     }
 
     public function downloadReport()
@@ -2047,6 +2132,348 @@ class DRM_MyRep extends CI_Controller
         }
 
         return 'RELEASED';
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data, array $extra = [])
+    {
+        $payload = [
+            'draw' => (int) $this->input->post('draw'),
+            'recordsTotal' => (int) $recordsTotal,
+            'recordsFiltered' => (int) $recordsFiltered,
+            'data' => $data,
+        ];
+        if (!empty($extra)) {
+            $payload = array_merge($payload, $extra);
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($payload));
+    }
+
+    private function filterDrmTableRows(array $rows, $tab, $statusFilter, $rabFilter, $stageFilter)
+    {
+        return array_values(array_filter($rows, function ($row) use ($tab, $statusFilter, $rabFilter, $stageFilter) {
+            if ($tab === 'ny_batch' && !$this->isNyBatchDrmRow($row)) {
+                return false;
+            }
+
+            if ($tab === 'ny_atp' && !$this->isNyAtpDrmRow($row)) {
+                return false;
+            }
+
+            if ($statusFilter !== '' && !in_array($statusFilter, $this->getDrmStatusTokens($row), true)) {
+                return false;
+            }
+
+            if ($rabFilter !== '' && $rabFilter !== $this->getDrmRabToken($row)) {
+                return false;
+            }
+
+            if ($stageFilter !== '' && !in_array($stageFilter, $this->getDrmStageTokens($row), true)) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
+    private function applyDrmTableSearch(array $rows, $searchValue)
+    {
+        $searchValue = trim((string) $searchValue);
+        if ($searchValue === '') {
+            return array_values($rows);
+        }
+
+        $needle = strtoupper($searchValue);
+        return array_values(array_filter($rows, static function ($row) use ($needle) {
+            $haystack = implode(' ', [
+                $row['cluster_name'] ?? '',
+                $row['cluster_code'] ?? '',
+                $row['regional_name'] ?? '',
+                $row['city_name'] ?? '',
+                $row['status_current'] ?? '',
+                $row['display_status_drm'] ?? $row['status_drm'] ?? '',
+                $row['rab_status'] ?? '',
+                $row['drm_cluster_status'] ?? '',
+                $row['drm_subfeeder_status'] ?? '',
+                $row['project_type'] ?? '',
+            ]);
+
+            return strpos(strtoupper($haystack), $needle) !== false;
+        }));
+    }
+
+    private function summarizeDrmStatusRows(array $rows)
+    {
+        $summary = [
+            'waitingInputCount' => 0,
+            'waitingHoCount' => 0,
+            'approvedCount' => 0,
+            'rejectedCount' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $tokens = $this->getDrmStatusTokens($row);
+            if (in_array('waiting_input', $tokens, true)) {
+                $summary['waitingInputCount']++;
+            }
+            if (in_array('waiting_ho', $tokens, true)) {
+                $summary['waitingHoCount']++;
+            }
+            if (in_array('approved', $tokens, true)) {
+                $summary['approvedCount']++;
+            }
+            if (in_array('rejected', $tokens, true)) {
+                $summary['rejectedCount']++;
+            }
+        }
+
+        return $summary;
+    }
+
+    private function summarizeDrmRabRows(array $rows)
+    {
+        $summary = [
+            'belumRabCount' => 0,
+            'rabDoneCount' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            if ($this->getDrmRabToken($row) === 'rab_done') {
+                $summary['rabDoneCount']++;
+                continue;
+            }
+
+            $summary['belumRabCount']++;
+        }
+
+        return $summary;
+    }
+
+    private function isNyBatchDrmRow(array $row)
+    {
+        if ((int) ($row['id_batch_approval'] ?? 0) <= 0) {
+            return true;
+        }
+
+        $stage = strtoupper(trim((string) ($row['batch_staging_status'] ?? 'DRAFT')));
+        $postStageOrder = [
+            'WAITING_POST_ZEYN_DOC',
+            'POST_ZEYN_DOC_ON_REVIEW',
+            'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
+            'WAITING_ASTRI_SUBMISSION',
+            'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
+            'ASTRI_APPROVED',
+            'PO_DONASI',
+            'INVOICE',
+            'COMPLETED',
+            'DONE BATCH APPROVAL',
+        ];
+
+        return !in_array($stage, $postStageOrder, true);
+    }
+
+    private function isNyAtpDrmRow(array $row)
+    {
+        $clusterBoqStatus = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
+        $subfeederBoqStatus = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? '')));
+        $atpStatus = strtoupper(trim((string) ($row['stage_atp_status'] ?? '')));
+
+        return ($clusterBoqStatus === 'APPROVED' || $subfeederBoqStatus === 'APPROVED') && $atpStatus !== 'DONE';
+    }
+
+    private function getDrmStageTokens(array $row)
+    {
+        $tokens = [];
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'RELEASED')));
+        $drmStatus = strtoupper(trim((string) ($row['display_status_drm'] ?? $row['status_drm'] ?? 'DRAFT')));
+        $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
+        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+        $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
+
+        if ($this->isNyBatchDrmRow($row)) {
+            $tokens[] = 'ny_batch';
+        }
+        if ($hasDrm && !in_array($drmStatus, ['COMPLETE', 'REJECTED'], true)) {
+            $tokens[] = 'on_proses_drm';
+        }
+        if ($hasDrm && $drmStatus === 'COMPLETE' && !in_array($currentStatus, $postDrmStatuses, true)) {
+            $tokens[] = 'done_drm';
+        }
+        if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
+            $tokens[] = 'rejected';
+        }
+        if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+            $tokens[] = 'rab_done';
+        }
+
+        return array_values(array_unique($tokens));
+    }
+
+    private function getDrmStatusTokens(array $row)
+    {
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
+        $clusterStatusLabel = $this->drmScopeStatusLabel($row['drm_cluster_status'] ?? '');
+        $subfeederStatusLabel = $this->drmScopeStatusLabel($row['drm_subfeeder_status'] ?? '');
+        $tokens = [strtolower(str_replace(' ', '_', $clusterStatusLabel))];
+        if (!$isMainfeeder) {
+            $tokens[] = strtolower(str_replace(' ', '_', $subfeederStatusLabel));
+        }
+        if (in_array('tidak_dibutuhkan', $tokens, true) || in_array('not_required', $tokens, true)) {
+            $tokens[] = 'approved';
+        }
+
+        return array_values(array_unique(array_filter($tokens)));
+    }
+
+    private function getDrmRabToken(array $row)
+    {
+        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+
+        return ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') ? 'rab_done' : 'belum_rab';
+    }
+
+    private function sortDrmTableRows(array &$rows, array $order)
+    {
+        $column = (int) ($order['column'] ?? 0);
+        if ($column === 0) {
+            return;
+        }
+
+        $dir = strtolower((string) ($order['dir'] ?? 'asc')) === 'desc' ? -1 : 1;
+        $columnMap = [
+            1 => 'cluster_name',
+            2 => 'city_name',
+            3 => 'released_at',
+            4 => 'hp_donasi',
+            5 => 'homepass_drm',
+            9 => 'status_current',
+        ];
+        $key = $columnMap[$column] ?? 'cluster_name';
+
+        usort($rows, static function ($a, $b) use ($key, $dir) {
+            $left = $a[$key] ?? '';
+            $right = $b[$key] ?? '';
+            if (is_numeric($left) && is_numeric($right)) {
+                return ((float) $left <=> (float) $right) * $dir;
+            }
+
+            return strnatcasecmp((string) $left, (string) $right) * $dir;
+        });
+    }
+
+    private function buildDrmTableRow(array $row, $no)
+    {
+        $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
+        $detailUrl = $isMainfeeder
+            ? base_url('DRM_MyRep/mainfeeder/' . (int) ($row['id_mainfeeder'] ?? 0))
+            : base_url('DRM_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
+        $clusterStatusLabel = $this->drmScopeStatusLabel($row['drm_cluster_status'] ?? '');
+        $subfeederStatusLabel = $this->drmScopeStatusLabel($row['drm_subfeeder_status'] ?? '');
+        $statusSearchTokens = array_map(static function ($token) {
+            return 'drm_filter_' . $token;
+        }, $this->getDrmStatusTokens($row));
+        $rabFilterToken = $this->getDrmRabToken($row);
+        $rabStatusLabel = $rabFilterToken === 'rab_done' ? 'RAB DONE' : 'BELUM RAB DONE';
+        $stageSearchTokens = array_map(static function ($token) {
+            return 'drm_stage_filter_' . $token;
+        }, $this->getDrmStageTokens($row));
+        $clusterName = (string) ($row['cluster_name'] ?? '-');
+        $clusterHtml = (!empty($row['id_myrep_cluster']) || !empty($row['id_mainfeeder']))
+            ? '<a href="' . $this->attr($detailUrl) . '" class="font-weight-bold">' . $this->html($clusterName) . '</a>'
+            : '<strong>' . $this->html($clusterName) . '</strong>';
+        if ($isMainfeeder) {
+            $clusterHtml .= '<div><span class="badge badge-warning">' . $this->html($projectType) . '</span></div>';
+        }
+        $clusterHtml .= '<div class="text-muted small">' . $this->html((string) ($row['regional_name'] ?? '-')) . '</div>';
+
+        $statusHtml = '<span class="sr-only">' . $this->html(implode(' ', $statusSearchTokens)) . '</span>'
+            . '<div class="drm-status-scope">'
+            . '<div class="drm-status-scope__item"><span class="drm-status-scope__name">' . ($isMainfeeder ? 'Mainfeeder' : 'Cluster') . ' :</span> '
+            . '<span class="badge badge-' . $this->attr($this->drmBadgeClass($clusterStatusLabel)) . ' drm-status-scope__badge">' . $this->html($clusterStatusLabel) . '</span></div>';
+        if (!$isMainfeeder) {
+            $statusHtml .= '<div class="drm-status-scope__item"><span class="drm-status-scope__name">Subfeeder :</span> '
+                . '<span class="badge badge-' . $this->attr($this->drmBadgeClass($subfeederStatusLabel)) . ' drm-status-scope__badge">' . $this->html($subfeederStatusLabel) . '</span></div>';
+        }
+        $statusHtml .= '</div>';
+
+        $actionHtml = '';
+        if ($isMainfeeder) {
+            $actionHtml = '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-outline-primary">' . ($hasDrm ? 'Detail' : 'Input DRM') . '</a>';
+        } elseif ($hasDrm) {
+            $actionHtml = '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-outline-primary">Detail</a>'
+                . '<form method="post" action="' . $this->attr(base_url('DRM_MyRep/deleteCluster')) . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?\');">'
+                . '<input type="hidden" name="cluster_id" value="' . (int) ($row['id_myrep_cluster'] ?? 0) . '">'
+                . '<button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>'
+                . '</form>';
+        } else {
+            $actionHtml = '<button type="button" class="btn btn-sm btn-outline-primary js-start-drm" data-toggle="modal" data-target="#modal-drm-create"'
+                . ' data-cluster_id="' . (int) ($row['id_myrep_cluster'] ?? 0) . '"'
+                . ' data-city_name="' . $this->attr((string) ($row['city_name'] ?? '')) . '">Input DRM</button>';
+        }
+
+        return [
+            (int) $no,
+            $clusterHtml,
+            $this->html((string) ($row['city_name'] ?? '-')),
+            !empty($row['released_at']) ? $this->html((string) $row['released_at']) : '-',
+            number_format((float) ($row['hp_donasi'] ?? 0), 0, ',', '.'),
+            number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.'),
+            $statusHtml,
+            (int) ($row['doc_approved'] ?? 0) . '/' . (int) ($row['doc_total'] ?? 0) . ' approved',
+            '<span class="sr-only">drm_rab_filter_' . $this->html($rabFilterToken) . '</span><span class="badge badge-' . $this->attr($this->drmBadgeClass($rabStatusLabel)) . '">' . $this->html($rabStatusLabel) . '</span>',
+            '<span class="sr-only">' . $this->html(implode(' ', $stageSearchTokens)) . '</span><span class="badge badge-' . $this->attr($this->drmBadgeClass($row['status_current'] ?? 'RELEASED')) . '">' . $this->html((string) ($row['status_current'] ?? 'RELEASED')) . '</span>',
+            $actionHtml,
+        ];
+    }
+
+    private function drmBadgeClass($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'DONE':
+            case 'COMPLETE':
+            case 'APPROVED':
+            case 'RAB DONE':
+            case 'TIDAK DIBUTUHKAN':
+            case 'NOT REQUIRED':
+            case 'DRM':
+            case 'RFS':
+            case 'ATP':
+                return 'success';
+            case 'ON REVIEW':
+            case 'WAITING HO':
+            case 'WAITING APPROVE':
+                return 'warning';
+            case 'REJECTED':
+                return 'danger';
+            case 'WAITING INPUT':
+                return 'info';
+            default:
+                return 'secondary';
+        }
+    }
+
+    private function drmScopeStatusLabel($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        return $status !== '' ? $status : 'WAITING INPUT';
+    }
+
+    private function html($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function attr($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     }
 
     private function normalizeDate($date)

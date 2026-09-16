@@ -19,6 +19,13 @@ $nyBatchRows = [];
 $nyAtpRows = [];
 $allDrmRows = $clusterRows;
 $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
+$drmStageSummary = [
+    'NY_BATCH' => ['label' => 'NY Batch', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-ny-batch-tab', 'filter' => ''],
+    'ON_PROSES_DRM' => ['label' => 'On Proses DRM', 'class' => 'primary', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'on_proses_drm'],
+    'DONE_DRM' => ['label' => 'Done DRM', 'class' => 'success', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'done_drm'],
+    'RAB_DONE' => ['label' => 'RAB Done', 'class' => 'success', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rab_done'],
+    'REJECTED' => ['label' => 'Rejected', 'class' => 'danger', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rejected'],
+];
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'TAMBAH') : true;
 
 foreach ($eligibleClusterOptions as $clusterOption) {
@@ -77,28 +84,42 @@ foreach ($clusterRows as $row) {
     if ($isNyBatchRow($row)) {
         $summaryNyBatch++;
         $summaryNyBatchHp += $homepassBase;
+        $drmStageSummary['NY_BATCH']['count']++;
+        $drmStageSummary['NY_BATCH']['hp'] += $homepassBase;
     }
 
     if ($hasDrm && !in_array($drmStatus, ['COMPLETE', 'REJECTED'], true)) {
         $summaryOnProses++;
         $summaryOnProsesHp += $summaryHomepass;
+        $drmStageSummary['ON_PROSES_DRM']['count']++;
+        $drmStageSummary['ON_PROSES_DRM']['hp'] += $summaryHomepass;
     }
 
     if ($hasDrm && $drmStatus === 'COMPLETE' && !in_array($currentStatus, $postDrmStatuses, true)) {
         $summaryDone++;
         $summaryDoneHp += $summaryHomepass;
+        $drmStageSummary['DONE_DRM']['count']++;
+        $drmStageSummary['DONE_DRM']['hp'] += $summaryHomepass;
     }
 
     if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
         $summaryRejected++;
         $summaryRejectedHp += $summaryHomepass;
+        $drmStageSummary['REJECTED']['count']++;
+        $drmStageSummary['REJECTED']['hp'] += $summaryHomepass;
     }
 
     if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
         $summaryRabDone++;
         $summaryRabDoneHp += $summaryHomepass;
+        $drmStageSummary['RAB_DONE']['count']++;
+        $drmStageSummary['RAB_DONE']['hp'] += $summaryHomepass;
     }
 }
+
+$drmStageSummary = array_filter($drmStageSummary, static function ($stageData) {
+    return (int) ($stageData['count'] ?? 0) > 0;
+});
 
 $buildDrmStatusSummary = static function (array $rows) {
     $summary = [
@@ -223,6 +244,63 @@ if (!function_exists('drmScopeStatusLabel')) {
     }
 }
 
+if (!function_exists('drmIsNyBatchRow')) {
+    function drmIsNyBatchRow(array $row)
+    {
+        if ((int) ($row['id_batch_approval'] ?? 0) <= 0) {
+            return true;
+        }
+
+        $stage = strtoupper(trim((string) ($row['batch_staging_status'] ?? 'DRAFT')));
+        $postStageOrder = [
+            'WAITING_POST_ZEYN_DOC',
+            'POST_ZEYN_DOC_ON_REVIEW',
+            'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
+            'WAITING_ASTRI_SUBMISSION',
+            'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
+            'ASTRI_APPROVED',
+            'PO_DONASI',
+            'INVOICE',
+            'COMPLETED',
+            'DONE BATCH APPROVAL',
+        ];
+
+        return !in_array($stage, $postStageOrder, true);
+    }
+}
+
+if (!function_exists('drmStageSearchTokens')) {
+    function drmStageSearchTokens(array $row)
+    {
+        $tokens = [];
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'RELEASED')));
+        $drmStatus = strtoupper(trim((string) ($row['display_status_drm'] ?? $row['status_drm'] ?? 'DRAFT')));
+        $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
+        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+        $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
+
+        if (drmIsNyBatchRow($row)) {
+            $tokens[] = 'ny_batch';
+        }
+        if ($hasDrm && !in_array($drmStatus, ['COMPLETE', 'REJECTED'], true)) {
+            $tokens[] = 'on_proses_drm';
+        }
+        if ($hasDrm && $drmStatus === 'COMPLETE' && !in_array($currentStatus, $postDrmStatuses, true)) {
+            $tokens[] = 'done_drm';
+        }
+        if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
+            $tokens[] = 'rejected';
+        }
+        if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+            $tokens[] = 'rab_done';
+        }
+
+        return array_values(array_unique($tokens));
+    }
+}
+
 $renderDrmTableRows = static function (array $rows) {
     foreach ($rows as $index => $row) {
         $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
@@ -249,8 +327,11 @@ $renderDrmTableRows = static function (array $rows) {
         $rabDone = $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
         $rabFilterToken = $rabDone ? 'rab_done' : 'belum_rab';
         $rabStatusLabel = $rabDone ? 'RAB DONE' : 'BELUM RAB DONE';
+        $stageSearchTokens = array_map(static function ($token) {
+            return 'drm_stage_filter_' . $token;
+        }, drmStageSearchTokens($row));
         ?>
-        <tr data-drm-statuses="<?= htmlspecialchars(implode(' ', $statusTokens), ENT_QUOTES, 'UTF-8') ?>" data-drm-rab="<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?>">
+        <tr data-drm-statuses="<?= htmlspecialchars(implode(' ', $statusTokens), ENT_QUOTES, 'UTF-8') ?>" data-drm-rab="<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?>" data-drm-stages="<?= htmlspecialchars(implode(' ', drmStageSearchTokens($row)), ENT_QUOTES, 'UTF-8') ?>">
             <td><?= $index + 1 ?></td>
             <td>
                 <?php if (!empty($row['id_myrep_cluster']) || !empty($row['id_mainfeeder'])): ?>
@@ -289,7 +370,10 @@ $renderDrmTableRows = static function (array $rows) {
                 <span class="sr-only">drm_rab_filter_<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?></span>
                 <span class="badge badge-<?= drmBadgeClass($rabStatusLabel) ?>"><?= htmlspecialchars($rabStatusLabel, ENT_QUOTES, 'UTF-8') ?></span>
             </td>
-            <td><span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span></td>
+            <td>
+                <span class="sr-only"><?= htmlspecialchars(implode(' ', $stageSearchTokens), ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span>
+            </td>
             <td>
                 <?php if ($isMainfeeder): ?>
                     <a href="<?= $detailUrl ?>" class="btn btn-sm btn-outline-primary"><?= $hasDrm ? 'Detail' : 'Input DRM' ?></a>
@@ -335,9 +419,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                     <th>Aksi</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php $renderDrmTableRows($rows); ?>
-            </tbody>
+            <tbody></tbody>
             <tfoot>
                 <tr>
                     <th colspan="4" class="text-right">TOTAL</th>
@@ -394,8 +476,8 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                 <div class="row">
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label class="drm-field-label">Tipe Project</label>
-                                            <select name="project_type" class="form-control drm-input">
+                                            <label class="drm-field-label" for="drm_project_type">Tipe Project</label>
+                                            <select id="drm_project_type" name="project_type" class="form-control drm-input">
                                                 <option value="">Semua Tipe</option>
                                                 <option value="CLUSTER" <?= $selectedProjectType === 'CLUSTER' ? 'selected' : '' ?>>Cluster</option>
                                                 <option value="MAINFEEDER" <?= $selectedProjectType === 'MAINFEEDER' ? 'selected' : '' ?>>Mainfeeder</option>
@@ -405,8 +487,8 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label class="drm-field-label">Kota</label>
-                                            <select name="city" class="form-control drm-input">
+                                            <label class="drm-field-label" for="drm_city">Kota</label>
+                                            <select id="drm_city" name="city" class="form-control drm-input">
                                                 <option value="">Semua Kota</option>
                                                 <?php foreach ($cityOptions as $cityOption): ?>
                                                     <option value="<?= htmlspecialchars($cityOption) ?>" <?= $selectedCity === strtoupper($cityOption) ? 'selected' : '' ?>><?= htmlspecialchars($cityOption) ?></option>
@@ -416,8 +498,8 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label class="drm-field-label">Status</label>
-                                            <select name="status" class="form-control drm-input">
+                                            <label class="drm-field-label" for="drm_status">Status</label>
+                                            <select id="drm_status" name="status" class="form-control drm-input">
                                                 <option value="">Semua Status</option>
                                                 <?php foreach (array_unique($statusOptions) as $statusOption): ?>
                                                     <option value="<?= $statusOption ?>" <?= $selectedStatus === $statusOption ? 'selected' : '' ?>><?= $statusOption ?></option>
@@ -440,70 +522,37 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md">
-                    <div class="small-box bg-info shadow-sm drm-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryNyBatch, 0, ',', '.') ?></h3>
-                            <p>NY BATCH</p>
-                            <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryNyBatchHp, 0, ',', '.') ?></p>
+            <?php if (!empty($drmStageSummary)): ?>
+                <div class="card card-outline card-info shadow-sm drm-stage-summary-card">
+                    <div class="card-header drm-section-header">
+                        <div>
+                            <h3 class="card-title mb-1">Summary Staging DRM</h3>
                         </div>
-                        <div class="icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                    <div class="card-body">
+                        <div class="drm-stage-summary-grid">
+                            <?php foreach ($drmStageSummary as $stageCode => $stageData): ?>
+                                <a
+                                    href="#"
+                                    class="drm-stage-summary-item drm-stage-summary-item--<?= htmlspecialchars((string) ($stageData['class'] ?? 'info'), ENT_QUOTES, 'UTF-8') ?> js-drm-stage-summary-filter"
+                                    data-drm-tab="<?= htmlspecialchars((string) ($stageData['tab'] ?? '#drm-all-tab'), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-drm-stage="<?= htmlspecialchars((string) ($stageData['filter'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-role-guard-exempt="1">
+                                    <span class="drm-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="drm-stage-summary-item__count"><?= number_format((int) ($stageData['count'] ?? 0), 0, ',', '.') ?></span>
+                                    <span class="drm-stage-summary-item__meta">HP <?= number_format((float) ($stageData['hp'] ?? 0), 0, ',', '.') ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md">
-                    <div class="small-box bg-primary shadow-sm drm-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryOnProses, 0, ',', '.') ?></h3>
-                            <p>On Proses</p>
-                            <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryOnProsesHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-folder-open"></i></div>
-                    </div>
-                </div>
-                <div class="col-md">
-                    <div class="small-box bg-success shadow-sm drm-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryDone, 0, ',', '.') ?></h3>
-                            <p>Done DRM</p>
-                            <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryDoneHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-check-circle"></i></div>
-                    </div>
-                </div>
-                <div class="col-md">
-                    <div class="small-box bg-danger shadow-sm drm-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryRejected, 0, ',', '.') ?></h3>
-                            <p>Rejected</p>
-                            <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryRejectedHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-times-circle"></i></div>
-                    </div>
-                </div>
-                <div class="col-md">
-                    <div class="small-box bg-success shadow-sm drm-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryRabDone, 0, ',', '.') ?></h3>
-                            <p>RAB DONE</p>
-                            <p class="drm-summary-box__meta mb-0">HP <?= number_format($summaryRabDoneHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-clipboard-check"></i></div>
-                    </div>
-                </div>
-            </div>
+            <?php endif; ?>
 
             <div class="row">
                 <div class="col-md-12">
                     <div class="drm-toolbar">
                         <?php if ($isReady && $canTambah): ?>
-                            <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-drm-create">
-                                <i class="fas fa-plus mr-1"></i> Input DRM
-                            </button>
-                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-drm-import">
-                                <i class="fas fa-file-import mr-1"></i> Import DRM
-                            </button>
-                            <button type="button" class="btn budget-btn budget-btn--success ml-2" data-toggle="modal" data-target="#modal-drm-download-report">
+                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-drm-download-report">
                                 <i class="fas fa-download mr-1"></i> Download Report DRM
                             </button>
                         <?php endif; ?>
@@ -524,19 +573,19 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                 <div class="drm-tab-section">
                                     <div class="drm-tab-section__label">Flow</div>
                                     <ul class="nav nav-tabs drm-monitor-tabs" id="drm-monitor-tab" role="tablist">
-                                        <li class="nav-item">
+                                        <li class="nav-item" role="presentation">
                                             <a class="nav-link active" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="true">
                                                 All DRM
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
-                                        <li class="nav-item">
+                                        <li class="nav-item" role="presentation">
                                             <a class="nav-link" id="drm-ny-batch-tab" data-toggle="tab" href="#drm-ny-batch-pane" role="tab" aria-controls="drm-ny-batch-pane" aria-selected="false">
                                                 NY BATCH
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($nyBatchRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
-                                        <li class="nav-item">
+                                        <li class="nav-item" role="presentation">
                                             <a class="nav-link" id="drm-ny-atp-tab" data-toggle="tab" href="#drm-ny-atp-pane" role="tab" aria-controls="drm-ny-atp-pane" aria-selected="false">
                                                 NY ATP
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($nyAtpRows), 0, ',', '.') ?></span>
@@ -917,20 +966,82 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         cursor: not-allowed;
     }
 
-    .drm-summary-box {
-        border-radius: 18px;
+    .drm-stage-summary-card {
+        border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+        margin-bottom: 1rem;
     }
 
-    .drm-summary-box .inner h3 {
-        font-weight: 800;
+    .drm-stage-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: .75rem;
     }
 
-    .drm-summary-box__meta {
-        font-size: .88rem;
-        font-weight: 600;
-        opacity: .92;
+    .drm-stage-summary-item {
+        display: grid;
+        min-height: 108px;
+        padding: .85rem .9rem;
+        border: 1px solid #dbe7f3;
+        border-left: 5px solid #64748b;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f172a;
+        text-decoration: none;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .drm-stage-summary-item:hover,
+    .drm-stage-summary-item:focus {
+        color: #0f172a;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+        outline: none;
+    }
+
+    .drm-stage-summary-item.is-active {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18), 0 16px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    .drm-stage-summary-item--success {
+        border-left-color: #16a34a;
+    }
+
+    .drm-stage-summary-item--info {
+        border-left-color: #0284c7;
+    }
+
+    .drm-stage-summary-item--primary {
+        border-left-color: #2563eb;
+    }
+
+    .drm-stage-summary-item--danger {
+        border-left-color: #dc2626;
+    }
+
+    .drm-stage-summary-item__label {
+        color: #475569;
+        font-size: .76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .drm-stage-summary-item__count {
+        display: block;
+        margin-top: .15rem;
+        font-size: 1.55rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .drm-stage-summary-item__meta {
+        display: block;
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
     }
 
     .drm-toolbar {
@@ -1589,6 +1700,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 var drmTables = {};
                 var drmStatusFilter = '';
                 var drmRabFilter = '';
+                var drmStageFilter = '';
+                var drmAjaxUrl = <?= json_encode(base_url('DRM_MyRep/tableData')) ?>;
+                var drmBaseFilters = {
+                    city: <?= json_encode($selectedCity) ?>,
+                    status: <?= json_encode($selectedStatus) ?>,
+                    project_type: <?= json_encode($selectedProjectType) ?>
+                };
                 var drmTableConfigs = {
                     '#table_drm_ny_batch': { tab: 'ny_batch' },
                     '#table_drm_ny_atp': { tab: 'ny_atp' },
@@ -1623,6 +1741,15 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     return String($row.attr('data-drm-rab') || '') === rab;
                 }
 
+                function rowMatchesStage($row, stage) {
+                    if (!stage) {
+                        return true;
+                    }
+
+                    var stages = String($row.attr('data-drm-stages') || '').split(/\s+/);
+                    return stages.indexOf(stage) !== -1;
+                }
+
                 function buildStatusCountsFromTable(table) {
                     var summary = {
                         waitingInputCount: 0,
@@ -1638,6 +1765,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     table.rows().nodes().each(function (row) {
                         var $row = $(row);
                         if (!rowMatchesRab($row, drmRabFilter)) {
+                            return;
+                        }
+                        if (!rowMatchesStage($row, drmStageFilter)) {
                             return;
                         }
 
@@ -1674,6 +1804,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         if (!rowMatchesStatus($row, drmStatusFilter)) {
                             return;
                         }
+                        if (!rowMatchesStage($row, drmStageFilter)) {
+                            return;
+                        }
 
                         if (String($row.attr('data-drm-rab') || '') === 'rab_done') {
                             summary.rabDoneCount++;
@@ -1686,7 +1819,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 }
 
                 function updateDrmStatusCounts(table, tab) {
-                    var summary = table ? buildStatusCountsFromTable(table) : (drmStatusSummaryByTab[tab] || {});
+                    var activeTab = tab || (drmTableConfigs[getActiveDrmTableSelector()] ? drmTableConfigs[getActiveDrmTableSelector()].tab : 'all');
+                    var summary = drmStatusSummaryByTab[activeTab] || {};
                     $('[data-drm-status-count]').each(function () {
                         var key = String($(this).data('drm-status-count') || '');
                         var value = Number(summary[key] || 0);
@@ -1695,10 +1829,31 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 }
 
                 function updateDrmRabCounts(table, tab) {
-                    var summary = table ? buildRabCountsFromTable(table) : (drmRabSummaryByTab[tab] || {});
+                    var activeTab = tab || (drmTableConfigs[getActiveDrmTableSelector()] ? drmTableConfigs[getActiveDrmTableSelector()].tab : 'all');
+                    var summary = drmRabSummaryByTab[activeTab] || {};
                     $('[data-drm-rab-count]').each(function () {
                         var key = String($(this).data('drm-rab-count') || '');
                         var value = Number(summary[key] || 0);
+                        $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    });
+                }
+
+                function applyDrmAjaxSummary(payload) {
+                    if (!payload || !payload.summary) {
+                        return;
+                    }
+
+                    var statusSummary = payload.summary.status || {};
+                    $('[data-drm-status-count]').each(function () {
+                        var key = String($(this).data('drm-status-count') || '');
+                        var value = Number(statusSummary[key] || 0);
+                        $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    });
+
+                    var rabSummary = payload.summary.rab || {};
+                    $('[data-drm-rab-count]').each(function () {
+                        var key = String($(this).data('drm-rab-count') || '');
+                        var value = Number(rabSummary[key] || 0);
                         $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     });
                 }
@@ -1710,16 +1865,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                     Object.keys(drmTables).forEach(function (selector) {
                         if (drmTables[selector] && drmTables[selector] !== table) {
-                            drmTables[selector].column(6).search('');
-                            drmTables[selector].column(8).search('');
+                            drmTables[selector].search('');
                         }
                     });
-                    var statusKeyword = drmStatusFilter !== '' ? 'drm_filter_' + drmStatusFilter : '';
-                    var rabKeyword = drmRabFilter !== '' ? 'drm_rab_filter_' + drmRabFilter : '';
-                    table.column(6).search(statusKeyword, false, false);
-                    table.column(8).search(rabKeyword, false, false).draw();
-                    updateDrmStatusCounts(table);
-                    updateDrmRabCounts(table);
+
+                    table.ajax.reload(null, true);
                 }
 
                 function syncDrmStatusFilterButtons() {
@@ -1734,13 +1884,49 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     });
                 }
 
+                function syncDrmStageSummaryButtons() {
+                    $('.js-drm-stage-summary-filter').each(function () {
+                        var stage = String($(this).data('drm-stage') || '').trim();
+                        var tab = String($(this).data('drm-tab') || '#drm-all-tab').trim();
+                        var isActiveTab = $(tab).hasClass('active');
+                        $(this).toggleClass('is-active', isActiveTab && stage === drmStageFilter);
+                    });
+                }
+
                 $('.js-drm-monitor-table').each(function () {
                     var selector = '#' + $(this).attr('id');
+                    var config = drmTableConfigs[selector] || { tab: 'all' };
                     drmTables[selector] = $(this).DataTable({
+                        processing: true,
+                        serverSide: true,
                         responsive: false,
                         scrollX: true,
                         autoWidth: false,
+                        deferRender: true,
                         order: [[0, 'asc']],
+                        ajax: {
+                            url: drmAjaxUrl,
+                            type: 'POST',
+                            data: function (data) {
+                                data.city = drmBaseFilters.city;
+                                data.status = drmBaseFilters.status;
+                                data.project_type = drmBaseFilters.project_type;
+                                data.tab = config.tab;
+                                data.status_filter = drmStatusFilter;
+                                data.rab_filter = drmRabFilter;
+                                data.stage_filter = drmStageFilter;
+                            },
+                            dataSrc: function (payload) {
+                                if (getActiveDrmTableSelector() === selector) {
+                                    applyDrmAjaxSummary(payload);
+                                }
+                                return payload && payload.data ? payload.data : [];
+                            }
+                        },
+                        columnDefs: [
+                            { targets: [6, 8, 9, 10], orderable: false },
+                            { targets: [1, 6, 8, 9, 10], searchable: true }
+                        ],
                         language: {
                             emptyTable: 'Belum ada data DRM.'
                         },
@@ -1765,6 +1951,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var activeTable = drmTables[tableSelector];
                     updateDrmStatusCounts(activeTable, activeTab);
                     updateDrmRabCounts(activeTable, activeTab);
+                    syncDrmStageSummaryButtons();
 
                     Object.keys(drmTables).forEach(function (selector) {
                         drmTables[selector].columns.adjust();
@@ -1776,6 +1963,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var nextStatus = String($(this).data('drm-status') || '').trim();
                     drmStatusFilter = drmStatusFilter === nextStatus ? '' : nextStatus;
                     syncDrmStatusFilterButtons();
+                    syncDrmStageSummaryButtons();
                     applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
                 });
 
@@ -1783,7 +1971,36 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var nextRab = String($(this).data('drm-rab') || '').trim();
                     drmRabFilter = drmRabFilter === nextRab ? '' : nextRab;
                     syncDrmRabFilterButtons();
+                    syncDrmStageSummaryButtons();
                     applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
+                });
+
+                $(document).on('click', '.js-drm-stage-summary-filter', function (event) {
+                    event.preventDefault();
+                    var $button = $(this);
+                    var targetTab = String($button.data('drm-tab') || '#drm-all-tab').trim();
+                    var nextStage = String($button.data('drm-stage') || '').trim();
+                    var isSameActive = $button.hasClass('is-active');
+
+                    drmStatusFilter = '';
+                    drmRabFilter = '';
+                    drmStageFilter = isSameActive ? '' : nextStage;
+                    syncDrmStatusFilterButtons();
+                    syncDrmRabFilterButtons();
+                    syncDrmStageSummaryButtons();
+
+                    var applySummaryFilter = function () {
+                        var table = drmTables[getActiveDrmTableSelector()];
+                        syncDrmStageSummaryButtons();
+                        applyDrmFiltersToTable(table);
+                    };
+
+                    if ($(targetTab).length && !$(targetTab).hasClass('active')) {
+                        $(targetTab).one('shown.bs.tab', applySummaryFilter);
+                        $(targetTab).tab('show');
+                    } else {
+                        applySummaryFilter();
+                    }
                 });
             }
 

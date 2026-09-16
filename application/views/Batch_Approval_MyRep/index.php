@@ -697,45 +697,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="small-box bg-info shadow-sm batch-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryNyBatch, 0, ',', '.') ?></h3>
-                            <p>NY BATCH</p>
-                        </div>
-                        <div class="icon"><i class="fas fa-layer-group"></i></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-primary shadow-sm batch-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryOnProses, 0, ',', '.') ?></h3>
-                            <p>On Proses</p>
-                        </div>
-                        <div class="icon"><i class="fas fa-folder-open"></i></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-success shadow-sm batch-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryDone, 0, ',', '.') ?></h3>
-                            <p>Done Batch</p>
-                        </div>
-                        <div class="icon"><i class="fas fa-check-circle"></i></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-danger shadow-sm batch-summary-box">
-                        <div class="inner">
-                            <h3><?= number_format($summaryRejected, 0, ',', '.') ?></h3>
-                            <p>Rejected</p>
-                        </div>
-                        <div class="icon"><i class="fas fa-times-circle"></i></div>
-                    </div>
-                </div>
-            </div>
-
             <?php if (!empty($orderedDonationStageSummary)): ?>
                 <div class="card card-outline card-info shadow-sm batch-stage-summary-card">
                     <div class="card-header batch-section-header">
@@ -1724,12 +1685,6 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border-color: #d7e3f1;
         color: #64748b;
         cursor: not-allowed;
-    }
-
-    .batch-summary-box {
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
     }
 
     .batch-stage-summary-card {
