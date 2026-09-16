@@ -712,6 +712,10 @@ class MBatch_Approval_MyRep extends CI_Model
         }
         unset($row);
 
+        $rows = array_values(array_filter($rows, function ($row) {
+            return $this->shouldShowBatchRowByRabGate($row);
+        }));
+
         if (in_array(strtoupper($status), ['WAITING DOC', 'COMPLETED', 'WAITING_PRE_ZEYN_DOC', 'WAITING_POST_ZEYN_DOC', 'NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
             $rows = array_values(array_filter($rows, static function ($row) use ($status) {
                 return strtoupper((string) ($row['display_staging_status'] ?? '')) === strtoupper($status);
@@ -3187,6 +3191,43 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         return $stagingStatus !== '' ? $stagingStatus : 'DRAFT';
+    }
+
+    private function shouldShowBatchRowByRabGate(array $row)
+    {
+        $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
+            || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
+        if ($hasRabDone) {
+            return true;
+        }
+
+        $advancedStages = $this->batchStagesAtOrAboveSakuProcess();
+        $displayStage = strtoupper(trim((string) ($row['display_staging_status'] ?? '')));
+        $storedStage = strtoupper(trim((string) ($row['staging_status'] ?? '')));
+
+        return in_array($displayStage, $advancedStages, true) || in_array($storedStage, $advancedStages, true);
+    }
+
+    private function batchStagesAtOrAboveSakuProcess()
+    {
+        return [
+            'PRE_ZEYN_FINANCE_APPROVED',
+            'WAITING_SAKU_FINANCE_APPROVAL',
+            'WAITING_FINANCE_RELEASE',
+            'RELEASED',
+            'WAITING_POST_ZEYN_DOC',
+            'POST_ZEYN_DOC_ON_REVIEW',
+            'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
+            'WAITING_ASTRI_SUBMISSION',
+            'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
+            'ASTRI_APPROVED',
+            'PO_DONASI',
+            'INVOICE',
+            'COMPLETED',
+            'DONE BATCH APPROVAL',
+        ];
     }
 }
 
