@@ -185,43 +185,56 @@ if (!function_exists('batchDetailLatestDateFromRows')) {
 }
 
 if (!function_exists('batchDetailSlaStatus')) {
-    function batchDetailSlaStatus($targetDate, $actualDate)
+    function batchDetailSlaStatus($startDate, $targetDate, $actualDate)
     {
+        $startTimestamp = strtotime((string) $startDate);
         $targetTimestamp = strtotime((string) $targetDate);
         $actualTimestamp = strtotime((string) $actualDate);
+        if (!$startTimestamp) {
+            return ['label' => 'Belum Mulai', 'class' => 'secondary', 'icon' => 'clock'];
+        }
         if (!$actualTimestamp) {
-            return ['label' => 'Pending', 'class' => 'secondary', 'icon' => 'clock'];
+            if ($targetTimestamp && strtotime(date('Y-m-d')) > $targetTimestamp) {
+                return ['label' => 'Over SLA', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
+            }
+            return ['label' => 'Berjalan', 'class' => 'warning', 'icon' => 'clock'];
         }
         if (!$targetTimestamp || $actualTimestamp <= $targetTimestamp) {
-            return ['label' => 'Tepat Waktu', 'class' => 'success', 'icon' => 'check-circle'];
+            return ['label' => 'Done Tepat Waktu', 'class' => 'success', 'icon' => 'check-circle'];
         }
 
-        return ['label' => 'Terlambat', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
+        return ['label' => 'Done Telat', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
     }
 }
 
-if (!function_exists('batchDetailSlaRemainingDays')) {
-    function batchDetailSlaRemainingDays($targetDate, $actualDate)
+if (!function_exists('batchDetailCalendarDayDiff')) {
+    function batchDetailCalendarDayDiff($startDate, $endDate = '')
     {
-        $targetTimestamp = strtotime((string) $targetDate);
-        if (!$targetTimestamp) {
+        $startTimestamp = strtotime((string) $startDate);
+        if (!$startTimestamp) {
             return '-';
         }
 
-        $endTimestamp = strtotime((string) $actualDate);
+        $endTimestamp = strtotime((string) $endDate);
         if (!$endTimestamp) {
             $endTimestamp = strtotime(date('Y-m-d'));
         }
 
-        $target = new DateTime(date('Y-m-d', $targetTimestamp));
+        $start = new DateTime(date('Y-m-d', $startTimestamp));
         $end = new DateTime(date('Y-m-d', $endTimestamp));
-        $diff = (int) $end->diff($target)->days;
+        return (int) $start->diff($end)->days;
+    }
+}
 
-        if ($end <= $target) {
-            return $diff . ' hari';
+if (!function_exists('batchDetailSlaWorkText')) {
+    function batchDetailSlaWorkText($startDate, $actualDate)
+    {
+        $diff = batchDetailCalendarDayDiff($startDate, $actualDate);
+        if ($diff === '-') {
+            return '-';
         }
 
-        return '-' . $diff . ' hari';
+        return $diff . ' hari';
     }
 }
 
@@ -432,13 +445,14 @@ $releaseNominalDefault = $releaseNominal !== null ? $releaseNominal : $approvalN
 $releaseVariance = $releaseNominal !== null && $approvalNominal !== null ? $releaseNominal - $approvalNominal : null;
 $slaStartDate = trim((string) ($cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? $cluster['created_at'] ?? ''));
 $slaRows = [];
-$slaCumulativeDays = 0;
 $slaDefinitions = [
-    ['Pengajuan Donasi', 'AREA', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? ''],
+    ['Pengajuan Donasi', 'AREA', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? '', $slaStartDate],
     ['Release Batch Approval', 'MYREP', 1, $cluster['astri_batch_approved_at'] ?? ''],
     ['Upload Dokumen Tahap 1 Pra-Finance', 'AREA', 2, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'uploaded_at', true)],
     ['Approve SITAC Tahap 1', 'SITAC TKM', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
     ['Approve Finance Tahap 1', 'FINANCE TKM', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Pengajuan Saku', 'AREA', 1, $cluster['saku_finance_requested_at'] ?? ''],
+    ['Approval Saku Finance', 'FINANCE TKM', 1, $cluster['saku_finance_reviewed_at'] ?? ''],
     ['Pembayaran Donasi', 'FINANCE TKM', 2, $cluster['released_at'] ?? ''],
     ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'AREA', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'uploaded_at', true)],
     ['Approve SITAC Tahap 2', 'SITAC TKM', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
@@ -448,20 +462,35 @@ $slaDefinitions = [
     ['PO Donasi', 'MYREP', 3, $cluster['po_donasi_date'] ?? ''],
     ['Invoice Donasi', 'MYREP', 1, $cluster['invoice_donasi_date'] ?? ''],
 ];
+$slaTotalDays = array_sum(array_map(static function ($slaDefinition) {
+    return (int) ($slaDefinition[2] ?? 0);
+}, $slaDefinitions));
+$slaTotalWorkDays = 0;
+$previousActualDate = $slaStartDate;
 foreach ($slaDefinitions as $slaDefinition) {
-    $slaCumulativeDays += (int) $slaDefinition[2];
-    $targetDate = batchDetailAddCalendarDays($slaStartDate, $slaCumulativeDays);
+    $startDate = trim((string) ($slaDefinition[4] ?? $previousActualDate));
+    $targetDate = batchDetailAddCalendarDays($startDate, (int) $slaDefinition[2]);
     $actualDate = trim((string) $slaDefinition[3]);
+    $workDays = batchDetailCalendarDayDiff($startDate, $actualDate);
+    if ($workDays !== '-') {
+        $slaTotalWorkDays += (int) $workDays;
+    }
     $picMeta = batchDetailSlaPicMeta($slaDefinition[1]);
     $slaRows[] = [
         'name' => $slaDefinition[0],
         'pic' => $picMeta,
         'days' => (int) $slaDefinition[2],
+        'start_date' => $startDate,
         'target_date' => $targetDate,
         'actual_date' => $actualDate,
-        'remaining_days' => batchDetailSlaRemainingDays($targetDate, $actualDate),
-        'status' => batchDetailSlaStatus($targetDate, $actualDate),
+        'work_days' => batchDetailSlaWorkText($startDate, $actualDate),
+        'status' => batchDetailSlaStatus($startDate, $targetDate, $actualDate),
     ];
+    if ($actualDate !== '') {
+        $previousActualDate = $actualDate;
+    } else {
+        $previousActualDate = '';
+    }
 }
 $postDonasiUploadableRows = [];
 $postDonasiReviewableRows = [];
@@ -1683,7 +1712,7 @@ if ($canApprove && $canApprovalAction) {
                         <h3 class="card-title mb-0">Pencairan Donasi</h3>
                     </div>
                     <?php if ($canFinanceApprovalAction && $currentDonationStage === 'WAITING_FINANCE_RELEASE'): ?>
-                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modal-set-released">
+                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modal-set-released" data-required-action="APPROVAL" data-role-guard-exempt="1">
                             Set Released
                         </button>
                     <?php endif; ?>
@@ -1807,7 +1836,7 @@ if ($canApprove && $canApprovalAction) {
             <div class="card shadow-sm batch-sla-card">
                 <div class="card-header batch-sla-card__header">
                     <h3 class="card-title mb-0">SLA SOP Donasi</h3>
-                    <span class="batch-sla-total-badge">Total SLA 17 Hari Kalender</span>
+                    <span class="batch-sla-total-badge">Total SLA <?= (int) $slaTotalDays ?> Hari Kalender · Total Pekerjaan <?= (int) $slaTotalWorkDays ?> Hari</span>
                 </div>
                 <div class="card-body batch-sla-card__body">
                     <div class="table-responsive">
@@ -1818,9 +1847,9 @@ if ($canApprove && $canApprovalAction) {
                                     <th>SOP Process</th>
                                     <th>PIC</th>
                                     <th>Durasi SLA</th>
-                                    <th>Target Selesai</th>
+                                    <th>Mulai</th>
                                     <th>Aktual Selesai</th>
-                                    <th>Sisa Hari</th>
+                                    <th>Total Pekerjaan</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -1836,9 +1865,9 @@ if ($canApprove && $canApprovalAction) {
                                             </span>
                                         </td>
                                         <td><?= (int) $slaRow['days'] ?> Hari</td>
-                                        <td><?= batchDetailDateText($slaRow['target_date'] ?? '') ?></td>
+                                        <td><?= batchDetailDateText($slaRow['start_date'] ?? '') ?></td>
                                         <td><?= batchDetailDateText($slaRow['actual_date'] ?? '') ?></td>
-                                        <td><?= htmlspecialchars((string) ($slaRow['remaining_days'] ?? '-')) ?></td>
+                                        <td><?= htmlspecialchars((string) ($slaRow['work_days'] ?? '-')) ?></td>
                                         <td>
                                             <span class="batch-sla-status batch-sla-status--<?= htmlspecialchars((string) ($slaRow['status']['class'] ?? 'secondary')) ?>">
                                                 <i class="fas fa-<?= htmlspecialchars((string) ($slaRow['status']['icon'] ?? 'clock')) ?>"></i>
@@ -1867,7 +1896,7 @@ if ($canApprove && $canApprovalAction) {
             $allAstriRejectedCount = (int) ($preZeynSummary['astri_rejected'] ?? 0) + (int) ($postZeynSummary['astri_rejected'] ?? 0);
             $isAllAstriFullApproved = $allAstriRequiredCount > 0 && $allAstriRejectedCount === 0 && $allAstriApprovedCount >= $allAstriRequiredCount;
             ?>
-            <?php if (($canApprove && $canApprovalAction) || $canSubmitSakuFinanceRequest): ?>
+            <?php if (($canApprove && $canApprovalAction) || $canSubmitSakuFinanceRequest || $canFinanceApprovalAction): ?>
                 <div class="card card-outline card-warning shadow-sm">
                     <div class="card-header">
                         <h3 class="card-title mb-0">Aksi Staging Donasi</h3>
@@ -1951,7 +1980,7 @@ if ($canApprove && $canApprovalAction) {
                     <div class="modal fade" id="modal-set-released" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog" role="document">
                             <div class="modal-content">
-                                <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>" enctype="multipart/form-data">
+                                <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>" enctype="multipart/form-data" data-required-action="APPROVAL" data-role-guard-exempt="1">
                                     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                     <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
                                     <input type="hidden" name="redirect_to_detail" value="1">
@@ -1978,7 +2007,7 @@ if ($canApprove && $canApprovalAction) {
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                                        <button type="submit" class="btn btn-success">Set Released</button>
+                                        <button type="submit" class="btn btn-success" data-required-action="APPROVAL" data-role-guard-exempt="1">Set Released</button>
                                     </div>
                                 </form>
                             </div>
@@ -4707,6 +4736,31 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
 
             $(document).on('shown.bs.modal', '#modal-donation-reject', function () {
                 $('#donation_reject_remark').trigger('focus');
+            });
+
+            $(document).on('click', '[data-target="#modal-set-released"]', function (event) {
+                var $button = $(this);
+                console.log('[Batch Approval] klik Set Released', {
+                    defaultPrevented: event.isDefaultPrevented ? event.isDefaultPrevented() : event.defaultPrevented,
+                    disabled: $button.prop('disabled'),
+                    ariaDisabled: $button.attr('aria-disabled') || '',
+                    classes: $button.attr('class') || '',
+                    roleGuardExempt: $button.attr('data-role-guard-exempt') || '',
+                    requiredAction: $button.attr('data-required-action') || '',
+                    modalExists: $('#modal-set-released').length,
+                    bootstrapModalPlugin: !!($.fn && $.fn.modal),
+                    currentStage: '<?= htmlspecialchars((string) ($currentDonationStage ?? ''), ENT_QUOTES) ?>',
+                    canFinanceApprovalAction: <?= $canFinanceApprovalAction ? 'true' : 'false' ?>
+                });
+            });
+
+            $(document).on('show.bs.modal shown.bs.modal hide.bs.modal hidden.bs.modal', '#modal-set-released', function (event) {
+                console.log('[Batch Approval] modal Set Released event', {
+                    type: event.type,
+                    target: event.target && event.target.id ? event.target.id : '',
+                    isShownClass: $('#modal-set-released').hasClass('show'),
+                    bodyModalOpen: $('body').hasClass('modal-open')
+                });
             });
 
             $(document).on('click', '.js-open-batch-rar-modal', function () {

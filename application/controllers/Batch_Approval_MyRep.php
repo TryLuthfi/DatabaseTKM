@@ -3965,10 +3965,12 @@ class Batch_Approval_MyRep extends CI_Controller
             . '</span></div></div>';
 
         $slaHtml = '<div class="batch-sla-aging-cell">'
-            . '<span class="badge badge-' . $this->getBatchListSlaBadgeClass($slaInfo) . '">SLA 17 Hari</span> '
-            . '<span class="badge badge-' . $this->getBatchListAgingBadgeClass($slaInfo['aging_days']) . '">'
-            . (($slaInfo['aging_days'] === null) ? 'Aging -' : 'Aging ' . (int) $slaInfo['aging_days'] . ' Hari')
-            . '</span></div>';
+            . '<span class="badge badge-' . $this->getBatchListSlaBadgeClass($slaInfo) . '">SLA ' . htmlspecialchars($slaInfo['sla_text'], ENT_QUOTES, 'UTF-8') . '</span> '
+            . '<span class="badge badge-' . $this->getBatchListAgingBadgeClass($slaInfo) . '">'
+            . htmlspecialchars($slaInfo['duration_text'], ENT_QUOTES, 'UTF-8')
+            . '</span>'
+            . '<small class="text-muted">' . htmlspecialchars($slaInfo['process_label'], ENT_QUOTES, 'UTF-8') . '</small>'
+            . '</div>';
 
         $actionHtml = '';
         if ($hasBatch) {
@@ -4078,6 +4080,9 @@ class Batch_Approval_MyRep extends CI_Controller
                 return $nominalDonasi;
             case 6:
                 return $hpDonasi > 0 ? $nominalDonasi / $hpDonasi : 0;
+            case 7:
+                $slaInfo = $this->getBatchListSlaInfo($row);
+                return $slaInfo['duration_days'] ?? -1;
             case 8:
                 return $this->getIndonesianStagingLabel($stageCode);
             case 11:
@@ -4156,20 +4161,130 @@ class Batch_Approval_MyRep extends CI_Controller
 
     private function getBatchListSlaInfo(array $row)
     {
-        $approvedValsalDate = trim((string) ($row['valsal_approved_at'] ?? ''));
-        if ($approvedValsalDate === '') {
-            $approvedValsalDate = trim((string) ($row['valsal_date'] ?? ''));
+        $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $meta = $this->getBatchListActiveSlaMeta($stageCode, $row);
+        $slaDays = (int) ($meta['sla_days'] ?? 0);
+        $startDate = trim((string) ($meta['start_date'] ?? ''));
+        $actualDate = trim((string) ($meta['actual_date'] ?? ''));
+        $durationDays = $this->countBatchListCalendarDays($startDate, $actualDate !== '' ? $actualDate : date('Y-m-d'));
+        $status = 'not_started';
+        if ($startDate !== '') {
+            if ($actualDate !== '') {
+                $status = $durationDays !== null && $durationDays > $slaDays ? 'done_late' : 'done_ok';
+            } else {
+                $status = $durationDays !== null && $durationDays > $slaDays ? 'over' : 'running';
+            }
         }
 
-        if ($approvedValsalDate === '' || $approvedValsalDate === '0000-00-00') {
-            return ['start_date' => null, 'aging_days' => null];
-        }
-
-        $approvalEmrDate = trim((string) ($row['submitted_to_finance_at'] ?? ''));
         return [
-            'start_date' => substr($approvedValsalDate, 0, 10),
-            'aging_days' => $this->countBatchListCalendarDays($approvedValsalDate, $approvalEmrDate !== '' ? $approvalEmrDate : date('Y-m-d')),
+            'stage_code' => $stageCode,
+            'process_label' => (string) ($meta['process_label'] ?? '-'),
+            'start_date' => $startDate !== '' ? substr($startDate, 0, 10) : null,
+            'actual_date' => $actualDate !== '' ? substr($actualDate, 0, 10) : null,
+            'sla_days' => $slaDays,
+            'sla_text' => $slaDays > 0 ? $slaDays . ' Hari' : '-',
+            'duration_days' => $durationDays,
+            'duration_text' => $durationDays === null ? 'Durasi -' : 'Durasi ' . (int) $durationDays . ' Hari',
+            'status' => $status,
         ];
+    }
+
+    private function getBatchListActiveSlaMeta($stageCode, array $row)
+    {
+        $stageCode = strtoupper(trim((string) $stageCode));
+        $fallbackBatchStart = $this->firstBatchListDate($row, ['submission_date', 'astri_initial_submitted_at', 'submitted_to_ho_at', 'created_at']);
+        $batchApprovedAt = $this->firstBatchListDate($row, ['astri_batch_approved_at']);
+        $preUploadedAt = $this->firstBatchListDate($row, ['pre_zeyn_uploaded_at']);
+        $preApprovedAt = $this->firstBatchListDate($row, ['pre_zeyn_approved_at', 'pre_zeyn_doc_approved_at']);
+        $preFinanceApprovedAt = $this->firstBatchListDate($row, ['pre_zeyn_finance_approved_at']);
+        $sakuRequestedAt = $this->firstBatchListDate($row, ['saku_finance_requested_at']);
+        $sakuReviewedAt = $this->firstBatchListDate($row, ['saku_finance_reviewed_at']);
+        $releasedAt = $this->firstBatchListDate($row, ['released_at']);
+        $postUploadedAt = $this->firstBatchListDate($row, ['post_zeyn_uploaded_at']);
+        $postApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_approved_at', 'post_zeyn_doc_approved_at']);
+        $postFinanceApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_finance_approved_at']);
+        $astriSubmittedAt = $this->firstBatchListDate($row, ['post_zeyn_astri_submitted_at', 'final_astri_submitted_at']);
+        $astriApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_astri_approved_at', 'final_astri_approved_at']);
+        $poDate = $this->firstBatchListDate($row, ['po_donasi_date']);
+        $invoiceDate = $this->firstBatchListDate($row, ['invoice_donasi_date']);
+
+        $preRequired = (int) ($row['pre_zeyn_doc_total'] ?? 0);
+        $preFinanceRequired = (int) ($row['pre_zeyn_finance_required'] ?? $preRequired);
+        $postRequired = (int) ($row['post_zeyn_doc_total'] ?? 0);
+        $postFinanceRequired = (int) ($row['post_zeyn_finance_required'] ?? $postRequired);
+        if ($preRequired > 0 && (int) ($row['pre_zeyn_doc_uploaded'] ?? 0) < $preRequired) {
+            $preUploadedAt = '';
+        }
+        if ($preRequired > 0 && (int) ($row['pre_zeyn_doc_approved'] ?? 0) < $preRequired) {
+            $preApprovedAt = '';
+        }
+        if ($preFinanceRequired > 0 && (int) ($row['pre_zeyn_finance_approved'] ?? 0) < $preFinanceRequired) {
+            $preFinanceApprovedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['post_zeyn_doc_uploaded'] ?? 0) < $postRequired) {
+            $postUploadedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['post_zeyn_doc_approved'] ?? 0) < $postRequired) {
+            $postApprovedAt = '';
+        }
+        if ($postFinanceRequired > 0 && (int) ($row['post_zeyn_finance_approved'] ?? 0) < $postFinanceRequired) {
+            $postFinanceApprovedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['astri_final_submitted'] ?? 0) < $postRequired) {
+            $astriSubmittedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['astri_final_approved'] ?? 0) < $postRequired) {
+            $astriApprovedAt = '';
+        }
+
+        $map = [
+            'WAITING_BATCH_APPROVAL' => ['Release Batch Approval', 1, $fallbackBatchStart, $batchApprovedAt],
+            'BATCH_APPROVED' => ['Upload Dokumen Tahap 1', 2, $batchApprovedAt, $preUploadedAt],
+            'WAITING_PRE_ZEYN_DOC' => ['Upload Dokumen Tahap 1', 2, $batchApprovedAt, $preUploadedAt],
+            'PRE_ZEYN_DOC_ON_REVIEW' => ['Approve SITAC Tahap 1', 1, $preUploadedAt, $preApprovedAt],
+            'PRE_ZEYN_DOC_APPROVED' => ['Approve Finance Tahap 1', 1, $preApprovedAt, $preFinanceApprovedAt],
+            'PRE_ZEYN_FINANCE_ON_REVIEW' => ['Approve Finance Tahap 1', 1, $preApprovedAt, $preFinanceApprovedAt],
+            'PRE_ZEYN_FINANCE_APPROVED' => ['Pengajuan Saku', 1, $preFinanceApprovedAt, $sakuRequestedAt],
+            'WAITING_SAKU_FINANCE_APPROVAL' => ['Approval Saku Finance', 1, $sakuRequestedAt, $sakuReviewedAt],
+            'WAITING_FINANCE_RELEASE' => ['Pembayaran Donasi', 2, $sakuReviewedAt ?: $this->firstBatchListDate($row, ['submitted_to_finance_at', 'finance_submitted_at']), $releasedAt],
+            'RELEASED' => ['Upload Dokumen Tahap 2', 1, $releasedAt, $postUploadedAt],
+            'WAITING_POST_ZEYN_DOC' => ['Upload Dokumen Tahap 2', 1, $releasedAt, $postUploadedAt],
+            'POST_ZEYN_DOC_ON_REVIEW' => ['Approve SITAC Tahap 2', 1, $postUploadedAt, $postApprovedAt],
+            'POST_ZEYN_DOC_APPROVED' => ['Approve Finance Tahap 2', 1, $postApprovedAt, $postFinanceApprovedAt],
+            'POST_ZEYN_FINANCE_ON_REVIEW' => ['Approve Finance Tahap 2', 1, $postApprovedAt, $postFinanceApprovedAt],
+            'WAITING_ASTRI_SUBMISSION' => ['Submit Final ke Astri', 1, $postFinanceApprovedAt, $astriSubmittedAt],
+            'ASTRI_ON_REVIEW' => ['Approved Astri', 3, $astriSubmittedAt, $astriApprovedAt],
+            'NEED_REVISE_ASTRI' => ['Revisi Astri', 3, $astriSubmittedAt, ''],
+            'ASTRI_APPROVED' => ['PO Donasi', 3, $astriApprovedAt, $poDate],
+            'PO_DONASI' => ['Invoice Donasi', 1, $poDate, $invoiceDate],
+            'INVOICE' => ['Flow Selesai', 0, $invoiceDate, $invoiceDate],
+            'COMPLETED' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
+            'DONE BATCH APPROVAL' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
+            'NEED_REVISE' => ['Revisi Dokumen', 1, $preUploadedAt ?: $postUploadedAt, ''],
+            'REJECTED' => ['Ditolak', 0, $this->firstBatchListDate($row, ['rejected_at', 'updated_at']), $this->firstBatchListDate($row, ['rejected_at', 'updated_at'])],
+            'HOLD' => ['Ditahan', 0, $this->firstBatchListDate($row, ['hold_at', 'updated_at']), $this->firstBatchListDate($row, ['hold_at', 'updated_at'])],
+        ];
+
+        $selected = $map[$stageCode] ?? ['Draft', 0, '', ''];
+
+        return [
+            'process_label' => $selected[0],
+            'sla_days' => (int) $selected[1],
+            'start_date' => $selected[2],
+            'actual_date' => $selected[3],
+        ];
+    }
+
+    private function firstBatchListDate(array $row, array $keys)
+    {
+        foreach ($keys as $key) {
+            $date = trim((string) ($row[$key] ?? ''));
+            if ($date !== '' && $date !== '0000-00-00' && $date !== '0000-00-00 00:00:00') {
+                return $date;
+            }
+        }
+
+        return '';
     }
 
     private function countBatchListCalendarDays($startDateString, $endDateString = null)
@@ -4190,20 +4305,30 @@ class Batch_Approval_MyRep extends CI_Controller
 
     private function getBatchListSlaBadgeClass(array $slaInfo)
     {
-        if (($slaInfo['aging_days'] ?? null) === null) {
+        if ((int) ($slaInfo['sla_days'] ?? 0) <= 0 || ($slaInfo['duration_days'] ?? null) === null) {
             return 'secondary';
         }
 
-        return (int) $slaInfo['aging_days'] > 17 ? 'danger' : 'success';
+        return in_array((string) ($slaInfo['status'] ?? ''), ['over', 'done_late'], true) ? 'danger' : 'success';
     }
 
-    private function getBatchListAgingBadgeClass($agingDays)
+    private function getBatchListAgingBadgeClass(array $slaInfo)
     {
-        if ($agingDays === null) {
+        if (($slaInfo['duration_days'] ?? null) === null) {
             return 'secondary';
         }
 
-        return (int) $agingDays > 17 ? 'danger' : 'success';
+        switch ((string) ($slaInfo['status'] ?? 'not_started')) {
+            case 'over':
+            case 'done_late':
+                return 'danger';
+            case 'running':
+                return 'warning';
+            case 'done_ok':
+                return 'success';
+            default:
+                return 'secondary';
+        }
     }
 
     private function getBatchListBadgeClass($status)

@@ -312,13 +312,23 @@ if (!function_exists('batchMoneyCompact')) {
 }
 
 if (!function_exists('batchAgingBadgeClass')) {
-    function batchAgingBadgeClass($agingDays)
+    function batchAgingBadgeClass($slaInfo)
     {
-        if ($agingDays === null) {
+        if (($slaInfo['duration_days'] ?? null) === null) {
             return 'secondary';
         }
 
-        return (int) $agingDays > 17 ? 'danger' : 'success';
+        switch ((string) ($slaInfo['status'] ?? 'not_started')) {
+            case 'over':
+            case 'done_late':
+                return 'danger';
+            case 'running':
+                return 'warning';
+            case 'done_ok':
+                return 'success';
+            default:
+                return 'secondary';
+        }
     }
 }
 
@@ -352,22 +362,106 @@ if (!function_exists('batchCountCalendarDays')) {
 if (!function_exists('batchSlaInfo')) {
     function batchSlaInfo($row)
     {
-        $approvedValsalDate = trim((string) ($row['valsal_approved_at'] ?? ''));
-        if ($approvedValsalDate === '') {
-            $approvedValsalDate = trim((string) ($row['valsal_date'] ?? ''));
+        $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $dateFromRow = static function (array $keys) use ($row) {
+            foreach ($keys as $key) {
+                $date = trim((string) ($row[$key] ?? ''));
+                if ($date !== '' && $date !== '0000-00-00' && $date !== '0000-00-00 00:00:00') {
+                    return $date;
+                }
+            }
+
+            return '';
+        };
+        $fallbackBatchStart = $dateFromRow(['submission_date', 'astri_initial_submitted_at', 'submitted_to_ho_at', 'created_at']);
+        $batchApprovedAt = $dateFromRow(['astri_batch_approved_at']);
+        $preUploadedAt = $dateFromRow(['pre_zeyn_uploaded_at']);
+        $preApprovedAt = $dateFromRow(['pre_zeyn_approved_at', 'pre_zeyn_doc_approved_at']);
+        $preFinanceApprovedAt = $dateFromRow(['pre_zeyn_finance_approved_at']);
+        $sakuRequestedAt = $dateFromRow(['saku_finance_requested_at']);
+        $sakuReviewedAt = $dateFromRow(['saku_finance_reviewed_at']);
+        $releasedAt = $dateFromRow(['released_at']);
+        $postUploadedAt = $dateFromRow(['post_zeyn_uploaded_at']);
+        $postApprovedAt = $dateFromRow(['post_zeyn_approved_at', 'post_zeyn_doc_approved_at']);
+        $postFinanceApprovedAt = $dateFromRow(['post_zeyn_finance_approved_at']);
+        $astriSubmittedAt = $dateFromRow(['post_zeyn_astri_submitted_at', 'final_astri_submitted_at']);
+        $astriApprovedAt = $dateFromRow(['post_zeyn_astri_approved_at', 'final_astri_approved_at']);
+        $poDate = $dateFromRow(['po_donasi_date']);
+        $invoiceDate = $dateFromRow(['invoice_donasi_date']);
+
+        $preRequired = (int) ($row['pre_zeyn_doc_total'] ?? 0);
+        $preFinanceRequired = (int) ($row['pre_zeyn_finance_required'] ?? $preRequired);
+        $postRequired = (int) ($row['post_zeyn_doc_total'] ?? 0);
+        $postFinanceRequired = (int) ($row['post_zeyn_finance_required'] ?? $postRequired);
+        if ($preRequired > 0 && (int) ($row['pre_zeyn_doc_uploaded'] ?? 0) < $preRequired) {
+            $preUploadedAt = '';
+        }
+        if ($preRequired > 0 && (int) ($row['pre_zeyn_doc_approved'] ?? 0) < $preRequired) {
+            $preApprovedAt = '';
+        }
+        if ($preFinanceRequired > 0 && (int) ($row['pre_zeyn_finance_approved'] ?? 0) < $preFinanceRequired) {
+            $preFinanceApprovedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['post_zeyn_doc_uploaded'] ?? 0) < $postRequired) {
+            $postUploadedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['post_zeyn_doc_approved'] ?? 0) < $postRequired) {
+            $postApprovedAt = '';
+        }
+        if ($postFinanceRequired > 0 && (int) ($row['post_zeyn_finance_approved'] ?? 0) < $postFinanceRequired) {
+            $postFinanceApprovedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['astri_final_submitted'] ?? 0) < $postRequired) {
+            $astriSubmittedAt = '';
+        }
+        if ($postRequired > 0 && (int) ($row['astri_final_approved'] ?? 0) < $postRequired) {
+            $astriApprovedAt = '';
         }
 
-        if ($approvedValsalDate === '' || $approvedValsalDate === '0000-00-00') {
-            return [
-                'start_date' => null,
-                'aging_days' => null,
-            ];
+        $map = [
+            'WAITING_BATCH_APPROVAL' => ['Release Batch Approval', 1, $fallbackBatchStart, $batchApprovedAt],
+            'BATCH_APPROVED' => ['Upload Dokumen Tahap 1', 2, $batchApprovedAt, $preUploadedAt],
+            'WAITING_PRE_ZEYN_DOC' => ['Upload Dokumen Tahap 1', 2, $batchApprovedAt, $preUploadedAt],
+            'PRE_ZEYN_DOC_ON_REVIEW' => ['Approve SITAC Tahap 1', 1, $preUploadedAt, $preApprovedAt],
+            'PRE_ZEYN_DOC_APPROVED' => ['Approve Finance Tahap 1', 1, $preApprovedAt, $preFinanceApprovedAt],
+            'PRE_ZEYN_FINANCE_ON_REVIEW' => ['Approve Finance Tahap 1', 1, $preApprovedAt, $preFinanceApprovedAt],
+            'PRE_ZEYN_FINANCE_APPROVED' => ['Pengajuan Saku', 1, $preFinanceApprovedAt, $sakuRequestedAt],
+            'WAITING_SAKU_FINANCE_APPROVAL' => ['Approval Saku Finance', 1, $sakuRequestedAt, $sakuReviewedAt],
+            'WAITING_FINANCE_RELEASE' => ['Pembayaran Donasi', 2, $sakuReviewedAt ?: $dateFromRow(['submitted_to_finance_at', 'finance_submitted_at']), $releasedAt],
+            'RELEASED' => ['Upload Dokumen Tahap 2', 1, $releasedAt, $postUploadedAt],
+            'WAITING_POST_ZEYN_DOC' => ['Upload Dokumen Tahap 2', 1, $releasedAt, $postUploadedAt],
+            'POST_ZEYN_DOC_ON_REVIEW' => ['Approve SITAC Tahap 2', 1, $postUploadedAt, $postApprovedAt],
+            'POST_ZEYN_DOC_APPROVED' => ['Approve Finance Tahap 2', 1, $postApprovedAt, $postFinanceApprovedAt],
+            'POST_ZEYN_FINANCE_ON_REVIEW' => ['Approve Finance Tahap 2', 1, $postApprovedAt, $postFinanceApprovedAt],
+            'WAITING_ASTRI_SUBMISSION' => ['Submit Final ke Astri', 1, $postFinanceApprovedAt, $astriSubmittedAt],
+            'ASTRI_ON_REVIEW' => ['Approved Astri', 3, $astriSubmittedAt, $astriApprovedAt],
+            'NEED_REVISE_ASTRI' => ['Revisi Astri', 3, $astriSubmittedAt, ''],
+            'ASTRI_APPROVED' => ['PO Donasi', 3, $astriApprovedAt, $poDate],
+            'PO_DONASI' => ['Invoice Donasi', 1, $poDate, $invoiceDate],
+            'INVOICE' => ['Flow Selesai', 0, $invoiceDate, $invoiceDate],
+            'COMPLETED' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
+            'DONE BATCH APPROVAL' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
+            'NEED_REVISE' => ['Revisi Dokumen', 1, $preUploadedAt ?: $postUploadedAt, ''],
+        ];
+        $selected = $map[$stageCode] ?? ['Draft', 0, '', ''];
+        $slaDays = (int) $selected[1];
+        $durationDays = batchCountCalendarDays($selected[2], $selected[3] !== '' ? $selected[3] : date('Y-m-d'));
+        $status = 'not_started';
+        if ($selected[2] !== '') {
+            if ($selected[3] !== '') {
+                $status = $durationDays !== null && $durationDays > $slaDays ? 'done_late' : 'done_ok';
+            } else {
+                $status = $durationDays !== null && $durationDays > $slaDays ? 'over' : 'running';
+            }
         }
 
-        $approvalEmrDate = trim((string) ($row['submitted_to_finance_at'] ?? ''));
         return [
-            'start_date' => substr($approvedValsalDate, 0, 10),
-            'aging_days' => batchCountCalendarDays($approvedValsalDate, $approvalEmrDate !== '' ? $approvalEmrDate : date('Y-m-d')),
+            'process_label' => $selected[0],
+            'sla_days' => $slaDays,
+            'sla_text' => $slaDays > 0 ? $slaDays . ' Hari' : '-',
+            'duration_days' => $durationDays,
+            'duration_text' => $durationDays === null ? 'Durasi -' : 'Durasi ' . (int) $durationDays . ' Hari',
+            'status' => $status,
         ];
     }
 }
@@ -375,11 +469,11 @@ if (!function_exists('batchSlaInfo')) {
 if (!function_exists('batchSlaBadgeClass')) {
     function batchSlaBadgeClass($slaInfo)
     {
-        if (($slaInfo['aging_days'] ?? null) === null) {
+        if ((int) ($slaInfo['sla_days'] ?? 0) <= 0 || ($slaInfo['duration_days'] ?? null) === null) {
             return 'secondary';
         }
 
-        return (int) $slaInfo['aging_days'] > 17 ? 'danger' : 'success';
+        return in_array((string) ($slaInfo['status'] ?? ''), ['over', 'done_late'], true) ? 'danger' : 'success';
     }
 }
 
@@ -431,14 +525,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             <td class="text-right"><?= $displayNominalPerHomepass !== null ? number_format($displayNominalPerHomepass, 0, ',', '.') : '-' ?></td>
             <td>
                 <div class="batch-sla-aging-cell">
-                    <span class="badge badge-<?= batchSlaBadgeClass($slaInfo) ?>">SLA 17 Hari</span>
-                    <span class="badge badge-<?= batchAgingBadgeClass($slaInfo['aging_days']) ?>">
-                        <?php if ($slaInfo['aging_days'] === null): ?>
-                            Aging -
-                        <?php else: ?>
-                            Aging <?= (int) $slaInfo['aging_days'] ?> Hari
-                        <?php endif; ?>
-                    </span>
+                    <span class="badge badge-<?= batchSlaBadgeClass($slaInfo) ?>">SLA <?= htmlspecialchars($slaInfo['sla_text']) ?></span>
+                    <span class="badge badge-<?= batchAgingBadgeClass($slaInfo) ?>"><?= htmlspecialchars($slaInfo['duration_text']) ?></span>
+                    <small class="text-muted"><?= htmlspecialchars($slaInfo['process_label']) ?></small>
                 </div>
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
@@ -757,7 +846,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>HP Donasi</th>
                                                     <th>Nominal Donasi</th>
                                                     <th>Nominal / Homepass</th>
-                                                    <th>SLA &amp; Aging</th>
+                                                    <th>SLA / Durasi Proses</th>
                                                     <th>Staging</th>
                                                     <th>PIC</th>
                                                     <th>Review Dokumen</th>
@@ -790,7 +879,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>HP Donasi</th>
                                                     <th>Nominal Donasi</th>
                                                     <th>Nominal / Homepass</th>
-                                                    <th>SLA &amp; Aging</th>
+                                                    <th>SLA / Durasi Proses</th>
                                                     <th>Staging</th>
                                                     <th>PIC</th>
                                                     <th>Review Dokumen</th>

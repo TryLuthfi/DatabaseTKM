@@ -684,11 +684,21 @@ class MBatch_Approval_MyRep extends CI_Model
             $row['pre_zeyn_doc_approved'] = $donationSummary['PRE_ZEYN']['approved'];
             $row['pre_zeyn_finance_required'] = $donationSummary['PRE_ZEYN']['finance_required'];
             $row['pre_zeyn_finance_approved'] = $donationSummary['PRE_ZEYN']['finance_approved'];
+            $row['pre_zeyn_uploaded_at'] = $donationSummary['PRE_ZEYN']['latest_uploaded_at'];
+            $row['pre_zeyn_approved_at'] = $donationSummary['PRE_ZEYN']['latest_approved_at'];
+            $row['pre_zeyn_finance_approved_at'] = $donationSummary['PRE_ZEYN']['latest_finance_approved_at'];
+            $row['pre_zeyn_astri_submitted_at'] = $donationSummary['PRE_ZEYN']['latest_astri_submitted_at'];
+            $row['pre_zeyn_astri_approved_at'] = $donationSummary['PRE_ZEYN']['latest_astri_approved_at'];
             $row['post_zeyn_doc_total'] = $donationSummary['POST_ZEYN']['required'];
             $row['post_zeyn_doc_uploaded'] = $donationSummary['POST_ZEYN']['uploaded'];
             $row['post_zeyn_doc_approved'] = $donationSummary['POST_ZEYN']['approved'];
             $row['post_zeyn_finance_required'] = $donationSummary['POST_ZEYN']['finance_required'];
             $row['post_zeyn_finance_approved'] = $donationSummary['POST_ZEYN']['finance_approved'];
+            $row['post_zeyn_uploaded_at'] = $donationSummary['POST_ZEYN']['latest_uploaded_at'];
+            $row['post_zeyn_approved_at'] = $donationSummary['POST_ZEYN']['latest_approved_at'];
+            $row['post_zeyn_finance_approved_at'] = $donationSummary['POST_ZEYN']['latest_finance_approved_at'];
+            $row['post_zeyn_astri_submitted_at'] = $donationSummary['POST_ZEYN']['latest_astri_submitted_at'];
+            $row['post_zeyn_astri_approved_at'] = $donationSummary['POST_ZEYN']['latest_astri_approved_at'];
             $row['astri_final_total'] = $donationSummary['POST_ZEYN']['required'];
             $row['astri_final_submitted'] = $donationSummary['POST_ZEYN']['astri_submitted'];
             $row['astri_final_approved'] = $donationSummary['POST_ZEYN']['astri_approved'];
@@ -1092,11 +1102,21 @@ class MBatch_Approval_MyRep extends CI_Model
         $row['pre_zeyn_doc_approved'] = $donationSummary['PRE_ZEYN']['approved'];
         $row['pre_zeyn_finance_required'] = $donationSummary['PRE_ZEYN']['finance_required'];
         $row['pre_zeyn_finance_approved'] = $donationSummary['PRE_ZEYN']['finance_approved'];
+        $row['pre_zeyn_uploaded_at'] = $donationSummary['PRE_ZEYN']['latest_uploaded_at'];
+        $row['pre_zeyn_approved_at'] = $donationSummary['PRE_ZEYN']['latest_approved_at'];
+        $row['pre_zeyn_finance_approved_at'] = $donationSummary['PRE_ZEYN']['latest_finance_approved_at'];
+        $row['pre_zeyn_astri_submitted_at'] = $donationSummary['PRE_ZEYN']['latest_astri_submitted_at'];
+        $row['pre_zeyn_astri_approved_at'] = $donationSummary['PRE_ZEYN']['latest_astri_approved_at'];
         $row['post_zeyn_doc_total'] = $donationSummary['POST_ZEYN']['required'];
         $row['post_zeyn_doc_uploaded'] = $donationSummary['POST_ZEYN']['uploaded'];
         $row['post_zeyn_doc_approved'] = $donationSummary['POST_ZEYN']['approved'];
         $row['post_zeyn_finance_required'] = $donationSummary['POST_ZEYN']['finance_required'];
         $row['post_zeyn_finance_approved'] = $donationSummary['POST_ZEYN']['finance_approved'];
+        $row['post_zeyn_uploaded_at'] = $donationSummary['POST_ZEYN']['latest_uploaded_at'];
+        $row['post_zeyn_approved_at'] = $donationSummary['POST_ZEYN']['latest_approved_at'];
+        $row['post_zeyn_finance_approved_at'] = $donationSummary['POST_ZEYN']['latest_finance_approved_at'];
+        $row['post_zeyn_astri_submitted_at'] = $donationSummary['POST_ZEYN']['latest_astri_submitted_at'];
+        $row['post_zeyn_astri_approved_at'] = $donationSummary['POST_ZEYN']['latest_astri_approved_at'];
         $row['astri_final_total'] = $donationSummary['POST_ZEYN']['required'];
         $row['astri_final_submitted'] = $donationSummary['POST_ZEYN']['astri_submitted'];
         $row['astri_final_approved'] = $donationSummary['POST_ZEYN']['astri_approved'];
@@ -2420,6 +2440,11 @@ class MBatch_Approval_MyRep extends CI_Model
                 'astri_submitted' => 0,
                 'astri_approved' => 0,
                 'astri_rejected' => 0,
+                'latest_uploaded_at' => '',
+                'latest_approved_at' => '',
+                'latest_finance_approved_at' => '',
+                'latest_astri_submitted_at' => '',
+                'latest_astri_approved_at' => '',
             ],
             'POST_ZEYN' => [
                 'package_exists' => 0,
@@ -2434,6 +2459,11 @@ class MBatch_Approval_MyRep extends CI_Model
                 'astri_submitted' => 0,
                 'astri_approved' => 0,
                 'astri_rejected' => 0,
+                'latest_uploaded_at' => '',
+                'latest_approved_at' => '',
+                'latest_finance_approved_at' => '',
+                'latest_astri_submitted_at' => '',
+                'latest_astri_approved_at' => '',
             ],
         ];
     }
@@ -2453,7 +2483,9 @@ class MBatch_Approval_MyRep extends CI_Model
                 i.is_required,
                 p.id_doc_package,
                 f.id_doc_file,
-                f.status_file
+                f.status_file,
+                f.uploaded_at,
+                f.approved_at
             ', false)
             ->from('tb_myrep_cluster c')
             ->join('md_myrep_flow_doc_group g', "g.flow_type = 'BATCH_APPROVAL' AND g.is_active = 1", 'inner', false)
@@ -2471,6 +2503,16 @@ class MBatch_Approval_MyRep extends CI_Model
             $this->db->select('f.finance_status');
         } else {
             $this->db->select("'NY' AS finance_status", false);
+        }
+        if ($this->tableHasField('tb_myrep_flow_doc_file', 'finance_approved_at')) {
+            $this->db->select('f.finance_approved_at');
+        } else {
+            $this->db->select('NULL AS finance_approved_at', false);
+        }
+        if ($this->tableHasField('tb_myrep_flow_doc_file', 'astri_approved_date')) {
+            $this->db->select('f.astri_approved_date');
+        } else {
+            $this->db->select('NULL AS astri_approved_date', false);
         }
 
         $rows = $this->db->get()->result_array();
@@ -2505,15 +2547,27 @@ class MBatch_Approval_MyRep extends CI_Model
             }
             if ($hasFile && $isRequired) {
                 $map[$clusterId][$key]['uploaded']++;
+                $map[$clusterId][$key]['latest_uploaded_at'] = $this->latestDonationSummaryDate(
+                    $map[$clusterId][$key]['latest_uploaded_at'],
+                    $row['uploaded_at'] ?? ''
+                );
             }
             if ($hasFile && $statusFile === 'APPROVED' && $isRequired) {
                 $map[$clusterId][$key]['approved']++;
+                $map[$clusterId][$key]['latest_approved_at'] = $this->latestDonationSummaryDate(
+                    $map[$clusterId][$key]['latest_approved_at'],
+                    $row['approved_at'] ?? ''
+                );
             }
             if ($hasFile && $statusFile === 'REJECTED') {
                 $map[$clusterId][$key]['rejected']++;
             }
             if ($hasFile && $statusFile === 'APPROVED' && $isRequired && $financeStatus === 'APPROVED') {
                 $map[$clusterId][$key]['finance_approved']++;
+                $map[$clusterId][$key]['latest_finance_approved_at'] = $this->latestDonationSummaryDate(
+                    $map[$clusterId][$key]['latest_finance_approved_at'],
+                    $row['finance_approved_at'] ?? ''
+                );
             }
             if ($hasFile && $financeStatus === 'REJECTED') {
                 $map[$clusterId][$key]['finance_rejected']++;
@@ -2523,9 +2577,17 @@ class MBatch_Approval_MyRep extends CI_Model
             }
             if ($hasFile && in_array($astriStatus, ['ON REVIEW', 'APPROVED', 'REJECTED'], true) && $isRequired) {
                 $map[$clusterId][$key]['astri_submitted']++;
+                $map[$clusterId][$key]['latest_astri_submitted_at'] = $this->latestDonationSummaryDate(
+                    $map[$clusterId][$key]['latest_astri_submitted_at'],
+                    $row['astri_submitted_date'] ?? ''
+                );
             }
             if ($hasFile && $astriStatus === 'APPROVED' && $isRequired) {
                 $map[$clusterId][$key]['astri_approved']++;
+                $map[$clusterId][$key]['latest_astri_approved_at'] = $this->latestDonationSummaryDate(
+                    $map[$clusterId][$key]['latest_astri_approved_at'],
+                    $row['astri_approved_date'] ?? ''
+                );
             }
             if ($hasFile && $astriStatus === 'REJECTED') {
                 $map[$clusterId][$key]['astri_rejected']++;
@@ -2533,6 +2595,20 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         return $map;
+    }
+
+    private function latestDonationSummaryDate($currentDate, $candidateDate)
+    {
+        $currentDate = trim((string) $currentDate);
+        $candidateDate = trim((string) $candidateDate);
+        if ($candidateDate === '' || $candidateDate === '0000-00-00' || $candidateDate === '0000-00-00 00:00:00') {
+            return $currentDate;
+        }
+        if ($currentDate === '' || strtotime($candidateDate) > strtotime($currentDate)) {
+            return $candidateDate;
+        }
+
+        return $currentDate;
     }
 
     private function applyAllowedCityRestriction($columnName = 'c.city_name')
