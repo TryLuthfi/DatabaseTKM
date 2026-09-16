@@ -35,6 +35,7 @@ class MBAK_MyRep extends CI_Model
         if ($this->shouldRestrictCityByUser()) {
             $this->getCurrentUserAllowedCitySet();
         }
+        $this->resetBakQueryBuilder();
     }
 
     public function getBakClusterReviewPicMap(array $clusterRows)
@@ -226,6 +227,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         $rows = $this->db
             ->select('id_target, year_num, month_num, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv')
             ->from('tb_rfs_myrep_monthly_target')
@@ -322,6 +324,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         $rows = $this->db
             ->distinct()
             ->select('city_name')
@@ -353,6 +356,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         $clusterLocationSelect = $this->buildClusterLocationSelect();
         $effectiveBakStatusSql = $this->buildBakEffectiveStatusSql();
 
@@ -502,6 +506,7 @@ class MBAK_MyRep extends CI_Model
             ];
         }
 
+        $this->resetBakQueryBuilder();
         $postBakStatuses = [
             'VALSAL',
             'WAITING HO',
@@ -579,6 +584,7 @@ class MBAK_MyRep extends CI_Model
         $onReviewSql = $this->buildBakApprovalStatusSql('on_review');
         $rejectedSql = $this->buildBakApprovalStatusSql('rejected');
 
+        $this->resetBakQueryBuilder();
         $this->db
             ->select("SUM(CASE WHEN {$onReviewSql} THEN 1 ELSE 0 END) AS on_review_count", false)
             ->select("SUM(CASE WHEN {$rejectedSql} THEN 1 ELSE 0 END) AS rejected_count", false)
@@ -845,6 +851,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         $rows = $this->db
             ->distinct()
             ->select('regional_name')
@@ -895,6 +902,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         $rows = $this->db
             ->distinct()
             ->select('regional_name, city_name')
@@ -946,6 +954,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         $rows = $this->db
             ->distinct()
             ->select('regional_name, city_name')
@@ -1083,6 +1092,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $this->resetBakQueryBuilder();
         if ($this->shouldRestrictCityByUser()) {
             $allowedCitySet = $this->getCurrentUserAllowedCitySet();
             if (empty($allowedCitySet)) {
@@ -1328,6 +1338,13 @@ class MBAK_MyRep extends CI_Model
         }
 
         return $this->currentUserAllowedCitySet;
+    }
+
+    private function resetBakQueryBuilder()
+    {
+        if (method_exists($this->db, 'reset_query')) {
+            $this->db->reset_query();
+        }
     }
 
     public function getBakTableDataDebugContext()

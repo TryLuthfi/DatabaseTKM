@@ -257,9 +257,10 @@ class MDRM_MyRep extends CI_Model
             : 'NULL AS rfs_cluster_id';
 
         $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', COALESCE(v.homepass_valsal, d.homepass_drm, c.hp_plan, 0) AS hp_donasi, NULL AS released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', ba.id_batch_approval, ba.staging_status AS batch_staging_status, COALESCE(ba.hp_donasi, v.homepass_valsal, d.homepass_drm, c.hp_plan, 0) AS hp_donasi, COALESCE(ba.released_at, NULL) AS released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->group_start()

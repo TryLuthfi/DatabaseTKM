@@ -482,6 +482,10 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $slaInfo = batchSlaInfo($row);
         $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
         $batchStageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+        $editStagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? 'DRAFT')));
+        if (in_array($batchStageCode, ['NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
+            $editStagingStatus = $batchStageCode;
+        }
         $batchStageLabel = $hasBatch ? batchStatusLabel($batchStageCode) : batchStatusLabel('WAITING INPUT');
         $isWaitingInputStage = !$hasBatch || $batchStageCode === 'WAITING INPUT';
         $canStartBatchInput = !$hasBatch;
@@ -489,14 +493,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
         $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
         $batchPics = $hasBatch ? (array) $batchModel->getBatchPics((int) ($row['id_batch_approval'] ?? 0)) : [];
-        $myrepPicNames = [];
-        foreach ($batchPics as $batchPic) {
-            $myrepPicName = trim((string) ($batchPic['pic_name'] ?? ''));
-            if ($myrepPicName !== '') {
-                $myrepPicNames[] = $myrepPicName;
-            }
-        }
-        $myrepPicLabel = !empty($myrepPicNames) ? implode(', ', array_unique($myrepPicNames)) : '';
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
         $useReleaseNominal = in_array($batchStageCode, ['RELEASED', 'WAITING_POST_ZEYN_DOC', 'POST_ZEYN_DOC_ON_REVIEW', 'POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'ASTRI_APPROVED', 'PO_DONASI', 'INVOICE', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
@@ -534,8 +530,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             <td>
                 <div class="batch-pic-summary">
                     <div><strong>Area:</strong> <?= htmlspecialchars($uploadBy !== '' ? $uploadBy : '-') ?></div>
-                    <div><strong>HO:</strong> <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
-                    <div><strong>MyRep:</strong> <?= htmlspecialchars($myrepPicLabel !== '' ? $myrepPicLabel : '-') ?></div>
+                    <div><strong>TKM:</strong> <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
                 </div>
             </td>
             <td>
@@ -581,7 +576,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                             data-free_wifi_qty="<?= htmlspecialchars((string) ($row['free_wifi_qty'] ?? ''), ENT_QUOTES) ?>"
                             data-free_wifi_period_month="<?= htmlspecialchars((string) ($row['free_wifi_period_month'] ?? ''), ENT_QUOTES) ?>"
                             data-astri_batch_number="<?= htmlspecialchars((string) ($row['astri_batch_number'] ?? ''), ENT_QUOTES) ?>"
-                            data-staging_status="<?= htmlspecialchars((string) ($row['staging_status'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                            data-staging_status="<?= htmlspecialchars($editStagingStatus, ENT_QUOTES) ?>"
                             data-remark_batch_approval="<?= htmlspecialchars((string) ($row['remark_batch_approval'] ?? ''), ENT_QUOTES) ?>"
                             data-pics='<?= htmlspecialchars(json_encode($batchPics), ENT_QUOTES) ?>'>
                             Edit

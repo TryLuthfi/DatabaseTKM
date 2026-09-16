@@ -10,6 +10,7 @@ $canFinanceApprovalAction = !empty($canFinanceApprovalAction);
 $canDonationInternalApprovalAction = isset($canDonationInternalApprovalAction) ? (bool) $canDonationInternalApprovalAction : ($canApprovalAction && !$canFinanceApprovalAction);
 $canSubmitDonationFinanceRequest = isset($canSubmitDonationFinanceRequest) ? (bool) $canSubmitDonationFinanceRequest : $canDonationInternalApprovalAction;
 $canSubmitSakuFinanceRequest = isset($canSubmitSakuFinanceRequest) ? (bool) $canSubmitSakuFinanceRequest : $canSubmitDonationFinanceRequest;
+$canRejectBatchData = isset($canRejectBatchData) ? (bool) $canRejectBatchData : ((string) $this->session->userdata('nama_level') === 'Super Admin');
 $canDonationUpload = (string) $this->session->userdata('nama_level') === 'Super Admin'
     || (isset($this->myrepAccess)
         && method_exists($this->myrepAccess, 'getCurrentRoleKeys')
@@ -394,10 +395,12 @@ if (!function_exists('batchDetailStageMeta')) {
 }
 
 $displayStageStatus = (string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? 'DRAFT');
+$displayStageStatusCode = strtoupper(trim($displayStageStatus));
+$canSubmitRevisedBatchData = $canEdit && $displayStageStatusCode === 'NEED_REVISE';
 $stageMeta = batchDetailStageMeta($displayStageStatus);
 $batchDocumentStatus = batchDetailDocumentLabel($batchDocument);
 $batchDocumentRawStatus = strtoupper(trim((string) ($batchDocument['status_file'] ?? '')));
-$batchDocumentCanUpload = $canDonationUpload && in_array($batchDocumentStatus, ['BELUM UPLOAD', 'REJECTED'], true);
+$batchDocumentCanUpload = $canDonationUpload && in_array($batchDocumentStatus, ['BELUM UPLOAD', 'UPLOADED', 'ON REVIEW', 'REJECTED'], true);
 $batchDocumentCanReview = $canApprove && $canApprovalAction && !empty($batchDocument['id_doc_file']) && $batchDocumentRawStatus === 'UPLOADED';
 $transferProofPath = (string) ($cluster['transfer_proof_file_path'] ?? '');
 $transferProofExtension = strtolower(pathinfo($transferProofPath, PATHINFO_EXTENSION));
@@ -1619,12 +1622,20 @@ if ($canApprove && $canApprovalAction) {
             <div class="card card-primary shadow-sm batch-info-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Informasi Cluster & Batch</h3>
-                    <?php if ($canEdit): ?>
-                        <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail" data-role-guard-exempt="1">
-                            <i class="fas fa-pen"></i>
-                            Edit Batch Approval
-                        </button>
-                    <?php endif; ?>
+                    <div>
+                        <?php if ($canRejectBatchData): ?>
+                            <button type="button" class="btn btn-sm btn-outline-danger mr-2" data-toggle="modal" data-target="#modal-reject-batch-data" data-role-guard-exempt="1">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Reject Data Batch
+                            </button>
+                        <?php endif; ?>
+                        <?php if ($canEdit): ?>
+                            <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail" data-role-guard-exempt="1">
+                                <i class="fas fa-pen"></i>
+                                Edit Batch Approval
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="batch-progress-wrap">
@@ -1644,6 +1655,12 @@ if ($canApprove && $canApprovalAction) {
                             <div class="progress-bar <?= htmlspecialchars($stageMeta['class']) ?>" role="progressbar" style="width: <?= (int) $stageMeta['percent'] ?>%;" aria-valuenow="<?= (int) $stageMeta['percent'] ?>" aria-valuemin="0" aria-valuemax="100"><?= (int) $stageMeta['percent'] ?>%</div>
                         </div>
                     </div>
+                    <?php if (trim((string) ($cluster['remark_batch_approval'] ?? '')) !== ''): ?>
+                        <div class="alert <?= $displayStageStatusCode === 'NEED_REVISE' ? 'alert-danger' : 'alert-light border' ?>">
+                            <strong>Remark Data Batch:</strong>
+                            <?= nl2br(htmlspecialchars((string) $cluster['remark_batch_approval'])) ?>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="row batch-info-grid">
                         <div class="col-md-4"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
@@ -2080,7 +2097,7 @@ if ($canApprove && $canApprovalAction) {
                                         data-remark="<?= htmlspecialchars((string) ($batchDocument['remark'] ?? ''), ENT_QUOTES) ?>"
                                         data-status-label="<?= htmlspecialchars($batchDocumentStatus, ENT_QUOTES) ?>"
                                         data-can-upload="<?= $batchDocumentCanUpload ? '1' : '0' ?>">
-                                        <?= $batchDocumentCanUpload ? 'Upload RAR' : 'Lihat RAR' ?>
+                                        <?= $batchDocumentCanUpload && !empty($batchDocument['id_doc_file'] ?? null) ? 'Upload Ulang RAR' : ($batchDocumentCanUpload ? 'Upload RAR' : 'Lihat RAR') ?>
                                     </button>
                                 </div>
                             </div>
@@ -2814,9 +2831,44 @@ if ($canApprove && $canApprovalAction) {
     </section>
 </div>
 
+<?php if ($canRejectBatchData): ?>
+<div class="modal fade" id="modal-reject-batch-data" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content batch-modal">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/rejectBatchData') ?>" data-role-guard-exempt="1">
+                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
+                <input type="hidden" name="redirect_to_detail" value="1">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Reject Data Batch</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light border">
+                        Status batch akan menjadi <strong>Need Revise</strong>. Gunakan ini untuk masalah data global seperti PIC, nomor batch, rekening, atau nominal.
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Remark Reject</label>
+                        <textarea name="remark_batch_approval" rows="4" class="form-control" required><?= htmlspecialchars((string) ($cluster['remark_batch_approval'] ?? '')) ?></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-danger">Simpan Reject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if ($canEdit): ?>
 <?php
 $detailEditCurrentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? '')));
+$detailEditDisplayStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? '')));
+if (in_array($detailEditDisplayStage, ['NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
+    $detailEditCurrentStage = $detailEditDisplayStage;
+}
 $detailEditBatchOptionalStages = ['DRAFT', 'WAITING_INPUT', 'WAITING INPUT', 'WAITING_BATCH_APPROVAL'];
 $detailEditBatchRequired = !in_array($detailEditCurrentStage, $detailEditBatchOptionalStages, true);
 $detailEditBaseDataRequired = !in_array($detailEditCurrentStage, $detailEditBatchOptionalStages, true);
@@ -2825,7 +2877,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
 <div class="modal fade" id="modal-batch-edit-detail" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
-            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>" data-role-guard-exempt="1">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>" data-role-guard-exempt="1" data-submit-revision="<?= $canSubmitRevisedBatchData ? '1' : '0' ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
                 <input type="hidden" name="redirect_to_detail" value="1">
@@ -2851,12 +2903,12 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                         <div class="batch-form-section__title">Data Pengajuan</div>
                         <div class="row">
                             <div class="col-md-3"><div class="form-group"><label>HP VALSAL Astri</label><input type="text" id="detail_edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['homepass_valsal'] ?? null) ? htmlspecialchars(number_format((float) $cluster['homepass_valsal'], 0, ',', '.')) : '' ?>" readonly></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>HP Donasi Astri</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format js-detail-base-required" data-decimals="0" value="<?= !is_null($cluster['hp_donasi'] ?? null) ? htmlspecialchars(number_format((float) $cluster['hp_donasi'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan Astri</label><input type="date" name="submission_date" id="detail_edit_submission_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['submission_date'] ?? '')) ?>"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>No Batch Astri</label><input type="text" name="astri_batch_number" id="detail_edit_astri_batch_number" class="form-control" placeholder="Batch 2026-XX" value="<?= htmlspecialchars((string) ($cluster['astri_batch_number'] ?? '')) ?>" <?= $detailEditBatchRequired ? 'required' : '' ?>></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="detail_edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= strtoupper((string) ($cluster['staging_status'] ?? '')) === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format js-detail-base-required" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>><input type="hidden" name="nominal_nego_emr" id="detail_edit_nominal_nego_emr" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars((string) round((float) $cluster['nominal_pengajuan_area'])) : '' ?>"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Tanggal Batch Approval</label><input type="date" name="astri_batch_approved_at" id="detail_edit_astri_batch_approved_at" class="form-control" value="<?= htmlspecialchars($detailBatchApprovedDate) ?>" <?= $detailEditBatchRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>HP Donasi Astri</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format js-detail-base-required js-revision-required" data-field-label="HP Donasi" data-decimals="0" value="<?= !is_null($cluster['hp_donasi'] ?? null) ? htmlspecialchars(number_format((float) $cluster['hp_donasi'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan Astri</label><input type="date" name="submission_date" id="detail_edit_submission_date" class="form-control js-revision-required" data-field-label="Tanggal Pengajuan Astri" value="<?= htmlspecialchars((string) ($cluster['submission_date'] ?? '')) ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>No Batch Astri</label><input type="text" name="astri_batch_number" id="detail_edit_astri_batch_number" class="form-control js-revision-required" data-field-label="Nomor Batch Astri" placeholder="Batch 2026-XX" value="<?= htmlspecialchars((string) ($cluster['astri_batch_number'] ?? '')) ?>" <?= $detailEditBatchRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="detail_edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= $detailEditCurrentStage === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format js-detail-base-required js-revision-required" data-field-label="Nominal Donasi" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>><input type="hidden" name="nominal_nego_emr" id="detail_edit_nominal_nego_emr" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars((string) round((float) $cluster['nominal_pengajuan_area'])) : '' ?>"></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>Tanggal Batch Approval</label><input type="date" name="astri_batch_approved_at" id="detail_edit_astri_batch_approved_at" class="form-control js-revision-required" data-field-label="Tanggal Batch Approval" value="<?= htmlspecialchars($detailBatchApprovedDate) ?>" <?= $detailEditBatchRequired ? 'required' : '' ?>></div></div>
                             <div class="col-md-3"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="detail_edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" value="<?= !is_null($cluster['nominal_per_homepass'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_per_homepass'], 2, ',', '.')) : '' ?>" readonly></div></div>
                         </div>
                     </div>
@@ -2864,20 +2916,20 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Free Wifi</div>
                         <div class="row">
-                            <div class="col-md-6"><div class="form-group mb-md-0"><label>Jumlah Free Wifi</label><input type="text" name="free_wifi_qty" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['free_wifi_qty'] ?? null) ? htmlspecialchars(number_format((float) $cluster['free_wifi_qty'], 0, ',', '.')) : '' ?>"></div></div>
-                            <div class="col-md-6"><div class="form-group mb-0"><label>Periode Free Wifi</label><input type="text" name="free_wifi_period_month" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['free_wifi_period_month'] ?? null) ? htmlspecialchars(number_format((float) $cluster['free_wifi_period_month'], 0, ',', '.')) : '' ?>"></div></div>
+                            <div class="col-md-6"><div class="form-group mb-md-0"><label>Jumlah Free Wifi</label><input type="text" name="free_wifi_qty" inputmode="numeric" class="form-control js-number-format js-revision-required" data-field-label="Jumlah Free Wifi" data-decimals="0" value="<?= !is_null($cluster['free_wifi_qty'] ?? null) ? htmlspecialchars(number_format((float) $cluster['free_wifi_qty'], 0, ',', '.')) : '' ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
+                            <div class="col-md-6"><div class="form-group mb-0"><label>Periode Free Wifi</label><input type="text" name="free_wifi_period_month" inputmode="numeric" class="form-control js-number-format js-revision-required" data-field-label="Periode Free Wifi" data-decimals="0" value="<?= !is_null($cluster['free_wifi_period_month'] ?? null) ? htmlspecialchars(number_format((float) $cluster['free_wifi_period_month'], 0, ',', '.')) : '' ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
                         </div>
                     </div>
 
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Penerima Dana dan Bank</div>
                         <div class="row">
-                            <div class="col-md-6"><div class="form-group"><label>Nama Bank</label><input type="text" name="bank_name" class="form-control js-detail-base-required" value="<?= htmlspecialchars((string) ($cluster['bank_name'] ?? '')) ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>No Rekening</label><input type="text" name="bank_account_number" class="form-control js-detail-base-required" value="<?= htmlspecialchars((string) ($cluster['bank_account_number'] ?? '')) ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Nama Penerima Dana</label><input type="text" name="recipient_name" id="detail_edit_recipient_name" class="form-control js-recipient-source js-detail-base-required" value="<?= htmlspecialchars((string) ($cluster['recipient_name'] ?? '')) ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>No HP Penerima</label><input type="text" name="recipient_phone" id="detail_edit_recipient_phone" class="form-control js-recipient-source" value="<?= htmlspecialchars((string) ($cluster['recipient_phone'] ?? '')) ?>"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Jabatan Penerima</label><input type="text" name="recipient_position" id="detail_edit_recipient_position" class="form-control js-recipient-source" value="<?= htmlspecialchars((string) ($cluster['recipient_position'] ?? '')) ?>"></div></div>
-                            <div class="col-md-4"><div class="form-group mb-0"><label>Masa Jabatan</label><input type="text" name="recipient_period" id="detail_edit_recipient_period" class="form-control js-recipient-source" value="<?= htmlspecialchars((string) ($cluster['recipient_period'] ?? '')) ?>"></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Nama Bank</label><input type="text" name="bank_name" class="form-control js-detail-base-required js-revision-required" data-field-label="Bank" value="<?= htmlspecialchars((string) ($cluster['bank_name'] ?? '')) ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>No Rekening</label><input type="text" name="bank_account_number" class="form-control js-detail-base-required js-revision-required" data-field-label="Nomor Rekening" value="<?= htmlspecialchars((string) ($cluster['bank_account_number'] ?? '')) ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Nama Penerima Dana</label><input type="text" name="recipient_name" id="detail_edit_recipient_name" class="form-control js-recipient-source js-detail-base-required js-revision-required" data-field-label="Nama Penerima Dana" value="<?= htmlspecialchars((string) ($cluster['recipient_name'] ?? '')) ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>No HP Penerima</label><input type="text" name="recipient_phone" id="detail_edit_recipient_phone" class="form-control js-recipient-source js-revision-required" data-field-label="No HP Penerima" value="<?= htmlspecialchars((string) ($cluster['recipient_phone'] ?? '')) ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Jabatan Penerima</label><input type="text" name="recipient_position" id="detail_edit_recipient_position" class="form-control js-recipient-source js-revision-required" data-field-label="Jabatan Penerima" value="<?= htmlspecialchars((string) ($cluster['recipient_position'] ?? '')) ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
+                            <div class="col-md-4"><div class="form-group mb-0"><label>Masa Jabatan</label><input type="text" name="recipient_period" id="detail_edit_recipient_period" class="form-control js-recipient-source js-revision-required" data-field-label="Masa Jabatan" value="<?= htmlspecialchars((string) ($cluster['recipient_period'] ?? '')) ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
                         </div>
                     </div>
 
@@ -2928,7 +2980,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                    <button type="submit" class="btn btn-primary">Update Batch Approval</button>
+                    <button type="submit" class="btn btn-primary"><?= $canSubmitRevisedBatchData ? 'Update & Submit Revisi' : 'Update Batch Approval' ?></button>
                 </div>
             </form>
         </div>
@@ -3134,7 +3186,7 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                         </div>
                         <div class="form-group"><input type="text" name="remark" id="batch_rar_remark" class="form-control form-control-sm" placeholder="Remark upload"></div>
                     </div>
-                    <div class="alert alert-light border d-none" id="batch_rar_readonly_note">File sudah diproses. Upload baru hanya tersedia saat status `REJECTED` atau `BELUM UPLOAD`.</div>
+                    <div class="alert alert-light border d-none" id="batch_rar_readonly_note">File sudah diproses. Upload baru hanya tersedia saat status belum approved.</div>
                     <div class="form-group mb-0">
                         <a href="#" target="_blank" id="batch_rar_preview_link" class="btn btn-sm btn-outline-secondary d-none">Preview File Saat Ini</a>
                     </div>
@@ -4671,6 +4723,34 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                         $submitButton.prop('disabled', false).text(originalText);
                     }
                 });
+            });
+
+            $(document).on('submit', '#modal-batch-edit-detail form', function (event) {
+                var $form = $(this);
+                if (String($form.data('submit-revision')) !== '1') {
+                    return true;
+                }
+
+                var $emptyField = $();
+                var emptyLabel = '';
+                $form.find('.js-revision-required').each(function () {
+                    var $field = $(this);
+                    var value = $.trim(String($field.val() || ''));
+                    if (value === '' || value === '-') {
+                        $emptyField = $field;
+                        emptyLabel = $field.data('field-label') || $field.closest('.form-group').find('label').first().text() || 'Field';
+                        return false;
+                    }
+                });
+
+                if ($emptyField.length) {
+                    event.preventDefault();
+                    alert(emptyLabel + ' wajib diisi sebelum submit revisi.');
+                    $emptyField.focus();
+                    return false;
+                }
+
+                return true;
             });
 
             $(document).on('submit', '.js-donation-ajax-form', function (event) {

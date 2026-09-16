@@ -20,6 +20,8 @@ class Batch_Approval_MyRep extends CI_Controller
                 'printChecklistPengajuan' => 'VIEW',
                 'saveImportedBatch' => 'TAMBAH',
                 'updateBatchApproval' => 'VIEW',
+                'rejectBatchData' => 'APPROVAL',
+                'submitRevisedBatchData' => 'VIEW',
                 'updateStagingProgress' => 'VIEW',
                 'uploadDocument' => 'VIEW',
                 'uploadDonationDocument' => 'VIEW',
@@ -406,6 +408,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['canSubmitDonationFinanceRequest'] = $this->canSubmitDonationFinanceRequest();
         $data['canSubmitSakuFinanceRequest'] = $this->canSubmitSakuFinanceRequest();
         $data['canEditBatchApproval'] = $this->canEditBatchApprovalDetail($cluster);
+        $data['canRejectBatchData'] = $this->isSitacHoUser();
         $data['canReplaceDonationFile'] = $this->isSitacHoUser();
         $data['canFinanceApprovalAction'] = $this->isFinanceHoUser();
         $data['batchDocument'] = $batchFile;
@@ -667,6 +670,8 @@ class Batch_Approval_MyRep extends CI_Controller
         $remark = trim((string) $this->input->post('remark_batch_approval'));
         $pics = $this->collectPicsFromPost();
         $stagingStatus = $this->normalizeStagingStatus($stagingStatus, false);
+        $existingStage = strtoupper(trim((string) ($existing['display_staging_status'] ?? $existing['staging_status'] ?? '')));
+        $isSubmittingRevisedBatchData = $existingStage === 'NEED_REVISE' && $stagingStatus === 'NEED_REVISE';
         $batchApprovalRequiredStages = [
             'DRAFT',
             'WAITING_INPUT',
@@ -711,6 +716,31 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $userId = (int) $this->session->userdata('id_user');
+        if ($isSubmittingRevisedBatchData) {
+            $revisionError = $this->validateRevisedBatchDataCanSubmit($clusterId, [
+                'submission_date' => $submissionDate,
+                'hp_donasi' => $hpDonasi,
+                'nominal_pengajuan_area' => $nominalPengajuanArea,
+                'astri_batch_number' => $astriBatchNumber,
+                'astri_batch_approved_at' => $astriBatchApprovedAt,
+                'recipient_name' => $recipientName,
+                'recipient_phone' => $recipientPhone,
+                'recipient_position' => $recipientPosition,
+                'recipient_period' => $recipientPeriod,
+                'bank_name' => $bankName,
+                'bank_account_number' => $bankAccountNumber,
+                'free_wifi_qty' => $freeWifiQty,
+                'free_wifi_period_month' => $freeWifiPeriodMonth,
+            ]);
+            if ($revisionError !== '') {
+                $this->session->set_flashdata('error', $revisionError);
+                redirect($this->resolveBatchRedirectPath($clusterId));
+                return;
+            }
+
+            $stagingStatus = 'WAITING_BATCH_APPROVAL';
+        }
+
         $gateError = $this->validateDonationStageGate($clusterId, $stagingStatus);
         if ($gateError !== '') {
             $redirectPath = $this->resolveBatchRedirectPath($clusterId);
@@ -756,7 +786,132 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
 
-        $this->session->set_flashdata('success', 'Data Batch Approval berhasil diperbarui.');
+        $this->session->set_flashdata('success', $isSubmittingRevisedBatchData ? 'Revisi data batch berhasil disubmit ulang ke SITAC HO.' : 'Data Batch Approval berhasil diperbarui.');
+        redirect($redirectPath);
+    }
+
+    public function rejectBatchData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $batchId = (int) $this->input->post('id_batch_approval');
+        $redirectPath = $this->resolveBatchRedirectPath($clusterId);
+
+        if (!$this->MBatch_Approval_MyRep->batchTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel Batch Approval MyRep belum tersedia.');
+            redirect($redirectPath);
+            return;
+        }
+
+        if (!$this->isSitacHoUser()) {
+            $this->session->set_flashdata('error', 'Reject data batch hanya tersedia untuk SITAC HO dan Super Admin.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $batch = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if ($clusterId <= 0 || $batchId <= 0 || empty($batch) || (int) ($batch['id_batch_approval'] ?? 0) !== $batchId) {
+            $this->session->set_flashdata('error', 'Data Batch Approval tidak ditemukan.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $remark = trim((string) $this->input->post('remark_batch_approval'));
+        if ($remark === '') {
+            $this->session->set_flashdata('error', 'Remark reject data batch wajib diisi.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        $result = $this->MBatch_Approval_MyRep->updateBatchStage(
+            $clusterId,
+            $batchId,
+            [
+                'staging_status' => 'NEED_REVISE',
+                'remark_batch_approval' => $remark,
+                'updated_by' => $userId,
+            ],
+            [
+                'status_current' => $this->mapClusterStatusFromStaging('NEED_REVISE'),
+                'updated_by' => $userId,
+            ]
+        );
+
+        $this->session->set_flashdata(
+            $result ? 'success' : 'error',
+            $result ? 'Data batch ditandai Need Revise.' : 'Gagal reject data batch.'
+        );
+        redirect($redirectPath);
+    }
+
+    public function submitRevisedBatchData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $batchId = (int) $this->input->post('id_batch_approval');
+        $redirectPath = $this->resolveBatchRedirectPath($clusterId);
+
+        if (!$this->MBatch_Approval_MyRep->batchTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel Batch Approval MyRep belum tersedia.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $batch = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if (!$this->canEditBatchApprovalDetail($batch)) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses submit revisi data batch.');
+            redirect($redirectPath);
+            return;
+        }
+
+        if ($clusterId <= 0 || $batchId <= 0 || empty($batch) || (int) ($batch['id_batch_approval'] ?? 0) !== $batchId) {
+            $this->session->set_flashdata('error', 'Data Batch Approval tidak ditemukan.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $currentStage = strtoupper(trim((string) ($batch['display_staging_status'] ?? $batch['staging_status'] ?? '')));
+        if ($currentStage !== 'NEED_REVISE') {
+            $this->session->set_flashdata('error', 'Submit revisi hanya tersedia saat status Need Revise.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $revisionError = $this->validateRevisedBatchDataCanSubmit($clusterId, $batch);
+        if ($revisionError !== '') {
+            $this->session->set_flashdata('error', $revisionError);
+            redirect($redirectPath);
+            return;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        $targetStage = 'WAITING_BATCH_APPROVAL';
+        $result = $this->MBatch_Approval_MyRep->updateBatchStage(
+            $clusterId,
+            $batchId,
+            [
+                'staging_status' => $targetStage,
+                'updated_by' => $userId,
+            ],
+            [
+                'status_current' => $this->mapClusterStatusFromStaging($targetStage),
+                'updated_by' => $userId,
+            ]
+        );
+
+        $this->session->set_flashdata(
+            $result ? 'success' : 'error',
+            $result ? 'Revisi data batch berhasil disubmit ulang ke SITAC HO.' : 'Gagal submit revisi data batch.'
+        );
         redirect($redirectPath);
     }
 
@@ -3858,6 +4013,63 @@ class Batch_Approval_MyRep extends CI_Controller
         return '';
     }
 
+    private function validateRevisedBatchDataCanSubmit($clusterId, array $batch)
+    {
+        if ($this->MBatch_Approval_MyRep->batchDocumentTablesReady()) {
+            $batchFile = $this->MBatch_Approval_MyRep->getBatchFileByClusterId((int) $clusterId);
+            if (strtoupper(trim((string) ($batchFile['status_file'] ?? ''))) === 'REJECTED') {
+                return 'Dokumen RAR masih rejected. Upload ulang RAR terlebih dahulu.';
+            }
+
+            $donationSummary = $this->MBatch_Approval_MyRep->getDonationDocumentSummary((int) $clusterId);
+            $totalRejectedDocument = (int) ($donationSummary['PRE_ZEYN']['rejected'] ?? 0)
+                + (int) ($donationSummary['PRE_ZEYN']['finance_rejected'] ?? 0)
+                + (int) ($donationSummary['POST_ZEYN']['rejected'] ?? 0)
+                + (int) ($donationSummary['POST_ZEYN']['finance_rejected'] ?? 0);
+            if ($totalRejectedDocument > 0) {
+                return 'Masih ada dokumen donasi yang rejected. Upload/review ulang dokumen terlebih dahulu.';
+            }
+        }
+
+        $requiredFields = [
+            'submission_date' => 'Tanggal Pengajuan Astri',
+            'hp_donasi' => 'HP Donasi',
+            'nominal_pengajuan_area' => 'Nominal Donasi',
+            'astri_batch_number' => 'Nomor Batch Astri',
+            'astri_batch_approved_at' => 'Tanggal Batch Approval',
+            'free_wifi_qty' => 'Jumlah Free Wifi',
+            'free_wifi_period_month' => 'Periode Free Wifi',
+            'recipient_name' => 'Nama Penerima Dana',
+            'recipient_phone' => 'No HP Penerima',
+            'recipient_position' => 'Jabatan Penerima',
+            'recipient_period' => 'Masa Jabatan',
+            'bank_name' => 'Bank',
+            'bank_account_number' => 'Nomor Rekening',
+        ];
+        foreach ($requiredFields as $field => $label) {
+            $value = $batch[$field] ?? '';
+            if (in_array($field, ['hp_donasi', 'nominal_pengajuan_area'], true)) {
+                if ((float) $value <= 0) {
+                    return $label . ' wajib diisi sebelum submit revisi.';
+                }
+                continue;
+            }
+
+            if (in_array($field, ['free_wifi_qty', 'free_wifi_period_month'], true)) {
+                if ($value === null || trim((string) $value) === '') {
+                    return $label . ' wajib diisi sebelum submit revisi.';
+                }
+                continue;
+            }
+
+            if (trim((string) $value) === '' || trim((string) $value) === '-') {
+                return $label . ' wajib diisi sebelum submit revisi.';
+            }
+        }
+
+        return '';
+    }
+
     public function deleteCluster()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -3924,13 +4136,6 @@ class Batch_Approval_MyRep extends CI_Controller
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
         $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
         $batchPics = $hasBatch ? (array) $this->MBatch_Approval_MyRep->getBatchPics((int) ($row['id_batch_approval'] ?? 0)) : [];
-        $myrepPicNames = [];
-        foreach ($batchPics as $batchPic) {
-            $picName = trim((string) ($batchPic['pic_name'] ?? ''));
-            if ($picName !== '') {
-                $myrepPicNames[] = $picName;
-            }
-        }
 
         $nominalRelease = $row['nominal_release_finance'] ?? null;
         $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
@@ -3954,8 +4159,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $picHtml = '<div class="batch-pic-summary">'
             . '<div><strong>Area:</strong> ' . htmlspecialchars($uploadBy !== '' ? $uploadBy : '-', ENT_QUOTES, 'UTF-8') . '</div>'
-            . '<div><strong>HO:</strong> ' . htmlspecialchars($picApproval !== '' ? $picApproval : '-', ENT_QUOTES, 'UTF-8') . '</div>'
-            . '<div><strong>MyRep:</strong> ' . htmlspecialchars(!empty($myrepPicNames) ? implode(', ', array_unique($myrepPicNames)) : '-', ENT_QUOTES, 'UTF-8') . '</div>'
+            . '<div><strong>TKM:</strong> ' . htmlspecialchars($picApproval !== '' ? $picApproval : '-', ENT_QUOTES, 'UTF-8') . '</div>'
             . '</div>';
 
         $docHtml = '<div class="batch-doc-status-stack"><div class="batch-doc-status-stack__item">'
@@ -4094,6 +4298,12 @@ class Batch_Approval_MyRep extends CI_Controller
 
     private function buildBatchApprovalEditButton(array $row, array $batchPics)
     {
+        $editStagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? 'DRAFT')));
+        $displayStagingStatus = strtoupper(trim((string) ($row['display_staging_status'] ?? '')));
+        if (in_array($displayStagingStatus, ['NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
+            $editStagingStatus = $displayStagingStatus;
+        }
+
         $attrs = [
             'id_myrep_cluster' => (int) ($row['id_myrep_cluster'] ?? 0),
             'id_batch_approval' => (int) ($row['id_batch_approval'] ?? 0),
@@ -4118,7 +4328,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'free_wifi_qty' => (string) ($row['free_wifi_qty'] ?? ''),
             'free_wifi_period_month' => (string) ($row['free_wifi_period_month'] ?? ''),
             'astri_batch_number' => (string) ($row['astri_batch_number'] ?? ''),
-            'staging_status' => (string) ($row['staging_status'] ?? 'DRAFT'),
+            'staging_status' => $editStagingStatus,
             'remark_batch_approval' => (string) ($row['remark_batch_approval'] ?? ''),
         ];
 
