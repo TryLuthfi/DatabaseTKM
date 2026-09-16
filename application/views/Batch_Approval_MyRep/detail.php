@@ -436,6 +436,8 @@ $statusOptions = [
     'ASTRI_APPROVED' => batchDetailStatusLabel('ASTRI_APPROVED'),
     'PO_DONASI' => batchDetailStatusLabel('PO_DONASI'),
     'INVOICE' => batchDetailStatusLabel('INVOICE'),
+    'COMPLETED' => batchDetailStatusLabel('COMPLETED'),
+    'DONE BATCH APPROVAL' => batchDetailStatusLabel('DONE BATCH APPROVAL'),
     'REJECTED' => batchDetailStatusLabel('REJECTED'),
     'NEED_REVISE' => batchDetailStatusLabel('NEED_REVISE'),
 ];
@@ -2866,7 +2868,7 @@ if ($canApprove && $canApprovalAction) {
 <?php
 $detailEditCurrentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? '')));
 $detailEditDisplayStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? '')));
-if (in_array($detailEditDisplayStage, ['NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
+if (isset($statusOptions[$detailEditDisplayStage])) {
     $detailEditCurrentStage = $detailEditDisplayStage;
 }
 $detailEditBatchOptionalStages = ['DRAFT', 'WAITING_INPUT', 'WAITING INPUT', 'WAITING_BATCH_APPROVAL'];

@@ -3025,11 +3025,14 @@ class Batch_Approval_MyRep extends CI_Controller
             'WAITING_POST_ZEYN_DOC',
             'POST_ZEYN_DOC_ON_REVIEW',
             'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
             'WAITING_ASTRI_SUBMISSION',
             'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
             'ASTRI_APPROVED',
             'PO_DONASI',
             'INVOICE',
+            'COMPLETED',
             'DONE BATCH APPROVAL',
         ];
         if (!in_array($status, $allowed, true)) {
@@ -4310,7 +4313,35 @@ class Batch_Approval_MyRep extends CI_Controller
     {
         $editStagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? 'DRAFT')));
         $displayStagingStatus = strtoupper(trim((string) ($row['display_staging_status'] ?? '')));
-        if (in_array($displayStagingStatus, ['NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
+        $editableStageOptions = [
+            'DRAFT',
+            'WAITING_BATCH_APPROVAL',
+            'BATCH_APPROVED',
+            'HOLD',
+            'WAITING_PRE_ZEYN_DOC',
+            'NEED_REVISE',
+            'PRE_ZEYN_DOC_ON_REVIEW',
+            'PRE_ZEYN_DOC_APPROVED',
+            'PRE_ZEYN_FINANCE_ON_REVIEW',
+            'PRE_ZEYN_FINANCE_APPROVED',
+            'WAITING_SAKU_FINANCE_APPROVAL',
+            'WAITING_FINANCE_RELEASE',
+            'RELEASED',
+            'WAITING_POST_ZEYN_DOC',
+            'POST_ZEYN_DOC_ON_REVIEW',
+            'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
+            'WAITING_ASTRI_SUBMISSION',
+            'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
+            'ASTRI_APPROVED',
+            'PO_DONASI',
+            'INVOICE',
+            'COMPLETED',
+            'DONE BATCH APPROVAL',
+            'REJECTED',
+        ];
+        if (in_array($displayStagingStatus, $editableStageOptions, true)) {
             $editStagingStatus = $displayStagingStatus;
         }
 

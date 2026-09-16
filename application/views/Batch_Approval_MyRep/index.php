@@ -102,6 +102,8 @@ $statusOptions = [
     'ASTRI_APPROVED' => batchStageLabel('ASTRI_APPROVED'),
     'PO_DONASI' => batchStageLabel('PO_DONASI'),
     'INVOICE' => batchStageLabel('INVOICE'),
+    'COMPLETED' => batchStageLabel('COMPLETED'),
+    'DONE BATCH APPROVAL' => batchStageLabel('DONE BATCH APPROVAL'),
     'REJECTED' => batchStageLabel('REJECTED'),
 ];
 $summaryNyBatch = 0;
@@ -477,13 +479,13 @@ if (!function_exists('batchSlaBadgeClass')) {
     }
 }
 
-$renderBatchTableRows = static function (array $rows, $docReady, $batchModel) use ($canTambah, $canEdit, $canHapus, $clusterReviewPicMap) {
+$renderBatchTableRows = static function (array $rows, $docReady, $batchModel) use ($canTambah, $canEdit, $canHapus, $clusterReviewPicMap, $statusOptions) {
     foreach ($rows as $index => $row) {
         $slaInfo = batchSlaInfo($row);
         $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
         $batchStageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
         $editStagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? 'DRAFT')));
-        if (in_array($batchStageCode, ['NEED_REVISE', 'NEED_REVISE_ASTRI'], true)) {
+        if (isset($statusOptions[$batchStageCode])) {
             $editStagingStatus = $batchStageCode;
         }
         $batchStageLabel = $hasBatch ? batchStatusLabel($batchStageCode) : batchStatusLabel('WAITING INPUT');
@@ -2691,6 +2693,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $(document).on('click', '.js-edit-batch', function () {
                 var $button = $(this);
                 var $modal = $('#modal-batch-edit');
+                var stagingStatus = String($button.data('staging_status') || 'DRAFT');
+                var $stagingSelect = $modal.find('#edit_staging_status');
 
                 $modal.find('#edit_id_myrep_cluster').val($button.data('id_myrep_cluster'));
                 $modal.find('#edit_id_batch_approval').val($button.data('id_batch_approval'));
@@ -2714,7 +2718,16 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $modal.find('#edit_free_wifi_qty').val($button.data('free_wifi_qty'));
                 $modal.find('#edit_free_wifi_period_month').val($button.data('free_wifi_period_month'));
                 $modal.find('#edit_astri_batch_number').val($button.data('astri_batch_number'));
-                $modal.find('#edit_staging_status').val($button.data('staging_status'));
+                var hasStagingOption = $stagingSelect.find('option').filter(function () {
+                    return String(this.value) === stagingStatus;
+                }).length > 0;
+                if (!hasStagingOption) {
+                    $stagingSelect.append($('<option>', {
+                        value: stagingStatus,
+                        text: stagingStatus.replace(/_/g, ' ')
+                    }));
+                }
+                $stagingSelect.val(stagingStatus);
                 $modal.find('#edit_homepass_valsal').val($button.data('homepass_valsal'));
                 $modal.find('#edit_valsal_date').val($button.data('valsal_date'));
                 $modal.find('#edit_remark_batch_approval').val($button.data('remark_batch_approval'));
