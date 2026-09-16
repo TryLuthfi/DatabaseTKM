@@ -184,6 +184,24 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     white-space: nowrap;
                 }
 
+                .drm-doc-file-link {
+                    max-width: 260px;
+                    overflow-wrap: anywhere;
+                }
+
+                .drm-doc-file-actions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: .25rem;
+                    margin-top: .35rem;
+                }
+
+                .drm-doc-file-actions .btn {
+                    padding: .18rem .45rem;
+                    font-size: .78rem;
+                    line-height: 1.25;
+                }
+
                 .drm-dropzone {
                     position: relative;
                     background: linear-gradient(135deg, #f8fbff, #eff6ff);
@@ -748,17 +766,25 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                 <td><span class="badge badge-<?= drmDetailBadgeClass($docStatus) ?>"><?= htmlspecialchars($docStatus) ?></span></td>
                                                                 <td>
                                                                     <?php if (!empty($row['file_name'])): ?>
-                                                                        <div><?= htmlspecialchars((string) $row['file_name']) ?></div>
-                                                                        <a href="<?= base_url('DRM_MyRep/previewDocument/' . (int) $row['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">Preview</a>
-                                                                        <button
-                                                                            type="button"
-                                                                            class="btn btn-sm btn-outline-dark mt-1 js-doc-history"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modal-doc-history"
-                                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
-                                                                            data-history='<?= htmlspecialchars(json_encode(!empty($row['id_doc_file']) ? $this->MDRM_MyRep->getDrmFileLogs((int) $row['id_doc_file']) : []), ENT_QUOTES) ?>'>
-                                                                            History
-                                                                        </button>
+                                                                        <div class="drm-doc-file-link">
+                                                                            <a href="<?= base_url('DRM_MyRep/previewDocument/' . (int) $row['id_doc_file']) ?>" target="_blank">
+                                                                                <?= htmlspecialchars((string) $row['file_name']) ?>
+                                                                            </a>
+                                                                        </div>
+                                                                        <div class="drm-doc-file-actions">
+                                                                            <a href="<?= base_url('DRM_MyRep/downloadDocument/' . (int) $row['id_doc_file']) ?>" class="btn btn-sm btn-outline-primary">
+                                                                                <i class="fas fa-download"></i> Download
+                                                                            </a>
+                                                                            <button
+                                                                                type="button"
+                                                                                class="btn btn-sm btn-outline-info js-doc-history"
+                                                                                data-toggle="modal"
+                                                                                data-target="#modal-doc-history"
+                                                                                data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                                data-history='<?= htmlspecialchars(json_encode(!empty($row['id_doc_file']) ? $this->MDRM_MyRep->getDrmFileLogs((int) $row['id_doc_file']) : []), ENT_QUOTES) ?>'>
+                                                                                <i class="fas fa-history"></i> History
+                                                                            </button>
+                                                                        </div>
                                                                     <?php else: ?>
                                                                         <span class="text-muted">Belum ada file</span>
                                                                     <?php endif; ?>

@@ -1050,8 +1050,8 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                 <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" id="edit_regional_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" id="edit_province_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group"><label>Kecamatan</label><input type="text" id="edit_district_name" class="form-control" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group"><label>Desa / Kelurahan</label><input type="text" id="edit_village_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kecamatan</label><input type="text" name="district_name" id="edit_district_name" class="form-control" required></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Desa / Kelurahan</label><input type="text" name="village_name" id="edit_village_name" class="form-control" required></div></div>
                                 <div class="col-md-8"><div class="form-group mb-md-0"><label>Cluster</label><input type="text" id="edit_cluster_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" id="edit_valsal_date" class="form-control" readonly></div></div>
                             </div>

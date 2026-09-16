@@ -1088,6 +1088,40 @@ class DRM_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MDRM_MyRep->getDrmFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $downloadName = trim((string) ($file['file_name'] ?? ''));
+        if ($downloadName === '') {
+            $downloadName = basename($fullPath);
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . basename($downloadName) . '"');
+        header('Pragma: public');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
     public function saveBoqDraft()
     {
         if (empty($this->session->userdata('id_user'))) {

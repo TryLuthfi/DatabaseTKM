@@ -663,6 +663,8 @@ class Batch_Approval_MyRep extends CI_Controller
         $recipientPeriod = trim((string) $this->input->post('recipient_period'));
         $bankName = trim((string) $this->input->post('bank_name'));
         $bankAccountNumber = trim((string) $this->input->post('bank_account_number'));
+        $districtName = trim((string) $this->input->post('district_name'));
+        $villageName = trim((string) $this->input->post('village_name'));
         $submissionDate = $this->normalizeDate($this->input->post('submission_date'));
         $stagingStatus = strtoupper(trim((string) $this->input->post('staging_status')));
         $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
@@ -689,6 +691,12 @@ class Batch_Approval_MyRep extends CI_Controller
 
         if ($isBaseDataRequired && ($hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '')) {
             $this->session->set_flashdata('error', 'Data update Batch Approval belum lengkap.');
+            redirect($this->resolveBatchRedirectPath($clusterId));
+            return;
+        }
+
+        if ($districtName === '' || $villageName === '') {
+            $this->session->set_flashdata('error', 'Kecamatan dan Desa / Kelurahan wajib diisi.');
             redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
@@ -775,6 +783,8 @@ class Batch_Approval_MyRep extends CI_Controller
             'updated_by' => $userId,
         ], [
             'status_current' => $this->mapClusterStatusFromStaging($stagingStatus),
+            'district_name' => $districtName,
+            'village_name' => $villageName,
             'updated_by' => $userId,
         ], $pics);
 
