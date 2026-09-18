@@ -865,28 +865,31 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                     </div>
                                 </div>
                                 <?php foreach ($bakDocumentDefinitions as $documentDefinition): ?>
-                                    <?php $docItemId = (int) $documentDefinition['id_doc_item']; ?>
+                                    <?php
+                                        $docItemId = (int) $documentDefinition['id_doc_item'];
+                                        $docName = (string) ($documentDefinition['doc_name'] ?? '-');
+                                    ?>
                                     <div class="col-md-12">
                                         <div class="doc-modal-panel">
                                             <div class="form-group mb-3">
-                                                <label class="font-weight-bold d-block"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
+                                                <label class="font-weight-bold d-block">
+                                                    <?= htmlspecialchars($docName) ?>
+                                                    <span class="badge badge-info ml-1">Wajib PDF</span>
+                                                </label>
                                                 <div class="upload-dropzone create-doc-dropzone" id="bak-create-dropzone-<?= $docItemId ?>">
-                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="bak-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" required>
+                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="bak-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" data-required-extension="pdf" accept=".pdf,application/pdf" required>
                                                     <div class="upload-dropzone-content">
                                                         <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? 'dokumen')) ?></div>
+                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars($docName) ?></div>
                                                         <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
                                                         <div class="upload-dropzone-file create-doc-file-name" id="bak-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
                                                     </div>
                                                 </div>
-                                                <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
+                                                <small class="text-muted d-block mt-2">Format wajib: .pdf. Maksimal 30 MB.</small>
                                             </div>
-                                            <div class="form-group form-check mb-3">
-                                                <input type="checkbox" class="form-check-input js-create-doc-not-required" id="bak-create-not-required-<?= $docItemId ?>" name="create_is_document_not_required_<?= $docItemId ?>" value="1" data-doc-item-id="<?= $docItemId ?>">
-                                                <label class="form-check-label" for="bak-create-not-required-<?= $docItemId ?>">Tidak butuh dokument</label>
-                                            </div>
+                                            <div class="alert alert-info py-2 px-3 small mb-3"><?= htmlspecialchars($docName) ?> wajib diupload dalam format .pdf.</div>
                                             <div class="form-group mb-0">
-                                                <label class="font-weight-bold">Remark <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
+                                                <label class="font-weight-bold">Remark <?= htmlspecialchars($docName) ?></label>
                                                 <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
                                             </div>
                                         </div>
@@ -1106,9 +1109,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                 </div>
                             </div>
                             <div class="doc-modal-panel">
-                                <label class="font-weight-bold d-block">File Dokumen</label>
+                                <label class="font-weight-bold d-block">File Dokumen <span class="badge badge-info ml-1">Wajib PDF</span></label>
                                 <div class="upload-dropzone" id="bak-upload-dropzone">
-                                    <input type="file" name="file" id="bak-upload-file-input">
+                                    <input type="file" name="file" id="bak-upload-file-input" data-required-extension="pdf" accept=".pdf,application/pdf">
                                     <div class="upload-dropzone-content">
                                         <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                         <div class="upload-dropzone-title">Drag & drop file di sini</div>
@@ -1116,18 +1119,12 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                         <div class="upload-dropzone-file" id="bak-upload-file-name">Belum ada file dipilih</div>
                                     </div>
                                 </div>
-                                <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
+                                <small class="text-muted d-block mt-2">Format wajib: .pdf. Maksimal 30 MB.</small>
                             </div>
                             <div class="doc-modal-panel">
                                 <div class="form-group mb-0">
                                     <label class="font-weight-bold">Remark Upload</label>
                                     <textarea name="remark" id="upload_doc_remark" rows="3" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
-                                </div>
-                            </div>
-                            <div class="doc-modal-panel">
-                                <div class="form-group form-check mb-0">
-                                    <input type="checkbox" class="form-check-input" id="upload_doc_not_required" name="is_document_not_required" value="1">
-                                    <label class="form-check-label" for="upload_doc_not_required">Tandai dokumen tidak dibutuhkan</label>
                                 </div>
                             </div>
                             <div class="upload-progress-panel" id="bak-upload-progress-panel">
@@ -2457,6 +2454,16 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             }, 4000);
         }
 
+        function bakFileInputHasValidExtension(input) {
+            var requiredExtension = String(input.getAttribute('data-required-extension') || '').toLowerCase();
+            if (!requiredExtension || !input.files || !input.files.length) {
+                return true;
+            }
+
+            var fileName = String(input.files[0].name || '').toLowerCase();
+            return fileName.slice(-1 * (requiredExtension.length + 1)) === '.' + requiredExtension;
+        }
+
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
             var input = document.querySelector(inputSelector);
@@ -2546,38 +2553,15 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
             var allReady = true;
             inputs.forEach(function (input) {
-                var docItemId = input.getAttribute('data-doc-item-id') || '';
-                var checkbox = docItemId ? form.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]') : null;
-                var isNotRequired = checkbox ? checkbox.checked : false;
-                if (!isNotRequired && (!input.files || !input.files.length)) {
+                if (!input.files || !input.files.length) {
+                    allReady = false;
+                }
+                if (!bakFileInputHasValidExtension(input)) {
                     allReady = false;
                 }
             });
 
             submitButton.disabled = !allReady;
-        }
-
-        function syncBakCreateNoDocumentState(docItemId) {
-            var checkbox = document.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]');
-            var input = document.getElementById('bak-create-file-' + docItemId);
-            var label = document.getElementById('bak-create-file-name-' + docItemId);
-
-            if (!checkbox || !input || !label) {
-                return;
-            }
-
-            if (checkbox.checked) {
-                input.value = '';
-                input.disabled = true;
-                input.required = false;
-                label.textContent = 'File tidak diperlukan untuk item ini';
-            } else {
-                input.disabled = false;
-                input.required = true;
-                label.textContent = (input.files && input.files.length > 0)
-                    ? input.files[0].name
-                    : 'Belum ada file dipilih';
-            }
         }
 
         function syncTargetMeta($container) {
@@ -2748,7 +2732,6 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 syncTargetMeta($(this));
                 $(this).find('.create-doc-input').val('');
                 $(this).find('.create-doc-file-name').text('Belum ada file dipilih');
-                $(this).find('.js-create-doc-not-required').prop('checked', false);
                 $(this).find('.create-doc-input').prop('disabled', false).prop('required', true);
                 $(this).find('.js-bak-district-select').val(null).trigger('change');
                 $(this).find('.js-bak-village-select').val(null).trigger('change');
@@ -2776,6 +2759,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             });
 
             $(document).on('change', '.create-doc-input', function () {
+                if (!bakFileInputHasValidExtension(this)) {
+                    alert('File ' + ($(this).data('doc-name') || 'dokumen') + ' wajib format .pdf.');
+                    $(this).val('');
+                    $('#bak-create-file-name-' + ($(this).data('doc-item-id') || '')).text('Belum ada file dipilih');
+                }
                 updateBakCreateSubmitState();
             });
 
@@ -2788,11 +2776,6 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $(document).on('change', '.js-bak-district-select', function () {
                 var $container = $(this).closest('.modal-body, .modal-content');
                 $container.find('.js-bak-village-select').val(null).trigger('change');
-            });
-
-            $(document).on('change', '.js-create-doc-not-required', function () {
-                syncBakCreateNoDocumentState($(this).data('doc-item-id'));
-                updateBakCreateSubmitState();
             });
 
             $(document).on('click', '.js-edit-bak', function () {
@@ -2826,8 +2809,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $('#upload_doc_name').val($button.data('doc_name'));
                 $('#upload_doc_status').val($button.data('doc_status'));
                 $('#upload_doc_remark').val($button.data('doc_remark'));
-                $('#upload_doc_not_required').prop('checked', false);
-                $('#bak-upload-file-input').val('').prop('disabled', false).prop('required', true);
+                $('#bak-upload-file-input').val('').prop('disabled', false).prop('required', true).attr('accept', '.pdf,application/pdf').attr('data-required-extension', 'pdf');
                 $('#bak-upload-file-name').text('Belum ada file dipilih');
                 $('#bak-upload-progress-panel').hide();
                 $('#bak-upload-progress-bar').removeClass('success').css('width', '0%');
@@ -2845,8 +2827,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $('#upload_doc_name').val($button.data('doc_name'));
                 $('#upload_doc_status').val($button.data('doc_status'));
                 $('#upload_doc_remark').val($button.data('doc_remark'));
-                $('#upload_doc_not_required').prop('checked', false);
-                $('#bak-upload-file-input').val('').prop('disabled', false).prop('required', true);
+                $('#bak-upload-file-input').val('').prop('disabled', false).prop('required', true).attr('accept', '.pdf,application/pdf').attr('data-required-extension', 'pdf');
                 $('#bak-upload-file-name').text('Belum ada file dipilih');
                 $('#bak-upload-progress-panel').hide();
                 $('#bak-upload-progress-bar').removeClass('success').css('width', '0%');
@@ -2978,27 +2959,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 });
             });
 
-            $(document).on('change', '#upload_doc_not_required', function () {
-                var checked = $(this).is(':checked');
-                $('#bak-upload-file-input').prop('disabled', checked).prop('required', !checked);
-                if (checked) {
-                    $('#bak-upload-file-input').val('');
-                    $('#bak-upload-file-name').text('File tidak diperlukan untuk item ini');
-                } else {
+            $(document).on('change', '#bak-upload-file-input', function () {
+                if (!bakFileInputHasValidExtension(this)) {
+                    alert('File ' + ($('#upload_doc_name').val() || 'dokumen') + ' wajib format .pdf.');
+                    $(this).val('');
                     $('#bak-upload-file-name').text('Belum ada file dipilih');
                 }
             });
 
             $('#modal-bak-create form').on('submit', function (e) {
                 var missingDocName = '';
+                var invalidDocName = '';
                 $(this).find('.create-doc-input').each(function () {
-                    if (missingDocName) {
-                        return;
-                    }
-
-                    var docItemId = $(this).data('doc-item-id');
-                    var isNotRequired = $('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]').is(':checked');
-                    if (isNotRequired) {
+                    if (missingDocName || invalidDocName) {
                         return;
                     }
 
@@ -3006,12 +2979,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
                     if (!hasFile) {
                         missingDocName = $(this).data('doc-name') || 'dokumen';
+                        return;
+                    }
+
+                    if (!bakFileInputHasValidExtension(fileInput)) {
+                        invalidDocName = $(this).data('doc-name') || 'dokumen';
                     }
                 });
 
                 if (missingDocName) {
                     e.preventDefault();
-                    alert('File ' + missingDocName + ' wajib diupload atau tandai tidak dibutuhkan saat input BAK.');
+                    alert('File ' + missingDocName + ' wajib diupload saat input BAK.');
+                    return;
+                }
+
+                if (invalidDocName) {
+                    e.preventDefault();
+                    alert('File ' + invalidDocName + ' wajib format .pdf.');
                 }
             });
 
@@ -3023,7 +3007,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 var progressPanel = $('#bak-upload-progress-panel');
                 var progressBar = $('#bak-upload-progress-bar');
                 var progressPercent = $('#bak-upload-progress-percent');
+                var uploadInput = document.getElementById('bak-upload-file-input');
                 var formData = new FormData(form);
+
+                if (uploadInput && !bakFileInputHasValidExtension(uploadInput)) {
+                    alert('File ' + ($('#upload_doc_name').val() || 'dokumen') + ' wajib format .pdf.');
+                    return;
+                }
 
                 submitButton.prop('disabled', true).text('Uploading...');
                 progressPanel.show();

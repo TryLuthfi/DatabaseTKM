@@ -29,6 +29,28 @@ $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'APPROVAL') : true;
 
+if (!function_exists('valsalDocumentUploadMeta')) {
+    function valsalDocumentUploadMeta($docName)
+    {
+        $normalizedDocName = strtoupper(trim((string) $docName));
+        if ($normalizedDocName === 'BOUNDARY KMZ') {
+            return [
+                'title_suffix' => 'Wajib KMZ',
+                'accept' => '.kmz,application/vnd.google-earth.kmz',
+                'hint' => 'Format wajib: .kmz. Maksimal 30 MB.',
+                'extension' => 'kmz',
+            ];
+        }
+
+        return [
+            'title_suffix' => 'Wajib PDF',
+            'accept' => '.pdf,application/pdf',
+            'hint' => 'Format wajib: .pdf. Maksimal 30 MB.',
+            'extension' => 'pdf',
+        ];
+    }
+}
+
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
     if ($cityName !== '') {
@@ -902,28 +924,32 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                     </div>
                                 </div>
                                 <?php foreach ($valsalDocumentDefinitions as $documentDefinition): ?>
-                                    <?php $docItemId = (int) $documentDefinition['id_doc_item']; ?>
+                                    <?php
+                                        $docItemId = (int) $documentDefinition['id_doc_item'];
+                                        $docName = (string) ($documentDefinition['doc_name'] ?? '-');
+                                        $docUploadMeta = valsalDocumentUploadMeta($docName);
+                                    ?>
                                     <div class="col-md-12">
                                         <div class="doc-modal-panel">
                                             <div class="form-group mb-3">
-                                                <label class="font-weight-bold d-block"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
+                                                <label class="font-weight-bold d-block">
+                                                    <?= htmlspecialchars($docName) ?>
+                                                    <span class="badge badge-info ml-1"><?= htmlspecialchars($docUploadMeta['title_suffix']) ?></span>
+                                                </label>
                                                 <div class="upload-dropzone create-doc-dropzone" id="valsal-create-dropzone-<?= $docItemId ?>">
-                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="valsal-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" required>
+                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="valsal-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" data-required-extension="<?= htmlspecialchars($docUploadMeta['extension'], ENT_QUOTES) ?>" accept="<?= htmlspecialchars($docUploadMeta['accept'], ENT_QUOTES) ?>" required>
                                                     <div class="upload-dropzone-content">
                                                         <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? 'dokumen')) ?></div>
+                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars($docName) ?></div>
                                                         <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
                                                         <div class="upload-dropzone-file create-doc-file-name" id="valsal-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
                                                     </div>
                                                 </div>
-                                                <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
+                                                <small class="text-muted d-block mt-2"><?= htmlspecialchars($docUploadMeta['hint']) ?></small>
                                             </div>
-                                            <div class="form-group form-check mb-3">
-                                                <input type="checkbox" class="form-check-input js-create-doc-not-required" id="valsal-create-not-required-<?= $docItemId ?>" name="create_is_document_not_required_<?= $docItemId ?>" value="1" data-doc-item-id="<?= $docItemId ?>">
-                                                <label class="form-check-label" for="valsal-create-not-required-<?= $docItemId ?>">Tidak butuh dokument</label>
-                                            </div>
+                                            <div class="alert alert-info py-2 px-3 small mb-3"><?= htmlspecialchars($docName) ?> wajib diupload dalam format .<?= htmlspecialchars($docUploadMeta['extension']) ?>.</div>
                                             <div class="form-group mb-0">
-                                                <label class="font-weight-bold">Remark <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
+                                                <label class="font-weight-bold">Remark <?= htmlspecialchars($docName) ?></label>
                                                 <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
                                             </div>
                                         </div>
@@ -1120,9 +1146,9 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                 </div>
                             </div>
                             <div class="doc-modal-panel">
-                                <label class="font-weight-bold d-block">File Dokumen</label>
+                                <label class="font-weight-bold d-block" id="valsal-upload-file-label">File Dokumen</label>
                                 <div class="upload-dropzone" id="valsal-upload-dropzone">
-                                    <input type="file" name="file" id="valsal-upload-file-input">
+                                    <input type="file" name="file" id="valsal-upload-file-input" data-required-extension="pdf" accept=".pdf,application/pdf">
                                     <div class="upload-dropzone-content">
                                         <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                         <div class="upload-dropzone-title">Drag & drop file di sini</div>
@@ -1130,18 +1156,12 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                         <div class="upload-dropzone-file" id="valsal-upload-file-name">Belum ada file dipilih</div>
                                     </div>
                                 </div>
-                                <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
+                                <small class="text-muted d-block mt-2" id="valsal-upload-file-hint">Format wajib: .pdf. Maksimal 30 MB.</small>
                             </div>
                             <div class="doc-modal-panel">
                                 <div class="form-group mb-0">
                                     <label class="font-weight-bold">Remark Upload</label>
                                     <textarea name="remark" id="upload_doc_remark" rows="3" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
-                                </div>
-                            </div>
-                            <div class="doc-modal-panel">
-                                <div class="form-group form-check mb-0">
-                                    <input type="checkbox" class="form-check-input" id="upload_doc_not_required" name="is_document_not_required" value="1">
-                                    <label class="form-check-label" for="upload_doc_not_required">Tandai dokumen tidak dibutuhkan</label>
                                 </div>
                             </div>
                             <div class="upload-progress-panel" id="valsal-upload-progress-panel">
@@ -2152,6 +2172,35 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 .replace(/'/g, '&#039;');
         }
 
+        function getValsalUploadMeta(docName) {
+            var normalizedDocName = String(docName || '').toUpperCase().trim();
+            if (normalizedDocName === 'BOUNDARY KMZ') {
+                return {
+                    titleSuffix: 'Wajib KMZ',
+                    accept: '.kmz,application/vnd.google-earth.kmz',
+                    hint: 'Format wajib: .kmz. Maksimal 30 MB.',
+                    extension: 'kmz'
+                };
+            }
+
+            return {
+                titleSuffix: 'Wajib PDF',
+                accept: '.pdf,application/pdf',
+                hint: 'Format wajib: .pdf. Maksimal 30 MB.',
+                extension: 'pdf'
+            };
+        }
+
+        function valsalFileInputHasValidExtension(input) {
+            var requiredExtension = String(input.getAttribute('data-required-extension') || '').toLowerCase();
+            if (!requiredExtension || !input.files || !input.files.length) {
+                return true;
+            }
+
+            var fileName = String(input.files[0].name || '').toLowerCase();
+            return fileName.slice(-1 * (requiredExtension.length + 1)) === '.' + requiredExtension;
+        }
+
         function getValsalStatusBadgeClass(statusLabel) {
             var value = String(statusLabel || '').toUpperCase().trim();
             if (value === 'DONE' || value === 'APPROVED' || value === 'VALSAL') return 'success';
@@ -2392,10 +2441,10 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
             var allReady = true;
             inputs.forEach(function (input) {
-                var docItemId = input.getAttribute('data-doc-item-id') || '';
-                var checkbox = docItemId ? form.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]') : null;
-                var isNotRequired = checkbox ? checkbox.checked : false;
-                if (!isNotRequired && (!input.files || !input.files.length)) {
+                if (!input.files || !input.files.length) {
+                    allReady = false;
+                }
+                if (!valsalFileInputHasValidExtension(input)) {
                     allReady = false;
                 }
             });
@@ -2403,27 +2452,30 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             submitButton.disabled = !allReady;
         }
 
-        function syncValsalCreateNoDocumentState(docItemId) {
-            var checkbox = document.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]');
-            var input = document.getElementById('valsal-create-file-' + docItemId);
-            var label = document.getElementById('valsal-create-file-name-' + docItemId);
+        function setupValsalUploadDocumentModal($button) {
+            var docName = $button.data('doc_name') || '';
+            var uploadMeta = getValsalUploadMeta(docName);
 
-            if (!checkbox || !input || !label) {
-                return;
-            }
-
-            if (checkbox.checked) {
-                input.value = '';
-                input.disabled = true;
-                input.required = false;
-                label.textContent = 'File tidak diperlukan untuk item ini';
-            } else {
-                input.disabled = false;
-                input.required = true;
-                label.textContent = (input.files && input.files.length > 0)
-                    ? input.files[0].name
-                    : 'Belum ada file dipilih';
-            }
+            $('#upload_cluster_id').val($button.data('cluster_id'));
+            $('#upload_doc_item_id').val($button.data('doc_item_id'));
+            $('#upload_cluster_name').val($button.data('cluster_name'));
+            $('#upload_doc_cluster_caption').text($button.data('cluster_name'));
+            $('#upload_doc_name').val(docName);
+            $('#upload_doc_status').val($button.data('doc_status'));
+            $('#upload_doc_remark').val($button.data('doc_remark'));
+            $('#valsal-upload-file-label').html('File Dokumen <span class="badge badge-info ml-1">' + uploadMeta.titleSuffix + '</span>');
+            $('#valsal-upload-file-input')
+                .val('')
+                .prop('disabled', false)
+                .prop('required', true)
+                .attr('accept', uploadMeta.accept)
+                .attr('data-required-extension', uploadMeta.extension);
+            $('#valsal-upload-file-hint').text(uploadMeta.hint);
+            $('#valsal-upload-file-name').text('Belum ada file dipilih');
+            $('#valsal-upload-progress-panel').hide();
+            $('#valsal-upload-progress-bar').removeClass('success').css('width', '0%');
+            $('#valsal-upload-progress-percent').text('0%');
+            $('#valsal-upload-document-submit').prop('disabled', false).text('Upload Dokumen');
         }
 
         function syncValsalDetailFooterButtons(clusterId, documents) {
@@ -2682,7 +2734,6 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 syncClusterMeta($(this));
                 $(this).find('.create-doc-input').val('');
                 $(this).find('.create-doc-file-name').text('Belum ada file dipilih');
-                $(this).find('.js-create-doc-not-required').prop('checked', false);
                 $(this).find('.create-doc-input').prop('disabled', false).prop('required', true);
                 updateValsalCreateSubmitState();
             }).on('hidden.bs.modal', function () {
@@ -2698,11 +2749,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             });
 
             $(document).on('change', '.create-doc-input', function () {
-                updateValsalCreateSubmitState();
-            });
-
-            $(document).on('change', '.js-create-doc-not-required', function () {
-                syncValsalCreateNoDocumentState($(this).data('doc-item-id'));
+                if (!valsalFileInputHasValidExtension(this)) {
+                    alert('File ' + ($(this).data('doc-name') || 'dokumen') + ' wajib format .' + ($(this).attr('data-required-extension') || '').toLowerCase() + '.');
+                    $(this).val('');
+                    $('#valsal-create-file-name-' + ($(this).data('doc-item-id') || '')).text('Belum ada file dipilih');
+                }
                 updateValsalCreateSubmitState();
             });
 
@@ -2733,40 +2784,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             });
 
             $(document).on('click', '.js-upload-doc', function () {
-                var $button = $(this);
-                $('#upload_cluster_id').val($button.data('cluster_id'));
-                $('#upload_doc_item_id').val($button.data('doc_item_id'));
-                $('#upload_cluster_name').val($button.data('cluster_name'));
-                $('#upload_doc_cluster_caption').text($button.data('cluster_name'));
-                $('#upload_doc_name').val($button.data('doc_name'));
-                $('#upload_doc_status').val($button.data('doc_status'));
-                $('#upload_doc_remark').val($button.data('doc_remark'));
-                $('#upload_doc_not_required').prop('checked', false);
-                $('#valsal-upload-file-input').val('').prop('disabled', false).prop('required', true);
-                $('#valsal-upload-file-name').text('Belum ada file dipilih');
-                $('#valsal-upload-progress-panel').hide();
-                $('#valsal-upload-progress-bar').removeClass('success').css('width', '0%');
-                $('#valsal-upload-progress-percent').text('0%');
-                $('#valsal-upload-document-submit').prop('disabled', false).text('Upload Dokumen');
+                setupValsalUploadDocumentModal($(this));
             });
 
             $(document).on('click', '.js-detail-reupload-doc', function () {
                 var $button = $(this);
                 $('#modal-valsal-doc-detail').modal('hide');
-                $('#upload_cluster_id').val($button.data('cluster_id'));
-                $('#upload_doc_item_id').val($button.data('doc_item_id'));
-                $('#upload_cluster_name').val($button.data('cluster_name'));
-                $('#upload_doc_cluster_caption').text($button.data('cluster_name'));
-                $('#upload_doc_name').val($button.data('doc_name'));
-                $('#upload_doc_status').val($button.data('doc_status'));
-                $('#upload_doc_remark').val($button.data('doc_remark'));
-                $('#upload_doc_not_required').prop('checked', false);
-                $('#valsal-upload-file-input').val('').prop('disabled', false).prop('required', true);
-                $('#valsal-upload-file-name').text('Belum ada file dipilih');
-                $('#valsal-upload-progress-panel').hide();
-                $('#valsal-upload-progress-bar').removeClass('success').css('width', '0%');
-                $('#valsal-upload-progress-percent').text('0%');
-                $('#valsal-upload-document-submit').prop('disabled', false).text('Upload Dokumen');
+                setupValsalUploadDocumentModal($button);
                 window.setTimeout(function () {
                     $('#modal-valsal-upload-doc').modal('show');
                 }, 180);
@@ -2869,27 +2893,20 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 });
             });
 
-            $(document).on('change', '#upload_doc_not_required', function () {
-                var checked = $(this).is(':checked');
-                $('#valsal-upload-file-input').prop('disabled', checked).prop('required', !checked);
-                if (checked) {
-                    $('#valsal-upload-file-input').val('');
-                    $('#valsal-upload-file-name').text('File tidak diperlukan untuk item ini');
-                } else {
+            $(document).on('change', '#valsal-upload-file-input', function () {
+                if (!valsalFileInputHasValidExtension(this)) {
+                    alert('File ' + ($('#upload_doc_name').val() || 'dokumen') + ' wajib format .' + ($('#valsal-upload-file-input').attr('data-required-extension') || '').toLowerCase() + '.');
+                    $(this).val('');
                     $('#valsal-upload-file-name').text('Belum ada file dipilih');
                 }
             });
 
             $('#modal-valsal-create form').on('submit', function (e) {
                 var missingDocName = '';
+                var invalidDocName = '';
+                var invalidExtension = '';
                 $(this).find('.create-doc-input').each(function () {
-                    if (missingDocName) {
-                        return;
-                    }
-
-                    var docItemId = $(this).data('doc-item-id');
-                    var isNotRequired = $('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]').is(':checked');
-                    if (isNotRequired) {
+                    if (missingDocName || invalidDocName) {
                         return;
                     }
 
@@ -2897,12 +2914,24 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
                     if (!hasFile) {
                         missingDocName = $(this).data('doc-name') || 'dokumen';
+                        return;
+                    }
+
+                    if (!valsalFileInputHasValidExtension(fileInput)) {
+                        invalidDocName = $(this).data('doc-name') || 'dokumen';
+                        invalidExtension = $(this).attr('data-required-extension') || '';
                     }
                 });
 
                 if (missingDocName) {
                     e.preventDefault();
-                    alert('File ' + missingDocName + ' wajib diupload atau tandai tidak dibutuhkan saat input VALSAL.');
+                    alert('File ' + missingDocName + ' wajib diupload saat input VALSAL.');
+                    return;
+                }
+
+                if (invalidDocName) {
+                    e.preventDefault();
+                    alert('File ' + invalidDocName + ' wajib format .' + invalidExtension + '.');
                 }
             });
 
@@ -2914,7 +2943,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 var progressPanel = $('#valsal-upload-progress-panel');
                 var progressBar = $('#valsal-upload-progress-bar');
                 var progressPercent = $('#valsal-upload-progress-percent');
+                var uploadInput = document.getElementById('valsal-upload-file-input');
                 var formData = new FormData(form);
+
+                if (uploadInput && !valsalFileInputHasValidExtension(uploadInput)) {
+                    alert('File ' + ($('#upload_doc_name').val() || 'dokumen') + ' wajib format .' + ($('#valsal-upload-file-input').attr('data-required-extension') || '').toLowerCase() + '.');
+                    return;
+                }
 
                 submitButton.prop('disabled', true).text('Uploading...');
                 progressPanel.show();

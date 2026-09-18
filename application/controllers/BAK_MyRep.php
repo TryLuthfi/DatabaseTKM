@@ -569,9 +569,8 @@ class BAK_MyRep extends CI_Controller
             foreach ($documentDefinitions as $documentDefinition) {
                 $docItemId = (int) $documentDefinition['id_doc_item'];
                 $fieldName = 'create_file_' . $docItemId;
-                $isNoDocumentRequired = (int) $this->input->post('create_is_document_not_required_' . $docItemId) === 1;
-                if (!$isNoDocumentRequired && empty($_FILES[$fieldName]['name'])) {
-                    $this->session->set_flashdata('error', 'Dokumen ' . ($documentDefinition['doc_name'] ?? 'BAK') . ' wajib diupload atau tandai tidak dibutuhkan saat input cluster BAK baru.');
+                if (empty($_FILES[$fieldName]['name'])) {
+                    $this->session->set_flashdata('error', 'Dokumen ' . ($documentDefinition['doc_name'] ?? 'BAK') . ' wajib diupload saat input cluster BAK baru.');
                     redirect('BAK_MyRep');
                     return;
                 }
@@ -652,7 +651,6 @@ class BAK_MyRep extends CI_Controller
             foreach ($documentDefinitions as $documentDefinition) {
                 $docItemId = (int) $documentDefinition['id_doc_item'];
                 $context = $this->MBAK_MyRep->getBakDocumentContext($clusterId, $docItemId);
-                $isNoDocumentRequired = (int) $this->input->post('create_is_document_not_required_' . $docItemId) === 1;
                 if (empty($context['id_doc_item'])) {
                     $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
                     $this->session->set_flashdata('error', 'Konfigurasi dokumen ' . ($documentDefinition['doc_name'] ?? 'BAK') . ' belum ditemukan.');
@@ -660,14 +658,7 @@ class BAK_MyRep extends CI_Controller
                     return;
                 }
 
-                $uploadResult = $isNoDocumentRequired
-                    ? [
-                        'status' => true,
-                        'message' => '',
-                        'file_name' => '',
-                        'file_path' => '',
-                    ]
-                    : $this->storeBakUploadFile($clusterId, $context, 'create_file_' . $docItemId);
+                $uploadResult = $this->storeBakUploadFile($clusterId, $context, 'create_file_' . $docItemId);
                 if (!$uploadResult['status']) {
                     $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
                     $this->session->set_flashdata('error', $uploadResult['message']);
@@ -678,7 +669,7 @@ class BAK_MyRep extends CI_Controller
                 $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, $docItemId, [
                     'file_name' => $uploadResult['file_name'],
                     'file_path' => $uploadResult['file_path'],
-                    'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
+                    'is_document_not_required' => 0,
                     'status_file' => 'UPLOADED',
                     'remark' => trim((string) $this->input->post('create_doc_remark_' . $docItemId)),
                     'uploaded_by' => $userId,
@@ -843,8 +834,7 @@ class BAK_MyRep extends CI_Controller
         }
         $notificationEvent = !empty($context['id_doc_file']) ? 'document_revised' : 'document_masuk';
 
-        $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
-        if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
+        if (empty($_FILES['file']['name'])) {
             $this->handleUploadError('File ' . ($context['doc_name'] ?? 'dokumen') . ' wajib dipilih.', 'BAK_MyRep');
             return;
         }
@@ -858,7 +848,7 @@ class BAK_MyRep extends CI_Controller
         $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, $docItemId, [
             'file_name' => $uploadResult['file_name'],
             'file_path' => $uploadResult['file_path'],
-            'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
+            'is_document_not_required' => 0,
             'status_file' => 'UPLOADED',
             'remark' => trim((string) $this->input->post('remark')),
             'uploaded_by' => (int) $this->session->userdata('id_user'),
@@ -874,7 +864,7 @@ class BAK_MyRep extends CI_Controller
         $this->sendBakNotification($notificationEvent, $cluster, (string) ($context['doc_name'] ?? 'BAK'));
 
         $this->handleUploadSuccess(
-            $isNoDocumentRequired ? 'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' berhasil diupload.',
+            'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' berhasil diupload.',
             'BAK_MyRep'
         );
     }
@@ -1757,18 +1747,6 @@ class BAK_MyRep extends CI_Controller
 
     private function storeBakUploadFile($clusterId, $context, $fieldName)
     {
-        $isNoDocumentRequired = $fieldName === 'file'
-            ? (int) $this->input->post('is_document_not_required') === 1
-            : false;
-        if ($isNoDocumentRequired) {
-            return [
-                'status' => true,
-                'message' => '',
-                'file_name' => '',
-                'file_path' => '',
-            ];
-        }
-
         if (empty($_FILES[$fieldName]['name'])) {
             return [
                 'status' => false,
@@ -1783,13 +1761,22 @@ class BAK_MyRep extends CI_Controller
             mkdir($uploadDir, 0777, true);
         }
 
-        $extension = pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION);
+        $extension = strtolower((string) pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION));
+        if ($extension !== 'pdf') {
+            return [
+                'status' => false,
+                'message' => 'File ' . ((string) ($context['doc_name'] ?? 'dokumen')) . ' wajib format .pdf.',
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
         $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'BAK_DOC'));
         $fileName = 'BAK_' . (int) $clusterId . '_' . (int) ($context['id_doc_item'] ?? 0) . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
 
         $config = [
             'upload_path' => $uploadDir,
-            'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+            'allowed_types' => 'pdf',
             'max_size' => 30720,
             'file_name' => $fileName,
             'overwrite' => true,
