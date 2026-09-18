@@ -387,6 +387,12 @@ class Myrep_reject_email_service
         $submitters = $this->getUsersByIds(array_keys($submitterIds));
         $rejecters = $this->getUsersByIds(array_keys($rejecterIds));
         $mappingUsers = $this->getMappedCityUsers($queue);
+        $sitacTeamCc = $this->usersShareNik($rejecters, $mappingUsers['sitac_ho'] ?? [])
+            ? $this->extractEmails($mappingUsers['sitac_ho'] ?? [])
+            : [];
+        $financeTeamCc = $this->usersShareNik($rejecters, $mappingUsers['finance_ho'] ?? [])
+            ? $this->extractEmails($mappingUsers['finance_ho'] ?? [])
+            : [];
 
         $to = $this->extractEmails($submitters);
         if (empty($to)) {
@@ -396,6 +402,8 @@ class Myrep_reject_email_service
         $cc = array_merge(
             $this->extractEmails($mappingUsers['rpm_area'] ?? []),
             $this->extractEmails($mappingUsers['sm_area'] ?? []),
+            $sitacTeamCc,
+            $financeTeamCc,
             $this->extractEmails($rejecters),
             $this->parseEmailList($this->envValue('MYREP_REJECT_FIXED_CC', ''))
         );
@@ -446,6 +454,8 @@ class Myrep_reject_email_service
             'admin_area' => $this->getUsersByNiks(myrep_pic_nik_list($mapping['admin_area'] ?? '')),
             'rpm_area' => $this->getUsersByNiks(myrep_pic_nik_list($mapping['rpm_area'] ?? '')),
             'sm_area' => $this->getUsersByNiks(myrep_pic_nik_list($mapping['sm_area'] ?? '')),
+            'sitac_ho' => $this->getUsersByNiks(myrep_pic_nik_list($mapping['sitac_ho'] ?? '')),
+            'finance_ho' => $this->getUsersByNiks(myrep_pic_nik_list($mapping['finance_ho'] ?? '')),
         ];
     }
 
@@ -745,6 +755,30 @@ class Myrep_reject_email_service
             $emails = array_merge($emails, $this->parseEmailList($user['email_kantor'] ?? ''));
         }
         return $emails;
+    }
+
+    private function usersShareNik(array $leftUsers, array $rightUsers)
+    {
+        $nikSet = [];
+        foreach ($leftUsers as $user) {
+            $nik = trim((string) ($user['nik'] ?? ''));
+            if ($nik !== '') {
+                $nikSet[$nik] = true;
+            }
+        }
+
+        if (empty($nikSet)) {
+            return false;
+        }
+
+        foreach ($rightUsers as $user) {
+            $nik = trim((string) ($user['nik'] ?? ''));
+            if ($nik !== '' && isset($nikSet[$nik])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function parseEmailList($value)
