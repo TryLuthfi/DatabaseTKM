@@ -18,13 +18,12 @@ $createCityOptions = [];
 $nyBatchRows = [];
 $nyAtpRows = [];
 $allDrmRows = $clusterRows;
-$postDrmStatuses = ['RFS', 'ATP', 'DONE'];
 $drmStageSummary = [
-    'NY_BATCH' => ['label' => 'NY Batch', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-ny-batch-tab', 'filter' => ''],
-    'ON_PROSES_DRM' => ['label' => 'On Proses DRM', 'class' => 'primary', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'on_proses_drm'],
-    'DONE_DRM' => ['label' => 'Done DRM', 'class' => 'success', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'done_drm'],
-    'RAB_DONE' => ['label' => 'RAB Done', 'class' => 'success', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rab_done'],
-    'REJECTED' => ['label' => 'Rejected', 'class' => 'danger', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rejected'],
+    'NY_DRM' => ['label' => 'NY DRM', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-ny-batch-tab', 'filter' => 'ny_drm'],
+    'ON_REVIEW_DRM' => ['label' => 'ON REVIEW DRM', 'pic' => 'HO SND', 'pic_class' => 'sitac', 'pic_icon' => 'users', 'class' => 'primary', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'on_review_drm'],
+    'NY_RAB' => ['label' => 'NY RAB', 'pic' => 'HO PLANNING', 'pic_class' => 'planning', 'pic_icon' => 'drafting-compass', 'class' => 'warning', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_rab'],
+    'REJECTED' => ['label' => 'REJECTED', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'danger', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rejected'],
+    'DONE_DRM' => ['label' => 'DONE DRM', 'pic' => '', 'pic_class' => 'done', 'pic_icon' => 'check-circle', 'class' => 'success', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'done_drm'],
 ];
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'TAMBAH') : true;
 
@@ -36,6 +35,41 @@ foreach ($eligibleClusterOptions as $clusterOption) {
 }
 
 asort($createCityOptions);
+
+$getDrmStatusTokens = static function (array $row) {
+    $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+    $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
+    $clusterStatus = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
+    $subfeederStatus = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? '')));
+    $clusterStatus = $clusterStatus !== '' ? $clusterStatus : 'WAITING INPUT';
+    $statusSet = [$clusterStatus];
+
+    if (!$isMainfeeder) {
+        $subfeederStatus = $subfeederStatus !== '' ? $subfeederStatus : 'WAITING INPUT';
+        $statusSet[] = $subfeederStatus;
+    }
+
+    $tokens = array_map(static function ($status) {
+        return strtolower(str_replace(' ', '_', $status));
+    }, array_unique($statusSet));
+
+    if (in_array('tidak_dibutuhkan', $tokens, true) || in_array('not_required', $tokens, true)) {
+        $tokens[] = 'approved';
+    }
+
+    return array_values(array_unique(array_filter($tokens)));
+};
+
+$getDrmRabToken = static function (array $row) use ($getDrmStatusTokens) {
+    $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+    $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+
+    if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+        return 'rab_done';
+    }
+
+    return in_array('approved', $getDrmStatusTokens($row), true) ? 'belum_rab' : '';
+};
 
 $isNyBatchRow = static function (array $row) {
     if ((int) ($row['id_batch_approval'] ?? 0) <= 0) {
@@ -84,22 +118,22 @@ foreach ($clusterRows as $row) {
     if ($isNyBatchRow($row)) {
         $summaryNyBatch++;
         $summaryNyBatchHp += $homepassBase;
-        $drmStageSummary['NY_BATCH']['count']++;
-        $drmStageSummary['NY_BATCH']['hp'] += $homepassBase;
+        $drmStageSummary['NY_DRM']['count']++;
+        $drmStageSummary['NY_DRM']['hp'] += $homepassBase;
     }
 
-    if ($hasDrm && !in_array($drmStatus, ['COMPLETE', 'REJECTED'], true)) {
+    if ($hasDrm && in_array('waiting_ho', $getDrmStatusTokens($row), true)) {
         $summaryOnProses++;
         $summaryOnProsesHp += $summaryHomepass;
-        $drmStageSummary['ON_PROSES_DRM']['count']++;
-        $drmStageSummary['ON_PROSES_DRM']['hp'] += $summaryHomepass;
+        $drmStageSummary['ON_REVIEW_DRM']['count']++;
+        $drmStageSummary['ON_REVIEW_DRM']['hp'] += $summaryHomepass;
     }
 
-    if ($hasDrm && $drmStatus === 'COMPLETE' && !in_array($currentStatus, $postDrmStatuses, true)) {
+    if ($getDrmRabToken($row) === 'belum_rab') {
         $summaryDone++;
         $summaryDoneHp += $summaryHomepass;
-        $drmStageSummary['DONE_DRM']['count']++;
-        $drmStageSummary['DONE_DRM']['hp'] += $summaryHomepass;
+        $drmStageSummary['NY_RAB']['count']++;
+        $drmStageSummary['NY_RAB']['hp'] += $summaryHomepass;
     }
 
     if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
@@ -112,14 +146,10 @@ foreach ($clusterRows as $row) {
     if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
         $summaryRabDone++;
         $summaryRabDoneHp += $summaryHomepass;
-        $drmStageSummary['RAB_DONE']['count']++;
-        $drmStageSummary['RAB_DONE']['hp'] += $summaryHomepass;
+        $drmStageSummary['DONE_DRM']['count']++;
+        $drmStageSummary['DONE_DRM']['hp'] += $summaryHomepass;
     }
 }
-
-$drmStageSummary = array_filter($drmStageSummary, static function ($stageData) {
-    return (int) ($stageData['count'] ?? 0) > 0;
-});
 
 $buildDrmStatusSummary = static function (array $rows) {
     $summary = [
@@ -175,21 +205,22 @@ $drmWaitingHoCount = (int) ($drmActiveStatusSummary['waitingHoCount'] ?? 0);
 $drmApprovedCount = (int) ($drmActiveStatusSummary['approvedCount'] ?? 0);
 $drmStatusRejectedCount = (int) ($drmActiveStatusSummary['rejectedCount'] ?? 0);
 
-$buildDrmRabSummary = static function (array $rows) {
+$buildDrmRabSummary = static function (array $rows) use ($getDrmRabToken) {
     $summary = [
         'belumRabCount' => 0,
         'rabDoneCount' => 0,
     ];
 
     foreach ($rows as $row) {
-        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
-        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
-        if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+        $rabToken = $getDrmRabToken($row);
+        if ($rabToken === 'rab_done') {
             $summary['rabDoneCount']++;
             continue;
         }
 
-        $summary['belumRabCount']++;
+        if ($rabToken === 'belum_rab') {
+            $summary['belumRabCount']++;
+        }
     }
 
     return $summary;
@@ -271,6 +302,27 @@ if (!function_exists('drmIsNyBatchRow')) {
     }
 }
 
+if (!function_exists('drmStatusTokens')) {
+    function drmStatusTokens(array $row)
+    {
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        $isMainfeeder = in_array($projectType, ['MAINFEEDER', 'FWA'], true);
+        $clusterStatusLabel = drmScopeStatusLabel($row['drm_cluster_status'] ?? '');
+        $subfeederStatusLabel = drmScopeStatusLabel($row['drm_subfeeder_status'] ?? '');
+        $tokens = [strtolower(str_replace(' ', '_', $clusterStatusLabel))];
+
+        if (!$isMainfeeder) {
+            $tokens[] = strtolower(str_replace(' ', '_', $subfeederStatusLabel));
+        }
+
+        if (in_array('tidak_dibutuhkan', $tokens, true) || in_array('not_required', $tokens, true)) {
+            $tokens[] = 'approved';
+        }
+
+        return array_values(array_unique(array_filter($tokens)));
+    }
+}
+
 if (!function_exists('drmStageSearchTokens')) {
     function drmStageSearchTokens(array $row)
     {
@@ -279,21 +331,25 @@ if (!function_exists('drmStageSearchTokens')) {
         $drmStatus = strtoupper(trim((string) ($row['display_status_drm'] ?? $row['status_drm'] ?? 'DRAFT')));
         $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
         $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
-        $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
 
         if (drmIsNyBatchRow($row)) {
+            $tokens[] = 'ny_drm';
             $tokens[] = 'ny_batch';
         }
-        if ($hasDrm && !in_array($drmStatus, ['COMPLETE', 'REJECTED'], true)) {
+        $statusTokens = drmStatusTokens($row);
+
+        if ($hasDrm && in_array('waiting_ho', $statusTokens, true)) {
+            $tokens[] = 'on_review_drm';
             $tokens[] = 'on_proses_drm';
         }
-        if ($hasDrm && $drmStatus === 'COMPLETE' && !in_array($currentStatus, $postDrmStatuses, true)) {
-            $tokens[] = 'done_drm';
+        if (in_array('approved', $statusTokens, true) && $rabStatus !== 'RAB DONE' && $currentStatus !== 'RAB DONE') {
+            $tokens[] = 'ny_rab';
         }
         if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
             $tokens[] = 'rejected';
         }
         if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+            $tokens[] = 'done_drm';
             $tokens[] = 'rab_done';
         }
 
@@ -311,22 +367,15 @@ $renderDrmTableRows = static function (array $rows) {
             : base_url('DRM_MyRep/detail/' . (int) ($row['id_myrep_cluster'] ?? 0));
         $clusterStatusLabel = drmScopeStatusLabel($row['drm_cluster_status'] ?? '');
         $subfeederStatusLabel = drmScopeStatusLabel($row['drm_subfeeder_status'] ?? '');
-        $statusTokens = [strtolower(str_replace(' ', '_', $clusterStatusLabel))];
-        if (!$isMainfeeder) {
-            $statusTokens[] = strtolower(str_replace(' ', '_', $subfeederStatusLabel));
-        }
-        if (in_array('tidak_dibutuhkan', $statusTokens, true) || in_array('not_required', $statusTokens, true)) {
-            $statusTokens[] = 'approved';
-        }
-        $statusTokens = array_unique(array_filter($statusTokens));
+        $statusTokens = drmStatusTokens($row);
         $statusSearchTokens = array_map(static function ($token) {
             return 'drm_filter_' . $token;
         }, $statusTokens);
         $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
         $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
         $rabDone = $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
-        $rabFilterToken = $rabDone ? 'rab_done' : 'belum_rab';
-        $rabStatusLabel = $rabDone ? 'RAB DONE' : 'BELUM RAB DONE';
+        $rabFilterToken = $rabDone ? 'rab_done' : (in_array('approved', $statusTokens, true) ? 'belum_rab' : '');
+        $rabStatusLabel = $rabDone ? 'RAB DONE' : ($rabFilterToken === 'belum_rab' ? 'BELUM RAB DONE' : '-');
         $stageSearchTokens = array_map(static function ($token) {
             return 'drm_stage_filter_' . $token;
         }, drmStageSearchTokens($row));
@@ -538,7 +587,15 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                     data-drm-tab="<?= htmlspecialchars((string) ($stageData['tab'] ?? '#drm-all-tab'), ENT_QUOTES, 'UTF-8') ?>"
                                     data-drm-stage="<?= htmlspecialchars((string) ($stageData['filter'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     data-role-guard-exempt="1">
-                                    <span class="drm-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="drm-stage-summary-item__head">
+                                        <span class="drm-stage-summary-item__label"><?= htmlspecialchars((string) ($stageData['label'] ?? $stageCode), ENT_QUOTES, 'UTF-8') ?></span>
+                                        <?php if (trim((string) ($stageData['pic'] ?? '')) !== ''): ?>
+                                            <span class="drm-stage-summary-pic drm-stage-summary-pic--<?= htmlspecialchars((string) ($stageData['pic_class'] ?? 'area'), ENT_QUOTES, 'UTF-8') ?>">
+                                                <i class="fas fa-<?= htmlspecialchars((string) ($stageData['pic_icon'] ?? 'user'), ENT_QUOTES, 'UTF-8') ?>"></i>
+                                                <?= htmlspecialchars((string) ($stageData['pic'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </span>
                                     <span class="drm-stage-summary-item__count"><?= number_format((int) ($stageData['count'] ?? 0), 0, ',', '.') ?></span>
                                     <span class="drm-stage-summary-item__meta">HP <?= number_format((float) ($stageData['hp'] ?? 0), 0, ',', '.') ?></span>
                                 </a>
@@ -1017,8 +1074,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border-left-color: #2563eb;
     }
 
+    .drm-stage-summary-item--warning {
+        border-left-color: #d97706;
+    }
+
     .drm-stage-summary-item--danger {
         border-left-color: #dc2626;
+    }
+
+    .drm-stage-summary-item__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .65rem;
     }
 
     .drm-stage-summary-item__label {
@@ -1026,6 +1094,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         font-size: .76rem;
         font-weight: 900;
         text-transform: uppercase;
+    }
+
+    .drm-stage-summary-pic {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        flex-shrink: 0;
+        padding: .18rem .45rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 900;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .drm-stage-summary-pic--area {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .drm-stage-summary-pic--sitac {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .drm-stage-summary-pic--planning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .drm-stage-summary-pic--done {
+        background: #e2e8f0;
+        color: #334155;
     }
 
     .drm-stage-summary-item__count {
@@ -1808,9 +1909,10 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             return;
                         }
 
-                        if (String($row.attr('data-drm-rab') || '') === 'rab_done') {
+                        var rabToken = String($row.attr('data-drm-rab') || '');
+                        if (rabToken === 'rab_done') {
                             summary.rabDoneCount++;
-                        } else {
+                        } else if (rabToken === 'belum_rab') {
                             summary.belumRabCount++;
                         }
                     });

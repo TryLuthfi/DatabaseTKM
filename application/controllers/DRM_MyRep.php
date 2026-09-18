@@ -96,7 +96,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $stageFilter = strtolower(trim((string) $this->input->post('stage_filter')));
-        if (!in_array($stageFilter, ['ny_batch', 'on_proses_drm', 'done_drm', 'rab_done', 'rejected'], true)) {
+        if (!in_array($stageFilter, ['ny_drm', 'ny_batch', 'on_review_drm', 'on_proses_drm', 'ny_rab', 'done_drm', 'rab_done', 'rejected'], true)) {
             $stageFilter = '';
         }
 
@@ -2298,12 +2298,15 @@ class DRM_MyRep extends CI_Controller
         ];
 
         foreach ($rows as $row) {
-            if ($this->getDrmRabToken($row) === 'rab_done') {
+            $rabToken = $this->getDrmRabToken($row);
+            if ($rabToken === 'rab_done') {
                 $summary['rabDoneCount']++;
                 continue;
             }
 
-            $summary['belumRabCount']++;
+            if ($rabToken === 'belum_rab') {
+                $summary['belumRabCount']++;
+            }
         }
 
         return $summary;
@@ -2350,21 +2353,25 @@ class DRM_MyRep extends CI_Controller
         $drmStatus = strtoupper(trim((string) ($row['display_status_drm'] ?? $row['status_drm'] ?? 'DRAFT')));
         $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
         $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
-        $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
 
         if ($this->isNyBatchDrmRow($row)) {
+            $tokens[] = 'ny_drm';
             $tokens[] = 'ny_batch';
         }
-        if ($hasDrm && !in_array($drmStatus, ['COMPLETE', 'REJECTED'], true)) {
+        $statusTokens = $this->getDrmStatusTokens($row);
+
+        if ($hasDrm && in_array('waiting_ho', $statusTokens, true)) {
+            $tokens[] = 'on_review_drm';
             $tokens[] = 'on_proses_drm';
         }
-        if ($hasDrm && $drmStatus === 'COMPLETE' && !in_array($currentStatus, $postDrmStatuses, true)) {
-            $tokens[] = 'done_drm';
+        if ($this->getDrmRabToken($row) === 'belum_rab') {
+            $tokens[] = 'ny_rab';
         }
         if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
             $tokens[] = 'rejected';
         }
         if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+            $tokens[] = 'done_drm';
             $tokens[] = 'rab_done';
         }
 
@@ -2393,7 +2400,11 @@ class DRM_MyRep extends CI_Controller
         $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
         $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
 
-        return ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') ? 'rab_done' : 'belum_rab';
+        if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+            return 'rab_done';
+        }
+
+        return in_array('approved', $this->getDrmStatusTokens($row), true) ? 'belum_rab' : '';
     }
 
     private function sortDrmTableRows(array &$rows, array $order)
@@ -2439,7 +2450,7 @@ class DRM_MyRep extends CI_Controller
             return 'drm_filter_' . $token;
         }, $this->getDrmStatusTokens($row));
         $rabFilterToken = $this->getDrmRabToken($row);
-        $rabStatusLabel = $rabFilterToken === 'rab_done' ? 'RAB DONE' : 'BELUM RAB DONE';
+        $rabStatusLabel = $rabFilterToken === 'rab_done' ? 'RAB DONE' : ($rabFilterToken === 'belum_rab' ? 'BELUM RAB DONE' : '-');
         $stageSearchTokens = array_map(static function ($token) {
             return 'drm_stage_filter_' . $token;
         }, $this->getDrmStageTokens($row));

@@ -196,15 +196,15 @@ if (!function_exists('batchDetailSlaStatus')) {
         }
         if (!$actualTimestamp) {
             if ($targetTimestamp && strtotime(date('Y-m-d')) > $targetTimestamp) {
-                return ['label' => 'Over SLA', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
+                return ['label' => 'NY - OVER SLA', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
             }
             return ['label' => 'Berjalan', 'class' => 'warning', 'icon' => 'clock'];
         }
         if (!$targetTimestamp || $actualTimestamp <= $targetTimestamp) {
-            return ['label' => 'Done Tepat Waktu', 'class' => 'success', 'icon' => 'check-circle'];
+            return ['label' => 'Done - Tepat Waktu', 'class' => 'success', 'icon' => 'check-circle'];
         }
 
-        return ['label' => 'Done Telat', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
+        return ['label' => 'Done - Terlambat', 'class' => 'danger', 'icon' => 'exclamation-triangle'];
     }
 }
 
@@ -1156,6 +1156,168 @@ if ($canApprove && $canApprovalAction) {
         margin-bottom: 1rem;
     }
 
+    .batch-detail-sections {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .batch-detail-section {
+        border: 1px solid #d7e1ec;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .batch-detail-section__head {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .95rem 1rem .95rem 1.15rem;
+        border-bottom: 1px solid #cbd5e1;
+        background: #eaf2fb;
+    }
+
+    .batch-detail-section__head::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        background: #2563eb;
+    }
+
+    .batch-detail-section__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 8px;
+        background: #1d4ed8;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    .batch-detail-section__title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+
+    .batch-detail-section__subtitle {
+        margin: .15rem 0 0;
+        color: #334155;
+        font-size: .84rem;
+        font-weight: 600;
+    }
+
+    .batch-detail-fields {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+    }
+
+    .batch-detail-field {
+        min-height: 74px;
+        padding: .9rem 1rem;
+        border-right: 1px solid #eef2f7;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .batch-detail-field:nth-child(4n) {
+        border-right: 0;
+    }
+
+    .batch-detail-field__label {
+        display: block;
+        margin-bottom: .32rem;
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0;
+    }
+
+    .batch-detail-field__value {
+        color: #0f172a;
+        font-size: .96rem;
+        font-weight: 600;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .batch-detail-field--wide {
+        grid-column: span 2;
+    }
+
+    .batch-detail-field--highlight .batch-detail-field__value {
+        font-size: 1.08rem;
+        font-weight: 800;
+    }
+
+    .batch-detail-pic-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: .9rem;
+        padding: 1rem;
+    }
+
+    .batch-detail-pic {
+        border: 1px solid #dbe4ef;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: .9rem 1rem;
+    }
+
+    .batch-detail-pic__title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        margin-bottom: .75rem;
+        padding-bottom: .65rem;
+        border-bottom: 1px solid #e5e7eb;
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .batch-detail-pic__badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 24px;
+        padding: 0 .55rem;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: .78rem;
+        font-weight: 800;
+    }
+
+    .batch-detail-pic__rows {
+        display: grid;
+        gap: .42rem;
+    }
+
+    .batch-detail-pic__row {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: .6rem;
+        color: #334155;
+        font-size: .9rem;
+    }
+
+    .batch-detail-pic__row strong {
+        color: #64748b;
+        font-weight: 800;
+    }
+
     .batch-dropzone {
         position: relative;
         background: linear-gradient(135deg, #f0fdf4, #ecfeff);
@@ -1585,9 +1747,40 @@ if ($canApprove && $canApprovalAction) {
             flex-direction: column;
         }
 
+        .batch-detail-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .batch-detail-field,
+        .batch-detail-field:nth-child(4n) {
+            border-right: 0;
+        }
+
+        .batch-detail-field--wide {
+            grid-column: span 1;
+        }
+
+        .batch-detail-section__head {
+            align-items: flex-start;
+        }
+
         .modal-xxl {
             max-width: calc(100vw - 1rem);
             margin: .5rem auto;
+        }
+    }
+
+    @media (min-width: 768px) and (max-width: 1199.98px) {
+        .batch-detail-fields {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .batch-detail-field:nth-child(4n) {
+            border-right: 1px solid #eef2f7;
+        }
+
+        .batch-detail-field:nth-child(2n) {
+            border-right: 0;
         }
     }
 </style>
@@ -1664,53 +1857,163 @@ if ($canApprove && $canApprovalAction) {
                         </div>
                     <?php endif; ?>
 
-                    <div class="row batch-info-grid">
-                        <div class="col-md-4"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Kab / Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Kecamatan</strong><div><?= !empty($cluster['district_name']) ? htmlspecialchars((string) $cluster['district_name']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>Desa / Kelurahan</strong><div><?= !empty($cluster['village_name']) ? htmlspecialchars((string) $cluster['village_name']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>HP Donasi</strong><div><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div></div>
-                        <div class="col-md-2"><strong>Tanggal Pengajuan</strong><div><?= !empty($cluster['submission_date']) ? htmlspecialchars((string) $cluster['submission_date']) : '-' ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row batch-info-grid">
-                        <div class="col-md-3"><strong>Nominal Donasi</strong><div><?= number_format((float) ($cluster['nominal_pengajuan_area'] ?? 0), 0, ',', '.') ?></div></div>
-                        <div class="col-md-3"><strong>Nominal / Homepass</strong><div><?= !is_null($cluster['nominal_per_homepass'] ?? null) ? number_format((float) $cluster['nominal_per_homepass'], 2, ',', '.') : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Nominal Approval EMR</strong><div><?= !is_null($cluster['nominal_nego_emr'] ?? null) ? number_format((float) $cluster['nominal_nego_emr'], 0, ',', '.') : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Nominal Pencairan</strong><div><?= !is_null($cluster['nominal_release_finance'] ?? null) ? number_format((float) $cluster['nominal_release_finance'], 0, ',', '.') : '-' ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row batch-info-grid">
-                        <div class="col-md-4"><strong>Penerima Dana</strong><div><?= htmlspecialchars((string) ($cluster['recipient_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>No HP</strong><div><?= !empty($cluster['recipient_phone']) ? htmlspecialchars((string) $cluster['recipient_phone']) : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Jabatan</strong><div><?= !empty($cluster['recipient_position']) ? htmlspecialchars((string) $cluster['recipient_position']) : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Periode</strong><div><?= !empty($cluster['recipient_period']) ? htmlspecialchars((string) $cluster['recipient_period']) : '-' ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row batch-info-grid">
-                        <div class="col-md-4"><strong>Bank</strong><div><?= htmlspecialchars((string) ($cluster['bank_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-4"><strong>No Rekening</strong><div><?= htmlspecialchars((string) ($cluster['bank_account_number'] ?? '-')) ?></div></div>
-                        <div class="col-md-4"><strong>No Batch Astri</strong><div><?= !empty($cluster['astri_batch_number']) ? htmlspecialchars((string) $cluster['astri_batch_number']) : '-' ?></div></div>
-                    </div>
-                    <?php if (!empty($batchPics)): ?>
-                        <hr>
-                        <div class="row">
-                            <?php foreach ($batchPics as $pic): ?>
-                                <div class="col-md-4 mb-3">
-                                    <div class="border rounded p-3 h-100 bg-light">
-                                        <strong>PIC <?= (int) ($pic['pic_no'] ?? 0) ?></strong>
-                                        <div class="batch-pic-detail">
-                                            <div><strong>Nama</strong> <?= htmlspecialchars((string) ($pic['pic_name'] ?? '-')) ?></div>
-                                            <div><strong>No HP</strong> <?= !empty($pic['pic_phone']) ? htmlspecialchars((string) $pic['pic_phone']) : '-' ?></div>
-                                            <div><strong>Jabatan</strong> <?= !empty($pic['pic_position']) ? htmlspecialchars((string) $pic['pic_position']) : '-' ?></div>
-                                            <div><strong>Periode</strong> <?= !empty($pic['pic_period']) ? htmlspecialchars((string) $pic['pic_period']) : '-' ?></div>
-                                        </div>
+                    <div class="batch-detail-sections">
+                        <section class="batch-detail-section">
+                            <div class="batch-detail-section__head">
+                                <span class="batch-detail-section__icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <div>
+                                    <h4 class="batch-detail-section__title">Lokasi Cluster</h4>
+                                    <p class="batch-detail-section__subtitle">Identitas area dan jumlah homepass donasi.</p>
+                                </div>
+                            </div>
+                            <div class="batch-detail-fields">
+                                <div class="batch-detail-field batch-detail-field--wide">
+                                    <span class="batch-detail-field__label">Cluster</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Kab / Kota</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Regional</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Kecamatan</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['district_name']) ? htmlspecialchars((string) $cluster['district_name']) : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Desa / Kelurahan</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['village_name']) ? htmlspecialchars((string) $cluster['village_name']) : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field batch-detail-field--highlight">
+                                    <span class="batch-detail-field__label">HP Donasi</span>
+                                    <div class="batch-detail-field__value"><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Tanggal Pengajuan</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['submission_date']) ? htmlspecialchars((string) $cluster['submission_date']) : '-' ?></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="batch-detail-section">
+                            <div class="batch-detail-section__head">
+                                <span class="batch-detail-section__icon"><i class="fas fa-hand-holding-usd"></i></span>
+                                <div>
+                                    <h4 class="batch-detail-section__title">Nilai Donasi</h4>
+                                    <p class="batch-detail-section__subtitle">Perbandingan nilai pengajuan, approval, dan pencairan.</p>
+                                </div>
+                            </div>
+                            <div class="batch-detail-fields">
+                                <div class="batch-detail-field batch-detail-field--highlight">
+                                    <span class="batch-detail-field__label">Nominal Donasi</span>
+                                    <div class="batch-detail-field__value"><?= number_format((float) ($cluster['nominal_pengajuan_area'] ?? 0), 0, ',', '.') ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Nominal / Homepass</span>
+                                    <div class="batch-detail-field__value"><?= !is_null($cluster['nominal_per_homepass'] ?? null) ? number_format((float) $cluster['nominal_per_homepass'], 2, ',', '.') : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Nominal Approval EMR</span>
+                                    <div class="batch-detail-field__value"><?= !is_null($cluster['nominal_nego_emr'] ?? null) ? number_format((float) $cluster['nominal_nego_emr'], 0, ',', '.') : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Nominal Pencairan</span>
+                                    <div class="batch-detail-field__value"><?= !is_null($cluster['nominal_release_finance'] ?? null) ? number_format((float) $cluster['nominal_release_finance'], 0, ',', '.') : '-' ?></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="batch-detail-section">
+                            <div class="batch-detail-section__head">
+                                <span class="batch-detail-section__icon"><i class="fas fa-user-tie"></i></span>
+                                <div>
+                                    <h4 class="batch-detail-section__title">Penerima Dana</h4>
+                                    <p class="batch-detail-section__subtitle">Kontak dan periode jabatan penerima.</p>
+                                </div>
+                            </div>
+                            <div class="batch-detail-fields">
+                                <div class="batch-detail-field batch-detail-field--wide">
+                                    <span class="batch-detail-field__label">Nama Penerima</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars((string) ($cluster['recipient_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">No HP</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['recipient_phone']) ? htmlspecialchars((string) $cluster['recipient_phone']) : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Periode</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['recipient_period']) ? htmlspecialchars((string) $cluster['recipient_period']) : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field batch-detail-field--wide">
+                                    <span class="batch-detail-field__label">Jabatan</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['recipient_position']) ? htmlspecialchars((string) $cluster['recipient_position']) : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Bank</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars((string) ($cluster['bank_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">No Rekening</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars((string) ($cluster['bank_account_number'] ?? '-')) ?></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="batch-detail-section">
+                            <div class="batch-detail-section__head">
+                                <span class="batch-detail-section__icon"><i class="fas fa-file-invoice"></i></span>
+                                <div>
+                                    <h4 class="batch-detail-section__title">Batch Astri</h4>
+                                    <p class="batch-detail-section__subtitle">Nomor batch dan status administrasi Astri.</p>
+                                </div>
+                            </div>
+                            <div class="batch-detail-fields">
+                                <div class="batch-detail-field batch-detail-field--wide">
+                                    <span class="batch-detail-field__label">No Batch Astri</span>
+                                    <div class="batch-detail-field__value"><?= !empty($cluster['astri_batch_number']) ? htmlspecialchars((string) $cluster['astri_batch_number']) : '-' ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Status Saat Ini</span>
+                                    <div class="batch-detail-field__value"><?= htmlspecialchars(batchDetailStatusLabel($displayStageStatus)) ?></div>
+                                </div>
+                                <div class="batch-detail-field">
+                                    <span class="batch-detail-field__label">Progress</span>
+                                    <div class="batch-detail-field__value"><?= (int) $stageMeta['percent'] ?>%</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <?php if (!empty($batchPics)): ?>
+                            <section class="batch-detail-section">
+                                <div class="batch-detail-section__head">
+                                    <span class="batch-detail-section__icon"><i class="fas fa-users"></i></span>
+                                    <div>
+                                        <h4 class="batch-detail-section__title">PIC Approval</h4>
+                                        <p class="batch-detail-section__subtitle">Daftar PIC yang dipakai untuk proses approval donasi.</p>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
+                                <div class="batch-detail-pic-grid">
+                                    <?php foreach ($batchPics as $pic): ?>
+                                        <div class="batch-detail-pic">
+                                            <div class="batch-detail-pic__title">
+                                                <span>PIC Approval</span>
+                                                <span class="batch-detail-pic__badge"><?= (int) ($pic['pic_no'] ?? 0) ?></span>
+                                            </div>
+                                            <div class="batch-detail-pic__rows">
+                                                <div class="batch-detail-pic__row"><strong>Nama</strong><span><?= htmlspecialchars((string) ($pic['pic_name'] ?? '-')) ?></span></div>
+                                                <div class="batch-detail-pic__row"><strong>No HP</strong><span><?= !empty($pic['pic_phone']) ? htmlspecialchars((string) $pic['pic_phone']) : '-' ?></span></div>
+                                                <div class="batch-detail-pic__row"><strong>Jabatan</strong><span><?= !empty($pic['pic_position']) ? htmlspecialchars((string) $pic['pic_position']) : '-' ?></span></div>
+                                                <div class="batch-detail-pic__row"><strong>Periode</strong><span><?= !empty($pic['pic_period']) ? htmlspecialchars((string) $pic['pic_period']) : '-' ?></span></div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </section>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 

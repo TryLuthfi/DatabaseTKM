@@ -162,6 +162,129 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     margin-bottom: 1rem;
                 }
 
+                .drm-detail-sections {
+                    display: grid;
+                    gap: 1rem;
+                }
+
+                .drm-detail-section {
+                    border: 1px solid #d7e1ec;
+                    border-radius: 8px;
+                    background: #fff;
+                    overflow: hidden;
+                    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+                }
+
+                .drm-detail-section__head {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    gap: .7rem;
+                    padding: .95rem 1rem .95rem 1.15rem;
+                    border-bottom: 1px solid #cbd5e1;
+                    background: #eaf2fb;
+                }
+
+                .drm-detail-section__head::before {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 5px;
+                    background: #2563eb;
+                }
+
+                .drm-detail-section__icon {
+                    width: 38px;
+                    height: 38px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex: 0 0 38px;
+                    border-radius: 8px;
+                    background: #1d4ed8;
+                    color: #fff;
+                    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+                }
+
+                .drm-detail-section__title {
+                    margin: 0;
+                    color: #0f172a;
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                }
+
+                .drm-detail-section__subtitle {
+                    margin: .15rem 0 0;
+                    color: #334155;
+                    font-size: .84rem;
+                    font-weight: 600;
+                }
+
+                .drm-detail-fields {
+                    display: grid;
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
+                    gap: 0;
+                }
+
+                .drm-detail-field {
+                    min-height: 74px;
+                    padding: .9rem 1rem;
+                    border-right: 1px solid #eef2f7;
+                    border-bottom: 1px solid #eef2f7;
+                }
+
+                .drm-detail-field:nth-child(4n) {
+                    border-right: 0;
+                }
+
+                .drm-detail-field__label {
+                    display: block;
+                    margin-bottom: .32rem;
+                    color: #64748b;
+                    font-size: .76rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 0;
+                }
+
+                .drm-detail-field__value {
+                    color: #0f172a;
+                    font-size: .96rem;
+                    font-weight: 600;
+                    line-height: 1.35;
+                    overflow-wrap: anywhere;
+                }
+
+                .drm-detail-field--wide {
+                    grid-column: span 2;
+                }
+
+                .drm-detail-field--highlight .drm-detail-field__value {
+                    font-size: 1.08rem;
+                    font-weight: 800;
+                }
+
+                .drm-detail-preview {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    max-width: 240px;
+                    min-height: 96px;
+                    padding: .4rem;
+                    border: 1px solid #dbeafe;
+                    border-radius: 8px;
+                    background: #f8fafc;
+                }
+
+                .drm-detail-preview img {
+                    max-width: 220px;
+                    max-height: 140px;
+                    border-radius: 6px;
+                    object-fit: contain;
+                }
+
                 .drm-rab-detail {
                     white-space: pre-wrap;
                 }
@@ -405,6 +528,39 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 .drm-bulk-card__body {
                     padding: 1rem 1.1rem 1.1rem;
                 }
+
+                @media (max-width: 767.98px) {
+                    .drm-detail-fields {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .drm-detail-field,
+                    .drm-detail-field:nth-child(4n) {
+                        border-right: 0;
+                    }
+
+                    .drm-detail-field--wide {
+                        grid-column: span 1;
+                    }
+
+                    .drm-detail-section__head {
+                        align-items: flex-start;
+                    }
+                }
+
+                @media (min-width: 768px) and (max-width: 1199.98px) {
+                    .drm-detail-fields {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                    }
+
+                    .drm-detail-field:nth-child(4n) {
+                        border-right: 1px solid #eef2f7;
+                    }
+
+                    .drm-detail-field:nth-child(2n) {
+                        border-right: 0;
+                    }
+                }
             </style>
 
             <div class="card card-primary shadow-sm drm-header-card">
@@ -418,63 +574,168 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
-                    <div class="row drm-info-grid">
-                        <div class="col-md-4"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Province</strong><div><?= !empty($cluster['province_name']) ? htmlspecialchars((string) $cluster['province_name']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>Status Flow</strong><div><?= !empty($cluster['status_current']) ? htmlspecialchars((string) $cluster['status_current']) : '-' ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row drm-info-grid">
-                        <div class="col-md-2"><strong>Cluster Code</strong><div><?= !empty($cluster['cluster_code']) ? htmlspecialchars((string) $cluster['cluster_code']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>Team</strong><div><?= !empty($cluster['team_name']) ? htmlspecialchars((string) $cluster['team_name']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>Chief</strong><div><?= !empty($cluster['chief']) ? htmlspecialchars((string) $cluster['chief']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>RPM</strong><div><?= !empty($cluster['rpm']) ? htmlspecialchars((string) $cluster['rpm']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>SM</strong><div><?= !empty($cluster['sm']) ? htmlspecialchars((string) $cluster['sm']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>SPV</strong><div><?= !empty($cluster['spv']) ? htmlspecialchars((string) $cluster['spv']) : '-' ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row drm-info-grid">
-                        <div class="col-md-3"><strong>PIC Project</strong><div><?= !empty($cluster['pic_project']) ? htmlspecialchars((string) $cluster['pic_project']) : '-' ?></div></div>
-                        <div class="col-md-3"><strong>NTP Name</strong><div><?= !empty($cluster['ntp_name']) ? htmlspecialchars((string) $cluster['ntp_name']) : '-' ?></div></div>
-                        <div class="col-md-3"><strong>NTP Date</strong><div><?= !empty($cluster['ntp_date']) ? htmlspecialchars((string) $cluster['ntp_date']) : '-' ?></div></div>
-                        <div class="col-md-3"><strong>NTP Year</strong><div><?= !empty($cluster['ntp_year']) ? htmlspecialchars((string) $cluster['ntp_year']) : '-' ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row drm-info-grid">
-                        <div class="col-md-2"><strong>HP Plan</strong><div><?= number_format((float) ($cluster['hp_plan'] ?? 0), 0, ',', '.') ?></div></div>
-                        <div class="col-md-2"><strong>HP Donasi</strong><div><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div></div>
-                        <div class="col-md-2"><strong>HP DRM</strong><div><?= !is_null($cluster['homepass_drm'] ?? null) ? number_format((float) $cluster['homepass_drm'], 0, ',', '.') : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Tanggal DRM</strong><div><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div></div>
-                        <div class="col-md-3">
-                            <strong>Status RAB</strong>
-                            <div>
-                                <span class="badge badge-<?= drmDetailBadgeClass($isRabDone ? 'APPROVED' : '') ?>"><?= htmlspecialchars($isRabDone ? 'RAB DONE' : 'BELUM RAB DONE') ?></span>
+                    <div class="drm-detail-sections">
+                        <section class="drm-detail-section">
+                            <div class="drm-detail-section__head">
+                                <span class="drm-detail-section__icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <div>
+                                    <h4 class="drm-detail-section__title">Lokasi Cluster</h4>
+                                    <p class="drm-detail-section__subtitle">Identitas cluster dan posisi area project.</p>
+                                </div>
                             </div>
-                            <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
-                                <div class="small text-muted mt-1"><?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Screenshoot Astri</strong>
-                            <div>
-                                <?php if (!empty($cluster['screenshot_astri_path'])): ?>
-                                    <a href="<?= base_url((string) $cluster['screenshot_astri_path']) ?>" target="_blank">
-                                        <img src="<?= base_url((string) $cluster['screenshot_astri_path']) ?>" alt="Screenshoot Astri" style="max-width: 220px; max-height: 140px; border-radius: 8px; border: 1px solid #dbeafe; margin-top: 6px;">
-                                    </a>
-                                <?php else: ?>
-                                    -
-                                <?php endif; ?>
+                            <div class="drm-detail-fields">
+                                <div class="drm-detail-field drm-detail-field--wide">
+                                    <span class="drm-detail-field__label">Cluster</span>
+                                    <div class="drm-detail-field__value"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Cluster Code</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['cluster_code']) ? htmlspecialchars((string) $cluster['cluster_code']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Status Flow</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['status_current']) ? htmlspecialchars((string) $cluster['status_current']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Kota</span>
+                                    <div class="drm-detail-field__value"><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Provinsi</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['province_name']) ? htmlspecialchars((string) $cluster['province_name']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Regional</span>
+                                    <div class="drm-detail-field__value"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3"><strong>Status DRM</strong><div><?= !empty($cluster['display_status_drm']) ? htmlspecialchars((string) $cluster['display_status_drm']) : (!empty($cluster['status_drm']) ? htmlspecialchars((string) $cluster['status_drm']) : 'WAITING INPUT') ?></div></div>
-                    </div>
-                    <hr>
-                    <div class="row drm-info-grid">
-                        <div class="col-md-4"><strong>Released At</strong><div><?= !empty($cluster['released_at']) ? htmlspecialchars((string) $cluster['released_at']) : '-' ?></div></div>
-                        <div class="col-md-4"><strong>Remark DRM</strong><div><?= !empty($cluster['remark_drm']) ? nl2br(htmlspecialchars((string) $cluster['remark_drm'])) : '-' ?></div></div>
-                        <div class="col-md-4"><strong>Outstanding Progress</strong><div><?= !empty($cluster['outstanding_progress']) ? nl2br(htmlspecialchars((string) $cluster['outstanding_progress'])) : '-' ?></div></div>
+                        </section>
+
+                        <section class="drm-detail-section">
+                            <div class="drm-detail-section__head">
+                                <span class="drm-detail-section__icon"><i class="fas fa-users-cog"></i></span>
+                                <div>
+                                    <h4 class="drm-detail-section__title">Tim Project</h4>
+                                    <p class="drm-detail-section__subtitle">PIC dan struktur tim yang bertanggung jawab.</p>
+                                </div>
+                            </div>
+                            <div class="drm-detail-fields">
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Team</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['team_name']) ? htmlspecialchars((string) $cluster['team_name']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">PIC Project</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['pic_project']) ? htmlspecialchars((string) $cluster['pic_project']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Chief</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['chief']) ? htmlspecialchars((string) $cluster['chief']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">RPM</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['rpm']) ? htmlspecialchars((string) $cluster['rpm']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">SM</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['sm']) ? htmlspecialchars((string) $cluster['sm']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">SPV</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['spv']) ? htmlspecialchars((string) $cluster['spv']) : '-' ?></div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="drm-detail-section">
+                            <div class="drm-detail-section__head">
+                                <span class="drm-detail-section__icon"><i class="fas fa-clipboard-check"></i></span>
+                                <div>
+                                    <h4 class="drm-detail-section__title">Progress DRM</h4>
+                                    <p class="drm-detail-section__subtitle">Status DRM, RAB, NTP, dan pencapaian homepass.</p>
+                                </div>
+                            </div>
+                            <div class="drm-detail-fields">
+                                <div class="drm-detail-field drm-detail-field--highlight">
+                                    <span class="drm-detail-field__label">HP DRM</span>
+                                    <div class="drm-detail-field__value"><?= !is_null($cluster['homepass_drm'] ?? null) ? number_format((float) $cluster['homepass_drm'], 0, ',', '.') : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">HP Plan</span>
+                                    <div class="drm-detail-field__value"><?= number_format((float) ($cluster['hp_plan'] ?? 0), 0, ',', '.') ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">HP Donasi</span>
+                                    <div class="drm-detail-field__value"><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Tanggal DRM</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Status DRM</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['display_status_drm']) ? htmlspecialchars((string) $cluster['display_status_drm']) : (!empty($cluster['status_drm']) ? htmlspecialchars((string) $cluster['status_drm']) : 'WAITING INPUT') ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Status RAB</span>
+                                    <div class="drm-detail-field__value">
+                                        <span class="badge badge-<?= drmDetailBadgeClass($isRabDone ? 'APPROVED' : '') ?>"><?= htmlspecialchars($isRabDone ? 'RAB DONE' : 'BELUM RAB DONE') ?></span>
+                                        <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
+                                            <div class="small text-muted mt-1"><?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">NTP Name</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['ntp_name']) ? htmlspecialchars((string) $cluster['ntp_name']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">NTP Date / Year</span>
+                                    <div class="drm-detail-field__value">
+                                        <?= !empty($cluster['ntp_date']) ? htmlspecialchars((string) $cluster['ntp_date']) : '-' ?>
+                                        <?php if (!empty($cluster['ntp_year'])): ?>
+                                            <div class="small text-muted mt-1">Tahun <?= htmlspecialchars((string) $cluster['ntp_year']) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="drm-detail-field drm-detail-field--wide">
+                                    <span class="drm-detail-field__label">Screenshot Astri</span>
+                                    <div class="drm-detail-field__value">
+                                        <?php if (!empty($cluster['screenshot_astri_path'])): ?>
+                                            <a href="<?= base_url((string) $cluster['screenshot_astri_path']) ?>" target="_blank" class="drm-detail-preview">
+                                                <img src="<?= base_url((string) $cluster['screenshot_astri_path']) ?>" alt="Screenshot Astri">
+                                            </a>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="drm-detail-section">
+                            <div class="drm-detail-section__head">
+                                <span class="drm-detail-section__icon"><i class="fas fa-sticky-note"></i></span>
+                                <div>
+                                    <h4 class="drm-detail-section__title">Catatan & Outstanding</h4>
+                                    <p class="drm-detail-section__subtitle">Informasi tambahan untuk tindak lanjut proses DRM.</p>
+                                </div>
+                            </div>
+                            <div class="drm-detail-fields">
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Released At</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['released_at']) ? htmlspecialchars((string) $cluster['released_at']) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field drm-detail-field--wide">
+                                    <span class="drm-detail-field__label">Remark DRM</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['remark_drm']) ? nl2br(htmlspecialchars((string) $cluster['remark_drm'])) : '-' ?></div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Outstanding Progress</span>
+                                    <div class="drm-detail-field__value"><?= !empty($cluster['outstanding_progress']) ? nl2br(htmlspecialchars((string) $cluster['outstanding_progress'])) : '-' ?></div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
