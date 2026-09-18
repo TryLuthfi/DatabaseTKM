@@ -1862,6 +1862,22 @@ class MDRM_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
+    public function rollbackRabDone($clusterId, $userId, $reason = '')
+    {
+        $clusterId = (int) $clusterId;
+        $reason = trim((string) $reason);
+        if ($clusterId <= 0 || !$this->rabTablesReady()) {
+            return false;
+        }
+
+        $activeRab = $this->getRabByClusterId($clusterId);
+        if (empty($activeRab['id_myrep_rab'])) {
+            return false;
+        }
+
+        return $this->cancelRabDone($clusterId, (int) $userId, $reason, true);
+    }
+
     private function rebuildCombinedBaselineIfReady($clusterId, $approvedAt, $userId)
     {
         $clusterHeader = $this->getDrmBoqHeader($clusterId, 'CLUSTER');
@@ -2094,7 +2110,7 @@ class MDRM_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
-    private function cancelRabDone($clusterId, $userId, $reason = '')
+    private function cancelRabDone($clusterId, $userId, $reason = '', $forceRestoreClusterStatus = false)
     {
         $clusterId = (int) $clusterId;
         if ($clusterId <= 0 || !$this->rabTablesReady()) {
@@ -2121,7 +2137,7 @@ class MDRM_MyRep extends CI_Model
                 ->limit(1)
                 ->get()
                 ->row_array();
-            if (!empty($existingBatch['id_batch_approval'])) {
+            if (!empty($existingBatch['id_batch_approval']) && !$forceRestoreClusterStatus) {
                 return true;
             }
         }

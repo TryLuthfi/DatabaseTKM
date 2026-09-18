@@ -13,6 +13,9 @@ $canShowRabDoneButton = !empty($rabReady)
     && !empty($canChecklistRabDone)
     && !$isRabDone
     && strtoupper(trim((string) ($clusterBoqHeaderForRab['review_status'] ?? ''))) === 'APPROVED';
+$canShowRabRollbackButton = !empty($rabReady)
+    && !empty($canChecklistRabDone)
+    && $isRabDone;
 
 if (!function_exists('drmDetailBadgeClass')) {
     function drmDetailBadgeClass($status)
@@ -903,7 +906,10 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                         <?php if ($canShowRabDoneButton): ?>
                                                             <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-rab-done">Checklist RAB DONE</button>
                                                         <?php elseif ($isRabDone): ?>
-                                                            <span class="text-success font-weight-bold">RAB sudah selesai.</span>
+                                                            <div class="text-success font-weight-bold mb-2">RAB sudah selesai.</div>
+                                                            <?php if ($canShowRabRollbackButton): ?>
+                                                                <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#modal-rab-rollback">Rollback RAB</button>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
                                                             <span class="text-muted small">Checklist RAB DONE tersedia setelah APD BOQ/BOQ Cluster approved dan user memiliki akses Planning HO.</span>
                                                         <?php endif; ?>
@@ -1043,6 +1049,35 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success" onclick="return confirm('Simpan checklist RAB DONE untuk cluster ini?');">Simpan RAB DONE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($canShowRabRollbackButton): ?>
+<div class="modal fade" id="modal-rab-rollback" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/rollbackRabDone') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Rollback RAB DONE</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning small">
+                        Status RAB akan dikembalikan menjadi BELUM RAB DONE. Cluster yang belum memenuhi gate RAB tidak akan tampil lagi di list Batch Approval tahap awal.
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Alasan Rollback <span class="text-muted font-weight-normal">(opsional)</span></label>
+                        <textarea name="reason" rows="4" class="form-control" placeholder="Contoh: detail RAB perlu diperbaiki"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Rollback status RAB DONE untuk cluster ini?');">Rollback RAB</button>
                 </div>
             </form>
         </div>

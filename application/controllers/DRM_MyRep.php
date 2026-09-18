@@ -1946,6 +1946,30 @@ class DRM_MyRep extends CI_Controller
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
+    public function rollbackRabDone()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->canChecklistRabDone()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses rollback RAB DONE.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->rollbackRabDone(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            trim((string) $this->input->post('reason'))
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Rollback RAB DONE berhasil disimpan. Status kembali BELUM RAB DONE.' : 'Gagal rollback RAB DONE.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
     public function deleteCluster()
     {
         if (empty($this->session->userdata('id_user'))) {
