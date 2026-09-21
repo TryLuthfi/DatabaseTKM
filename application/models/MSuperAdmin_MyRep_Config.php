@@ -74,6 +74,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'document_revised',
         'full_upload',
         'batch_revised',
+        'on_target_rab',
         'claim_rfs_approved',
         'daily_progress_masuk',
     ];

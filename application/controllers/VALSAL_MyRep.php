@@ -1136,6 +1136,18 @@ class VALSAL_MyRep extends CI_Controller
 
     private function storeValsalUploadFile($clusterId, $context, $fieldName)
     {
+        $isNoDocumentRequired = $fieldName === 'file'
+            ? (!$this->isValsalBoundaryKmzDocument($context) && (int) $this->input->post('is_document_not_required') === 1)
+            : false;
+        if ($isNoDocumentRequired) {
+            return [
+                'status' => true,
+                'message' => '',
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
         if (empty($_FILES[$fieldName]['name'])) {
             return [
                 'status' => false,

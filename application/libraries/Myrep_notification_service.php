@@ -17,7 +17,7 @@ class Myrep_notification_service
 
     public function notify($moduleName, $eventName, array $payload = [])
     {
-        if (empty($this->config['enabled']) || empty($this->config['bot_token']) || empty($this->config['chat_id'])) {
+        if (empty($this->config['enabled']) || empty($this->config['bot_token'])) {
             return false;
         }
 
@@ -32,7 +32,7 @@ class Myrep_notification_service
         }
 
         $message = $this->buildMessage($moduleName, $eventName, $payload, $recipient);
-        return $this->sendTelegramMessage($message, (string) $moduleName);
+        return $this->sendTelegramMessage($message, (string) $moduleName, (string) $eventName);
     }
 
     public function enqueueDelayed($moduleName, $eventName, array $payload = [], array $options = [])
@@ -230,6 +230,17 @@ class Myrep_notification_service
                 ->row_array();
         }
 
+        if ($normalizedEvent === 'on_target_rab' && $normalizedModule === 'drm_myrep') {
+            return [
+                'module_name' => (string) $moduleName,
+                'event_name' => (string) $eventName,
+                'target_type' => 'CITY_ROLE',
+                'target_user_id' => null,
+                'target_role' => 'PLANNING_HO',
+                'is_active' => 1,
+            ];
+        }
+
         return [];
     }
 
@@ -387,6 +398,7 @@ class Myrep_notification_service
             'ATP_HO' => 'atp_ho',
             'RFS_HO' => 'rfs_ho',
             'SITAC_HO' => 'sitac_ho',
+            'PLANNING_HO' => 'planning_ho',
             'DC_HO' => 'dc_ho',
             'QA_HO' => 'qa_ho',
         ];
@@ -553,6 +565,10 @@ class Myrep_notification_service
             return '✅ <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
+        if ($normalizedEvent === 'on_target_rab' && $normalizedModule === 'drm_myrep') {
+            return '<b>ON TARGET RAB</b>';
+        }
+
         if ($normalizedEvent === 'batch_revised' && $normalizedModule === 'batch_approval_myrep') {
             return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
@@ -587,6 +603,10 @@ class Myrep_notification_service
 
         if (strtolower(trim((string) $eventName)) === 'full_upload') {
             return $moduleLabel;
+        }
+
+        if (strtolower(trim((string) $eventName)) === 'on_target_rab') {
+            return $documentLabel !== '' ? ($moduleLabel . ' - ' . $documentLabel) : $moduleLabel;
         }
 
         if (strtolower(trim((string) $eventName)) === 'cluster_masuk') {
@@ -706,9 +726,9 @@ class Myrep_notification_service
         return '<a href="tg://user?id=' . rawurlencode($telegramUserId) . '">' . $name . '</a>';
     }
 
-    private function sendTelegramMessage($message, $moduleName = '')
+    private function sendTelegramMessage($message, $moduleName = '', $eventName = '')
     {
-        $chatId = $this->resolveChatId($moduleName);
+        $chatId = $this->resolveChatId($moduleName, $eventName);
         if ($chatId === '') {
             return false;
         }
@@ -768,14 +788,20 @@ class Myrep_notification_service
             'bot_token' => trim((string) ($env['TELEGRAM_BOT_TOKEN'] ?? '')),
             'chat_id' => trim((string) ($env['TELEGRAM_CHAT_ID_CHECKLIST_MYREP'] ?? ($env['TELEGRAM_CHAT_ID'] ?? ''))),
             'donation_chat_id' => trim((string) ($env['TELEGRAM_CHAT_ID_DONASI_MYREP'] ?? '')),
+            'rab_chat_id' => trim((string) ($env['TELEGRAM_CHAT_ID_RAB_MYREP'] ?? '')),
             'queue_delay_minutes' => max(1, (int) ($env['TELEGRAM_MYREP_QUEUE_DELAY_MINUTES'] ?? 3)),
             'queue_process_limit' => max(1, (int) ($env['TELEGRAM_MYREP_QUEUE_PROCESS_LIMIT'] ?? 10)),
         ];
     }
 
-    private function resolveChatId($moduleName)
+    private function resolveChatId($moduleName, $eventName = '')
     {
         $moduleName = strtolower(trim((string) $moduleName));
+        $eventName = strtolower(trim((string) $eventName));
+        if ($moduleName === 'drm_myrep' && $eventName === 'on_target_rab' && trim((string) ($this->config['rab_chat_id'] ?? '')) !== '') {
+            return trim((string) $this->config['rab_chat_id']);
+        }
+
         if ($moduleName === 'batch_approval_myrep' && trim((string) ($this->config['donation_chat_id'] ?? '')) !== '') {
             return trim((string) $this->config['donation_chat_id']);
         }

@@ -1877,12 +1877,17 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
+        $wasOnTargetRab = $this->isClusterOnTargetRab($clusterId);
         $result = $this->MDRM_MyRep->approveDrmBoq(
             $clusterId,
             (int) $this->session->userdata('id_user'),
             trim((string) $this->input->post('remark')),
             $scopeType
         );
+        if ($result && !$wasOnTargetRab && $this->isClusterOnTargetRab($clusterId)) {
+            $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+            $this->sendDrmNotification('on_target_rab', $clusterDetail, 'RAB', 'DRM');
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve. Baseline implementasi terbentuk saat BOQ Cluster approved dan BOQ Subfeeder approved atau Subfeeder sudah approved tidak dibutuhkan.' : 'Gagal approve BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
@@ -2835,15 +2840,54 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
+        $homepass = (float) ($cluster['homepass_drm'] ?? 0);
+        if ($homepass <= 0) {
+            $homepass = (float) ($cluster['hp_donasi'] ?? $cluster['hp_plan'] ?? 0);
+        }
+
         $this->myrepNotifier->notify('DRM_MyRep', $eventName, [
+            'cluster_id' => $clusterId,
             'module_label' => (string) $moduleLabel,
             'document_label' => (string) $documentLabel,
             'regional_name' => (string) ($cluster['regional_name'] ?? ''),
             'city_name' => (string) ($cluster['city_name'] ?? ''),
             'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'homepass' => $homepass,
             'sender_name' => (string) $this->session->userdata('nama_user'),
             'detail_url' => base_url('DRM_MyRep/detail/' . $clusterId),
         ]);
+    }
+
+    private function isClusterOnTargetRab($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $cluster = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+        if (empty($cluster)) {
+            return false;
+        }
+
+        $currentStatus = strtoupper(trim((string) ($cluster['status_current'] ?? '')));
+        $rabStatus = strtoupper(trim((string) ($cluster['rab_status'] ?? '')));
+        if ($currentStatus === 'RAB DONE' || $rabStatus === 'RAB DONE') {
+            return false;
+        }
+
+        $clusterBoq = $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'CLUSTER');
+        $subfeederBoq = $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'SUBFEEDER');
+        $clusterApproved = strtoupper(trim((string) ($clusterBoq['review_status'] ?? ''))) === 'APPROVED';
+        $subfeederApproved = strtoupper(trim((string) ($subfeederBoq['review_status'] ?? ''))) === 'APPROVED';
+        $subfeederNotRequiredApproved = false;
+
+        if ($this->MDRM_MyRep->drmScopeRequirementTablesReady()) {
+            $requirement = $this->MDRM_MyRep->getScopeRequirement($clusterId, 'SUBFEEDER');
+            $subfeederNotRequiredApproved = strtoupper(trim((string) ($requirement['requirement_status'] ?? ''))) === 'NOT_REQUIRED_APPROVED';
+        }
+
+        return $clusterApproved || $subfeederApproved || $subfeederNotRequiredApproved;
     }
 
     private function buildDrmFullUploadNotificationContext($clusterId, $scopeType)
