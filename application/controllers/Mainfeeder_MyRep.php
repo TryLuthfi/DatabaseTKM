@@ -11,6 +11,7 @@ class Mainfeeder_MyRep extends CI_Controller
         $this->load->model('MChecklist_Dokument_MyRep');
         $this->load->model('MPO_Monitor');
         $this->load->library('upload');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
     }
 
     public function index()
@@ -318,6 +319,71 @@ class Mainfeeder_MyRep extends CI_Controller
         $this->redirectBack('DRM_MyRep/mainfeeder/' . (int) $mainfeederId);
     }
 
+    public function previewDrmDocument($fileId = 0)
+    {
+        $this->requireLogin();
+        $file = $this->MMainfeeder_MyRep->getDrmFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+
+        header('Content-Type: ' . ($mimeMap[$extension] ?? 'application/octet-stream'));
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
+    public function downloadDrmDocument($fileId = 0)
+    {
+        $this->requireLogin();
+        $file = $this->MMainfeeder_MyRep->getDrmFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $downloadName = trim((string) ($file['file_name'] ?? ''));
+        if ($downloadName === '') {
+            $downloadName = basename($fullPath);
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . basename($downloadName) . '"');
+        header('Pragma: public');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
     public function uploadDrmBoq($mainfeederId = 0)
     {
         $this->requireLogin();
@@ -369,12 +435,56 @@ class Mainfeeder_MyRep extends CI_Controller
         } else {
             $ok = $this->MMainfeeder_MyRep->rejectDrmBoq((int) $mainfeederId, (int) $this->session->userdata('id_user'), $remark);
         }
-        $this->session->set_flashdata($ok ? 'success' : 'error', $ok ? 'Review BOQ berhasil disimpan.' : 'Review BOQ gagal disimpan.');
-        if ($ok && $action === 'APPROVE') {
-            redirect('Implementasi_BOQ_MyRep/mainfeeder/' . (int) $mainfeederId);
+        $successMessage = $action === 'APPROVE'
+            ? 'Review BOQ berhasil disimpan. Silakan checklist RAB DONE sebelum lanjut flow.'
+            : 'Review BOQ berhasil disimpan.';
+        $this->session->set_flashdata($ok ? 'success' : 'error', $ok ? $successMessage : 'Review BOQ gagal disimpan.');
+        $this->redirectBack('DRM_MyRep/mainfeeder/' . (int) $mainfeederId);
+    }
+
+    public function checklistRabDone($mainfeederId = 0)
+    {
+        $this->requireLogin();
+        $mainfeederId = (int) $mainfeederId;
+        if (!$this->canChecklistRabDone()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses checklist RAB DONE.');
+            $this->redirectBack('DRM_MyRep/mainfeeder/' . $mainfeederId);
             return;
         }
-        $this->redirectBack('DRM_MyRep/mainfeeder/' . (int) $mainfeederId);
+
+        $detailRab = trim((string) $this->input->post('detail_rab'));
+        if ($detailRab === '') {
+            $this->session->set_flashdata('error', 'Detail RAB wajib diisi.');
+            $this->redirectBack('DRM_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $ok = $this->MMainfeeder_MyRep->checklistRabDone(
+            $mainfeederId,
+            (int) $this->session->userdata('id_user'),
+            $detailRab
+        );
+        $this->session->set_flashdata($ok ? 'success' : 'error', $ok ? 'Checklist RAB DONE berhasil disimpan.' : 'Gagal checklist RAB DONE. Pastikan BOQ DRM sudah approved.');
+        $this->redirectBack('DRM_MyRep/mainfeeder/' . $mainfeederId);
+    }
+
+    public function rollbackRabDone($mainfeederId = 0)
+    {
+        $this->requireLogin();
+        $mainfeederId = (int) $mainfeederId;
+        if (!$this->canChecklistRabDone()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses rollback RAB DONE.');
+            $this->redirectBack('DRM_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $ok = $this->MMainfeeder_MyRep->rollbackRabDone(
+            $mainfeederId,
+            (int) $this->session->userdata('id_user'),
+            trim((string) $this->input->post('reason'))
+        );
+        $this->session->set_flashdata($ok ? 'success' : 'error', $ok ? 'Rollback RAB DONE berhasil disimpan. Status kembali BELUM RAB DONE.' : 'Gagal rollback RAB DONE.');
+        $this->redirectBack('DRM_MyRep/mainfeeder/' . $mainfeederId);
     }
 
     public function saveDailyActivity($mainfeederId = 0)
@@ -2082,6 +2192,18 @@ class Mainfeeder_MyRep extends CI_Controller
         $level = (string) $this->session->userdata('nama_level');
         $lokasi = strtoupper(trim((string) $this->session->userdata('lokasi_user')));
         return $level === 'Super Admin' || $lokasi === 'HO';
+    }
+
+    private function canChecklistRabDone()
+    {
+        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        return in_array('PLANNING_HO', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
     }
 
     private function redirectBack($fallbackUri)

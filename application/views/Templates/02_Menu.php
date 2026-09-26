@@ -576,6 +576,7 @@ $forceVisibleControllerMap = [
                         $id_menu == 'MyRepublik_PO' ||
                         $id_menu == 'MyRepublik_Project' ||
                         $id_menu == 'DRM_MyRep' ||
+                        $id_menu == 'RFS_Readiness_MyRep' ||
                         $id_menu == 'Monitoring_RFS_MyRep' ||
                         $id_menu == 'ATP_MyRep' ||
                         $id_menu == 'Checklist_Dokument_MyRep' ||
@@ -596,6 +597,7 @@ $forceVisibleControllerMap = [
                             $id_menu == 'MyRepublik_PO' ||
                             $id_menu == 'MyRepublik_Project' ||
                             $id_menu == 'DRM_MyRep' ||
+                            $id_menu == 'RFS_Readiness_MyRep' ||
                             $id_menu == 'Monitoring_RFS_MyRep' ||
                             $id_menu == 'ATP_MyRep' ||
                             $id_menu == 'Checklist_Dokument_MyRep' ||
@@ -698,6 +700,7 @@ $forceVisibleControllerMap = [
                                 $id_menu == 'VALSAL_MyRep' ||
                                 $id_menu == 'Batch_Approval_MyRep' ||
                                 $id_menu == 'DRM_MyRep' ||
+                                $id_menu == 'RFS_Readiness_MyRep' ||
                                 $id_menu == 'Implementasi_BOQ_MyRep' ||
                                 $id_menu == 'PO_MyRep' ||
                                 $id_menu == 'Monitoring_RFS_MyRep' ||
@@ -715,6 +718,7 @@ $forceVisibleControllerMap = [
                                     $id_menu == 'VALSAL_MyRep' ||
                                     $id_menu == 'Batch_Approval_MyRep' ||
                                     $id_menu == 'DRM_MyRep' ||
+                                    $id_menu == 'RFS_Readiness_MyRep' ||
                                     $id_menu == 'Implementasi_BOQ_MyRep' ||
                                     $id_menu == 'PO_MyRep' ||
                                     $id_menu == 'Monitoring_RFS_MyRep' ||
@@ -729,7 +733,7 @@ $forceVisibleControllerMap = [
                                     <p>
                                         My Republik
                                         <i class="fas fa-angle-left right"></i>
-                                        <span class="badge badge-info right"><?= $this->session->userdata('nama_level') == "Super Admin" ? '12' : '11' ?></span>
+                                        <span class="badge badge-info right"><?= $this->session->userdata('nama_level') == "Super Admin" ? '13' : '12' ?></span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -766,6 +770,13 @@ $forceVisibleControllerMap = [
                                             class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Batch_Approval_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Batch Approval</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('RFS_Readiness_MyRep') ?>"
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'RFS_Readiness_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>RFS Readiness</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

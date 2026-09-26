@@ -312,6 +312,7 @@ if (!function_exists('get_user_page_access_registry')) {
             ['module_key' => 'MyRepublik', 'page_key' => 'VALSAL_MyRep', 'controller' => 'VALSAL_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
             ['module_key' => 'MyRepublik', 'page_key' => 'Batch_Approval_MyRep', 'controller' => 'Batch_Approval_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
             ['module_key' => 'MyRepublik', 'page_key' => 'DRM_MyRep', 'controller' => 'DRM_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
+            ['module_key' => 'MyRepublik', 'page_key' => 'RFS_Readiness_MyRep', 'controller' => 'RFS_Readiness_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
             ['module_key' => 'MyRepublik', 'page_key' => 'Implementasi_BOQ_MyRep', 'controller' => 'Implementasi_BOQ_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
             ['module_key' => 'MyRepublik', 'page_key' => 'PO_MyRep', 'controller' => 'PO_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],
             ['module_key' => 'MyRepublik', 'page_key' => 'Monitoring_RFS_MyRep', 'controller' => 'Monitoring_RFS_MyRep', 'actions' => ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL']],

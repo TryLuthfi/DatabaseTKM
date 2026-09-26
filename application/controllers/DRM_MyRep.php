@@ -19,6 +19,7 @@ class DRM_MyRep extends CI_Controller
                 'tableData' => 'VIEW',
                 'approveBoq' => 'APPROVAL',
                 'rejectBoq' => 'APPROVAL',
+                'backfillBoqBaselines' => 'APPROVAL',
                 'previewDrmImport' => 'TAMBAH',
             ]);
         }
@@ -936,6 +937,9 @@ class DRM_MyRep extends CI_Controller
         $data['boqHeader'] = $this->MMainfeeder_MyRep->getDrmBoqHeader($mainfeederId);
         $data['boqItems'] = $this->MMainfeeder_MyRep->getDrmBoqItems($mainfeederId);
         $data['canApprove'] = $this->isApprover();
+        $data['rabReady'] = $this->MDRM_MyRep->rabTablesReady();
+        $data['rabDetail'] = $this->MMainfeeder_MyRep->getRabByMainfeederId($mainfeederId, false);
+        $data['canChecklistRabDone'] = $this->canChecklistRabDone();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -1889,8 +1893,57 @@ class DRM_MyRep extends CI_Controller
             $this->sendDrmNotification('on_target_rab', $clusterDetail, 'RAB', 'DRM');
         }
 
-        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve. Baseline implementasi terbentuk saat BOQ Cluster approved dan BOQ Subfeeder approved atau Subfeeder sudah approved tidak dibutuhkan.' : 'Gagal approve BOQ DRM.');
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve. Baseline implementasi langsung terbentuk dari BOQ Cluster; BOQ Subfeeder yang menyusul akan otomatis merge ke baseline aktif.' : 'Gagal approve BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function backfillBoqBaselines()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            $this->session->set_flashdata('error', 'Backfill baseline BOQ harus dijalankan melalui request valid.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses backfill baseline BOQ.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $postedClusterIds = array_values(array_filter(array_map('intval', (array) $this->input->post('cluster_ids'))));
+        $clusterIds = $clusterId > 0 ? [$clusterId] : $postedClusterIds;
+        $result = $this->MDRM_MyRep->backfillApprovedClusterBoqBaselines(
+            (int) $this->session->userdata('id_user'),
+            $clusterIds
+        );
+
+        $message = sprintf(
+            'Backfill baseline selesai. Scan %d BOQ, generate %d baseline, skip %d BOQ.',
+            (int) ($result['scanned'] ?? 0),
+            (int) ($result['created'] ?? 0),
+            (int) ($result['skipped'] ?? 0)
+        );
+        $this->session->set_flashdata('success', $message);
+
+        $returnUrl = trim((string) $this->input->post('return_url'));
+        if ($returnUrl !== '' && strpos($returnUrl, '://') === false && strpos($returnUrl, '//') !== 0) {
+            redirect($returnUrl);
+            return;
+        }
+
+        if ($clusterId > 0) {
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        redirect('DRM_MyRep');
     }
 
     public function rejectBoq()

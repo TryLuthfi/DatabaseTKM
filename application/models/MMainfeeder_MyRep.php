@@ -5,6 +5,102 @@ class MMainfeeder_MyRep extends CI_Model
 {
     private $defaultTerminPercents = [20, 25, 15, 30, 10];
 
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureRabSchema();
+    }
+
+    private function ensureRabSchema()
+    {
+        $this->ensureMainfeederStatusCurrentSupportsRabDone();
+
+        if (!$this->db->table_exists('tb_myrep_rab')) {
+            $this->db->query("
+                CREATE TABLE `tb_myrep_rab` (
+                    `id_myrep_rab` INT(11) NOT NULL AUTO_INCREMENT,
+                    `id_myrep_cluster` INT(11) DEFAULT NULL,
+                    `id_mainfeeder` INT(11) DEFAULT NULL,
+                    `id_drm` INT(11) DEFAULT NULL,
+                    `id_drm_boq` INT(11) DEFAULT NULL,
+                    `id_apd_boq_file` INT(11) DEFAULT NULL,
+                    `rab_status` VARCHAR(50) NOT NULL DEFAULT 'RAB DONE',
+                    `detail_rab` TEXT NULL,
+                    `rab_done_at` DATETIME DEFAULT NULL,
+                    `rab_done_by` INT(11) DEFAULT NULL,
+                    `cancelled_at` DATETIME DEFAULT NULL,
+                    `cancelled_by` INT(11) DEFAULT NULL,
+                    `cancel_reason` TEXT NULL,
+                    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id_myrep_rab`),
+                    UNIQUE KEY `uniq_myrep_rab_cluster` (`id_myrep_cluster`),
+                    UNIQUE KEY `uniq_myrep_rab_mainfeeder` (`id_mainfeeder`),
+                    KEY `idx_myrep_rab_status` (`rab_status`),
+                    KEY `idx_myrep_rab_drm_boq` (`id_drm_boq`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            return;
+        }
+
+        if ($this->db->field_exists('id_myrep_cluster', 'tb_myrep_rab') && !$this->isColumnNullable('tb_myrep_rab', 'id_myrep_cluster')) {
+            $this->db->query("ALTER TABLE `tb_myrep_rab` MODIFY COLUMN `id_myrep_cluster` INT(11) DEFAULT NULL");
+        }
+        if (!$this->db->field_exists('id_mainfeeder', 'tb_myrep_rab')) {
+            $afterColumn = $this->db->field_exists('id_myrep_cluster', 'tb_myrep_rab') ? 'id_myrep_cluster' : 'id_myrep_rab';
+            $this->db->query("ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_mainfeeder` INT(11) DEFAULT NULL AFTER `" . $afterColumn . "`");
+        }
+
+        $index = $this->db->query("
+            SELECT 1
+            FROM INFORMATION_SCHEMA.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'tb_myrep_rab'
+              AND INDEX_NAME = 'uniq_myrep_rab_mainfeeder'
+            LIMIT 1
+        ")->row_array();
+        if (empty($index)) {
+            $this->db->query("ALTER TABLE `tb_myrep_rab` ADD UNIQUE KEY `uniq_myrep_rab_mainfeeder` (`id_mainfeeder`)");
+        }
+    }
+
+    private function ensureMainfeederStatusCurrentSupportsRabDone()
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_mainfeeder') || !$this->db->field_exists('current_status', 'tb_rfs_myrep_mainfeeder')) {
+            return;
+        }
+
+        $row = $this->db->query("
+            SELECT COLUMN_TYPE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'tb_rfs_myrep_mainfeeder'
+              AND COLUMN_NAME = 'current_status'
+            LIMIT 1
+        ")->row_array();
+        $columnType = strtoupper((string) ($row['COLUMN_TYPE'] ?? ''));
+        if ($columnType !== '' && strpos($columnType, "'RAB DONE'") === false) {
+            $this->db->query("
+                ALTER TABLE `tb_rfs_myrep_mainfeeder`
+                MODIFY COLUMN `current_status` ENUM('DRM','RAB DONE','IMPLEMENTASI','ATP','CHECKLIST','DONE') NOT NULL DEFAULT 'DRM'
+            ");
+        }
+    }
+
+    private function isColumnNullable($tableName, $columnName)
+    {
+        $row = $this->db->query("
+            SELECT IS_NULLABLE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+            LIMIT 1
+        ", [$tableName, $columnName])->row_array();
+
+        return strtoupper((string) ($row['IS_NULLABLE'] ?? '')) === 'YES';
+    }
+
     public function standaloneProjectTypes()
     {
         return ['MAINFEEDER', 'FWA'];
@@ -74,7 +170,7 @@ class MMainfeeder_MyRep extends CI_Model
 
     public function getStatusOptions()
     {
-        return ['DRM', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'];
+        return ['DRM', 'RAB DONE', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'];
     }
 
     public function getCityOptions()
@@ -197,6 +293,137 @@ class MMainfeeder_MyRep extends CI_Model
             ->join('tb_myrep_mainfeeder_drm drm', 'drm.id_mainfeeder = mf.id_mainfeeder', 'left')
             ->join('tb_myrep_mainfeeder_drm_boq boq', 'boq.id_mainfeeder = mf.id_mainfeeder', 'left')
             ->where('mf.id_mainfeeder', (int) $mainfeederId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getRabByMainfeederId($mainfeederId, $activeOnly = true)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0 || !$this->db->table_exists('tb_myrep_rab') || !$this->db->field_exists('id_mainfeeder', 'tb_myrep_rab')) {
+            return [];
+        }
+
+        $this->db
+            ->from('tb_myrep_rab')
+            ->where('id_mainfeeder', $mainfeederId);
+        if ($activeOnly) {
+            $this->db->where('UPPER(rab_status)', 'RAB DONE');
+        }
+
+        return (array) $this->db
+            ->order_by('id_myrep_rab', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function checklistRabDone($mainfeederId, $userId, $detailRab)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        $userId = (int) $userId;
+        $detailRab = trim((string) $detailRab);
+        if ($mainfeederId <= 0 || $detailRab === '' || !$this->db->table_exists('tb_myrep_rab')) {
+            return false;
+        }
+
+        $boqHeader = $this->getDrmBoqHeader($mainfeederId);
+        if (empty($boqHeader['id_mainfeeder_drm_boq']) || strtoupper(trim((string) ($boqHeader['review_status'] ?? ''))) !== 'APPROVED') {
+            return false;
+        }
+
+        $drm = $this->getDrm($mainfeederId);
+        $apdBoqFile = $this->getMainfeederApdBoqFile($mainfeederId);
+        $now = date('Y-m-d H:i:s');
+        $payload = [
+            'id_myrep_cluster' => null,
+            'id_mainfeeder' => $mainfeederId,
+            'id_drm' => !empty($drm['id_mainfeeder_drm']) ? (int) $drm['id_mainfeeder_drm'] : null,
+            'id_drm_boq' => (int) ($boqHeader['id_mainfeeder_drm_boq'] ?? 0),
+            'id_apd_boq_file' => !empty($apdBoqFile['id_doc_file_mainfeeder_flow']) ? (int) $apdBoqFile['id_doc_file_mainfeeder_flow'] : null,
+            'rab_status' => 'RAB DONE',
+            'detail_rab' => $detailRab,
+            'rab_done_at' => $now,
+            'rab_done_by' => $userId > 0 ? $userId : null,
+            'cancelled_at' => null,
+            'cancelled_by' => null,
+            'cancel_reason' => null,
+            'updated_at' => $now,
+        ];
+
+        $this->db->trans_start();
+        $existing = $this->db
+            ->select('id_myrep_rab')
+            ->from('tb_myrep_rab')
+            ->where('id_mainfeeder', $mainfeederId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($existing['id_myrep_rab'])) {
+            $this->db->where('id_myrep_rab', (int) $existing['id_myrep_rab'])->update('tb_myrep_rab', $payload);
+        } else {
+            $payload['created_at'] = $now;
+            $this->db->insert('tb_myrep_rab', $payload);
+        }
+        $this->db->where('id_mainfeeder', $mainfeederId)->update('tb_rfs_myrep_mainfeeder', [
+            'current_status' => 'RAB DONE',
+            'updated_by' => $userId,
+        ]);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    public function rollbackRabDone($mainfeederId, $userId, $reason = '')
+    {
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0 || !$this->db->table_exists('tb_myrep_rab') || !$this->db->field_exists('id_mainfeeder', 'tb_myrep_rab')) {
+            return false;
+        }
+
+        $activeRab = $this->getRabByMainfeederId($mainfeederId);
+        if (empty($activeRab['id_myrep_rab'])) {
+            return false;
+        }
+
+        $this->db->trans_start();
+        $this->db
+            ->where('id_myrep_rab', (int) $activeRab['id_myrep_rab'])
+            ->update('tb_myrep_rab', [
+                'rab_status' => 'CANCELLED',
+                'cancelled_at' => date('Y-m-d H:i:s'),
+                'cancelled_by' => (int) $userId > 0 ? (int) $userId : null,
+                'cancel_reason' => trim((string) $reason) !== '' ? trim((string) $reason) : null,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        $this->db
+            ->where('id_mainfeeder', $mainfeederId)
+            ->where('UPPER(current_status)', 'RAB DONE')
+            ->update('tb_rfs_myrep_mainfeeder', [
+                'current_status' => 'DRM',
+                'updated_by' => (int) $userId,
+            ]);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    private function getMainfeederApdBoqFile($mainfeederId)
+    {
+        if (!$this->db->table_exists('tb_myrep_mainfeeder_doc_file') || !$this->db->table_exists('md_myrep_flow_doc_item')) {
+            return [];
+        }
+
+        return (array) $this->db
+            ->select('f.*')
+            ->from('tb_myrep_mainfeeder_doc_file f')
+            ->join('tb_myrep_mainfeeder_doc_package p', 'p.id_doc_package_mainfeeder_flow = f.id_doc_package_mainfeeder_flow', 'inner')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_item = f.id_doc_item', 'inner')
+            ->where('p.id_mainfeeder', (int) $mainfeederId)
+            ->where('p.flow_type', 'DRM')
+            ->where('UPPER(i.doc_name)', 'APD BOQ')
+            ->order_by('f.id_doc_file_mainfeeder_flow', 'DESC')
+            ->limit(1)
             ->get()
             ->row_array();
     }
@@ -539,6 +766,42 @@ class MMainfeeder_MyRep extends CI_Model
             ->result_array();
     }
 
+    public function getDrmFileById($fileId)
+    {
+        $fileId = (int) $fileId;
+        if ($fileId <= 0 || !$this->db->table_exists('tb_myrep_mainfeeder_doc_file')) {
+            return [];
+        }
+
+        return (array) $this->db
+            ->select('f.*, p.id_mainfeeder, mf.mainfeeder_name, mf.city_name, i.doc_name')
+            ->from('tb_myrep_mainfeeder_doc_file f')
+            ->join('tb_myrep_mainfeeder_doc_package p', 'p.id_doc_package_mainfeeder_flow = f.id_doc_package_mainfeeder_flow', 'left')
+            ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_item = f.id_doc_item', 'left')
+            ->where('f.id_doc_file_mainfeeder_flow', $fileId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getDrmFileLogs($fileId)
+    {
+        $fileId = (int) $fileId;
+        if ($fileId <= 0 || !$this->db->table_exists('tb_myrep_mainfeeder_doc_file_log')) {
+            return [];
+        }
+
+        return $this->db
+            ->select('l.*, u.nama_karyawan AS nama_user')
+            ->from('tb_myrep_mainfeeder_doc_file_log l')
+            ->join('tb_master_user_new u', 'u.id = l.action_by', 'left')
+            ->where('l.id_doc_file_mainfeeder_flow', $fileId)
+            ->order_by('l.action_at', 'DESC')
+            ->order_by('l.id_doc_file_log_mainfeeder_flow', 'DESC')
+            ->get()
+            ->result_array();
+    }
+
     public function saveDrmFileUpload($mainfeederId, $docItemId, array $data)
     {
         $context = $this->getDrmDocumentContext($mainfeederId, $docItemId);
@@ -730,7 +993,7 @@ class MMainfeeder_MyRep extends CI_Model
             ]);
         }
         $this->db->where('id_mainfeeder', (int) $mainfeederId)->update('tb_myrep_mainfeeder_drm', ['status_drm' => 'DONE', 'updated_by' => (int) $userId]);
-        $this->db->where('id_mainfeeder', (int) $mainfeederId)->update('tb_rfs_myrep_mainfeeder', ['current_status' => 'IMPLEMENTASI', 'updated_by' => (int) $userId]);
+        $this->db->where('id_mainfeeder', (int) $mainfeederId)->update('tb_rfs_myrep_mainfeeder', ['current_status' => 'DRM', 'updated_by' => (int) $userId]);
         $this->db->trans_complete();
         return $this->db->trans_status();
     }

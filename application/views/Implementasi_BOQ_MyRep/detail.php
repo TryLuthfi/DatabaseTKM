@@ -62,6 +62,20 @@ if (!function_exists('implHistoryNumber')) {
     }
 }
 
+if (!function_exists('implReadinessBadgeClass')) {
+    function implReadinessBadgeClass($status)
+    {
+        return strtoupper(trim((string) $status)) === 'COMPLETE' ? 'success' : 'warning';
+    }
+}
+
+if (!function_exists('implReadinessIcon')) {
+    function implReadinessIcon($status)
+    {
+        return strtoupper(trim((string) $status)) === 'COMPLETE' ? 'fa-check-circle' : 'fa-clock';
+    }
+}
+
 if (!function_exists('implDetectComplyItemOverride')) {
     function implDetectComplyItemOverride($remarkValue)
     {
@@ -983,6 +997,15 @@ $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
 $agingWorkingDays = !empty($cluster['drm_date']) ? implCountWorkingDays((string) $cluster['drm_date']) : 0;
 $agingTargetDate = !empty($cluster['drm_date']) ? implAddWorkingDays((string) $cluster['drm_date'], 23) : null;
 $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
+$clusterReadiness = array_merge([
+    'cable_status' => 'ON PROGRESS',
+    'fat_status' => 'ON PROGRESS',
+    'tiang_status' => 'ON PROGRESS',
+    'progress_status' => 'ON PROGRESS',
+    'remark' => '',
+    'updated_by_name' => '',
+    'updated_at' => null,
+], (array) ($clusterReadiness ?? []));
 
 if (!function_exists('implPhotoReviewBadgeClass')) {
     function implPhotoReviewBadgeClass($status)
@@ -1400,6 +1423,48 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         font-size: 1.2rem;
         font-weight: 700;
         color: #0f172a;
+    }
+
+    .impl-readiness-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: .85rem;
+    }
+
+    .impl-readiness-card {
+        border: 1px solid #e5edf6;
+        border-radius: 14px;
+        padding: .95rem;
+        background: linear-gradient(180deg, #fff, #f8fbff);
+    }
+
+    .impl-readiness-card__label {
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .impl-readiness-card__status {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        margin-top: .35rem;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .impl-readiness-final {
+        border-radius: 14px;
+        padding: 1rem;
+        color: #fff;
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        height: 100%;
+    }
+
+    .impl-readiness-final.complete {
+        background: linear-gradient(135deg, #059669, #14b8a6);
     }
 
     .impl-dropzone {
@@ -2540,6 +2605,92 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 </div>
             </div>
 
+            <div class="card card-outline card-success shadow-sm impl-table-card">
+                <div class="card-header">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Status Progress BOQ Cluster</h3>
+                        <?php if (!empty($clusterReadinessReady)): ?>
+                            <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modal-cluster-readiness">
+                                <i class="fas fa-edit mr-1"></i>Edit Status
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($clusterReadinessReady)): ?>
+                        <div class="alert alert-warning mb-0">Tabel status progress BOQ cluster belum tersedia. Jalankan patch <code>db/patch_myrep_boq_cluster_readiness_20260923.sql</code>.</div>
+                    <?php else: ?>
+                        <div class="row">
+                            <div class="col-lg-9">
+                                <div class="impl-readiness-grid">
+                                    <?php foreach (['cable_status' => 'Cable', 'fat_status' => 'FAT', 'tiang_status' => 'Tiang'] as $statusKey => $statusLabel): ?>
+                                        <?php $statusValue = strtoupper((string) ($clusterReadiness[$statusKey] ?? 'ON PROGRESS')); ?>
+                                        <div class="impl-readiness-card">
+                                            <div class="impl-readiness-card__label"><?= htmlspecialchars($statusLabel) ?></div>
+                                            <div class="impl-readiness-card__status">
+                                                <span class="badge badge-<?= implReadinessBadgeClass($statusValue) ?>">
+                                                    <i class="fas <?= implReadinessIcon($statusValue) ?> mr-1"></i><?= htmlspecialchars($statusValue) ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php $finalReadinessStatus = strtoupper((string) ($clusterReadiness['progress_status'] ?? 'ON PROGRESS')); ?>
+                            <div class="col-lg-3 mt-3 mt-lg-0">
+                                <div class="impl-readiness-final <?= $finalReadinessStatus === 'COMPLETE' ? 'complete' : '' ?>">
+                                    <div class="small font-weight-bold text-uppercase mb-1">Progress BOQ</div>
+                                    <div class="h4 mb-2 font-weight-bold"><?= htmlspecialchars($finalReadinessStatus) ?></div>
+                                    <div class="small">
+                                        Update: <?= !empty($clusterReadiness['updated_at']) ? htmlspecialchars((string) $clusterReadiness['updated_at']) : '-' ?>
+                                        <?= !empty($clusterReadiness['updated_by_name']) ? ' oleh ' . htmlspecialchars((string) $clusterReadiness['updated_by_name']) : '' ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php if (!empty($clusterReadiness['remark'])): ?>
+                            <div class="alert alert-light border mt-3 mb-0"><?= nl2br(htmlspecialchars((string) $clusterReadiness['remark'])) ?></div>
+                        <?php endif; ?>
+                        <?php if (!empty($clusterReadinessHistory)): ?>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:150px;">Waktu</th>
+                                            <th style="width:160px;">User</th>
+                                            <th>Perubahan</th>
+                                            <th>Remark</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($clusterReadinessHistory as $historyRow): ?>
+                                            <?php
+                                            $oldPayload = json_decode((string) ($historyRow['old_payload'] ?? ''), true) ?: [];
+                                            $newPayload = json_decode((string) ($historyRow['new_payload'] ?? ''), true) ?: [];
+                                            $diffText = [];
+                                            foreach (['cable_status' => 'Cable', 'fat_status' => 'FAT', 'tiang_status' => 'Tiang', 'progress_status' => 'Progress'] as $payloadKey => $payloadLabel) {
+                                                $oldValue = (string) ($oldPayload[$payloadKey] ?? '-');
+                                                $newValue = (string) ($newPayload[$payloadKey] ?? '-');
+                                                if ($oldValue !== $newValue || empty($oldPayload)) {
+                                                    $diffText[] = $payloadLabel . ': ' . $oldValue . ' -> ' . $newValue;
+                                                }
+                                            }
+                                            ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars((string) ($historyRow['created_at'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($historyRow['created_by_name'] ?? $historyRow['created_by'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars(!empty($diffText) ? implode(' | ', $diffText) : '-') ?></td>
+                                                <td><?= nl2br(htmlspecialchars((string) ($historyRow['remark'] ?? '-'))) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <div class="card card-outline card-primary shadow-sm impl-table-card">
                 <div class="card-header">
                     <h3 class="card-title">BOQ Tracker & Daily Progress</h3>
@@ -3160,6 +3311,45 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             </div>
         </div>
     </section>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($clusterReadinessReady)): ?>
+<div class="modal fade" id="modal-cluster-readiness" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/saveClusterReadiness') ?>" class="modal-content">
+            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Edit Status Progress BOQ Cluster</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Cluster</label>
+                    <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly>
+                </div>
+                <?php foreach (['cable_status' => 'Cable', 'fat_status' => 'FAT', 'tiang_status' => 'Tiang'] as $statusKey => $statusLabel): ?>
+                    <div class="form-group">
+                        <label><?= htmlspecialchars($statusLabel) ?></label>
+                        <select name="<?= htmlspecialchars($statusKey) ?>" class="form-control">
+                            <?php foreach (['ON PROGRESS', 'COMPLETE'] as $optionStatus): ?>
+                                <option value="<?= $optionStatus ?>" <?= strtoupper((string) ($clusterReadiness[$statusKey] ?? 'ON PROGRESS')) === $optionStatus ? 'selected' : '' ?>><?= $optionStatus ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php endforeach; ?>
+                <div class="form-group mb-0">
+                    <label>Remark</label>
+                    <textarea name="remark" class="form-control" rows="3" placeholder="Catatan perubahan status BOQ"><?= htmlspecialchars((string) ($clusterReadiness['remark'] ?? '')) ?></textarea>
+                    <div class="small text-muted mt-2">Progress BOQ otomatis COMPLETE jika Cable, FAT, dan Tiang sudah COMPLETE.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-success">Simpan Status</button>
+            </div>
+        </form>
+    </div>
 </div>
 <?php endif; ?>
 

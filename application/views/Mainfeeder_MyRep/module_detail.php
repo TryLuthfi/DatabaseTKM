@@ -104,12 +104,28 @@ if (!function_exists('mfModuleStatusBadge')) {
         return 'secondary';
     }
 }
+if (!function_exists('mfModuleDocumentLabel')) {
+    function mfModuleDocumentLabel($row)
+    {
+        if ((int) ($row['is_document_not_required'] ?? 0) === 1) {
+            return 'Tidak Dibutuhkan';
+        }
+
+        $status = strtoupper(trim((string) ($row['status_file'] ?? '')));
+        if ($status === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        return $status !== '' ? $status : 'BELUM UPLOAD';
+    }
+}
 $section = strtolower((string) ($section ?? ''));
 $mainfeederId = (int) ($mainfeeder['id_mainfeeder'] ?? 0);
 $returnUrl = current_url();
 $projectType = strtoupper(trim((string) ($mainfeeder['project_type'] ?? 'MAINFEEDER'))) ?: 'MAINFEEDER';
 $projectLabel = $projectType === 'FWA' ? 'FWA' : 'Mainfeeder';
 $moduleTitle = (string) ($moduleTitle ?? $projectLabel);
+$canEditDrm = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'EDIT') : true;
 $canTambahPo = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'TAMBAH') : true;
 $canEditPo = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT') : true;
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
@@ -149,6 +165,12 @@ foreach (($drmDocuments ?? []) as $docRow) {
         break;
     }
 }
+$rabDetail = (array) ($rabDetail ?? []);
+$rabStatus = strtoupper(trim((string) ($rabDetail['rab_status'] ?? '')));
+$isRabDone = $rabStatus === 'RAB DONE';
+$boqReviewStatusForRab = strtoupper(trim((string) ($boqHeader['review_status'] ?? '')));
+$canShowRabDoneButton = !empty($rabReady) && !empty($canChecklistRabDone) && !$isRabDone && $boqReviewStatusForRab === 'APPROVED';
+$canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) && $isRabDone;
 ?>
 
 <style>
@@ -178,6 +200,23 @@ foreach (($drmDocuments ?? []) as $docRow) {
     .mf-section-header .card-title {
         color: #0f172a;
         font-weight: 850;
+    }
+
+    .mf-rab-summary {
+        align-items: flex-start;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .mf-rab-detail {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        color: #334155;
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        white-space: normal;
     }
 
     .mf-project-card h4 {
@@ -257,6 +296,100 @@ foreach (($drmDocuments ?? []) as $docRow) {
     .mf-action-btn {
         border-radius: 10px;
         font-weight: 800;
+    }
+
+    .mf-drm-header-card .card-header {
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        border-bottom: 1px solid #dbeafe;
+    }
+
+    .mf-detail-sections {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .mf-detail-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .mf-detail-section__head {
+        align-items: center;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.8rem 0.95rem;
+    }
+
+    .mf-detail-section__icon {
+        align-items: center;
+        background: #0f172a;
+        border-radius: 12px;
+        color: #fff;
+        display: inline-flex;
+        height: 34px;
+        justify-content: center;
+        width: 34px;
+    }
+
+    .mf-detail-section__title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 850;
+        margin: 0;
+    }
+
+    .mf-detail-section__subtitle {
+        color: #64748b;
+        font-size: 0.82rem;
+        margin: 0.1rem 0 0;
+    }
+
+    .mf-detail-fields {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .mf-detail-field {
+        border-bottom: 1px solid #eef2f7;
+        border-right: 1px solid #eef2f7;
+        min-height: 74px;
+        padding: 0.8rem 0.95rem;
+    }
+
+    .mf-detail-field--wide {
+        grid-column: span 2;
+    }
+
+    .mf-detail-field__label {
+        color: #64748b;
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 850;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .mf-detail-field__value {
+        color: #0f172a;
+        font-weight: 800;
+        margin-top: 0.2rem;
+        overflow-wrap: anywhere;
+    }
+
+    .mf-doc-file-link a {
+        color: #0d6efd;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .mf-doc-file-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.45rem;
     }
 
     .mf-po-hero {
@@ -348,6 +481,15 @@ foreach (($drmDocuments ?? []) as $docRow) {
             min-width: 240px;
         }
 
+        .mf-detail-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .mf-detail-field,
+        .mf-detail-field--wide {
+            grid-column: span 1;
+        }
+
         .mf-detail-page .text-right {
             text-align: left !important;
         }
@@ -359,10 +501,10 @@ foreach (($drmDocuments ?? []) as $docRow) {
         <div class="container-fluid mf-detail-shell">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0 text-dark"><?= mfModuleDetailHtml($moduleTitle) ?></h1>
+                    <h1 class="m-0 text-dark"><?= $section === 'drm' ? 'Detail DRM MyRep' : mfModuleDetailHtml($moduleTitle) ?></h1>
                 </div>
                 <div class="col-sm-6 text-right">
-                    <a href="<?= base_url('MyRepublik_Project') ?>" class="btn btn-outline-secondary">Kembali</a>
+                    <a href="<?= base_url($section === 'drm' ? 'DRM_MyRep' : 'MyRepublik_Project') ?>" class="btn btn-outline-secondary">Kembali</a>
                 </div>
             </div>
         </div>
@@ -370,8 +512,18 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
     <section class="content">
         <div class="container-fluid mf-detail-shell">
-            <?php if (!empty($this->session->flashdata('success'))): ?><div class="alert alert-success"><?= mfModuleDetailHtml($this->session->flashdata('success')) ?></div><?php endif; ?>
-            <?php if (!empty($this->session->flashdata('error'))): ?><div class="alert alert-danger"><?= mfModuleDetailHtml($this->session->flashdata('error')) ?></div><?php endif; ?>
+            <?php if (!empty($this->session->flashdata('success'))): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <?= mfModuleDetailHtml($this->session->flashdata('success')) ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($this->session->flashdata('error'))): ?>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <?= mfModuleDetailHtml($this->session->flashdata('error')) ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+            <?php endif; ?>
 
             <?php if ($section === 'po'): ?>
                 <div class="mf-po-hero">
@@ -412,6 +564,115 @@ foreach (($drmDocuments ?? []) as $docRow) {
                         </div>
                     </div>
                 </div>
+            <?php elseif ($section === 'drm'): ?>
+                <div class="card card-primary shadow-sm mf-drm-header-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Header DRM</h3>
+                        <?php if ($canEditDrm): ?>
+                            <button type="button" class="btn btn-sm btn-primary mf-action-btn" data-toggle="modal" data-target="#modal-mf-drm-edit">
+                                <i class="fas fa-pen"></i> Edit DRM
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <div class="mf-detail-sections">
+                            <section class="mf-detail-section">
+                                <div class="mf-detail-section__head">
+                                    <span class="mf-detail-section__icon"><i class="fas fa-map-marker-alt"></i></span>
+                                    <div>
+                                        <h4 class="mf-detail-section__title">Lokasi <?= mfModuleDetailHtml($projectLabel) ?></h4>
+                                        <p class="mf-detail-section__subtitle">Identitas project dan area pekerjaan.</p>
+                                    </div>
+                                </div>
+                                <div class="mf-detail-fields">
+                                    <div class="mf-detail-field mf-detail-field--wide">
+                                        <span class="mf-detail-field__label"><?= mfModuleDetailHtml($projectLabel) ?></span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Cluster Code</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '-') ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Project Type</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($projectType) ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Kota</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '-') ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Regional</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '-') ?></div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="mf-detail-section">
+                                <div class="mf-detail-section__head">
+                                    <span class="mf-detail-section__icon"><i class="fas fa-clipboard-check"></i></span>
+                                    <div>
+                                        <h4 class="mf-detail-section__title">Progress DRM</h4>
+                                        <p class="mf-detail-section__subtitle">Status DRM, RAB, dan nilai pekerjaan mainfeeder.</p>
+                                    </div>
+                                </div>
+                                <div class="mf-detail-fields">
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Length / HP DRM</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailNum($mainfeeder['length_meter'] ?? 0) ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Tanggal DRM</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailDate($mainfeeder['drm_date'] ?? '') ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Status Flow</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Status DRM</span>
+                                        <div class="mf-detail-field__value">
+                                            <span class="badge badge-<?= mfModuleStatusBadge($mainfeeder['status_drm'] ?? '') ?>"><?= mfModuleDetailHtml($mainfeeder['status_drm'] ?? 'WAITING INPUT') ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Status RAB</span>
+                                        <div class="mf-detail-field__value">
+                                            <span class="badge badge-<?= $isRabDone ? 'success' : 'secondary' ?>"><?= $isRabDone ? 'RAB DONE' : 'BELUM RAB DONE' ?></span>
+                                            <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
+                                                <div class="small text-muted mt-1"><?= mfModuleDetailHtml($rabDetail['rab_done_at']) ?></div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Nama OLT</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['nama_olt'] ?? '-') ?></div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="mf-detail-section">
+                                <div class="mf-detail-section__head">
+                                    <span class="mf-detail-section__icon"><i class="fas fa-sticky-note"></i></span>
+                                    <div>
+                                        <h4 class="mf-detail-section__title">Catatan</h4>
+                                        <p class="mf-detail-section__subtitle">Informasi tambahan untuk tindak lanjut DRM.</p>
+                                    </div>
+                                </div>
+                                <div class="mf-detail-fields">
+                                    <div class="mf-detail-field mf-detail-field--wide">
+                                        <span class="mf-detail-field__label">Remark DRM</span>
+                                        <div class="mf-detail-field__value"><?= !empty($mainfeeder['remark_drm']) ? nl2br(mfModuleDetailHtml($mainfeeder['remark_drm'])) : '-' ?></div>
+                                    </div>
+                                    <div class="mf-detail-field">
+                                        <span class="mf-detail-field__label">Year / Month</span>
+                                        <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['year_num'] ?? '-') ?> / <?= mfModuleDetailHtml($mainfeeder['month_num'] ?? '-') ?></div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
             <?php else: ?>
                 <div class="card card-outline card-<?= mfModuleDetailHtml($meta['accent']) ?> shadow-sm mf-project-card">
                     <div class="card-body">
@@ -443,48 +704,144 @@ foreach (($drmDocuments ?? []) as $docRow) {
 
             <?php if ($section === 'drm'): ?>
                 <div class="card card-outline card-primary shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">DRM <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
+                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">Dokumen Doc <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
                     <div class="card-body">
-                        <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveDrm/' . $mainfeederId) ?>" class="row mb-4">
-                            <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                            <div class="col-md-3"><div class="form-group"><label>Tanggal DRM</label><input type="date" name="drm_date" value="<?= mfModuleDetailHtml($mainfeeder['drm_date'] ?? '') ?>" class="form-control"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Nama OLT</label><input type="text" name="nama_olt" value="<?= mfModuleDetailHtml($mainfeeder['nama_olt'] ?? '') ?>" class="form-control"></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Status DRM</label><select name="status_drm" class="form-control"><?php foreach (['DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE'] as $st): ?><option value="<?= $st ?>" <?= strtoupper((string)($mainfeeder['status_drm'] ?? '')) === $st ? 'selected' : '' ?>><?= $st ?></option><?php endforeach; ?></select></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Remark</label><input type="text" name="remark_drm" value="<?= mfModuleDetailHtml($mainfeeder['remark_drm'] ?? '') ?>" class="form-control"></div></div>
-                            <div class="col-md-12"><button type="submit" class="btn btn-primary mf-action-btn">Simpan DRM</button></div>
-                        </form>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover mf-detail-table">
-                                <thead><tr><th>Group</th><th>Dokumen</th><th>Status</th><th>File</th><th>Upload</th><th>Approval</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Dokumen</th>
+                                        <th>Catatan</th>
+                                        <th>Status</th>
+                                        <th>File</th>
+                                        <th>Upload / Update</th>
+                                        <th>Remarks</th>
+                                        <?php if (!empty($canApprove)): ?><th>Review</th><?php endif; ?>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     <?php foreach (($drmDocuments ?? []) as $doc): ?>
+                                        <?php
+                                        $docStatus = mfModuleDocumentLabel($doc);
+                                        $docRawStatus = strtoupper(trim((string) ($doc['status_file'] ?? '')));
+                                        $docFileId = (int) ($doc['id_doc_file_mainfeeder_flow'] ?? 0);
+                                        $docName = (string) ($doc['doc_name'] ?? '');
+                                        $isApdBoqDoc = strtoupper(trim($docName)) === 'APD BOQ';
+                                        $boqReviewStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? '')));
+                                        $isBoqApproved = $boqReviewStatus === 'APPROVED';
+                                        ?>
                                         <tr>
-                                            <td><?= mfModuleDetailHtml($doc['group_label'] ?? '-') ?></td>
-                                            <td><?= mfModuleDetailHtml($doc['doc_name'] ?? '-') ?></td>
-                                            <td><span class="badge badge-secondary"><?= mfModuleDetailHtml($doc['status_file'] ?? 'BELUM UPLOAD') ?></span></td>
-                                            <td><?= !empty($doc['file_path']) ? '<a target="_blank" href="' . base_url($doc['file_path']) . '">' . mfModuleDetailHtml($doc['file_name'] ?? 'File') . '</a>' : '-' ?></td>
                                             <td>
-                                                <form method="post" action="<?= base_url('Mainfeeder_MyRep/uploadDrmDocument/' . $mainfeederId) ?>" enctype="multipart/form-data" class="mf-inline-form">
-                                                    <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                                                    <input type="hidden" name="id_doc_item" value="<?= (int) ($doc['id_doc_item'] ?? 0) ?>">
-                                                    <input type="hidden" name="doc_name" value="<?= mfModuleDetailHtml($doc['doc_name'] ?? '') ?>">
-                                                    <input type="file" name="file" class="form-control form-control-sm">
-                                                    <button type="submit" class="btn btn-sm btn-success mf-action-btn">Upload</button>
-                                                </form>
+                                                <strong><?= mfModuleDetailHtml($doc['doc_name'] ?? '-') ?></strong>
+                                                <div class="small text-muted"><?= mfModuleDetailHtml($doc['group_label'] ?? '-') ?></div>
                                             </td>
+                                            <td><?= !empty($doc['doc_requirement_note']) ? mfModuleDetailHtml($doc['doc_requirement_note']) : '-' ?></td>
+                                            <td><span class="badge badge-<?= mfModuleStatusBadge($docStatus) ?>"><?= mfModuleDetailHtml($docStatus) ?></span></td>
                                             <td>
-                                                <?php if (!empty($canApprove) && !empty($doc['id_doc_file_mainfeeder_flow'])): ?>
-                                                    <form method="post" action="<?= base_url('Mainfeeder_MyRep/reviewDrmDocument/' . $mainfeederId) ?>" class="mf-inline-form">
-                                                        <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                                                        <input type="hidden" name="id_doc_file_mainfeeder_flow" value="<?= (int) $doc['id_doc_file_mainfeeder_flow'] ?>">
-                                                        <select name="status_file" class="form-control form-control-sm"><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select>
-                                                        <input type="text" name="remark" class="form-control form-control-sm" placeholder="Remark">
-                                                        <button type="submit" class="btn btn-sm btn-primary mf-action-btn">Simpan</button>
-                                                    </form>
-                                                <?php else: ?>-<?php endif; ?>
+                                                <?php if (!empty($doc['file_name']) && $docFileId > 0): ?>
+                                                    <div class="mf-doc-file-link">
+                                                        <a href="<?= base_url('Mainfeeder_MyRep/previewDrmDocument/' . $docFileId) ?>" target="_blank">
+                                                            <?= mfModuleDetailHtml($doc['file_name'] ?? 'File') ?>
+                                                        </a>
+                                                    </div>
+                                                    <div class="mf-doc-file-actions">
+                                                        <a href="<?= base_url('Mainfeeder_MyRep/downloadDrmDocument/' . $docFileId) ?>" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-download"></i> Download
+                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-info js-mf-doc-history"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-mf-doc-history"
+                                                            data-doc-name="<?= mfModuleDetailHtml($doc['doc_name'] ?? '') ?>"
+                                                            data-history='<?= mfModuleDetailHtml(json_encode($this->MMainfeeder_MyRep->getDrmFileLogs($docFileId))) ?>'>
+                                                            <i class="fas fa-history"></i> History
+                                                        </button>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Belum ada file</span>
+                                                <?php endif; ?>
                                             </td>
+                                            <td style="min-width:320px;">
+                                                <?php if ($isApdBoqDoc): ?>
+                                                    <?php if (!$isBoqApproved && $canEditDrm): ?>
+                                                        <button type="button" class="btn btn-sm btn-primary mf-action-btn" data-toggle="modal" data-target="#modal-mf-boq-submit">
+                                                            Kelola APD BOQ
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <span class="text-success small font-weight-bold">BOQ sudah approved</span>
+                                                    <?php endif; ?>
+                                                    <div class="small text-muted mt-2">
+                                                        Status BOQ:
+                                                        <span class="badge badge-<?= mfModuleStatusBadge($boqReviewStatus) ?>"><?= mfModuleDetailHtml($boqReviewStatus !== '' ? $boqReviewStatus : 'DRAFT') ?></span>
+                                                    </div>
+                                                <?php elseif ($canEditDrm): ?>
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-primary mf-action-btn js-mf-doc-upload"
+                                                        data-toggle="modal"
+                                                        data-target="#modal-mf-doc-upload"
+                                                        data-doc-item-id="<?= (int) ($doc['id_doc_item'] ?? 0) ?>"
+                                                        data-doc-name="<?= mfModuleDetailHtml($docName) ?>"
+                                                        data-current-file="<?= mfModuleDetailHtml($doc['file_name'] ?? '') ?>">
+                                                        Upload
+                                                    </button>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">Upload tidak tersedia</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="min-width:220px;"><?= !empty($doc['remark']) ? nl2br(mfModuleDetailHtml($doc['remark'])) : '-' ?></td>
+                                            <?php if (!empty($canApprove)): ?>
+                                                <td style="min-width:260px;">
+                                                    <?php if ($isApdBoqDoc): ?>
+                                                        <?php if (!empty($boqItems) && !$isBoqApproved): ?>
+                                                            <button type="button" class="btn btn-sm btn-outline-success mf-action-btn" data-toggle="modal" data-target="#modal-mf-boq-review">
+                                                                Review BOQ
+                                                            </button>
+                                                        <?php elseif ($isBoqApproved): ?>
+                                                            <span class="text-success small font-weight-bold">Review mengikuti approval BOQ</span>
+                                                        <?php else: ?>
+                                                            <span class="text-muted small">BOQ belum tersedia</span>
+                                                        <?php endif; ?>
+                                                    <?php elseif ($docFileId > 0 && in_array($docRawStatus, ['UPLOADED', 'REJECTED'], true)): ?>
+                                                        <div class="d-flex flex-wrap" style="gap:.35rem;">
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-success js-mf-doc-review"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-mf-doc-review"
+                                                                data-review-status="APPROVED"
+                                                                data-doc-file-id="<?= $docFileId ?>"
+                                                                data-doc-name="<?= mfModuleDetailHtml($docName) ?>"
+                                                                data-remark="<?= mfModuleDetailHtml($doc['remark'] ?? '') ?>">
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-danger js-mf-doc-review"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-mf-doc-review"
+                                                                data-review-status="REJECTED"
+                                                                data-doc-file-id="<?= $docFileId ?>"
+                                                                data-doc-name="<?= mfModuleDetailHtml($docName) ?>"
+                                                                data-remark="<?= mfModuleDetailHtml($doc['remark'] ?? '') ?>">
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    <?php elseif ($docRawStatus === 'APPROVED'): ?>
+                                                        <span class="text-success small font-weight-bold">Sudah approved</span>
+                                                    <?php elseif ($docRawStatus === 'REJECTED'): ?>
+                                                        <span class="text-danger small font-weight-bold">Sudah rejected</span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted small">Belum ada review</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endif; ?>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <?php if (empty($drmDocuments)): ?>
+                                        <tr><td colspan="<?= !empty($canApprove) ? '7' : '6' ?>" class="text-center text-muted">Belum ada dokumen DRM.</td></tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -492,28 +849,52 @@ foreach (($drmDocuments ?? []) as $docRow) {
                 </div>
 
                 <div class="card card-outline card-warning shadow-sm">
-                    <div class="card-header mf-section-header"><h3 class="card-title mb-1">BOQ DRM <?= mfModuleDetailHtml($projectLabel) ?></h3></div>
+                    <div class="card-header mf-section-header">
+                        <h3 class="card-title mb-1">BOQ DRM <?= mfModuleDetailHtml($projectLabel) ?></h3>
+                        <div class="d-flex flex-wrap" style="gap:.45rem;">
+                            <?php if ($canEditDrm && strtoupper((string) ($boqHeader['review_status'] ?? '')) !== 'APPROVED'): ?>
+                                <button type="button" class="btn btn-sm btn-warning mf-action-btn" data-toggle="modal" data-target="#modal-mf-boq-submit">Submit BOQ</button>
+                            <?php endif; ?>
+                            <?php if (!empty($canApprove) && !empty($boqItems) && strtoupper((string) ($boqHeader['review_status'] ?? '')) !== 'APPROVED'): ?>
+                                <button type="button" class="btn btn-sm btn-outline-success mf-action-btn" data-toggle="modal" data-target="#modal-mf-boq-review">Review BOQ</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                     <div class="card-body">
-                        <form method="post" action="<?= base_url('Mainfeeder_MyRep/uploadDrmBoq/' . $mainfeederId) ?>" enctype="multipart/form-data" class="form-inline mb-3">
-                            <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                            <input type="hidden" name="id_doc_item" value="<?= $apdBoqDocItemId ?>">
-                            <input type="file" name="boq_file" class="form-control mr-2" accept=".xls,.xlsx" required>
-                            <button type="submit" class="btn btn-warning mf-action-btn">Submit BOQ</button>
-                        </form>
                         <div class="mb-2"><strong>Status Review:</strong> <span class="badge badge-info"><?= mfModuleDetailHtml($boqHeader['review_status'] ?? '-') ?></span></div>
-                        <?php if (!empty($canApprove) && !empty($boqItems) && strtoupper((string) ($boqHeader['review_status'] ?? '')) !== 'APPROVED'): ?>
-                            <form method="post" action="<?= base_url('Mainfeeder_MyRep/reviewDrmBoq/' . $mainfeederId) ?>" class="form-inline mb-3">
-                                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
-                                <select name="action_review" class="form-control mr-2"><option value="APPROVE">APPROVE</option><option value="REJECT">REJECT</option></select>
-                                <input type="text" name="remark" class="form-control mr-2" placeholder="Remark HO">
-                                <button type="submit" class="btn btn-primary mf-action-btn">Simpan Review BOQ</button>
-                            </form>
-                        <?php endif; ?>
                         <div class="table-responsive"><table class="table table-bordered table-hover mf-detail-table"><thead><tr><th>Item</th><th>Type</th><th class="text-right">Qty BOQ</th></tr></thead><tbody>
                             <?php if (empty($boqItems)): ?><tr><td colspan="3" class="text-center text-muted">Belum ada BOQ.</td></tr><?php else: foreach ($boqItems as $item): ?>
                                 <tr><td><?= mfModuleDetailHtml($item['item_name'] ?? '-') ?></td><td><?= mfModuleDetailHtml($item['item_type'] ?? '-') ?></td><td class="text-right"><?= mfModuleDetailNum($item['qty_boq'] ?? 0) ?></td></tr>
                             <?php endforeach; endif; ?>
                         </tbody></table></div>
+                    </div>
+                </div>
+
+                <div class="card card-outline <?= $isRabDone ? 'card-success' : 'card-secondary' ?> shadow-sm">
+                    <div class="card-header mf-section-header">
+                        <h3 class="card-title mb-1">RAB <?= mfModuleDetailHtml($projectLabel) ?></h3>
+                        <span class="badge badge-<?= $isRabDone ? 'success' : 'secondary' ?>"><?= $isRabDone ? 'RAB DONE' : 'BELUM RAB DONE' ?></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mf-rab-summary">
+                            <div>
+                                <div class="font-weight-bold">Status RAB</div>
+                                <div class="text-muted small">Checklist tersedia setelah BOQ DRM approved dan user memiliki akses Planning HO.</div>
+                                <?php if ($isRabDone): ?>
+                                    <div class="mt-2"><strong>Waktu Checklist:</strong> <?= mfModuleDetailHtml(mfModuleDetailDate($rabDetail['rab_done_at'] ?? '')) ?></div>
+                                    <div class="mf-rab-detail"><?= nl2br(mfModuleDetailHtml($rabDetail['detail_rab'] ?? '-')) ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="text-right">
+                                <?php if ($canShowRabDoneButton): ?>
+                                    <button type="button" class="btn btn-success mf-action-btn" data-toggle="modal" data-target="#modal-mf-rab-done">Checklist RAB DONE</button>
+                                <?php elseif ($canShowRabRollbackButton): ?>
+                                    <button type="button" class="btn btn-outline-danger mf-action-btn" data-toggle="modal" data-target="#modal-mf-rab-rollback">Rollback RAB</button>
+                                <?php elseif (!$isRabDone): ?>
+                                    <span class="badge badge-warning">NY RAB</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -734,6 +1115,311 @@ foreach (($drmDocuments ?? []) as $docRow) {
         </div>
     </section>
 </div>
+
+<?php if ($section === 'drm' && $canEditDrm): ?>
+<div class="modal fade" id="modal-mf-doc-upload" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/uploadDrmDocument/' . $mainfeederId) ?>" enctype="multipart/form-data">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <input type="hidden" name="id_doc_item" id="mf_upload_doc_item_id">
+                <input type="hidden" name="doc_name" id="mf_upload_doc_name_input">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Upload Dokumen DRM</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>Dokumen:</strong> <span id="mf_upload_doc_name">-</span>
+                        <div class="small text-muted" id="mf_upload_current_file"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>File</label>
+                        <input type="file" name="file" class="form-control" required>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Remark</label>
+                        <textarea name="remark" class="form-control" rows="3" placeholder="Opsional"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-mf-boq-submit" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/uploadDrmBoq/' . $mainfeederId) ?>" enctype="multipart/form-data">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <input type="hidden" name="id_doc_item" value="<?= (int) $apdBoqDocItemId ?>">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Submit APD BOQ <?= mfModuleDetailHtml($projectLabel) ?></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light border small">
+                        Upload file APD BOQ untuk membentuk item BOQ DRM <?= mfModuleDetailHtml($projectLabel) ?>.
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>File BOQ</label>
+                        <input type="file" name="boq_file" class="form-control" accept=".xls,.xlsx" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning">Submit BOQ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'drm' && !empty($canApprove)): ?>
+<div class="modal fade" id="modal-mf-doc-review" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/reviewDrmDocument/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <input type="hidden" name="id_doc_file_mainfeeder_flow" id="mf_review_doc_file_id">
+                <input type="hidden" name="status_file" id="mf_review_status">
+                <div class="modal-header text-white" id="mf_review_header">
+                    <h5 class="modal-title"><span id="mf_review_action_label">Review</span> Dokumen DRM</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>Dokumen:</strong> <span id="mf_review_doc_name">-</span>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Remark</label>
+                        <textarea name="remark" id="mf_review_remark" class="form-control" rows="3" placeholder="Wajib diisi jika reject"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn" id="mf_review_submit">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal-mf-boq-review" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/reviewDrmBoq/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Review BOQ DRM</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Aksi Review</label>
+                        <select name="action_review" class="form-control">
+                            <option value="APPROVE">APPROVE</option>
+                            <option value="REJECT">REJECT</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Remark HO</label>
+                        <textarea name="remark" class="form-control" rows="3" placeholder="Opsional untuk approve, disarankan jika reject"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'drm' && $canShowRabDoneButton): ?>
+<div class="modal fade" id="modal-mf-rab-done" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/checklistRabDone/' . $mainfeederId) ?>" onsubmit="return confirm('Checklist RAB DONE untuk <?= mfModuleDetailHtml($projectLabel) ?> ini?');">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Checklist RAB DONE</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>Detail RAB</label>
+                        <textarea name="detail_rab" class="form-control" rows="4" required placeholder="Isi detail RAB"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan RAB DONE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'drm' && $canShowRabRollbackButton): ?>
+<div class="modal fade" id="modal-mf-rab-rollback" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/rollbackRabDone/' . $mainfeederId) ?>" onsubmit="return confirm('Rollback RAB DONE menjadi BELUM RAB DONE?');">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Rollback RAB DONE</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>Remark Rollback</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Opsional"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger">Rollback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'drm' && $canEditDrm): ?>
+<div class="modal fade" id="modal-mf-drm-edit" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/saveDrm/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Edit Header DRM</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label><?= mfModuleDetailHtml($projectLabel) ?></label><input type="text" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?>" readonly></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Tanggal DRM</label><input type="date" name="drm_date" value="<?= mfModuleDetailHtml($mainfeeder['drm_date'] ?? '') ?>" class="form-control"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Nama OLT</label><input type="text" name="nama_olt" value="<?= mfModuleDetailHtml($mainfeeder['nama_olt'] ?? '') ?>" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Status DRM</label><select name="status_drm" class="form-control"><?php foreach (['DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE'] as $st): ?><option value="<?= $st ?>" <?= strtoupper((string)($mainfeeder['status_drm'] ?? '')) === $st ? 'selected' : '' ?>><?= $st ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-8"><div class="form-group"><label>Remark</label><textarea name="remark_drm" class="form-control" rows="3"><?= mfModuleDetailHtml($mainfeeder['remark_drm'] ?? '') ?></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan DRM</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($section === 'drm'): ?>
+<div class="modal fade" id="modal-mf-doc-history" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">History Dokumen - <span id="mf_doc_history_name">-</span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Action</th>
+                                <th>Status</th>
+                                <th>File</th>
+                                <th>Remark</th>
+                                <th>User</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mf_doc_history_body">
+                            <tr><td colspan="6" class="text-center text-muted">Belum ada history.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[char];
+            });
+        }
+
+        $(document).on('click', '.js-mf-doc-upload', function () {
+            var $button = $(this);
+            var currentFile = $button.data('current-file') || '';
+            $('#mf_upload_doc_item_id').val($button.data('doc-item-id') || '');
+            $('#mf_upload_doc_name_input').val($button.data('doc-name') || '');
+            $('#mf_upload_doc_name').text($button.data('doc-name') || '-');
+            $('#mf_upload_current_file').text(currentFile ? 'File saat ini: ' + currentFile : '');
+        });
+
+        $(document).on('click', '.js-mf-doc-review', function () {
+            var $button = $(this);
+            var status = String($button.data('review-status') || 'APPROVED').toUpperCase();
+            var isReject = status === 'REJECTED';
+            $('#mf_review_doc_file_id').val($button.data('doc-file-id') || '');
+            $('#mf_review_status').val(status);
+            $('#mf_review_doc_name').text($button.data('doc-name') || '-');
+            $('#mf_review_remark').val($button.data('remark') || '');
+            $('#mf_review_action_label').text(isReject ? 'Reject' : 'Approve');
+            $('#mf_review_header')
+                .removeClass('bg-success bg-danger bg-primary')
+                .addClass(isReject ? 'bg-danger' : 'bg-success');
+            $('#mf_review_submit')
+                .removeClass('btn-success btn-danger btn-primary')
+                .addClass(isReject ? 'btn-danger' : 'btn-success')
+                .text(isReject ? 'Reject' : 'Approve');
+        });
+
+        $(document).on('click', '.js-mf-doc-history', function () {
+            var $button = $(this);
+            var history = [];
+            $('#mf_doc_history_name').text($button.data('doc-name') || '-');
+            try {
+                history = JSON.parse($button.attr('data-history') || '[]');
+            } catch (error) {
+                history = [];
+            }
+
+            if (!history.length) {
+                $('#mf_doc_history_body').html('<tr><td colspan="6" class="text-center text-muted">Belum ada history.</td></tr>');
+                return;
+            }
+
+            $('#mf_doc_history_body').html(history.map(function (row) {
+                return '<tr>'
+                    + '<td>' + escapeHtml(row.action_at || '-') + '</td>'
+                    + '<td>' + escapeHtml(row.action_type || '-') + '</td>'
+                    + '<td>' + escapeHtml(row.status_after || '-') + '</td>'
+                    + '<td>' + escapeHtml(row.file_name || '-') + '</td>'
+                    + '<td>' + escapeHtml(row.remark || '-') + '</td>'
+                    + '<td>' + escapeHtml(row.nama_user || row.action_by || '-') + '</td>'
+                    + '</tr>';
+            }).join(''));
+        });
+    })();
+</script>
+<?php endif; ?>
 
 <?php if ($section === 'po' && $canTambahPo): ?>
 <div class="modal fade" id="modal-mf-create-po" tabindex="-1" role="dialog" aria-hidden="true">

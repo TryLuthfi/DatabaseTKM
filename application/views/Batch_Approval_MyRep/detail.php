@@ -476,6 +476,10 @@ foreach ($slaDefinitions as $slaDefinition) {
     $startDate = trim((string) ($slaDefinition[4] ?? $previousActualDate));
     $targetDate = batchDetailAddCalendarDays($startDate, (int) $slaDefinition[2]);
     $actualDate = trim((string) $slaDefinition[3]);
+    if ($startDate === '') {
+        $targetDate = '';
+        $actualDate = '';
+    }
     $workDays = batchDetailCalendarDayDiff($startDate, $actualDate);
     if ($workDays !== '-') {
         $slaTotalWorkDays += (int) $workDays;
@@ -2020,13 +2024,31 @@ if ($canApprove && $canApprovalAction) {
             <?php
             $currentDonationStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? '')));
             $sakuFinanceStatus = strtoupper(trim((string) ($cluster['saku_finance_approval_status'] ?? 'NY')));
+            $sakuVisibleStages = [
+                'WAITING_SAKU_FINANCE_APPROVAL',
+                'WAITING_FINANCE_RELEASE',
+                'RELEASED',
+                'WAITING_POST_ZEYN_DOC',
+                'POST_ZEYN_DOC_ON_REVIEW',
+                'POST_ZEYN_DOC_APPROVED',
+                'POST_ZEYN_FINANCE_ON_REVIEW',
+                'WAITING_ASTRI_SUBMISSION',
+                'ASTRI_ON_REVIEW',
+                'ASTRI_APPROVED',
+                'PO_DONASI',
+                'INVOICE',
+            ];
+            $isSakuFlowVisible = in_array($currentDonationStage, $sakuVisibleStages, true);
+            if (!$isSakuFlowVisible) {
+                $sakuFinanceStatus = 'NY';
+            }
             $sakuFinanceLabel = $sakuFinanceStatus === 'ON REVIEW'
                 ? 'Menunggu Approval'
                 : ($sakuFinanceStatus === 'APPROVED' ? 'Approved' : ($sakuFinanceStatus === 'REJECTED' ? 'Rejected' : 'Belum Diajukan'));
             $sakuFinanceBadgeClass = $sakuFinanceStatus === 'APPROVED'
                 ? 'success'
                 : ($sakuFinanceStatus === 'REJECTED' ? 'danger' : ($sakuFinanceStatus === 'ON REVIEW' ? 'warning' : 'secondary'));
-            $isSakuWaitingFinanceApproval = $currentDonationStage === 'WAITING_SAKU_FINANCE_APPROVAL' || $sakuFinanceStatus === 'ON REVIEW';
+            $isSakuWaitingFinanceApproval = $isSakuFlowVisible && ($currentDonationStage === 'WAITING_SAKU_FINANCE_APPROVAL' || $sakuFinanceStatus === 'ON REVIEW');
             ?>
             <div class="card card-outline card-success shadow-sm batch-disbursement-card">
                 <div class="card-header batch-section-header">
@@ -2094,6 +2116,7 @@ if ($canApprove && $canApprovalAction) {
                 </div>
             </div>
 
+            <?php if ($isSakuFlowVisible): ?>
             <div class="card card-outline card-info shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title mb-0">Approval Saku Finance</h3>
@@ -2154,6 +2177,7 @@ if ($canApprove && $canApprovalAction) {
                     <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
 
             <div class="card shadow-sm batch-sla-card">
                 <div class="card-header batch-sla-card__header">

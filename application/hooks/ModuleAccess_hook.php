@@ -68,6 +68,7 @@ class ModuleAccess_hook
             'VALSAL_MYREP',
             'BATCH_APPROVAL_MYREP',
             'DRM_MYREP',
+            'RFS_READINESS_MYREP',
             'IMPLEMENTASI_BOQ_MYREP',
             'PO_MYREP',
             'MONITORING_RFS_MYREP',

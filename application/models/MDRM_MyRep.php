@@ -26,7 +26,8 @@ class MDRM_MyRep extends CI_Model
             $this->db->query("
                 CREATE TABLE `tb_myrep_rab` (
                     `id_myrep_rab` INT(11) NOT NULL AUTO_INCREMENT,
-                    `id_myrep_cluster` INT(11) NOT NULL,
+                    `id_myrep_cluster` INT(11) DEFAULT NULL,
+                    `id_mainfeeder` INT(11) DEFAULT NULL,
                     `id_drm` INT(11) DEFAULT NULL,
                     `id_drm_boq` INT(11) DEFAULT NULL,
                     `id_apd_boq_file` INT(11) DEFAULT NULL,
@@ -41,6 +42,7 @@ class MDRM_MyRep extends CI_Model
                     `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
                     PRIMARY KEY (`id_myrep_rab`),
                     UNIQUE KEY `uniq_myrep_rab_cluster` (`id_myrep_cluster`),
+                    UNIQUE KEY `uniq_myrep_rab_mainfeeder` (`id_mainfeeder`),
                     KEY `idx_myrep_rab_status` (`rab_status`),
                     KEY `idx_myrep_rab_drm_boq` (`id_drm_boq`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -49,6 +51,7 @@ class MDRM_MyRep extends CI_Model
 
         if ($this->db->table_exists('tb_myrep_rab')) {
             $columns = [
+                'id_mainfeeder' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_mainfeeder` INT(11) DEFAULT NULL AFTER `id_myrep_cluster`",
                 'id_drm' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_drm` INT(11) DEFAULT NULL AFTER `id_myrep_cluster`",
                 'id_drm_boq' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_drm_boq` INT(11) DEFAULT NULL AFTER `id_drm`",
                 'id_apd_boq_file' => "ALTER TABLE `tb_myrep_rab` ADD COLUMN `id_apd_boq_file` INT(11) DEFAULT NULL AFTER `id_drm_boq`",
@@ -65,7 +68,35 @@ class MDRM_MyRep extends CI_Model
                     $this->db->query($sql);
                 }
             }
+            if ($this->db->field_exists('id_myrep_cluster', 'tb_myrep_rab') && !$this->isColumnNullable('tb_myrep_rab', 'id_myrep_cluster')) {
+                $this->db->query("ALTER TABLE `tb_myrep_rab` MODIFY COLUMN `id_myrep_cluster` INT(11) DEFAULT NULL");
+            }
+            $index = $this->db->query("
+                SELECT 1
+                FROM INFORMATION_SCHEMA.STATISTICS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'tb_myrep_rab'
+                  AND INDEX_NAME = 'uniq_myrep_rab_mainfeeder'
+                LIMIT 1
+            ")->row_array();
+            if (empty($index)) {
+                $this->db->query("ALTER TABLE `tb_myrep_rab` ADD UNIQUE KEY `uniq_myrep_rab_mainfeeder` (`id_mainfeeder`)");
+            }
         }
+    }
+
+    private function isColumnNullable($tableName, $columnName)
+    {
+        $row = $this->db->query("
+            SELECT IS_NULLABLE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+            LIMIT 1
+        ", [$tableName, $columnName])->row_array();
+
+        return strtoupper((string) ($row['IS_NULLABLE'] ?? '')) === 'YES';
     }
 
     private function ensureClusterStatusCurrentSupportsRabDone()
@@ -408,6 +439,13 @@ class MDRM_MyRep extends CI_Model
             ->join('tb_myrep_mainfeeder_drm drm', 'drm.id_mainfeeder = mf.id_mainfeeder', 'left')
             ->join('tb_myrep_mainfeeder_drm_boq boq', 'boq.id_mainfeeder = mf.id_mainfeeder', 'left');
 
+        if ($this->db->table_exists('tb_myrep_rab') && $this->db->field_exists('id_mainfeeder', 'tb_myrep_rab')) {
+            $this->db->select('rab.rab_status, rab.detail_rab, rab.rab_done_at');
+            $this->db->join('tb_myrep_rab rab', 'rab.id_mainfeeder = mf.id_mainfeeder AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false);
+        } else {
+            $this->db->select("NULL AS rab_status, NULL AS detail_rab, NULL AS rab_done_at", false);
+        }
+
         if ($projectType !== '') {
             if ($this->db->field_exists('project_type', 'tb_rfs_myrep_mainfeeder')) {
                 $this->db->where($projectTypeSql . ' = ' . $this->db->escape($projectType), null, false);
@@ -450,7 +488,7 @@ class MDRM_MyRep extends CI_Model
 
         $filterByDisplayStatus = false;
         if ($status !== '') {
-            if (in_array($status, ['DRM', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'], true)) {
+            if (in_array($status, ['DRM', 'RAB DONE', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'], true)) {
                 $this->db->where('UPPER(mf.current_status)', $status);
             } else {
                 $filterByDisplayStatus = true;
@@ -475,9 +513,9 @@ class MDRM_MyRep extends CI_Model
             $row['drm_cluster_status'] = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
             $row['drm_subfeeder_status'] = '';
             $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
-            $row['rab_status'] = '';
-            $row['detail_rab'] = '';
-            $row['rab_done_at'] = '';
+            $row['rab_status'] = (string) ($row['rab_status'] ?? '');
+            $row['detail_rab'] = (string) ($row['detail_rab'] ?? '');
+            $row['rab_done_at'] = (string) ($row['rab_done_at'] ?? '');
         }
         unset($row);
 
@@ -1895,11 +1933,6 @@ class MDRM_MyRep extends CI_Model
         $subfeederStatus = strtoupper(trim((string) ($subfeederHeader['review_status'] ?? '')));
         $subfeederItems = [];
         $subfeederApproved = !empty($subfeederHeader['id_drm_boq']) && $subfeederStatus === 'APPROVED';
-        $subfeederNotRequired = $this->isScopeNotRequiredApproved($clusterId, 'SUBFEEDER');
-        if ($this->drmScopeRequirementTablesReady() && !$subfeederApproved && !$subfeederNotRequired) {
-            return;
-        }
-
         if ($subfeederApproved) {
             $subfeederItems = $this->getDrmBoqItems($clusterId, 'SUBFEEDER');
         }
@@ -2019,6 +2052,65 @@ class MDRM_MyRep extends CI_Model
         $this->db->update('tb_myrep_boq_baseline', [
             'status_baseline' => 'REPLACED',
         ]);
+    }
+
+    public function backfillApprovedClusterBoqBaselines($userId = 0, array $clusterIds = [])
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return [
+                'scanned' => 0,
+                'created' => 0,
+                'skipped' => 0,
+            ];
+        }
+
+        $clusterIds = array_values(array_unique(array_filter(array_map('intval', $clusterIds))));
+
+        $this->db
+            ->select('h.id_myrep_cluster, h.approved_at, h.approved_by')
+            ->from('tb_myrep_drm_boq h')
+            ->where('h.review_status', 'APPROVED');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+            $this->db->where('h.scope_type', 'CLUSTER');
+        }
+        if (!empty($clusterIds)) {
+            $this->db->where_in('h.id_myrep_cluster', $clusterIds);
+        }
+
+        $rows = $this->db
+            ->order_by('h.id_myrep_cluster', 'ASC')
+            ->get()
+            ->result_array();
+
+        $result = [
+            'scanned' => count($rows),
+            'created' => 0,
+            'skipped' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if ($clusterId <= 0 || !empty($this->getBoqBaselineHeader($clusterId, 'CLUSTER'))) {
+                $result['skipped']++;
+                continue;
+            }
+
+            $approvedAt = !empty($row['approved_at']) ? (string) $row['approved_at'] : date('Y-m-d H:i:s');
+            $approvedBy = (int) ($row['approved_by'] ?? 0);
+            $actorId = (int) $userId > 0 ? (int) $userId : $approvedBy;
+
+            $this->db->trans_start();
+            $this->rebuildCombinedBaselineIfReady($clusterId, $approvedAt, $actorId);
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() && !empty($this->getBoqBaselineHeader($clusterId, 'CLUSTER'))) {
+                $result['created']++;
+            } else {
+                $result['skipped']++;
+            }
+        }
+
+        return $result;
     }
 
     private function baselineLegacyUniqueIndexExists()

@@ -2,6 +2,7 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $allDrmRows = isset($clusterRows) && is_array($clusterRows) ? $clusterRows : [];
+$missingBaselineRows = isset($missingBaselineRows) && is_array($missingBaselineRows) ? $missingBaselineRows : [];
 $nyRfsRows = [];
 $nyAtpRows = [];
 
@@ -18,6 +19,13 @@ foreach ($allDrmRows as $row) {
 
 $implFlowTabs = [
     [
+        'key' => 'all_drm',
+        'id' => 'impl-all-drm',
+        'table_id' => 'table_impl_all_drm',
+        'label' => 'All DRM',
+        'rows' => $allDrmRows,
+    ],
+    [
         'key' => 'ny_rfs',
         'id' => 'impl-ny-rfs',
         'table_id' => 'table_impl_ny_rfs',
@@ -30,13 +38,6 @@ $implFlowTabs = [
         'table_id' => 'table_impl_ny_atp',
         'label' => 'NY ATP',
         'rows' => $nyAtpRows,
-    ],
-    [
-        'key' => 'all_drm',
-        'id' => 'impl-all-drm',
-        'table_id' => 'table_impl_all_drm',
-        'label' => 'All DRM',
-        'rows' => $allDrmRows,
     ],
 ];
 
@@ -63,7 +64,7 @@ foreach ($implFlowTabs as $tab) {
     $implStatusSummaryByTab[$tab['key']] = $buildImplStatusSummary((array) $tab['rows']);
 }
 
-$implActiveStatusSummary = $implStatusSummaryByTab['ny_rfs'] ?? [];
+$implActiveStatusSummary = $implStatusSummaryByTab['all_drm'] ?? [];
 $implOnProgressCount = (int) ($implActiveStatusSummary['onProgressCount'] ?? 0);
 $implNotStartedCount = (int) ($implActiveStatusSummary['notStartedCount'] ?? 0);
 
@@ -370,6 +371,36 @@ $renderImplTableRows = static function (array $rows) {
         min-width: 260px;
     }
 
+    .impl-audit-card {
+        border: 1px solid #f7c948;
+        border-left: 5px solid #f59e0b;
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+    }
+
+    .impl-audit-card__title {
+        font-weight: 850;
+        color: #0f172a;
+    }
+
+    .impl-audit-card__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 38px;
+        padding: .2rem .6rem;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #c2410c;
+        font-weight: 850;
+    }
+
+    .impl-missing-table th {
+        text-align: center;
+        vertical-align: middle !important;
+        background: #fff7ed;
+        color: #7c2d12;
+    }
+
     @media (max-width: 767.98px) {
         .impl-status-filter-row {
             align-items: stretch;
@@ -493,6 +524,86 @@ $renderImplTableRows = static function (array $rows) {
                     </div>
                 </div>
 
+                <div class="card impl-audit-card">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="impl-audit-card__title">
+                                BOQ Approved Belum Masuk Implementasi
+                                <span class="impl-audit-card__count"><?= number_format(count($missingBaselineRows), 0, ',', '.') ?></span>
+                            </div>
+                            <div class="text-muted small">Daftar cluster dengan BOQ Cluster approved tapi belum punya baseline implementasi aktif.</div>
+                        </div>
+                        <?php if (!empty($missingBaselineRows)): ?>
+                            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/backfillMissingBaselines') ?>" class="mb-0">
+                                <?php foreach ($missingBaselineRows as $missingRow): ?>
+                                    <input type="hidden" name="cluster_ids[]" value="<?= (int) ($missingRow['id_myrep_cluster'] ?? 0) ?>">
+                                <?php endforeach; ?>
+                                <?php
+                                $returnUrl = 'Implementasi_BOQ_MyRep';
+                                if (!empty($_SERVER['QUERY_STRING'])) {
+                                    $returnUrl .= '?' . (string) $_SERVER['QUERY_STRING'];
+                                }
+                                ?>
+                                <input type="hidden" name="return_url" value="<?= htmlspecialchars($returnUrl, ENT_QUOTES) ?>">
+                                <button type="submit" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-sync-alt"></i> Generate Baseline Missing
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($missingBaselineRows)): ?>
+                            <div class="text-muted text-center py-3">Tidak ada BOQ approved yang missing baseline.</div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table id="table_missing_baseline" class="table table-bordered table-hover impl-missing-table">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Cluster</th>
+                                            <th>Kota</th>
+                                            <th>Regional</th>
+                                            <th>Status Cluster</th>
+                                            <th>Approved BOQ</th>
+                                            <th>Item</th>
+                                            <th>Total Qty</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($missingBaselineRows as $index => $missingRow): ?>
+                                            <tr>
+                                                <td class="text-center"><?= $index + 1 ?></td>
+                                                <td>
+                                                    <a href="<?= base_url('DRM_MyRep/detail/' . (int) ($missingRow['id_myrep_cluster'] ?? 0)) ?>" class="font-weight-bold">
+                                                        <?= htmlspecialchars((string) ($missingRow['cluster_name'] ?? '-')) ?>
+                                                    </a>
+                                                    <?php if (!empty($missingRow['cluster_code'])): ?>
+                                                        <div class="text-muted small"><?= htmlspecialchars((string) $missingRow['cluster_code']) ?></div>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><?= htmlspecialchars((string) ($missingRow['city_name'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($missingRow['regional_name'] ?? '-')) ?></td>
+                                                <td><span class="badge badge-light"><?= htmlspecialchars((string) ($missingRow['status_current'] ?? '-')) ?></span></td>
+                                                <td><?= !empty($missingRow['approved_at']) ? htmlspecialchars((string) $missingRow['approved_at']) : '-' ?></td>
+                                                <td class="text-right"><?= implDashboardNumber($missingRow['item_count'] ?? 0) ?></td>
+                                                <td class="text-right"><?= implDashboardNumber($missingRow['total_qty'] ?? 0) ?></td>
+                                                <td class="text-center">
+                                                    <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/backfillMissingBaselines') ?>" class="d-inline">
+                                                        <input type="hidden" name="cluster_id" value="<?= (int) ($missingRow['id_myrep_cluster'] ?? 0) ?>">
+                                                        <input type="hidden" name="return_url" value="<?= htmlspecialchars($returnUrl, ENT_QUOTES) ?>">
+                                                        <button type="submit" class="btn btn-outline-warning btn-xs">Generate</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
                 <div class="card card-outline card-primary shadow-sm impl-table-card">
                     <div class="card-header impl-section-header d-flex align-items-center justify-content-between">
                         <div>
@@ -579,18 +690,18 @@ $renderImplTableRows = static function (array $rows) {
         var implStatusFilter = '';
         var implStatusSummaryByTab = <?= json_encode($implStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var implTableConfigs = {
+            '#table_impl_all_drm': { tab: 'all_drm' },
             '#table_impl_ny_rfs': { tab: 'ny_rfs' },
             '#table_impl_ny_atp': { tab: 'ny_atp' },
-            '#table_impl_all_drm': { tab: 'all_drm' }
         };
 
         function getActiveImplTableSelector() {
-            var href = $('#impl-monitor-tab .nav-link.active').attr('href') || '#impl-ny-rfs-pane';
-            if (href === '#impl-ny-atp-pane') {
-                return '#table_impl_ny_atp';
-            }
+            var href = $('#impl-monitor-tab .nav-link.active').attr('href') || '#impl-all-drm-pane';
             if (href === '#impl-all-drm-pane') {
                 return '#table_impl_all_drm';
+            }
+            if (href === '#impl-ny-atp-pane') {
+                return '#table_impl_ny_atp';
             }
             return '#table_impl_ny_rfs';
         }
@@ -626,6 +737,28 @@ $renderImplTableRows = static function (array $rows) {
         }
 
         if ($.fn.DataTable) {
+            if ($('#table_missing_baseline').length) {
+                $('#table_missing_baseline').DataTable({
+                    responsive: false,
+                    scrollX: true,
+                    autoWidth: false,
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                    order: [[5, 'desc']],
+                    language: {
+                        emptyTable: 'Tidak ada BOQ approved yang missing baseline.',
+                        search: 'Search:',
+                        lengthMenu: 'Tampilkan _MENU_ data',
+                        info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                        infoEmpty: 'Menampilkan 0 data',
+                        paginate: {
+                            previous: 'Previous',
+                            next: 'Next'
+                        }
+                    }
+                });
+            }
+
             Object.keys(implTableConfigs).forEach(function (selector) {
                 if (!$(selector).length) {
                     return;

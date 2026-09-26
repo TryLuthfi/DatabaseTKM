@@ -448,6 +448,172 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return true;
     }
 
+    public function clusterReadinessTablesReady()
+    {
+        return $this->db->table_exists('tb_myrep_boq_cluster_readiness')
+            && $this->db->table_exists('tb_myrep_boq_cluster_readiness_history');
+    }
+
+    public function getMissingBaselineRows($city = '')
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster')
+            || !$this->db->table_exists('tb_myrep_drm_boq')
+            || !$this->db->table_exists('tb_myrep_drm_boq_item')
+            || !$this->db->table_exists('tb_myrep_boq_baseline')) {
+            return [];
+        }
+
+        $this->db
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, h.id_drm_boq, h.approved_at, h.approved_by, COUNT(i.id_drm_boq_item) AS item_count, COALESCE(SUM(i.qty_boq), 0) AS total_qty', false)
+            ->from('tb_myrep_drm_boq h')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = h.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_drm_boq_item i', 'i.id_drm_boq = h.id_drm_boq', 'left')
+            ->join('tb_myrep_boq_baseline b', "b.id_myrep_cluster = h.id_myrep_cluster AND b.status_baseline = 'ACTIVE'" . ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline') ? " AND b.scope_type = 'CLUSTER'" : ''), 'left', false)
+            ->where('h.review_status', 'APPROVED')
+            ->where('b.id_boq_baseline IS NULL', null, false);
+
+        if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+            $this->db->where('h.scope_type', 'CLUSTER');
+        }
+
+        if ($city !== '') {
+            $this->db->where('UPPER(c.city_name)', strtoupper((string) $city));
+        }
+
+        return $this->db
+            ->group_by(['c.id_myrep_cluster', 'c.cluster_name', 'c.cluster_code', 'c.regional_name', 'c.city_name', 'c.status_current', 'h.id_drm_boq', 'h.approved_at', 'h.approved_by'])
+            ->order_by('h.approved_at', 'DESC')
+            ->order_by('c.cluster_name', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function getDefaultClusterReadiness()
+    {
+        return [
+            'id_boq_cluster_readiness' => 0,
+            'id_myrep_cluster' => 0,
+            'cable_status' => 'ON PROGRESS',
+            'fat_status' => 'ON PROGRESS',
+            'tiang_status' => 'ON PROGRESS',
+            'progress_status' => 'ON PROGRESS',
+            'remark' => '',
+            'updated_by' => null,
+            'updated_by_name' => '',
+            'updated_at' => null,
+        ];
+    }
+
+    public function getClusterReadiness($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        $default = $this->getDefaultClusterReadiness();
+        $default['id_myrep_cluster'] = $clusterId;
+        if ($clusterId <= 0 || !$this->clusterReadinessTablesReady()) {
+            return $default;
+        }
+
+        $row = $this->db
+            ->select('r.*, u.nama_karyawan AS updated_by_name')
+            ->from('tb_myrep_boq_cluster_readiness r')
+            ->join('tb_master_user_new u', 'u.id = r.updated_by', 'left')
+            ->where('r.id_myrep_cluster', $clusterId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return $default;
+        }
+
+        return array_merge($default, $row);
+    }
+
+    public function getClusterReadinessHistory($clusterId, $limit = 10)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || !$this->clusterReadinessTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('h.*, u.nama_karyawan AS created_by_name')
+            ->from('tb_myrep_boq_cluster_readiness_history h')
+            ->join('tb_master_user_new u', 'u.id = h.created_by', 'left')
+            ->where('h.id_myrep_cluster', $clusterId)
+            ->order_by('h.created_at', 'DESC')
+            ->order_by('h.id_boq_cluster_readiness_history', 'DESC')
+            ->limit(max(1, (int) $limit))
+            ->get()
+            ->result_array();
+    }
+
+    public function saveClusterReadiness($clusterId, array $payload, $userId)
+    {
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        if ($clusterId <= 0 || !$this->clusterReadinessTablesReady()) {
+            return false;
+        }
+
+        $statuses = [
+            'cable_status' => $this->normalizeClusterReadinessStatus($payload['cable_status'] ?? ''),
+            'fat_status' => $this->normalizeClusterReadinessStatus($payload['fat_status'] ?? ''),
+            'tiang_status' => $this->normalizeClusterReadinessStatus($payload['tiang_status'] ?? ''),
+        ];
+        $statuses['progress_status'] = (
+            $statuses['cable_status'] === 'COMPLETE'
+            && $statuses['fat_status'] === 'COMPLETE'
+            && $statuses['tiang_status'] === 'COMPLETE'
+        ) ? 'COMPLETE' : 'ON PROGRESS';
+        $remark = trim((string) ($payload['remark'] ?? ''));
+
+        $old = $this->getClusterReadiness($clusterId);
+        $data = [
+            'id_myrep_cluster' => $clusterId,
+            'cable_status' => $statuses['cable_status'],
+            'fat_status' => $statuses['fat_status'],
+            'tiang_status' => $statuses['tiang_status'],
+            'progress_status' => $statuses['progress_status'],
+            'remark' => $remark !== '' ? $remark : null,
+            'updated_by' => $userId > 0 ? $userId : null,
+        ];
+
+        $this->db->trans_start();
+        if (!empty($old['id_boq_cluster_readiness'])) {
+            $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_boq_cluster_readiness', $data);
+        } else {
+            $this->db->insert('tb_myrep_boq_cluster_readiness', $data);
+        }
+
+        $this->db->insert('tb_myrep_boq_cluster_readiness_history', [
+            'id_myrep_cluster' => $clusterId,
+            'old_payload' => json_encode($this->clusterReadinessHistoryPayload($old)),
+            'new_payload' => json_encode($this->clusterReadinessHistoryPayload($data)),
+            'remark' => $remark !== '' ? $remark : null,
+            'created_by' => $userId > 0 ? $userId : null,
+        ]);
+        $this->db->trans_complete();
+
+        return (bool) $this->db->trans_status();
+    }
+
+    private function normalizeClusterReadinessStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        return $status === 'COMPLETE' ? 'COMPLETE' : 'ON PROGRESS';
+    }
+
+    private function clusterReadinessHistoryPayload(array $row)
+    {
+        return [
+            'cable_status' => (string) ($row['cable_status'] ?? 'ON PROGRESS'),
+            'fat_status' => (string) ($row['fat_status'] ?? 'ON PROGRESS'),
+            'tiang_status' => (string) ($row['tiang_status'] ?? 'ON PROGRESS'),
+            'progress_status' => (string) ($row['progress_status'] ?? 'ON PROGRESS'),
+        ];
+    }
+
     public function ensureComplyPrintOrderColumn()
     {
         if (!$this->db->table_exists('tb_myrep_boq_progress_photo')) {

@@ -7,6 +7,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MImplementasi_BOQ_MyRep');
+        $this->load->model('MDRM_MyRep');
         $this->load->model('MMainfeeder_MyRep');
         $this->load->library('upload');
         $this->load->helper('myrep_pic');
@@ -26,6 +27,8 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'rotateprogressphoto' => 'TAMBAH',
                 'deleteProgressPhoto' => 'VIEW',
                 'deleteprogressphoto' => 'VIEW',
+                'saveClusterReadiness' => 'VIEW',
+                'saveclusterreadiness' => 'VIEW',
                 'saveComplyPhotoOrder' => 'TAMBAH',
                 'savecomplyphotoorder' => 'TAMBAH',
                 'updateComplyPhotoGroup' => 'VIEW',
@@ -51,6 +54,9 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $data['cityOptions'] = $this->MImplementasi_BOQ_MyRep->getCityOptions();
         $data['clusterRows'] = $data['isReady']
             ? $this->MImplementasi_BOQ_MyRep->getRows($selectedCity, $selectedStatus)
+            : [];
+        $data['missingBaselineRows'] = $data['isReady']
+            ? $this->MImplementasi_BOQ_MyRep->getMissingBaselineRows($selectedCity)
             : [];
         $data['summary'] = $this->MImplementasi_BOQ_MyRep->getDashboardSummary($data['clusterRows']);
 
@@ -93,12 +99,58 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $data['activityDefinitions'] = $this->MImplementasi_BOQ_MyRep->getDailyActivityDefinitions();
         $data['dailyActivities'] = $data['activityReady'] ? $this->MImplementasi_BOQ_MyRep->getDailyActivities($clusterId) : [];
         $data['masterBoqItems'] = $this->MImplementasi_BOQ_MyRep->getMasterBoqItems();
+        $data['clusterReadinessReady'] = $this->MImplementasi_BOQ_MyRep->clusterReadinessTablesReady();
+        $data['clusterReadiness'] = $this->MImplementasi_BOQ_MyRep->getClusterReadiness($clusterId);
+        $data['clusterReadinessHistory'] = $this->MImplementasi_BOQ_MyRep->getClusterReadinessHistory($clusterId, 8);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Implementasi_BOQ_MyRep/detail', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function backfillMissingBaselines()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (strtoupper((string) $this->input->method(true)) !== 'POST') {
+            $this->session->set_flashdata('error', 'Backfill baseline BOQ harus dijalankan melalui request valid.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses backfill baseline BOQ.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $postedClusterIds = array_values(array_filter(array_map('intval', (array) $this->input->post('cluster_ids'))));
+        $clusterIds = $clusterId > 0 ? [$clusterId] : $postedClusterIds;
+        $result = $this->MDRM_MyRep->backfillApprovedClusterBoqBaselines(
+            (int) $this->session->userdata('id_user'),
+            $clusterIds
+        );
+
+        $this->session->set_flashdata('success', sprintf(
+            'Backfill baseline selesai. Scan %d BOQ, generate %d baseline, skip %d BOQ.',
+            (int) ($result['scanned'] ?? 0),
+            (int) ($result['created'] ?? 0),
+            (int) ($result['skipped'] ?? 0)
+        ));
+
+        $returnUrl = trim((string) $this->input->post('return_url'));
+        if ($returnUrl !== '' && strpos($returnUrl, '://') === false && strpos($returnUrl, '//') !== 0) {
+            redirect($returnUrl);
+            return;
+        }
+
+        redirect('Implementasi_BOQ_MyRep');
     }
 
     public function saveDailyActivity()
@@ -244,6 +296,40 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             'activities' => $createdActivitySummaries,
         ]);
         $this->session->set_flashdata('success', $createdCount . ' aktivitas harian berhasil disimpan.' . $autoBoqMessage);
+        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+    }
+
+    public function saveClusterReadiness()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster implementasi tidak valid.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        if (!$this->MImplementasi_BOQ_MyRep->clusterReadinessTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel status BOQ cluster belum tersedia. Jalankan patch database terlebih dahulu.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $saved = $this->MImplementasi_BOQ_MyRep->saveClusterReadiness($clusterId, [
+            'cable_status' => $this->input->post('cable_status'),
+            'fat_status' => $this->input->post('fat_status'),
+            'tiang_status' => $this->input->post('tiang_status'),
+            'remark' => $this->input->post('remark'),
+        ], (int) $this->session->userdata('id_user'));
+
+        $this->session->set_flashdata(
+            $saved ? 'success' : 'error',
+            $saved ? 'Status progress BOQ cluster berhasil disimpan.' : 'Status progress BOQ cluster gagal disimpan.'
+        );
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
     }
 
