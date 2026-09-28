@@ -31,6 +31,27 @@ if (!function_exists('rfs_readiness_month_label')) {
         return $date ? $date->format('F Y') : '-';
     }
 }
+if (!function_exists('rfs_readiness_target_month_label')) {
+    function rfs_readiness_target_month_label($year, $month)
+    {
+        $date = DateTime::createFromFormat('!Y-n-j', (int) $year . '-' . (int) $month . '-1');
+        if (!$date) {
+            return '-';
+        }
+
+        $date->modify('+1 month');
+        return $date->format('F Y');
+    }
+}
+if (!function_exists('rfs_readiness_period_label')) {
+    function rfs_readiness_period_label($year, $month, $status = '')
+    {
+        $label = 'Meeting ' . rfs_readiness_month_label($year, $month)
+            . ' / Target ' . rfs_readiness_target_month_label($year, $month);
+        $status = trim((string) $status);
+        return $status !== '' ? $label . ' - ' . $status : $label;
+    }
+}
 if (!function_exists('rfs_readiness_num_or_dash')) {
     function rfs_readiness_num_or_dash($value, $decimals = 0)
     {
@@ -91,6 +112,9 @@ if ($nextMonth > 12) {
     .rfs-table td.rfs-ready-cell { background:#fbfffc; }
     .rfs-table td.rfs-not-ready-cell { background:#fffafa; }
     .rfs-table td { vertical-align:middle; }
+    .rfs-cluster-cell { text-align:left !important; min-width:240px; }
+    .rfs-cluster-link { display:block; width:100%; padding:0; text-align:left; white-space:normal; line-height:1.25; word-break:break-word; overflow-wrap:anywhere; }
+    .rfs-cluster-code { display:block; margin-top:3px; text-align:left; }
     .rfs-table tfoot th, .rfs-table tfoot td { background:#f1f5f9; color:#17233c; font-weight:900; border-top:2px solid #cbd5e1; vertical-align:middle; }
     .rfs-table tfoot .rfs-footer-label { text-align:right; color:#0f3f93; }
     #table_rfs_readiness, #table_rfs_candidate { width:100% !important; }
@@ -102,6 +126,7 @@ if ($nextMonth > 12) {
     .rfs-status-chip.warning { background:#fff4dc; color:#9a6400; }
     .rfs-status-chip.primary { background:#e7f0ff; color:#1457b8; }
     .rfs-status-chip.secondary { background:#eef1f5; color:#546072; }
+    a.rfs-status-chip:hover { text-decoration:none; filter:brightness(.97); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
     .rfs-action-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .rfs-approval-card { border:1px solid #e5ebf3; border-radius:8px; padding:14px; background:#fff; }
     .rfs-approval-card + .rfs-approval-card { margin-top:10px; }
@@ -184,8 +209,9 @@ if ($nextMonth > 12) {
                     </div>
                     <?php if (!empty($period)): ?>
                         <div class="text-right mt-3 mt-md-0">
-                            <div class="small text-uppercase">Periode aktif</div>
-                            <div class="h4 mb-1"><?= rfs_readiness_h(rfs_readiness_month_label($period['year_num'], $period['month_num'])) ?></div>
+                            <div class="small text-uppercase">Meeting / Target RFS</div>
+                            <div class="h4 mb-1"><?= rfs_readiness_h(rfs_readiness_target_month_label($period['year_num'], $period['month_num'])) ?></div>
+                            <div class="small">Meeting <?= rfs_readiness_h(rfs_readiness_month_label($period['year_num'], $period['month_num'])) ?></div>
                             <span class="badge badge-light"><?= rfs_readiness_h($periodStatus) ?></span>
                         </div>
                     <?php endif; ?>
@@ -216,11 +242,11 @@ if ($nextMonth > 12) {
                         <form method="get" action="<?= base_url('RFS_Readiness_MyRep') ?>">
                             <div class="row align-items-end">
                                 <div class="col-md-3">
-                                    <label>Period</label>
+                                    <label>Meeting / Target RFS</label>
                                     <select name="period_id" class="form-control">
                                         <?php foreach ($periodOptions as $option): ?>
                                             <option value="<?= (int) $option['id_period'] ?>" <?= (int) $selectedPeriodId === (int) $option['id_period'] ? 'selected' : '' ?>>
-                                                <?= rfs_readiness_h(rfs_readiness_month_label($option['year_num'], $option['month_num']) . ' - ' . $option['status_period']) ?>
+                                                <?= rfs_readiness_h(rfs_readiness_period_label($option['year_num'], $option['month_num'], $option['status_period'])) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -262,7 +288,7 @@ if ($nextMonth > 12) {
                                             <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#modalCandidateClusters"><i class="fas fa-search"></i> Kandidat DRM</button>
                                         <?php endif; ?>
                                         <?php if ($canHoManage): ?>
-                                            <button class="btn btn-success" type="button" data-toggle="modal" data-target="#modalCreatePeriod"><i class="fas fa-calendar-plus"></i> Period</button>
+                                            <button class="btn btn-success" type="button" data-toggle="modal" data-target="#modalCreatePeriod"><i class="fas fa-calendar-plus"></i> Meeting Period</button>
                                         <?php endif; ?>
                                         <?php if (!$isSummaryMode): ?>
                                             <a class="btn btn-outline-info" href="<?= rfs_readiness_summary_url($selectedPeriodId) ?>"><i class="fas fa-arrow-left"></i> Summary</a>
@@ -279,7 +305,7 @@ if ($nextMonth > 12) {
                     <div class="card rfs-panel">
                         <div class="card-header">
                             <div class="d-flex flex-wrap justify-content-between align-items-center">
-                                <strong><i class="fas fa-layer-group mr-1"></i> Control Period</strong>
+                                <strong><i class="fas fa-layer-group mr-1"></i> Control Meeting Period</strong>
                                 <div class="rfs-action-row">
                                     <form method="post" action="<?= base_url('RFS_Readiness_MyRep/generateCandidates') ?>">
                                         <input type="hidden" name="period_id" value="<?= (int) $selectedPeriodId ?>">
@@ -332,7 +358,7 @@ if ($nextMonth > 12) {
                 <?php if ($isSummaryMode && $canHoManage && (int) ($summary['total_cluster'] ?? 0) === 0): ?>
                     <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center">
                         <div>
-                            <strong>Period ini belum punya cluster readiness.</strong>
+                            <strong>Meeting period ini belum punya cluster readiness.</strong>
                             Klik kandidat DRM untuk generate cluster DRM Done yang belum RFS ke period ini.
                         </div>
                         <button class="btn btn-primary btn-sm mt-2 mt-md-0" type="button" data-toggle="modal" data-target="#modalCandidateClusters">
@@ -842,11 +868,14 @@ if ($nextMonth > 12) {
 <div class="modal fade" id="modalCreatePeriod" tabindex="-1">
     <div class="modal-dialog">
         <form method="post" action="<?= base_url('RFS_Readiness_MyRep/createPeriod') ?>" class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Create Readiness Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+            <div class="modal-header"><h5 class="modal-title">Create Meeting Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
             <div class="modal-body">
+                <div class="alert alert-info">
+                    Bulan yang dibuat adalah bulan meeting/planning. Target RFS dibaca sebagai bulan berikutnya.
+                </div>
                 <div class="form-row">
-                    <div class="form-group col-6"><label>Tahun</label><input type="number" name="year_num" class="form-control" value="<?= date('Y') ?>" required></div>
-                    <div class="form-group col-6"><label>Bulan</label><input type="number" name="month_num" min="1" max="12" class="form-control" value="<?= date('n') ?>" required></div>
+                    <div class="form-group col-6"><label>Tahun Meeting</label><input type="number" name="year_num" class="form-control" value="<?= date('Y') ?>" required></div>
+                    <div class="form-group col-6"><label>Bulan Meeting</label><input type="number" name="month_num" min="1" max="12" class="form-control" value="<?= date('n') ?>" required></div>
                 </div>
                 <div class="form-group"><label>Tanggal Meeting</label><input type="date" name="meeting_date" class="form-control"></div>
                 <div class="form-group"><label>Remark</label><textarea name="remark" class="form-control" rows="3"></textarea></div>
@@ -867,11 +896,11 @@ if ($nextMonth > 12) {
                 <div class="rfs-form-section mb-0">
                     <div class="rfs-form-section-title"><span class="rfs-dot rfs-dot-target"></span>Filter Export</div>
                     <div class="form-group">
-                        <label>Period</label>
+                        <label>Meeting / Target RFS</label>
                         <select name="period_id" class="form-control" required>
                             <?php foreach ($periodOptions as $option): ?>
                                 <option value="<?= (int) $option['id_period'] ?>" <?= (int) $selectedPeriodId === (int) $option['id_period'] ? 'selected' : '' ?>>
-                                    <?= rfs_readiness_h(rfs_readiness_month_label($option['year_num'], $option['month_num']) . ' - ' . $option['status_period']) ?>
+                                    <?= rfs_readiness_h(rfs_readiness_period_label($option['year_num'], $option['month_num'], $option['status_period'])) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -1087,7 +1116,7 @@ if ($nextMonth > 12) {
             <input type="hidden" name="scope" value="<?= rfs_readiness_h($selectedScope) ?>">
             <input type="hidden" name="city" value="<?= rfs_readiness_h($selectedCity) ?>">
             <input type="hidden" name="regional" value="<?= rfs_readiness_h($selectedRegional) ?>">
-            <div class="modal-header rfs-modal-header-warning"><h5 class="modal-title"><i class="fas fa-lock mr-2"></i>Lock Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+            <div class="modal-header rfs-modal-header-warning"><h5 class="modal-title"><i class="fas fa-lock mr-2"></i>Lock Meeting Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
             <div class="modal-body">
                 <div class="rfs-form-section mb-0">
                     <div class="row text-center">
@@ -1096,15 +1125,15 @@ if ($nextMonth > 12) {
                         <div class="col-4"><div class="small text-muted font-weight-bold">BELUM</div><div class="h5 text-danger"><?= number_format((float) ($checklistStatus['belum'] ?? 0), 0, ',', '.') ?></div></div>
                     </div>
                     <?php if (!empty($checklistStatus['belum'])): ?>
-                        <div class="alert alert-warning mt-3 mb-0">Masih ada cluster BELUM CONFIRMED. Period tetap bisa di-lock, tapi setelah lock perubahan harus melalui flow Change Request.</div>
+                        <div class="alert alert-warning mt-3 mb-0">Masih ada cluster BELUM CONFIRMED. Meeting period tetap bisa di-lock, tapi setelah lock perubahan harus melalui flow Change Request.</div>
                     <?php else: ?>
-                        <div class="alert alert-success mt-3 mb-0">Semua cluster sudah CONFIRMED. Period siap di-lock.</div>
+                        <div class="alert alert-success mt-3 mb-0">Semua cluster sudah CONFIRMED. Meeting period siap di-lock.</div>
                     <?php endif; ?>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary" type="button" data-dismiss="modal">Batal</button>
-                <button class="btn btn-warning" type="submit" onclick="return confirm('Lock baseline period ini?');"><i class="fas fa-lock"></i> Lock Period</button>
+                <button class="btn btn-warning" type="submit" onclick="return confirm('Lock baseline meeting period ini?');"><i class="fas fa-lock"></i> Lock Meeting Period</button>
             </div>
         </form>
     </div>
@@ -1117,7 +1146,7 @@ if ($nextMonth > 12) {
             <input type="hidden" name="scope" value="<?= rfs_readiness_h($selectedScope) ?>">
             <input type="hidden" name="city" value="<?= rfs_readiness_h($selectedCity) ?>">
             <input type="hidden" name="regional" value="<?= rfs_readiness_h($selectedRegional) ?>">
-            <div class="modal-header rfs-modal-header-warning"><h5 class="modal-title"><i class="fas fa-unlock mr-2"></i>Unlock Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+            <div class="modal-header rfs-modal-header-warning"><h5 class="modal-title"><i class="fas fa-unlock mr-2"></i>Unlock Meeting Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
             <div class="modal-body">
                 <div class="rfs-form-section mb-0">
                     <div class="form-group">
@@ -1129,7 +1158,7 @@ if ($nextMonth > 12) {
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary" type="button" data-dismiss="modal">Batal</button>
-                <button class="btn btn-warning" type="submit" onclick="return confirm('Unlock period ini kembali ke DRAFT?');"><i class="fas fa-unlock"></i> Unlock</button>
+                <button class="btn btn-warning" type="submit" onclick="return confirm('Unlock meeting period ini kembali ke DRAFT?');"><i class="fas fa-unlock"></i> Unlock</button>
             </div>
         </form>
     </div>
@@ -1139,11 +1168,11 @@ if ($nextMonth > 12) {
     <div class="modal-dialog modal-xl">
         <form method="post" action="<?= base_url('RFS_Readiness_MyRep/closePeriod') ?>" class="modal-content">
             <input type="hidden" name="period_id" value="<?= (int) $selectedPeriodId ?>">
-            <div class="modal-header"><h5 class="modal-title">Closing Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+            <div class="modal-header"><h5 class="modal-title">Closing Meeting Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
             <div class="modal-body">
                 <div class="form-row mb-3">
-                    <div class="form-group col-md-2"><label>Next Year</label><input type="number" name="next_year_num" class="form-control" value="<?= (int) $nextYear ?>"></div>
-                    <div class="form-group col-md-2"><label>Next Month</label><input type="number" name="next_month_num" min="1" max="12" class="form-control" value="<?= (int) $nextMonth ?>"></div>
+                    <div class="form-group col-md-2"><label>Next Meeting Year</label><input type="number" name="next_year_num" class="form-control" value="<?= (int) $nextYear ?>"></div>
+                    <div class="form-group col-md-2"><label>Next Meeting Month</label><input type="number" name="next_month_num" min="1" max="12" class="form-control" value="<?= (int) $nextMonth ?>"></div>
                 </div>
                 <?php
                 $closingPreviewCount = 0;
@@ -1184,7 +1213,7 @@ if ($nextMonth > 12) {
                     </table>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-danger" type="submit" onclick="return confirm('Tutup period dan buat carry over?');">Close Period</button></div>
+            <div class="modal-footer"><button class="btn btn-danger" type="submit" onclick="return confirm('Tutup meeting period dan buat carry over?');">Close Meeting Period</button></div>
         </form>
     </div>
 </div>
@@ -1285,8 +1314,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function chip(status) {
         return '<span class="rfs-status-chip ' + badgeClass(status) + '">' + h(status || '-') + '</span>';
     }
-    function boqChip(status) {
-        return '<span class="rfs-status-chip ' + badgeClass(status || 'NY BOQ') + '">' + h(status || 'NY BOQ') + '</span>';
+    function boqChip(status, type, row) {
+        status = status || 'NY BOQ';
+        var chipHtml = h(status);
+        var chipClass = 'rfs-status-chip ' + badgeClass(status);
+        if (String(status).toUpperCase() !== 'NY BOQ' && row && row.id_myrep_cluster) {
+            return '<a class="' + chipClass + '" href="<?= base_url('Implementasi_BOQ_MyRep/detail/') ?>' + h(row.id_myrep_cluster) + '" title="Buka Implementasi BOQ">' + chipHtml + '</a>';
+        }
+        return '<span class="' + chipClass + '">' + chipHtml + '</span>';
     }
     var historyFieldLabels = {
         current_week: 'Target Week',
@@ -1509,9 +1544,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 { data: null, orderable: false, searchable: false, className: 'text-center', render: function (row, type, data, meta) {
                     return meta.settings._iDisplayStart + meta.row + 1;
                 }},
-                { data: null, render: function (row) {
+                { data: null, className: 'rfs-cluster-cell', render: function (row) {
                     var pending = row.pending_request_id ? '<div><span class="badge badge-warning">Change Request ' + h(row.pending_request_status) + '</span></div>' : '';
-                    return '<strong>' + h(row.cluster_name || '-') + '</strong><div class="text-muted small">' + h(row.cluster_code || '-') + '</div>' + pending;
+                    var clusterName = h(row.cluster_name || '-');
+                    if (row.can_edit_baseline) {
+                        clusterName = '<button type="button" class="btn btn-link border-0 font-weight-bold js-checklist rfs-cluster-link" data-toggle="modal" data-target="#modalChecklistItem" data-item-id="' + h(row.id_item) + '" title="Isi Checklist Readiness">' + clusterName + '</button>';
+                    } else {
+                        clusterName = '<strong class="rfs-cluster-link">' + clusterName + '</strong>';
+                    }
+                    return clusterName + '<span class="text-muted small rfs-cluster-code">' + h(row.cluster_code || '-') + '</span>' + pending;
                 }},
                 { data: 'regional_name', render: function (value) { return h(value || '-'); } },
                 { data: 'city_name', render: function (value) { return h(value || '-'); } },
@@ -1557,9 +1598,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 { data: null, orderable: false, searchable: false, render: function (row) {
                     var actions = [];
                     actions.push('<button type="button" class="btn btn-sm btn-outline-secondary js-history" data-toggle="modal" data-target="#modalItemHistory" data-item-id="' + h(row.id_item) + '"><i class="fas fa-history"></i></button>');
-                    if (row.can_edit_baseline) {
-                        actions.push('<button type="button" class="btn btn-sm btn-outline-primary js-checklist" data-toggle="modal" data-target="#modalChecklistItem" data-item-id="' + h(row.id_item) + '"><i class="fas fa-clipboard-check"></i></button>');
-                    }
                     if (row.can_submit_change) {
                         actions.push('<button type="button" class="btn btn-sm btn-outline-warning js-cr" data-toggle="modal" data-target="#modalChangeRequest" data-item-id="' + h(row.id_item) + '"><i class="fas fa-exchange-alt"></i></button>');
                     }

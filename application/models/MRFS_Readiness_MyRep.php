@@ -427,12 +427,20 @@ class MRFS_Readiness_MyRep extends CI_Model
         $pendingStatusSql = "'WAITING_SM','WAITING_RPM','WAITING_RFS_HO'";
         $hasBatchApproval = $this->db->table_exists('tb_myrep_batch_approval');
         $hasBoqReadiness = $this->db->table_exists('tb_myrep_boq_cluster_readiness');
+        $hasBoqBaseline = $this->db->table_exists('tb_myrep_boq_baseline');
         $batchSelect = $hasBatchApproval
             ? ', ba.id_batch_approval AS readiness_batch_id, ba.staging_status AS batch_approval_status'
             : ', NULL AS readiness_batch_id, NULL AS batch_approval_status';
-        $boqSelect = $hasBoqReadiness
-            ? ", COALESCE(br.cable_status, 'NY BOQ') AS boq_cable_status, COALESCE(br.fat_status, 'NY BOQ') AS boq_fat_status, COALESCE(br.tiang_status, 'NY BOQ') AS boq_tiang_status, COALESCE(br.progress_status, 'NY BOQ') AS boq_progress_status"
-            : ", 'NY BOQ' AS boq_cable_status, 'NY BOQ' AS boq_fat_status, 'NY BOQ' AS boq_tiang_status, 'NY BOQ' AS boq_progress_status";
+        if ($hasBoqReadiness && $hasBoqBaseline) {
+            $boqSelect = ", CASE WHEN br.id_boq_cluster_readiness IS NOT NULL THEN br.cable_status WHEN bb.id_boq_baseline IS NOT NULL THEN 'ON PROGRESS' ELSE 'NY BOQ' END AS boq_cable_status"
+                . ", CASE WHEN br.id_boq_cluster_readiness IS NOT NULL THEN br.fat_status WHEN bb.id_boq_baseline IS NOT NULL THEN 'ON PROGRESS' ELSE 'NY BOQ' END AS boq_fat_status"
+                . ", CASE WHEN br.id_boq_cluster_readiness IS NOT NULL THEN br.tiang_status WHEN bb.id_boq_baseline IS NOT NULL THEN 'ON PROGRESS' ELSE 'NY BOQ' END AS boq_tiang_status"
+                . ", CASE WHEN br.id_boq_cluster_readiness IS NOT NULL THEN br.progress_status WHEN bb.id_boq_baseline IS NOT NULL THEN 'ON PROGRESS' ELSE 'NY BOQ' END AS boq_progress_status";
+        } elseif ($hasBoqReadiness) {
+            $boqSelect = ", COALESCE(br.cable_status, 'NY BOQ') AS boq_cable_status, COALESCE(br.fat_status, 'NY BOQ') AS boq_fat_status, COALESCE(br.tiang_status, 'NY BOQ') AS boq_tiang_status, COALESCE(br.progress_status, 'NY BOQ') AS boq_progress_status";
+        } else {
+            $boqSelect = ", 'NY BOQ' AS boq_cable_status, 'NY BOQ' AS boq_fat_status, 'NY BOQ' AS boq_tiang_status, 'NY BOQ' AS boq_progress_status";
+        }
         $this->db
             ->select("i.*, c.cluster_name, c.cluster_code, c.regional_name, c.province_name, c.city_name, c.status_current, d.drm_date, d.nama_olt, cr.id_change_request AS pending_request_id, cr.status_request AS pending_request_status" . $batchSelect . $boqSelect, false)
             ->from('tb_myrep_rfs_readiness_item i')
@@ -445,6 +453,13 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
         if ($hasBoqReadiness) {
             $this->db->join('tb_myrep_boq_cluster_readiness br', 'br.id_myrep_cluster = i.id_myrep_cluster', 'left');
+        }
+        if ($hasBoqBaseline) {
+            $baselineJoin = "bb.id_myrep_cluster = i.id_myrep_cluster AND bb.status_baseline = 'ACTIVE'";
+            if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+                $baselineJoin .= " AND bb.scope_type = 'CLUSTER'";
+            }
+            $this->db->join('tb_myrep_boq_baseline bb', $baselineJoin, 'left', false);
         }
 
         $city = strtoupper(trim((string) $city));

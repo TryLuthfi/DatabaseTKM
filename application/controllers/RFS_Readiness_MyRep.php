@@ -134,7 +134,8 @@ class RFS_Readiness_MyRep extends CI_Controller
         }
 
         $periodWeekly = $this->MRFS_Readiness_MyRep->getWeeklyTargetRealization($periodId);
-        $periodLabel = sprintf('%04d-%02d', (int) $period['year_num'], (int) $period['month_num']);
+        $periodSlug = sprintf('%04d-%02d', (int) $period['year_num'], (int) $period['month_num']);
+        $periodLabel = $this->readinessPeriodDisplayLabel($period);
         $this->loadPHPExcel();
         $excel = new PHPExcel();
         $excel->getProperties()
@@ -171,7 +172,19 @@ class RFS_Readiness_MyRep extends CI_Controller
         );
 
         $excel->setActiveSheetIndex(0);
-        $this->outputPHPExcel($excel, 'rfs_readiness_summary_' . $periodLabel . '.xls');
+        $this->outputPHPExcel($excel, 'rfs_readiness_summary_' . $periodSlug . '.xls');
+    }
+
+    private function readinessPeriodDisplayLabel(array $period)
+    {
+        $meetingDate = DateTime::createFromFormat('!Y-n-j', (int) ($period['year_num'] ?? 0) . '-' . (int) ($period['month_num'] ?? 0) . '-1');
+        if (!$meetingDate) {
+            return '-';
+        }
+
+        $targetDate = clone $meetingDate;
+        $targetDate->modify('+1 month');
+        return 'Meeting ' . $meetingDate->format('F Y') . ' / Target ' . $targetDate->format('F Y');
     }
 
     private function populateReadinessSummarySheet($sheet, $title, $scope, array $statusRows, array $weeklyRows, array $periodWeekly, $periodLabel)
@@ -214,7 +227,7 @@ class RFS_Readiness_MyRep extends CI_Controller
         $sheet->mergeCells('A1:' . $lastColumn . '1');
         $sheet->setCellValue('A1', 'RFS READINESS MYREP - ' . strtoupper($title));
         $sheet->mergeCells('A2:' . $lastColumn . '2');
-        $sheet->setCellValue('A2', 'Periode ' . $periodLabel . ' | Summary status readiness, target RFS, dan realisasi RFS');
+        $sheet->setCellValue('A2', $periodLabel . ' | Summary status readiness, target RFS, dan realisasi RFS');
 
         foreach ($dimensionColumns as $index => $header) {
             $sheet->mergeCellsByColumnAndRow($index, 4, $index, 6);
@@ -487,7 +500,7 @@ class RFS_Readiness_MyRep extends CI_Controller
         $sheet->mergeCells('A1:' . $lastColumn . '1');
         $sheet->setCellValue('A1', 'RFS READINESS MYREP - DETAIL CLUSTER');
         $sheet->mergeCells('A2:' . $lastColumn . '2');
-        $sheet->setCellValue('A2', 'Periode ' . $periodLabel . ' | List cluster DRM done belum RFS beserta readiness dan target');
+        $sheet->setCellValue('A2', $periodLabel . ' | List cluster DRM done belum RFS beserta readiness dan target');
 
         foreach ($headers as $index => $header) {
             $sheet->setCellValueByColumnAndRow($index, 4, $header);
