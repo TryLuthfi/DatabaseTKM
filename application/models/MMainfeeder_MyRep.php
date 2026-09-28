@@ -437,13 +437,21 @@ class MMainfeeder_MyRep extends CI_Model
         $clusterCode = strtoupper(trim((string) ($payload['cluster_code'] ?? '')));
         $name = trim((string) ($payload['mainfeeder_name'] ?? ''));
         $projectType = $this->normalizeStandaloneProjectType($payload['project_type'] ?? 'MAINFEEDER');
-        if ($clusterCode === '' || $name === '') {
+        $mainfeederId = (int) ($payload['id_mainfeeder'] ?? 0);
+        if (($clusterCode === '' && $mainfeederId <= 0) || $name === '') {
             return 0;
         }
         $clusterCodeGenerated = !empty($payload['_cluster_code_generated']);
 
         $existing = [];
-        if ($clusterCode !== '') {
+        if ($mainfeederId > 0) {
+            $existing = $this->db
+                ->from('tb_rfs_myrep_mainfeeder')
+                ->where('id_mainfeeder', $mainfeederId)
+                ->get()
+                ->row_array();
+        }
+        if (empty($existing) && $clusterCode !== '') {
             $existing = $this->db
                 ->from('tb_rfs_myrep_mainfeeder')
                 ->where('UPPER(cluster_code)', $clusterCode)

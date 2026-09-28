@@ -139,6 +139,7 @@ foreach ($poHeaders as $poHeaderSummary) {
     $poTotalValue += (float) ($poHeaderSummary['po_value'] ?? 0);
 }
 $sectionMeta = [
+    'summary' => ['icon' => 'fas fa-project-diagram', 'label' => 'Summary', 'accent' => 'primary'],
     'drm' => ['icon' => 'fas fa-clipboard-check', 'label' => 'DRM', 'accent' => 'primary'],
     'implementasi' => ['icon' => 'fas fa-tools', 'label' => 'Implementasi', 'accent' => 'success'],
     'atp' => ['icon' => 'fas fa-check-double', 'label' => 'ATP', 'accent' => 'info'],
@@ -146,6 +147,7 @@ $sectionMeta = [
 ];
 $meta = $sectionMeta[$section] ?? ['icon' => 'fas fa-project-diagram', 'label' => 'Mainfeeder', 'accent' => 'primary'];
 $stageLinks = [
+    ['key' => 'summary', 'label' => 'Summary', 'url' => 'Mainfeeder_MyRep/detail/' . $mainfeederId],
     ['key' => 'drm', 'label' => 'DRM', 'url' => 'DRM_MyRep/mainfeeder/' . $mainfeederId],
     ['key' => 'atp', 'label' => 'ATP', 'url' => 'ATP_MyRep/mainfeeder/' . $mainfeederId],
     ['key' => 'checklist', 'label' => 'Checklist', 'url' => 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId],
@@ -171,6 +173,26 @@ $isRabDone = $rabStatus === 'RAB DONE';
 $boqReviewStatusForRab = strtoupper(trim((string) ($boqHeader['review_status'] ?? '')));
 $canShowRabDoneButton = !empty($rabReady) && !empty($canChecklistRabDone) && !$isRabDone && $boqReviewStatusForRab === 'APPROVED';
 $canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) && $isRabDone;
+$drmDocuments = isset($drmDocuments) && is_array($drmDocuments) ? $drmDocuments : [];
+$boqItems = isset($boqItems) && is_array($boqItems) ? $boqItems : [];
+$atpFiles = isset($atpFiles) && is_array($atpFiles) ? $atpFiles : [];
+$activeStageUrl = (string) ($activeStageUrl ?? '');
+$canUpdateMainfeeder = $section === 'summary' && $mainfeederId > 0;
+$drmUploadedCount = 0;
+$drmApprovedCount = 0;
+foreach ($drmDocuments as $docSummaryRow) {
+    if (!empty($docSummaryRow['id_doc_file_mainfeeder_flow']) || (int) ($docSummaryRow['is_document_not_required'] ?? 0) === 1) {
+        $drmUploadedCount++;
+    }
+    if (strtoupper(trim((string) ($docSummaryRow['status_file'] ?? ''))) === 'APPROVED' || (int) ($docSummaryRow['is_document_not_required'] ?? 0) === 1) {
+        $drmApprovedCount++;
+    }
+}
+$drmTotalCount = count($drmDocuments);
+$drmPercent = $drmTotalCount > 0 ? round(($drmApprovedCount / $drmTotalCount) * 100) : 0;
+$boqReviewStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? '')));
+$atpStatus = strtoupper(trim((string) ($mainfeeder['status_atp'] ?? '')));
+$currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')));
 ?>
 
 <style>
@@ -465,6 +487,81 @@ $canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) &&
         vertical-align: middle;
     }
 
+    .mf-summary-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        margin-bottom: 1rem;
+    }
+
+    .mf-summary-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .05);
+        padding: 1rem;
+    }
+
+    .mf-summary-card__label {
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 850;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .mf-summary-card__value {
+        color: #0f172a;
+        font-size: 1.1rem;
+        font-weight: 850;
+        margin-top: .25rem;
+    }
+
+    .mf-summary-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .mf-main-hero {
+        background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, .18), transparent 32%),
+            linear-gradient(135deg, #0f172a, #1e3a8a 58%, #0f766e);
+        border-radius: 20px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+        color: #fff;
+        margin-bottom: 1.25rem;
+        padding: 1.25rem;
+    }
+
+    .mf-main-hero__meta {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        margin-top: 1.1rem;
+    }
+
+    .mf-main-hero__box {
+        background: rgba(255, 255, 255, .12);
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 14px;
+        padding: .85rem;
+    }
+
+    .mf-main-hero__label {
+        color: rgba(255, 255, 255, .72);
+        font-size: .78rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .mf-main-hero__value {
+        font-size: 1.12rem;
+        font-weight: 850;
+        margin-top: .25rem;
+    }
+
     @media (max-width: 767.98px) {
         .mf-section-header {
             align-items: stretch;
@@ -504,6 +601,9 @@ $canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) &&
                     <h1 class="m-0 text-dark"><?= $section === 'drm' ? 'Detail DRM MyRep' : mfModuleDetailHtml($moduleTitle) ?></h1>
                 </div>
                 <div class="col-sm-6 text-right">
+                    <?php if ($canUpdateMainfeeder): ?>
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-mf-update-mainfeeder">Update Mainfeeder</button>
+                    <?php endif; ?>
                     <a href="<?= base_url($section === 'drm' ? 'DRM_MyRep' : 'MyRepublik_Project') ?>" class="btn btn-outline-secondary">Kembali</a>
                 </div>
             </div>
@@ -525,7 +625,47 @@ $canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) &&
                 </div>
             <?php endif; ?>
 
-            <?php if ($section === 'po'): ?>
+            <?php if ($section === 'summary'): ?>
+                <div class="mf-main-hero">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap" style="gap:1rem;">
+                        <div>
+                            <div class="small text-uppercase font-weight-bold text-white-50"><?= mfModuleDetailHtml($projectLabel) ?> Detail</div>
+                            <h2 class="mb-1"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></h2>
+                            <div class="text-white-50">
+                                <?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '-') ?>
+                                | <?= mfModuleDetailHtml($mainfeeder['province_name'] ?? '-') ?>
+                                | <?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '-') ?>
+                                | <?= mfModuleDetailHtml($mainfeeder['team_name'] ?? '-') ?>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="mb-2">
+                                <span class="badge badge-light px-3 py-2"><?= mfModuleDetailHtml($currentStatus) ?></span>
+                            </div>
+                            <div class="small text-white-50">Sumber: Flow MyRep Standalone</div>
+                        </div>
+                    </div>
+
+                    <div class="mf-main-hero__meta">
+                        <div class="mf-main-hero__box">
+                            <div class="mf-main-hero__label">Length / HP</div>
+                            <div class="mf-main-hero__value"><?= mfModuleDetailNum($mainfeeder['length_meter'] ?? 0) ?></div>
+                        </div>
+                        <div class="mf-main-hero__box">
+                            <div class="mf-main-hero__label">PO Total</div>
+                            <div class="mf-main-hero__value"><?= mfModuleDetailNum($poTotalValue) ?></div>
+                        </div>
+                        <div class="mf-main-hero__box">
+                            <div class="mf-main-hero__label">PO Count</div>
+                            <div class="mf-main-hero__value"><?= (int) $poTotalCount ?></div>
+                        </div>
+                        <div class="mf-main-hero__box">
+                            <div class="mf-main-hero__label">DRM Approved</div>
+                            <div class="mf-main-hero__value"><?= (int) $drmApprovedCount ?> / <?= (int) $drmTotalCount ?></div>
+                        </div>
+                    </div>
+                </div>
+            <?php elseif ($section === 'po'): ?>
                 <div class="mf-po-hero">
                     <div class="d-flex flex-wrap justify-content-between align-items-start" style="gap:1rem;">
                         <div>
@@ -701,6 +841,158 @@ $canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) &&
                     </a>
                 <?php endforeach; ?>
             </nav>
+
+            <?php if ($section === 'summary'): ?>
+                <div class="mf-summary-grid">
+                    <div class="mf-summary-card">
+                        <div class="mf-summary-card__label">Status Flow</div>
+                        <div class="mf-summary-card__value"><?= mfModuleDetailHtml($currentStatus) ?></div>
+                    </div>
+                    <div class="mf-summary-card">
+                        <div class="mf-summary-card__label">DRM Approved</div>
+                        <div class="mf-summary-card__value"><?= (int) $drmApprovedCount ?> / <?= (int) $drmTotalCount ?> dokumen</div>
+                    </div>
+                    <div class="mf-summary-card">
+                        <div class="mf-summary-card__label">BOQ Review</div>
+                        <div class="mf-summary-card__value"><?= mfModuleDetailHtml($boqReviewStatus !== '' ? $boqReviewStatus : 'BELUM SUBMIT') ?></div>
+                    </div>
+                    <div class="mf-summary-card">
+                        <div class="mf-summary-card__label">PO Total</div>
+                        <div class="mf-summary-card__value"><?= mfModuleDetailNum($poTotalValue) ?></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card card-outline card-primary shadow-sm">
+                            <div class="card-header mf-section-header">
+                                <h3 class="card-title mb-1">Summary <?= mfModuleDetailHtml($projectLabel) ?></h3>
+                                <?php if ($activeStageUrl !== ''): ?>
+                                    <a href="<?= base_url($activeStageUrl) ?>" class="btn btn-sm btn-primary mf-action-btn">Masuk Stage Aktif</a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="card-body">
+                                <div class="mf-detail-sections">
+                                    <section class="mf-detail-section">
+                                        <div class="mf-detail-section__head">
+                                            <span class="mf-detail-section__icon"><i class="fas fa-map-marker-alt"></i></span>
+                                            <div>
+                                                <h4 class="mf-detail-section__title">Informasi Project</h4>
+                                                <p class="mf-detail-section__subtitle">Identitas utama sebelum masuk modul lanjutan.</p>
+                                            </div>
+                                        </div>
+                                        <div class="mf-detail-fields">
+                                            <div class="mf-detail-field mf-detail-field--wide">
+                                                <span class="mf-detail-field__label"><?= mfModuleDetailHtml($projectLabel) ?></span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Cluster Code</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '-') ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Project Type</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailHtml($projectType) ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Kota</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '-') ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Regional</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '-') ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Length / HP</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailNum($mainfeeder['length_meter'] ?? 0) ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Target Periode</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailHtml($mainfeeder['month_num'] ?? '-') ?> / <?= mfModuleDetailHtml($mainfeeder['year_num'] ?? '-') ?></div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="mf-detail-section">
+                                        <div class="mf-detail-section__head">
+                                            <span class="mf-detail-section__icon"><i class="fas fa-route"></i></span>
+                                            <div>
+                                                <h4 class="mf-detail-section__title">Progress Flow</h4>
+                                                <p class="mf-detail-section__subtitle">Ringkasan status dari DRM sampai PO.</p>
+                                            </div>
+                                        </div>
+                                        <div class="mf-detail-fields">
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">DRM</span>
+                                                <div class="mf-detail-field__value"><span class="badge badge-<?= mfModuleStatusBadge($mainfeeder['status_drm'] ?? '') ?>"><?= mfModuleDetailHtml($mainfeeder['status_drm'] ?? 'WAITING INPUT') ?></span></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Dokumen DRM</span>
+                                                <div class="mf-detail-field__value"><?= (int) $drmUploadedCount ?> upload, <?= (int) $drmApprovedCount ?> approved</div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">RAB</span>
+                                                <div class="mf-detail-field__value"><span class="badge badge-<?= $isRabDone ? 'success' : 'secondary' ?>"><?= $isRabDone ? 'RAB DONE' : 'BELUM RAB DONE' ?></span></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">ATP</span>
+                                                <div class="mf-detail-field__value"><span class="badge badge-<?= mfModuleStatusBadge($atpStatus) ?>"><?= mfModuleDetailHtml($atpStatus !== '' ? $atpStatus : '-') ?></span></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Tanggal ATP</span>
+                                                <div class="mf-detail-field__value"><?= mfModuleDetailDate($mainfeeder['atp_date'] ?? '') ?></div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">File ATP</span>
+                                                <div class="mf-detail-field__value"><?= count($atpFiles) ?> file</div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">PO Count</span>
+                                                <div class="mf-detail-field__value"><?= (int) $poTotalCount ?> PO</div>
+                                            </div>
+                                            <div class="mf-detail-field">
+                                                <span class="mf-detail-field__label">Checklist</span>
+                                                <div class="mf-detail-field__value"><?= in_array($currentStatus, ['CHECKLIST', 'DONE'], true) ? 'Tersedia' : 'Menunggu ATP DONE' ?></div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card card-outline card-info shadow-sm">
+                            <div class="card-header"><h3 class="card-title mb-0">Quick Access Modul</h3></div>
+                            <div class="card-body">
+                                <div class="mf-summary-actions">
+                                    <a href="<?= base_url('DRM_MyRep/mainfeeder/' . $mainfeederId) ?>" class="btn btn-sm btn-outline-primary">DRM</a>
+                                    <?php if ($projectType !== 'FWA'): ?>
+                                        <a href="<?= base_url('Implementasi_BOQ_MyRep/mainfeeder/' . $mainfeederId) ?>" class="btn btn-sm btn-outline-success">Implementasi</a>
+                                    <?php endif; ?>
+                                    <a href="<?= base_url('ATP_MyRep/mainfeeder/' . $mainfeederId) ?>" class="btn btn-sm btn-outline-info">ATP</a>
+                                    <a href="<?= base_url('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId) ?>" class="btn btn-sm btn-outline-primary">Checklist Dokumen</a>
+                                    <a href="<?= base_url('PO_MyRep/mainfeeder/' . $mainfeederId) ?>" class="btn btn-sm btn-outline-dark">Detail PO</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-outline card-secondary shadow-sm">
+                            <div class="card-header"><h3 class="card-title mb-0">PIC Area</h3></div>
+                            <div class="card-body">
+                                <dl class="mb-0">
+                                    <dt>Chief / RPM</dt>
+                                    <dd><?= mfModuleDetailHtml($mainfeeder['chief'] ?? '-') ?> / <?= mfModuleDetailHtml($mainfeeder['rpm'] ?? '-') ?></dd>
+                                    <dt>SM / SPV</dt>
+                                    <dd><?= mfModuleDetailHtml($mainfeeder['sm'] ?? '-') ?> / <?= mfModuleDetailHtml($mainfeeder['spv'] ?? '-') ?></dd>
+                                    <dt>Remark DRM</dt>
+                                    <dd><?= !empty($mainfeeder['remark_drm']) ? nl2br(mfModuleDetailHtml($mainfeeder['remark_drm'])) : '-' ?></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <?php if ($section === 'drm'): ?>
                 <div class="card card-outline card-primary shadow-sm">
@@ -1115,6 +1407,145 @@ $canShowRabRollbackButton = !empty($rabReady) && !empty($canChecklistRabDone) &&
         </div>
     </section>
 </div>
+
+<?php if ($canUpdateMainfeeder): ?>
+<div class="modal fade" id="modal-mf-update-mainfeeder" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/save') ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml(current_url()) ?>">
+                <input type="hidden" name="id_mainfeeder" value="<?= (int) $mainfeederId ?>">
+                <input type="hidden" name="project_type" value="<?= mfModuleDetailHtml($projectType) ?>">
+                <input type="hidden" name="cluster_code" value="<?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '') ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update <?= mfModuleDetailHtml($projectLabel) ?></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Project Type</label>
+                                <input type="text" class="form-control" value="<?= mfModuleDetailHtml($projectType) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Cluster Code</label>
+                                <input type="text" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['cluster_code'] ?? '') ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Status Flow</label>
+                                <select name="current_status" class="form-control">
+                                    <?php foreach (['DRM', 'RAB DONE', 'IMPLEMENTASI', 'ATP', 'CHECKLIST', 'DONE'] as $statusOption): ?>
+                                        <option value="<?= mfModuleDetailHtml($statusOption) ?>" <?= $currentStatus === $statusOption ? 'selected' : '' ?>><?= mfModuleDetailHtml($statusOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label><?= mfModuleDetailHtml($projectLabel) ?></label>
+                                <input type="text" name="mainfeeder_name" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '') ?>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Length / HP</label>
+                                <input type="text" name="length_meter" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['length_meter'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Year</label>
+                                <input type="number" name="year_num" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['year_num'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Month</label>
+                                <input type="number" name="month_num" min="1" max="12" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['month_num'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Tanggal ATP</label>
+                                <input type="date" name="atp_date" class="form-control" value="<?= mfModuleDetailHtml(substr((string) ($mainfeeder['atp_date'] ?? ''), 0, 10)) ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Vendor</label>
+                                <input type="text" name="vendor_name" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['vendor_name'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Regional</label>
+                                <input type="text" name="regional_name" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['regional_name'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Provinsi</label>
+                                <input type="text" name="province_name" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['province_name'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Kota</label>
+                                <input type="text" name="city_name" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['city_name'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Team</label>
+                                <input type="text" name="team_name" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['team_name'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Chief</label>
+                                <input type="text" name="chief" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['chief'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>RPM</label>
+                                <input type="text" name="rpm" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['rpm'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>SM</label>
+                                <input type="text" name="sm" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['sm'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>SPV</label>
+                                <input type="text" name="spv" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['spv'] ?? '') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="form-group">
+                                <label>Remark</label>
+                                <input type="text" name="remark_mainfeeder" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['remark_mainfeeder'] ?? '') ?>">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Update Mainfeeder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ($section === 'drm' && $canEditDrm): ?>
 <div class="modal fade" id="modal-mf-doc-upload" tabindex="-1" role="dialog" aria-hidden="true">

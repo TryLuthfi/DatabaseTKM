@@ -29,6 +29,11 @@ class Mainfeeder_MyRep extends CI_Controller
         $id = $this->MMainfeeder_MyRep->saveMainfeeder($payload);
         $projectLabel = $this->projectTypeLabel($payload['project_type'] ?? 'MAINFEEDER');
         $this->session->set_flashdata($id > 0 ? 'success' : 'error', $id > 0 ? $projectLabel . ' berhasil disimpan.' : $projectLabel . ' gagal disimpan.');
+        $returnUrl = trim((string) $this->input->post('return_url'));
+        if ($id > 0 && $this->isInternalUrl($returnUrl)) {
+            redirect($returnUrl);
+            return;
+        }
         redirect($id > 0 ? 'DRM_MyRep/mainfeeder/' . $id : 'MyRepublik_Project');
     }
 
@@ -248,7 +253,25 @@ class Mainfeeder_MyRep extends CI_Controller
             return;
         }
 
-        redirect($this->stageDetailUri($mainfeeder));
+        $poHeaders = $this->MMainfeeder_MyRep->getPoHeaders($mainfeederId);
+
+        $data['title'] = 'Detail Mainfeeder MyRep';
+        $data['section'] = 'summary';
+        $data['moduleTitle'] = 'Detail Mainfeeder MyRep';
+        $data['mainfeeder'] = $mainfeeder;
+        $data['drmDocuments'] = $this->MMainfeeder_MyRep->getDrmDocumentRows($mainfeederId);
+        $data['boqHeader'] = $this->MMainfeeder_MyRep->getDrmBoqHeader($mainfeederId);
+        $data['boqItems'] = $this->MMainfeeder_MyRep->getDrmBoqItems($mainfeederId);
+        $data['atpFiles'] = $this->MMainfeeder_MyRep->getAtpFiles($mainfeederId);
+        $data['poHeaders'] = $poHeaders;
+        $data['rabDetail'] = $this->MMainfeeder_MyRep->getRabByMainfeederId($mainfeederId, false);
+        $data['activeStageUrl'] = $this->stageDetailUri($mainfeeder);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Mainfeeder_MyRep/module_detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
     public function saveDrm($mainfeederId = 0)
@@ -785,6 +808,7 @@ class Mainfeeder_MyRep extends CI_Controller
     private function collectMainfeederPayload($userId)
     {
         return [
+            'id_mainfeeder' => (int) $this->input->post('id_mainfeeder'),
             'project_type' => $this->MMainfeeder_MyRep->normalizeStandaloneProjectType($this->input->post('project_type') ?: 'MAINFEEDER'),
             'cluster_code' => $this->input->post('cluster_code'),
             'mainfeeder_name' => $this->input->post('mainfeeder_name'),
