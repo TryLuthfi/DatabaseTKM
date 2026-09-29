@@ -574,16 +574,21 @@ class PO_MyRep extends CI_Controller
         }
 
         $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+        $mainfeederId = (int) ($header['id_mainfeeder'] ?? 0);
+        $redirectUrl = $mainfeederId > 0
+            ? 'PO_MyRep/mainfeeder/' . $mainfeederId
+            : ($clusterId > 0 ? 'PO_MyRep/detail/' . $clusterId : 'PO_MyRep');
+
         $mirrorResult = $this->MPO_Monitor->deletePoMonitorMirrorFromMyRepHeader($poHeaderId);
         if (empty($mirrorResult['status'])) {
             $this->session->set_flashdata('error', 'Mirror PO Monitor gagal dihapus: ' . ($mirrorResult['message'] ?? 'unknown error'));
-            redirect('PO_MyRep/detail/' . $clusterId);
+            redirect($redirectUrl);
             return;
         }
 
         $deleted = $this->MPO_MyRep->deletePoHeader($poHeaderId, (int) $this->session->userdata('id_user'));
         $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'PO berhasil dihapus.' : 'PO gagal dihapus.');
-        redirect('PO_MyRep/detail/' . $clusterId);
+        redirect($redirectUrl);
     }
 
     public function batchSavePo()

@@ -4822,6 +4822,9 @@ class MPO_Monitor extends CI_Model
                     'converted_by' => null,
                 ]);
         }
+        foreach ($idPoList as $idPo) {
+            $this->deletePoChildren((int) $idPo);
+        }
         $this->db->where_in('id_po', $idPoList)->delete('tb_po');
 
         if ($this->db->trans_status() === false) {

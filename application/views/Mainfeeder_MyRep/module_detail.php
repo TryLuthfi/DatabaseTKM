@@ -1326,6 +1326,15 @@ $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')
                                         <span class="badge badge-primary ml-2"><?= mfModuleDetailHtml($po['po_category'] ?? '-') ?></span>
                                         <span class="badge badge-info ml-1"><?= mfModuleDetailHtml($po['status_po'] ?? '-') ?></span>
                                     </div>
+                                    <?php if ($canEditPo): ?>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger js-mf-delete-po"
+                                            data-po-header-id="<?= (int) ($po['id_po_header'] ?? 0) ?>"
+                                            data-po-number="<?= mfModuleDetailHtml($po['po_number'] ?? '-') ?>">
+                                            Hapus PO
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-3"><strong>Tanggal PO</strong><div><?= mfModuleDetailDate($po['po_date'] ?? '') ?></div></div>
@@ -1400,6 +1409,11 @@ $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')
 
                         <?php if (empty($poHeaders)): ?>
                             <div class="text-center text-muted py-4">Belum ada PO <?= mfModuleDetailHtml($projectLabel) ?>.</div>
+                        <?php endif; ?>
+                        <?php if ($canEditPo): ?>
+                            <form method="post" action="<?= base_url('PO_MyRep/deletePoHeader') ?>" id="form-mf-delete-po" class="d-none">
+                                <input type="hidden" name="id_po_header" id="mf_delete_po_header_id" value="">
+                            </form>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1999,6 +2013,42 @@ $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')
                 .val(/^\d{4}-\d{2}-\d{2}$/.test(certificateValue) ? certificateValue : '');
             $('#mf_certificate_help').text('Hanya tanggal valid. Bisa disimpan setelah syarat ASTRI/FAC terpenuhi.');
             $('#mf_certificate_submit').text('Claim Sertifikat').removeClass('btn-secondary').addClass('btn-dark');
+        });
+
+        $(document).on('click', '.js-mf-delete-po', function () {
+            var $button = $(this);
+            var headerId = String($button.data('po-header-id') || '');
+            var poNumber = String($button.data('po-number') || '-');
+            if (!headerId) {
+                return;
+            }
+
+            var submitDelete = function () {
+                $('#mf_delete_po_header_id').val(headerId);
+                $('#form-mf-delete-po').trigger('submit');
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                Swal.fire({
+                    title: 'Hapus PO?',
+                    text: 'PO ' + poNumber + ' akan dihapus dari PO MyRep dan mirror PO Monitor terkait.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        submitDelete();
+                    }
+                });
+                return;
+            }
+
+            if (window.confirm('Hapus PO ' + poNumber + '?')) {
+                submitDelete();
+            }
         });
     })();
 </script>

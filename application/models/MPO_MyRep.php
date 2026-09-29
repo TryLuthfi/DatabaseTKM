@@ -4065,13 +4065,21 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
+        $hasMainfeederSupport = $this->db->table_exists('tb_rfs_myrep_mainfeeder')
+            && $this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header');
+        $cityExpression = $hasMainfeederSupport ? 'COALESCE(c.city_name, mf.city_name)' : 'c.city_name';
+
         $this->db
-            ->select('p.*, c.city_name')
+            ->select('p.*, ' . $cityExpression . ' AS city_name', false)
             ->from('tb_myrep_po_header p')
-            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'left')
             ->where('p.id_po_header', (int) $poHeaderId);
 
-        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+        if ($hasMainfeederSupport) {
+            $this->db->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left');
+        }
+
+        if (!$this->applyAllowedCityRestriction($cityExpression)) {
             return [];
         }
 
@@ -4157,6 +4165,7 @@ class MPO_MyRep extends CI_Model
                 'parent_po_header_id' => null,
                 'updated_by' => (int) $userId,
             ]);
+        $this->db->where('id_po_header', $poHeaderId)->delete('tb_myrep_po_termin');
         $this->db->where('id_po_header', $poHeaderId)->delete('tb_myrep_po_header');
 
         if ($this->db->trans_status() === false) {
