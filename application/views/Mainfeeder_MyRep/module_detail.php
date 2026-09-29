@@ -1327,13 +1327,32 @@ $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')
                                         <span class="badge badge-info ml-1"><?= mfModuleDetailHtml($po['status_po'] ?? '-') ?></span>
                                     </div>
                                     <?php if ($canEditPo): ?>
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-outline-danger js-mf-delete-po"
-                                            data-po-header-id="<?= (int) ($po['id_po_header'] ?? 0) ?>"
-                                            data-po-number="<?= mfModuleDetailHtml($po['po_number'] ?? '-') ?>">
-                                            Hapus PO
-                                        </button>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-primary js-mf-po-header-modal"
+                                                data-toggle="modal"
+                                                data-target="#modal-mf-edit-po-header"
+                                                data-po-header-id="<?= (int) ($po['id_po_header'] ?? 0) ?>"
+                                                data-parent-po-header-id="<?= (int) ($po['parent_po_header_id'] ?? 0) ?>"
+                                                data-po-category="<?= mfModuleDetailHtml($po['po_category'] ?? 'INITIAL') ?>"
+                                                data-status-po="<?= mfModuleDetailHtml($po['status_po'] ?? 'ISSUED') ?>"
+                                                data-po-number="<?= mfModuleDetailHtml($po['po_number'] ?? '') ?>"
+                                                data-po-date="<?= mfModuleDetailHtml($po['po_date'] ?? '') ?>"
+                                                data-po-value="<?= mfModuleDetailHtml($po['po_value'] ?? '') ?>"
+                                                data-ny-po-ref="<?= mfModuleDetailHtml($po['po_monitor_ny_ref'] ?? '') ?>"
+                                                data-po-version-label="<?= mfModuleDetailHtml($po['po_version_label'] ?? '') ?>"
+                                                data-remark-po="<?= mfModuleDetailHtml($po['remark_po'] ?? '') ?>">
+                                                Edit Header
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-danger js-mf-delete-po"
+                                                data-po-header-id="<?= (int) ($po['id_po_header'] ?? 0) ?>"
+                                                data-po-number="<?= mfModuleDetailHtml($po['po_number'] ?? '-') ?>">
+                                                Hapus PO
+                                            </button>
+                                        </div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="row">
@@ -1903,6 +1922,42 @@ $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')
 <?php endif; ?>
 
 <?php if ($section === 'po' && $canEditPo): ?>
+<div class="modal fade" id="modal-mf-edit-po-header" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Mainfeeder_MyRep/updatePoHeader/' . $mainfeederId) ?>">
+                <input type="hidden" name="return_url" value="<?= mfModuleDetailHtml($returnUrl) ?>">
+                <input type="hidden" name="id_po_header" id="mf_edit_po_header_id">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Edit Header PO <?= mfModuleDetailHtml($projectLabel) ?></h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label><?= mfModuleDetailHtml($projectLabel) ?></label><input type="text" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['mainfeeder_name'] ?? '-') ?>" readonly></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Status Flow</label><input type="text" class="form-control" value="<?= mfModuleDetailHtml($mainfeeder['current_status'] ?? '-') ?>" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tipe PO</label><input type="text" class="form-control" value="<?= mfModuleDetailHtml($projectLabel) ?>" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kategori PO</label><select name="po_category" id="mf_edit_po_category" class="form-control"><?php foreach (($poCategoryOptions ?? []) as $value => $label): ?><option value="<?= mfModuleDetailHtml($value) ?>"><?= mfModuleDetailHtml($label) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Status PO</label><select name="status_po" id="mf_edit_status_po" class="form-control"><?php foreach (($poStatusOptions ?? []) as $value => $label): ?><option value="<?= mfModuleDetailHtml($value) ?>"><?= mfModuleDetailHtml($label) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" id="mf_edit_po_number" class="form-control" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" id="mf_edit_po_date" class="form-control" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" id="mf_edit_po_value" class="form-control" required></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>NY PO REF</label><input type="text" name="ny_po_ref" id="mf_edit_ny_po_ref" class="form-control" placeholder="NY-123 (opsional)"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" id="mf_edit_po_version_label" class="form-control"></div></div>
+                        <div class="col-md-8"><div class="form-group"><label>Parent PO</label><select name="parent_po_header_id" id="mf_edit_parent_po_header_id" class="form-control"><option value="">PO Baru</option><?php foreach ($poHeaders as $existingPo): ?><option value="<?= (int) ($existingPo['id_po_header'] ?? 0) ?>"><?= mfModuleDetailHtml($existingPo['po_number'] ?? '-') ?> - <?= mfModuleDetailHtml($existingPo['po_category'] ?? '-') ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_po" id="mf_edit_remark_po" class="form-control" rows="3"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger mr-auto" id="btn-mf-delete-po-header">Hapus PO</button>
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Header</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modal-mf-termin" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -2013,6 +2068,63 @@ $currentStatus = strtoupper(trim((string) ($mainfeeder['current_status'] ?? '-')
                 .val(/^\d{4}-\d{2}-\d{2}$/.test(certificateValue) ? certificateValue : '');
             $('#mf_certificate_help').text('Hanya tanggal valid. Bisa disimpan setelah syarat ASTRI/FAC terpenuhi.');
             $('#mf_certificate_submit').text('Claim Sertifikat').removeClass('btn-secondary').addClass('btn-dark');
+        });
+
+        $(document).on('click', '.js-mf-po-header-modal', function () {
+            var $button = $(this);
+            var headerId = String($button.data('po-header-id') || '');
+            var parentHeaderId = String($button.data('parent-po-header-id') || '');
+
+            $('#mf_edit_po_header_id').val(headerId);
+            $('#mf_edit_po_category').val($button.data('po-category') || 'INITIAL');
+            $('#mf_edit_status_po').val($button.data('status-po') || 'ISSUED');
+            $('#mf_edit_po_number').val($button.data('po-number') || '');
+            $('#mf_edit_po_date').val($button.data('po-date') || '');
+            $('#mf_edit_po_value').val($button.data('po-value') || '');
+            $('#mf_edit_ny_po_ref').val($button.data('ny-po-ref') || '');
+            $('#mf_edit_po_version_label').val($button.data('po-version-label') || '');
+            $('#mf_edit_remark_po').val($button.data('remark-po') || '');
+            $('#mf_edit_parent_po_header_id option').prop('disabled', false);
+            $('#mf_edit_parent_po_header_id option[value="' + headerId + '"]').prop('disabled', true);
+            $('#mf_edit_parent_po_header_id').val(parentHeaderId !== '0' && parentHeaderId !== headerId ? parentHeaderId : '');
+            $('#btn-mf-delete-po-header')
+                .data('po-header-id', headerId)
+                .data('po-number', $button.data('po-number') || '-');
+        });
+
+        $(document).on('click', '#btn-mf-delete-po-header', function () {
+            var headerId = String($(this).data('po-header-id') || $('#mf_edit_po_header_id').val() || '');
+            var poNumber = String($(this).data('po-number') || $('#mf_edit_po_number').val() || '-');
+            if (!headerId) {
+                return;
+            }
+
+            var submitDelete = function () {
+                $('#mf_delete_po_header_id').val(headerId);
+                $('#form-mf-delete-po').trigger('submit');
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                Swal.fire({
+                    title: 'Hapus PO?',
+                    text: 'PO ' + poNumber + ' akan dihapus dari PO MyRep dan mirror PO Monitor terkait.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        submitDelete();
+                    }
+                });
+                return;
+            }
+
+            if (window.confirm('Hapus PO ' + poNumber + '?')) {
+                submitDelete();
+            }
         });
 
         $(document).on('click', '.js-mf-delete-po', function () {

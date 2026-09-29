@@ -637,6 +637,85 @@ class Mainfeeder_MyRep extends CI_Controller
         $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
     }
 
+    public function updatePoHeader($mainfeederId = 0)
+    {
+        $this->requireLogin();
+        $mainfeederId = (int) $mainfeederId;
+        $poHeaderId = (int) $this->input->post('id_po_header');
+        $header = $this->MMainfeeder_MyRep->getPoHeaderById($poHeaderId);
+        if (empty($header) || (int) ($header['id_mainfeeder'] ?? 0) !== $mainfeederId) {
+            $this->session->set_flashdata('error', 'Header PO mainfeeder tidak valid.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $poNumber = trim((string) $this->input->post('po_number'));
+        $poDate = $this->normalizeDate($this->input->post('po_date'));
+        $poValue = $this->normalizeNumber($this->input->post('po_value'));
+        $nyPoRef = strtoupper(trim((string) $this->input->post('ny_po_ref')));
+        if ($poNumber === '' || $poDate === null || $poValue <= 0) {
+            $this->session->set_flashdata('error', 'Nomor PO, tanggal PO, dan nilai PO wajib diisi.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+        if ($nyPoRef !== '' && !preg_match('/^NY-\d+$/', $nyPoRef)) {
+            $this->session->set_flashdata('error', 'NY PO REF tidak valid. Gunakan format NY-123.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $poType = $this->MMainfeeder_MyRep->getProjectTypeById($mainfeederId);
+        $poCategory = strtoupper(trim((string) $this->input->post('po_category'))) ?: 'INITIAL';
+        if (!in_array($poCategory, ['INITIAL', 'FINAL', 'AMANDMENT'], true)) {
+            $poCategory = 'INITIAL';
+        }
+        $statusPo = strtoupper(trim((string) $this->input->post('status_po'))) ?: 'ISSUED';
+        if (!in_array($statusPo, ['NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED'], true)) {
+            $statusPo = 'ISSUED';
+        }
+        if ($this->MMainfeeder_MyRep->poHeaderExists($mainfeederId, $poType, $poCategory, $poNumber, $poHeaderId)) {
+            $this->session->set_flashdata('error', 'PO dengan kategori dan nomor yang sama sudah ada.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        $oldNyPoRef = strtoupper(trim((string) ($header['po_monitor_ny_ref'] ?? '')));
+        $updated = $this->MMainfeeder_MyRep->updatePoHeader($mainfeederId, $poHeaderId, [
+            'parent_po_header_id' => (int) $this->input->post('parent_po_header_id'),
+            'po_category' => $poCategory,
+            'po_number' => $poNumber,
+            'po_date' => $poDate,
+            'po_value' => $poValue,
+            'po_monitor_ny_ref' => $nyPoRef,
+            'status_po' => $statusPo,
+            'po_version_label' => $this->input->post('po_version_label'),
+            'remark_po' => $this->input->post('remark_po'),
+            'updated_by' => $userId,
+        ]);
+        if (!$updated) {
+            $this->session->set_flashdata('error', 'Header PO mainfeeder gagal diupdate.');
+            $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $ensure = $this->MPO_Monitor->ensurePoMonitorFromMyRepPoHeader($poHeaderId, $userId);
+        if ($nyPoRef !== '') {
+            $linkResult = $this->MPO_Monitor->linkNyPoReferenceToMyRepHeader($poHeaderId, $nyPoRef, $userId);
+            if (empty($linkResult['status'])) {
+                $this->session->set_flashdata('error', 'Header PO mainfeeder terupdate, tapi NY PO REF gagal link ke PO Monitor: ' . ($linkResult['message'] ?? 'unknown error'));
+                $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+                return;
+            }
+        }
+        if ($oldNyPoRef !== '' && $oldNyPoRef !== $nyPoRef) {
+            $this->MPO_Monitor->unlinkNyPoReferenceFromPo($oldNyPoRef, (int) ($ensure['id_po'] ?? 0));
+        }
+
+        $this->session->set_flashdata('success', 'Header PO mainfeeder berhasil diupdate.');
+        $this->redirectBack('PO_MyRep/mainfeeder/' . $mainfeederId);
+    }
+
     public function updateTermin($mainfeederId = 0)
     {
         $this->requireLogin();

@@ -1269,6 +1269,112 @@ class MMainfeeder_MyRep extends CI_Model
         return $this->db->trans_status() ? $poHeaderId : 0;
     }
 
+    public function getPoHeaderById($poHeaderId)
+    {
+        return $this->db
+            ->from('tb_myrep_po_header')
+            ->where('id_po_header', (int) $poHeaderId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function updatePoHeader($mainfeederId, $poHeaderId, array $payload)
+    {
+        $mainfeederId = (int) $mainfeederId;
+        $poHeaderId = (int) $poHeaderId;
+        if ($mainfeederId <= 0 || $poHeaderId <= 0 || !$this->db->field_exists('id_mainfeeder', 'tb_myrep_po_header')) {
+            return false;
+        }
+
+        $existing = $this->getPoHeaderById($poHeaderId);
+        if (empty($existing) || (int) ($existing['id_mainfeeder'] ?? 0) !== $mainfeederId) {
+            return false;
+        }
+
+        $poType = $this->getProjectTypeById($mainfeederId);
+        $poValue = (float) ($payload['po_value'] ?? 0);
+        $parentPoHeaderId = !empty($payload['parent_po_header_id']) ? (int) $payload['parent_po_header_id'] : null;
+        if ($parentPoHeaderId === $poHeaderId) {
+            $parentPoHeaderId = null;
+        }
+
+        $header = [
+            'parent_po_header_id' => $parentPoHeaderId,
+            'po_type' => $poType,
+            'project_type' => $poType,
+            'po_category' => (string) ($payload['po_category'] ?? 'INITIAL'),
+            'po_number' => (string) ($payload['po_number'] ?? ''),
+            'po_date' => $payload['po_date'] ?? null,
+            'po_value' => $poValue,
+            'status_po' => (string) ($payload['status_po'] ?? 'ISSUED'),
+            'po_version_label' => !empty($payload['po_version_label']) ? (string) $payload['po_version_label'] : null,
+            'remark_po' => !empty($payload['remark_po']) ? (string) $payload['remark_po'] : null,
+            'updated_by' => (int) ($payload['updated_by'] ?? 0),
+        ];
+        if ($this->ensurePoHeaderNyRefColumn()) {
+            $nyRef = strtoupper(trim((string) ($payload['po_monitor_ny_ref'] ?? '')));
+            $header['po_monitor_ny_ref'] = $nyRef !== '' ? $nyRef : null;
+        }
+
+        $this->db->trans_start();
+        $this->db
+            ->where('id_po_header', $poHeaderId)
+            ->where('id_mainfeeder', $mainfeederId)
+            ->update('tb_myrep_po_header', $header);
+        $this->rescalePoTerminRows($poHeaderId, $poValue, (int) ($payload['updated_by'] ?? 0));
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    private function rescalePoTerminRows($poHeaderId, $poValue, $userId)
+    {
+        $poHeaderId = (int) $poHeaderId;
+        if ($poHeaderId <= 0) {
+            return;
+        }
+
+        foreach ($this->defaultTerminPercents as $index => $percent) {
+            $terminNo = $index + 1;
+            $terminValue = round(((float) $poValue * (float) $percent) / 100, 2);
+            $existing = $this->db
+                ->from('tb_myrep_po_termin')
+                ->where('id_po_header', $poHeaderId)
+                ->where('termin_no', $terminNo)
+                ->limit(1)
+                ->get()
+                ->row_array();
+
+            if (empty($existing)) {
+                $this->db->insert('tb_myrep_po_termin', [
+                    'id_po_header' => $poHeaderId,
+                    'termin_no' => $terminNo,
+                    'termin_percent' => $percent,
+                    'termin_value' => $terminValue,
+                    'status_termin' => 'NOT READY',
+                    'created_by' => (int) $userId,
+                    'updated_by' => (int) $userId,
+                ]);
+                continue;
+            }
+
+            $status = strtoupper(trim((string) ($existing['status_termin'] ?? 'NOT READY')));
+            $hasInvoice = trim((string) ($existing['invoice_date'] ?? '')) !== '';
+            $payload = [
+                'termin_percent' => $percent,
+                'updated_by' => (int) $userId,
+            ];
+            if (!$hasInvoice && !in_array($status, ['BILLED', 'PAID'], true)) {
+                $payload['termin_value'] = $terminValue;
+            }
+
+            $this->db
+                ->where('id_po_termin', (int) ($existing['id_po_termin'] ?? 0))
+                ->update('tb_myrep_po_termin', $payload);
+        }
+    }
+
     public function getTerminRowsByPoId($poId)
     {
         return $this->db->from('tb_myrep_po_termin')->where('id_po_header', (int) $poId)->order_by('termin_no', 'ASC')->get()->result_array();

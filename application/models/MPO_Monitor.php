@@ -992,6 +992,11 @@ class MPO_Monitor extends CI_Model
             $this->cancelPoTargets($idPo);
         }
 
+        if (!$this->syncMyRepHeaderFromPoMonitor($idPo, $update, (int) $userId)) {
+            $this->db->trans_rollback();
+            return ['status' => false, 'message' => 'Header PO gagal diperbarui karena sync balik ke PO MyRep gagal.'];
+        }
+
         $this->refreshPoDashboardMetrics($idPo);
         $this->rebuildDashboardCache(null);
 
@@ -4955,6 +4960,99 @@ class MPO_Monitor extends CI_Model
         }
 
         return true;
+    }
+
+    private function syncMyRepHeaderFromPoMonitor($idPo, array $poUpdate, $userId = 0)
+    {
+        $idPo = (int) $idPo;
+        if ($idPo <= 0 || !$this->db->table_exists('tb_myrep_po_header') || !$this->db->table_exists('tb_myrep_po_termin')) {
+            return true;
+        }
+
+        $po = $this->db
+            ->select('id_po, source_file, source_row_no')
+            ->from('tb_po')
+            ->where('id_po', $idPo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $poHeaderId = (int) ($po['source_row_no'] ?? 0);
+        if (strtoupper(trim((string) ($po['source_file'] ?? ''))) !== 'MYREP_PO_HEADER' || $poHeaderId <= 0) {
+            return true;
+        }
+
+        $header = $this->db
+            ->select('id_po_header')
+            ->from('tb_myrep_po_header')
+            ->where('id_po_header', $poHeaderId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (empty($header)) {
+            return true;
+        }
+
+        $headerUpdate = [
+            'po_number' => trim((string) ($poUpdate['po_number'] ?? '')),
+            'po_date' => !empty($poUpdate['po_date']) ? (string) $poUpdate['po_date'] : null,
+            'po_value' => (float) ($poUpdate['total_value'] ?? 0),
+            'updated_by' => (int) $userId,
+        ];
+        if ($this->db->field_exists('updated_at', 'tb_myrep_po_header')) {
+            $headerUpdate['updated_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->db
+            ->where('id_po_header', $poHeaderId)
+            ->update('tb_myrep_po_header', $headerUpdate);
+
+        $terms = $this->db
+            ->select('term_index, percent, value')
+            ->from('tb_po_term')
+            ->where('id_po', $idPo)
+            ->where('term_index >=', 1)
+            ->where('term_index <=', 5)
+            ->order_by('term_index', 'ASC')
+            ->get()
+            ->result_array();
+
+        foreach ($terms as $term) {
+            $terminNo = (int) ($term['term_index'] ?? 0);
+            if ($terminNo < 1 || $terminNo > 5) {
+                continue;
+            }
+
+            $terminPayload = [
+                'termin_percent' => (float) ($term['percent'] ?? 0),
+                'termin_value' => (float) ($term['value'] ?? 0),
+                'updated_by' => (int) $userId,
+            ];
+
+            $existingTerm = $this->db
+                ->select('id_po_termin')
+                ->from('tb_myrep_po_termin')
+                ->where('id_po_header', $poHeaderId)
+                ->where('termin_no', $terminNo)
+                ->limit(1)
+                ->get()
+                ->row_array();
+
+            if (!empty($existingTerm)) {
+                $this->db
+                    ->where('id_po_termin', (int) $existingTerm['id_po_termin'])
+                    ->update('tb_myrep_po_termin', $terminPayload);
+                continue;
+            }
+
+            $terminPayload['id_po_header'] = $poHeaderId;
+            $terminPayload['termin_no'] = $terminNo;
+            $terminPayload['status_termin'] = 'NOT READY';
+            $terminPayload['created_by'] = (int) $userId;
+            $this->db->insert('tb_myrep_po_termin', $terminPayload);
+        }
+
+        return $this->db->trans_status() !== false;
     }
 
     private function resolveMyRepMonitorBowheer(array $header)
