@@ -978,6 +978,20 @@ if ($canApprove && $canApprovalAction) {
         border-top: 0;
     }
 
+    .donation-doc-modal.is-child-modal-open .modal-content {
+        position: relative;
+    }
+
+    .donation-doc-modal.is-child-modal-open .modal-content::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        background: rgba(15, 23, 42, .38);
+        border-radius: inherit;
+        pointer-events: none;
+    }
+
     .donation-doc-modal-panel {
         background: #fff;
         border: 1px solid #e7ecf3;
@@ -3042,7 +3056,7 @@ if ($canApprove && $canApprovalAction) {
                                                                                     <?php endforeach; ?>
                                                                                 </select>
                                                                             </td>
-                                                                            <td><input type="date" name="astri_approved_date[<?= $bulkAstriFileId ?>]" class="form-control" value="<?= htmlspecialchars($bulkAstriApprovedDate) ?>"></td>
+                                                                            <td><input type="date" name="astri_approved_date[<?= $bulkAstriFileId ?>]" class="form-control js-bulk-astri-approved-date" value="<?= htmlspecialchars($bulkAstriApprovedDate) ?>"></td>
                                                                             <td><textarea name="astri_remark[<?= $bulkAstriFileId ?>]" id="bulk_astri_remark_<?= htmlspecialchars($safeGroupKey) ?>_<?= $bulkAstriFileId ?>" class="form-control js-bulk-astri-remark" rows="2" placeholder="Remark Astri"><?= htmlspecialchars((string) ($bulkAstriRow['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea></td>
                                                                         </tr>
                                                                     <?php endforeach; ?>
@@ -3052,10 +3066,49 @@ if ($canApprove && $canApprovalAction) {
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
+                                                    <button type="button" class="btn btn-outline-dark mr-auto" data-toggle="modal" data-target="#modal-bulk-astri-all-<?= htmlspecialchars($safeGroupKey) ?>">Edit Status All</button>
                                                     <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
                                                     <button type="submit" class="btn btn-dark">Simpan Bulk Astri</button>
                                                 </div>
                                             </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal fade donation-doc-modal" id="modal-bulk-astri-all-<?= htmlspecialchars($safeGroupKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
+                                    <div class="modal-dialog modal-md" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header" style="background: linear-gradient(135deg, #374151, #111827);">
+                                                <div>
+                                                    <h4 class="modal-title mb-1">Edit Status All Astri</h4>
+                                                    <p class="mb-0" style="opacity:.9;"><?= htmlspecialchars($title) ?></p>
+                                                </div>
+                                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="donation-doc-modal-panel">
+                                                    <label class="font-weight-bold">Status Astri</label>
+                                                    <select class="form-control js-bulk-astri-all-status" id="bulk_astri_all_status_<?= htmlspecialchars($safeGroupKey) ?>" data-date-input="#bulk_astri_all_approved_date_<?= htmlspecialchars($safeGroupKey) ?>">
+                                                        <option value="NY">NY</option>
+                                                        <option value="ON REVIEW">ON REVIEW</option>
+                                                        <option value="APPROVED">APPROVED</option>
+                                                    </select>
+                                                    <div class="text-muted small mt-2">Gunakan REJECTED per dokumen agar remark reject tetap jelas.</div>
+                                                </div>
+                                                <div class="donation-doc-modal-panel">
+                                                    <label class="font-weight-bold">Tanggal Submit Astri</label>
+                                                    <input type="date" class="form-control js-bulk-astri-all-submitted-date" id="bulk_astri_all_submitted_date_<?= htmlspecialchars($safeGroupKey) ?>">
+                                                    <div class="text-muted small mt-2">Dokumen yang sudah punya tanggal submit Astri tidak akan diubah.</div>
+                                                </div>
+                                                <div class="donation-doc-modal-panel">
+                                                    <label class="font-weight-bold">Tanggal Approved Astri</label>
+                                                    <input type="date" class="form-control js-bulk-astri-all-approved-date" id="bulk_astri_all_approved_date_<?= htmlspecialchars($safeGroupKey) ?>">
+                                                    <div class="text-muted small mt-2">Jika status APPROVED, tanggal ini akan diterapkan ke semua dokumen.</div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                                                <button type="button" class="btn btn-dark js-apply-bulk-astri-all" data-bulk-target="#modal-bulk-astri-<?= htmlspecialchars($safeGroupKey) ?>" data-modal-target="#modal-bulk-astri-all-<?= htmlspecialchars($safeGroupKey) ?>">Terapkan ke Semua</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -4962,6 +5015,104 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
             });
             $('.js-astri-status').each(function () {
                 syncAstriDateRequirement($(this));
+            });
+
+            function syncBulkAstriAllRequirement($statusSelect, allowAutofill) {
+                var status = String($statusSelect.val() || 'NY').toUpperCase();
+                var $dateInput = $($statusSelect.data('date-input'));
+                var $modal = $statusSelect.closest('.modal');
+                var $submittedInput = $modal.find('.js-bulk-astri-all-submitted-date');
+                if (!$dateInput.length) {
+                    return;
+                }
+                $submittedInput.prop('required', status !== 'NY');
+                $dateInput.prop('required', status === 'APPROVED');
+                if (allowAutofill && status !== 'NY' && !$submittedInput.val()) {
+                    $submittedInput.val(new Date().toISOString().slice(0, 10));
+                }
+                if (allowAutofill && status === 'APPROVED' && !$dateInput.val()) {
+                    $dateInput.val(new Date().toISOString().slice(0, 10));
+                }
+                if (status !== 'APPROVED') {
+                    $dateInput.val('');
+                }
+                if (status === 'NY') {
+                    $submittedInput.val('');
+                }
+            }
+
+            function getUniformBulkAstriValue($bulkModal, selector) {
+                var value = null;
+                var isUniform = true;
+                $bulkModal.find(selector).each(function () {
+                    var currentValue = String($(this).val() || '').trim();
+                    if (value === null) {
+                        value = currentValue;
+                    } else if (value !== currentValue) {
+                        isUniform = false;
+                        return false;
+                    }
+                });
+
+                return isUniform ? (value || '') : '';
+            }
+
+            $(document).on('change', '.js-bulk-astri-all-status', function () {
+                syncBulkAstriAllRequirement($(this), true);
+            });
+
+            $(document).on('click', '.js-apply-bulk-astri-all', function () {
+                var $button = $(this);
+                var $allModal = $($button.data('modal-target'));
+                var $bulkModal = $($button.data('bulk-target'));
+                var status = String($allModal.find('.js-bulk-astri-all-status').val() || 'NY').toUpperCase();
+                var submittedDate = String($allModal.find('.js-bulk-astri-all-submitted-date').val() || '').trim();
+                var approvedDate = String($allModal.find('.js-bulk-astri-all-approved-date').val() || '').trim();
+
+                if (status !== 'NY' && !submittedDate) {
+                    alert('Tanggal Submit Astri wajib diisi.');
+                    $allModal.find('.js-bulk-astri-all-submitted-date').focus();
+                    return;
+                }
+                if (status === 'APPROVED' && !approvedDate) {
+                    alert('Tanggal Approved Astri wajib diisi.');
+                    $allModal.find('.js-bulk-astri-all-approved-date').focus();
+                    return;
+                }
+
+                $bulkModal.find('.js-bulk-astri-status').each(function () {
+                    var $status = $(this);
+                    var $submittedDate = $($status.data('date-input'));
+                    $status.val(status).trigger('change');
+
+                    if ($submittedDate.length) {
+                        if (status === 'NY') {
+                            $submittedDate.val('');
+                        } else if (!$submittedDate.val()) {
+                            $submittedDate.val(submittedDate);
+                        }
+                    }
+                });
+                $bulkModal.find('.js-bulk-astri-approved-date').val(status === 'APPROVED' ? approvedDate : '');
+                $allModal.modal('hide');
+            });
+
+            $(document).on('show.bs.modal', '[id^="modal-bulk-astri-all-"]', function () {
+                var $parentBulkModal = $($(this).find('.js-apply-bulk-astri-all').data('bulk-target'));
+                var $statusSelect = $(this).find('.js-bulk-astri-all-status');
+                $parentBulkModal.addClass('is-child-modal-open');
+                $statusSelect.val(getUniformBulkAstriValue($parentBulkModal, '.js-bulk-astri-status') || 'NY');
+                $(this).find('.js-bulk-astri-all-submitted-date').val(getUniformBulkAstriValue($parentBulkModal, '.js-astri-submitted-date'));
+                $(this).find('.js-bulk-astri-all-approved-date').val(getUniformBulkAstriValue($parentBulkModal, '.js-bulk-astri-approved-date'));
+                syncBulkAstriAllRequirement($statusSelect, false);
+            });
+
+            $(document).on('hidden.bs.modal', '[id^="modal-bulk-astri-all-"]', function () {
+                var $parentBulkModal = $($(this).find('.js-apply-bulk-astri-all').data('bulk-target'));
+                $parentBulkModal.removeClass('is-child-modal-open');
+                if ($('.modal.show').length) {
+                    $('body').addClass('modal-open');
+                }
             });
 
             $(document).on('click', '.js-open-donation-photo', function () {

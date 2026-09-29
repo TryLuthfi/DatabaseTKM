@@ -5,6 +5,9 @@ require_once APPPATH . 'helpers/myrep_pic_helper.php';
 class MMonitoring_RFS_MyRep extends CI_Model
 {
     private $rfsReadyStatuses = ['DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'];
+    private $tableExistsCache = [];
+    private $fieldExistsCache = [];
+    private $cityOptionsCache = null;
 
     public function normalizeAreaApproverName($approverName)
     {
@@ -54,12 +57,12 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function claimSupportsStatusRfs()
     {
-        return $this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim');
+        return $this->fieldExists('status_rfs', 'tb_rfs_myrep_claim');
     }
 
     public function claimSupportsRpmApproval()
     {
-        return $this->db->field_exists('rpm_approval_status', 'tb_rfs_myrep_claim');
+        return $this->fieldExists('rpm_approval_status', 'tb_rfs_myrep_claim');
     }
 
     public function getAnnualSummary($year, $startMonth = 1, $endMonth = 12, $city = '')
@@ -433,98 +436,68 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ];
         }
 
-        foreach ($columns as $column) {
-            $monthlyTargetRows = $this->db
-                ->select('city_name, target_rkap')
-                ->from('tb_rfs_myrep_monthly_target')
-                ->where('year_num', $column['year_num'])
-                ->where('month_num', $column['month_num']);
+        $monthlyTargetQuery = $this->db
+            ->select('city_name, month_num, SUM(target_rkap) AS target_rkap', false)
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('year_num', $year)
+            ->where('month_num >=', $startMonth)
+            ->where('month_num <=', $endMonth);
 
-            if ($filterCity !== '') {
-                $this->db->where('UPPER(city_name)', $filterCity);
-            }
+        if ($filterCity !== '') {
+            $this->db->where('UPPER(city_name)', $filterCity);
+        }
 
-            $monthlyTargetRows = $this->db->get()->result_array();
+        $monthlyTargetRows = $monthlyTargetQuery
+            ->group_by(['city_name', 'month_num'])
+            ->get()
+            ->result_array();
 
-            foreach ($monthlyTargetRows as $row) {
-                $city = strtoupper((string) $row['city_name']);
-                if (!isset($result[$city])) {
-                    $result[$city] = [
-                        'city_name' => $city,
-                        'rkap' => [],
-                        'realistis' => [],
-                        'pencapaian' => []
-                    ];
-                }
+        foreach ($monthlyTargetRows as $row) {
+            $cityKey = strtoupper((string) $row['city_name']);
+            $this->ensureThreeMonthSummaryCity($result, $cityKey);
+            $result[$cityKey]['rkap'][(int) $row['month_num']] = (float) $row['target_rkap'];
+        }
 
-                $result[$city]['rkap'][$column['month_num']] = (float) $row['target_rkap'];
-            }
+        $planSql = "SELECT mt.city_name, p.month_num, COALESCE(SUM(p.optimistic_target), 0) AS realistis
+             FROM tb_rfs_myrep_cluster_plan p
+             INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = p.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
+             WHERE p.year_num = ? AND p.month_num BETWEEN ? AND ?";
+        $planParams = [$year, $startMonth, $endMonth];
 
-            $planSql = "SELECT mt.city_name, COALESCE(SUM(p.optimistic_target), 0) AS realistis
-                 FROM tb_rfs_myrep_cluster_plan p
-                 INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = p.cluster_id
-                 INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
-                 WHERE p.year_num = ? AND p.month_num = ?";
-            $planParams = [$column['year_num'], $column['month_num']];
+        if ($filterCity !== '') {
+            $planSql .= " AND UPPER(mt.city_name) = ? ";
+            $planParams[] = $filterCity;
+        }
 
-            if ($filterCity !== '') {
-                $planSql .= " AND UPPER(mt.city_name) = ? ";
-                $planParams[] = $filterCity;
-            }
+        $planSql .= " GROUP BY mt.city_name, p.month_num";
 
-            $planSql .= " GROUP BY mt.city_name";
+        $planRows = $this->db->query($planSql, $planParams)->result_array();
+        foreach ($planRows as $row) {
+            $cityKey = strtoupper((string) $row['city_name']);
+            $this->ensureThreeMonthSummaryCity($result, $cityKey);
+            $result[$cityKey]['realistis'][(int) $row['month_num']] = (float) $row['realistis'];
+        }
 
-            $planRows = $this->db->query(
-                $planSql,
-                $planParams
-            )->result_array();
+        $claimSql = "SELECT mt.city_name, cl.claim_month AS month_num, COALESCE(SUM(cl.claim_qty), 0) AS pencapaian
+             FROM tb_rfs_myrep_claim cl
+             INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
+             WHERE cl.claim_year = ? AND cl.claim_month BETWEEN ? AND ? AND cl.status_claim = 'APPROVED'";
+        $claimParams = [$year, $startMonth, $endMonth];
 
-            foreach ($planRows as $row) {
-                $city = strtoupper((string) $row['city_name']);
-                if (!isset($result[$city])) {
-                    $result[$city] = [
-                        'city_name' => $city,
-                        'rkap' => [],
-                        'realistis' => [],
-                        'pencapaian' => []
-                    ];
-                }
+        if ($filterCity !== '') {
+            $claimSql .= " AND UPPER(mt.city_name) = ? ";
+            $claimParams[] = $filterCity;
+        }
 
-                $result[$city]['realistis'][$column['month_num']] = (float) $row['realistis'];
-            }
+        $claimSql .= " GROUP BY mt.city_name, cl.claim_month";
 
-            $claimSql = "SELECT mt.city_name, COALESCE(SUM(cl.claim_qty), 0) AS pencapaian
-                 FROM tb_rfs_myrep_claim cl
-                 INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
-                 INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
-                 WHERE cl.claim_year = ? AND cl.claim_month = ? AND cl.status_claim = 'APPROVED'";
-            $claimParams = [$column['year_num'], $column['month_num']];
-
-            if ($filterCity !== '') {
-                $claimSql .= " AND UPPER(mt.city_name) = ? ";
-                $claimParams[] = $filterCity;
-            }
-
-            $claimSql .= " GROUP BY mt.city_name";
-
-            $claimRows = $this->db->query(
-                $claimSql,
-                $claimParams
-            )->result_array();
-
-            foreach ($claimRows as $row) {
-                $city = strtoupper((string) $row['city_name']);
-                if (!isset($result[$city])) {
-                    $result[$city] = [
-                        'city_name' => $city,
-                        'rkap' => [],
-                        'realistis' => [],
-                        'pencapaian' => []
-                    ];
-                }
-
-                $result[$city]['pencapaian'][$column['month_num']] = (float) $row['pencapaian'];
-            }
+        $claimRows = $this->db->query($claimSql, $claimParams)->result_array();
+        foreach ($claimRows as $row) {
+            $cityKey = strtoupper((string) $row['city_name']);
+            $this->ensureThreeMonthSummaryCity($result, $cityKey);
+            $result[$cityKey]['pencapaian'][(int) $row['month_num']] = (float) $row['pencapaian'];
         }
 
         $final = array_values($result);
@@ -533,6 +506,19 @@ class MMonitoring_RFS_MyRep extends CI_Model
         });
 
         return $final;
+    }
+
+    private function ensureThreeMonthSummaryCity(array &$result, $city)
+    {
+        $city = strtoupper((string) $city);
+        if (!isset($result[$city])) {
+            $result[$city] = [
+                'city_name' => $city,
+                'rkap' => [],
+                'realistis' => [],
+                'pencapaian' => []
+            ];
+        }
     }
 
     public function getClustersWithPlan($year, $startMonth, $endMonth, $city = '')
@@ -830,6 +816,10 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getCityOptions()
     {
+        if ($this->cityOptionsCache !== null) {
+            return $this->cityOptionsCache;
+        }
+
         $cities = [];
 
         $targetRows = $this->db->distinct()->select('city_name')->from('tb_rfs_myrep_monthly_target')->order_by('city_name', 'ASC')->get()->result_array();
@@ -841,7 +831,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         ksort($cities);
-        return array_values($cities);
+        $this->cityOptionsCache = array_values($cities);
+        return $this->cityOptionsCache;
     }
 
     public function upsertMonthlyTarget($data)
@@ -1283,7 +1274,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getUserNikById($userId)
     {
         $userId = (int) $userId;
-        if ($userId <= 0 || !$this->db->table_exists('tb_master_user_new')) {
+        if ($userId <= 0 || !$this->tableExists('tb_master_user_new')) {
             return '';
         }
 
@@ -1300,16 +1291,16 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     private function hasCityPicMappingTable()
     {
-        return $this->db->table_exists('tb_myrep_pic_mapping_city')
-            && $this->db->field_exists('city_name', 'tb_myrep_pic_mapping_city')
-            && $this->db->field_exists('rpm_area', 'tb_myrep_pic_mapping_city')
-            && $this->db->field_exists('sm_area', 'tb_myrep_pic_mapping_city');
+        return $this->tableExists('tb_myrep_pic_mapping_city')
+            && $this->fieldExists('city_name', 'tb_myrep_pic_mapping_city')
+            && $this->fieldExists('rpm_area', 'tb_myrep_pic_mapping_city')
+            && $this->fieldExists('sm_area', 'tb_myrep_pic_mapping_city');
     }
 
     private function hasCityPicMappingField($fieldName)
     {
-        return $this->db->table_exists('tb_myrep_pic_mapping_city')
-            && $this->db->field_exists((string) $fieldName, 'tb_myrep_pic_mapping_city');
+        return $this->tableExists('tb_myrep_pic_mapping_city')
+            && $this->fieldExists((string) $fieldName, 'tb_myrep_pic_mapping_city');
     }
 
     private function getCityPicMappingSelectSql()
@@ -1409,7 +1400,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     private function getMasterUserNamesByNiks(array $niks)
     {
         $niks = array_values(array_unique(array_filter(array_map('trim', $niks))));
-        if (empty($niks) || !$this->db->table_exists('tb_master_user_new')) {
+        if (empty($niks) || !$this->tableExists('tb_master_user_new')) {
             return [];
         }
 
@@ -1443,16 +1434,36 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     private function hasMyrepClusterTables()
     {
-        return $this->db->table_exists('tb_myrep_cluster');
+        return $this->tableExists('tb_myrep_cluster');
     }
 
     private function hasMyrepDrmDocumentTables()
     {
-        return $this->db->table_exists('tb_myrep_drm')
-            && $this->db->table_exists('md_myrep_flow_doc_group')
-            && $this->db->table_exists('md_myrep_flow_doc_item')
-            && $this->db->table_exists('tb_myrep_flow_doc_package')
-            && $this->db->table_exists('tb_myrep_flow_doc_file');
+        return $this->tableExists('tb_myrep_drm')
+            && $this->tableExists('md_myrep_flow_doc_group')
+            && $this->tableExists('md_myrep_flow_doc_item')
+            && $this->tableExists('tb_myrep_flow_doc_package')
+            && $this->tableExists('tb_myrep_flow_doc_file');
+    }
+
+    private function tableExists($tableName)
+    {
+        $tableName = (string) $tableName;
+        if (!array_key_exists($tableName, $this->tableExistsCache)) {
+            $this->tableExistsCache[$tableName] = $this->db->table_exists($tableName);
+        }
+
+        return $this->tableExistsCache[$tableName];
+    }
+
+    private function fieldExists($fieldName, $tableName)
+    {
+        $cacheKey = (string) $tableName . '.' . (string) $fieldName;
+        if (!array_key_exists($cacheKey, $this->fieldExistsCache)) {
+            $this->fieldExistsCache[$cacheKey] = $this->db->field_exists((string) $fieldName, (string) $tableName);
+        }
+
+        return $this->fieldExistsCache[$cacheKey];
     }
 
     private function syncEligibleMyrepClustersToRfs($year, $month, $city = '')
@@ -1517,6 +1528,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
             return;
         }
 
+        $linkedRfsClusterIds = [];
+        foreach ($clusters as $cluster) {
+            $linkedRfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? 0);
+            if ($linkedRfsClusterId > 0) {
+                $linkedRfsClusterIds[] = $linkedRfsClusterId;
+            }
+        }
+        $claimTotalsByClusterId = $this->getRfsClaimTotalsByClusterIds($linkedRfsClusterIds);
+
         foreach ($clusters as $cluster) {
             $idTarget = $this->ensureTargetForMyrepCluster($cluster, $year, $month);
             if ($idTarget <= 0) {
@@ -1530,8 +1550,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $mappedStatus = $this->mapMyrepStatusToRfs((string) ($cluster['status_current'] ?? ''));
 
             if ($rfsClusterId > 0) {
-                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
-                $approvedClaimQty = $this->getRfsApprovedClaimQty($rfsClusterId);
+                $claimTotals = $claimTotalsByClusterId[$rfsClusterId] ?? ['active_claim_qty' => 0, 'approved_claim_qty' => 0];
+                $homepass = max($homepassBase, (int) round((float) ($claimTotals['active_claim_qty'] ?? 0)));
+                $approvedClaimQty = (int) round((float) ($claimTotals['approved_claim_qty'] ?? 0));
                 $syncedStatus = $this->resolveSyncedRfsStatus(
                     $mappedStatus,
                     $cluster['current_status_rfs'] ?? '',
@@ -1600,6 +1621,34 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $syncedStatus);
             }
         }
+    }
+
+    private function getRfsClaimTotalsByClusterIds(array $clusterIds)
+    {
+        $clusterIds = array_values(array_unique(array_filter(array_map('intval', $clusterIds))));
+        if (empty($clusterIds) || !$this->tableExists('tb_rfs_myrep_claim')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select("cluster_id,
+                COALESCE(SUM(CASE WHEN status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO', 'APPROVED') THEN claim_qty ELSE 0 END), 0) AS active_claim_qty,
+                COALESCE(SUM(CASE WHEN status_claim = 'APPROVED' THEN claim_qty ELSE 0 END), 0) AS approved_claim_qty", false)
+            ->from('tb_rfs_myrep_claim')
+            ->where_in('cluster_id', $clusterIds)
+            ->group_by('cluster_id')
+            ->get()
+            ->result_array();
+
+        $totals = [];
+        foreach ($rows as $row) {
+            $totals[(int) ($row['cluster_id'] ?? 0)] = [
+                'active_claim_qty' => (float) ($row['active_claim_qty'] ?? 0),
+                'approved_claim_qty' => (float) ($row['approved_claim_qty'] ?? 0),
+            ];
+        }
+
+        return $totals;
     }
 
     private function ensureTargetForMyrepCluster($cluster, $year, $month)
@@ -1753,7 +1802,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     {
         $rfsClusterId = (int) $rfsClusterId;
         $fallbackHomepass = max(0, (int) $fallbackHomepass);
-        if ($rfsClusterId <= 0 || !$this->db->table_exists('tb_rfs_myrep_claim')) {
+        if ($rfsClusterId <= 0 || !$this->tableExists('tb_rfs_myrep_claim')) {
             return $fallbackHomepass;
         }
 
@@ -1772,7 +1821,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     private function getRfsApprovedClaimQty($rfsClusterId)
     {
         $rfsClusterId = (int) $rfsClusterId;
-        if ($rfsClusterId <= 0 || !$this->db->table_exists('tb_rfs_myrep_claim')) {
+        if ($rfsClusterId <= 0 || !$this->tableExists('tb_rfs_myrep_claim')) {
             return 0;
         }
 
