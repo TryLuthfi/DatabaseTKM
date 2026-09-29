@@ -185,6 +185,48 @@ if (!function_exists('batchDetailLatestDateFromRows')) {
     }
 }
 
+if (!function_exists('batchDetailLatestDateWhenAllRequiredMatch')) {
+    function batchDetailLatestDateWhenAllRequiredMatch(array $rows, $dateField, $statusField, $statusValue, $secondStatusField = '', $secondStatusValue = '')
+    {
+        $latest = '';
+        $requiredCount = 0;
+        $matchedCount = 0;
+        $expectedStatus = strtoupper(trim((string) $statusValue));
+        $expectedSecondStatus = strtoupper(trim((string) $secondStatusValue));
+
+        foreach ($rows as $row) {
+            if ((int) ($row['is_required'] ?? 1) !== 1) {
+                continue;
+            }
+
+            $requiredCount++;
+            $currentStatus = strtoupper(trim((string) ($row[$statusField] ?? '')));
+            if ($currentStatus !== $expectedStatus) {
+                continue;
+            }
+
+            if ($secondStatusField !== '') {
+                $currentSecondStatus = strtoupper(trim((string) ($row[$secondStatusField] ?? '')));
+                if ($currentSecondStatus !== $expectedSecondStatus) {
+                    continue;
+                }
+            }
+
+            $value = trim((string) ($row[$dateField] ?? ''));
+            if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+                continue;
+            }
+
+            $matchedCount++;
+            if ($latest === '' || strtotime($value) > strtotime($latest)) {
+                $latest = $value;
+            }
+        }
+
+        return $requiredCount > 0 && $matchedCount >= $requiredCount ? $latest : '';
+    }
+}
+
 if (!function_exists('batchDetailSlaStatus')) {
     function batchDetailSlaStatus($startDate, $targetDate, $actualDate)
     {
@@ -454,14 +496,14 @@ $slaDefinitions = [
     ['Pengajuan Donasi', 'AREA', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? '', $slaStartDate],
     ['Release Batch Approval', 'MYREP', 1, $cluster['astri_batch_approved_at'] ?? ''],
     ['Upload Dokumen Tahap 1 Pra-Finance', 'AREA', 2, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'uploaded_at', true)],
-    ['Approve SITAC Tahap 1', 'SITAC TKM', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
-    ['Approve Finance Tahap 1', 'FINANCE TKM', 1, batchDetailLatestDateFromRows((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Approve SITAC Tahap 1', 'SITAC TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($preZeynDocumentRows ?? []), 'approved_at', 'status_file', 'APPROVED')],
+    ['Approve Finance Tahap 1', 'FINANCE TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', 'finance_status', 'APPROVED', 'status_file', 'APPROVED')],
     ['Pengajuan Saku', 'AREA', 1, $cluster['saku_finance_requested_at'] ?? ''],
     ['Approval Saku Finance', 'FINANCE TKM', 1, $cluster['saku_finance_reviewed_at'] ?? ''],
     ['Pembayaran Donasi', 'FINANCE TKM', 2, $cluster['released_at'] ?? ''],
     ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'AREA', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'uploaded_at', true)],
-    ['Approve SITAC Tahap 2', 'SITAC TKM', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'approved_at', true, 'status_file', 'APPROVED')],
-    ['Approve Finance Tahap 2', 'FINANCE TKM', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'finance_approved_at', true, 'finance_status', 'APPROVED')],
+    ['Approve SITAC Tahap 2', 'SITAC TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($postZeynDocumentRows ?? []), 'approved_at', 'status_file', 'APPROVED')],
+    ['Approve Finance Tahap 2', 'FINANCE TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($postZeynDocumentRows ?? []), 'finance_approved_at', 'finance_status', 'APPROVED', 'status_file', 'APPROVED')],
     ['Submit Final ke Astri', 'MYREP', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_submitted_date', true)],
     ['Approved Astri', 'MYREP', 3, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_approved_date', true, 'astri_status', 'APPROVED')],
     ['PO Donasi', 'MYREP', 3, $cluster['po_donasi_date'] ?? ''],

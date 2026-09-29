@@ -4447,17 +4447,27 @@ class Batch_Approval_MyRep extends CI_Controller
         $batchApprovedAt = $this->firstBatchListDate($row, ['astri_batch_approved_at']);
         $preUploadedAt = $this->firstBatchListDate($row, ['pre_zeyn_uploaded_at']);
         $preApprovedAt = $this->firstBatchListDate($row, ['pre_zeyn_approved_at', 'pre_zeyn_doc_approved_at']);
+        $preRejectedAt = $this->firstBatchListDate($row, ['pre_zeyn_rejected_at']);
         $preFinanceApprovedAt = $this->firstBatchListDate($row, ['pre_zeyn_finance_approved_at']);
         $sakuRequestedAt = $this->firstBatchListDate($row, ['saku_finance_requested_at']);
         $sakuReviewedAt = $this->firstBatchListDate($row, ['saku_finance_reviewed_at']);
         $releasedAt = $this->firstBatchListDate($row, ['released_at']);
         $postUploadedAt = $this->firstBatchListDate($row, ['post_zeyn_uploaded_at']);
         $postApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_approved_at', 'post_zeyn_doc_approved_at']);
+        $postRejectedAt = $this->firstBatchListDate($row, ['post_zeyn_rejected_at']);
         $postFinanceApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_finance_approved_at']);
         $astriSubmittedAt = $this->firstBatchListDate($row, ['post_zeyn_astri_submitted_at', 'final_astri_submitted_at']);
         $astriApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_astri_approved_at', 'final_astri_approved_at']);
         $poDate = $this->firstBatchListDate($row, ['po_donasi_date']);
         $invoiceDate = $this->firstBatchListDate($row, ['invoice_donasi_date']);
+        $latestRejectedAt = $preRejectedAt;
+        if ($postRejectedAt !== '' && ($latestRejectedAt === '' || strtotime($postRejectedAt) > strtotime($latestRejectedAt))) {
+            $latestRejectedAt = $postRejectedAt;
+        }
+        $needReviseStartAt = $latestRejectedAt ?: $preUploadedAt ?: $postUploadedAt;
+        if ($postRejectedAt !== '' && ($preRejectedAt === '' || strtotime($postRejectedAt) >= strtotime($preRejectedAt))) {
+            $needReviseStartAt = $releasedAt ?: $postRejectedAt;
+        }
 
         $preRequired = (int) ($row['pre_zeyn_doc_total'] ?? 0);
         $preFinanceRequired = (int) ($row['pre_zeyn_finance_required'] ?? $preRequired);
@@ -4511,7 +4521,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'INVOICE' => ['Flow Selesai', 0, $invoiceDate, $invoiceDate],
             'COMPLETED' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
             'DONE BATCH APPROVAL' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
-            'NEED_REVISE' => ['Revisi Dokumen', 1, $preUploadedAt ?: $postUploadedAt, ''],
+            'NEED_REVISE' => ['Revisi Dokumen', 1, $needReviseStartAt, ''],
             'REJECTED' => ['Ditolak', 0, $this->firstBatchListDate($row, ['rejected_at', 'updated_at']), $this->firstBatchListDate($row, ['rejected_at', 'updated_at'])],
             'HOLD' => ['Ditahan', 0, $this->firstBatchListDate($row, ['hold_at', 'updated_at']), $this->firstBatchListDate($row, ['hold_at', 'updated_at'])],
         ];

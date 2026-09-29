@@ -379,17 +379,27 @@ if (!function_exists('batchSlaInfo')) {
         $batchApprovedAt = $dateFromRow(['astri_batch_approved_at']);
         $preUploadedAt = $dateFromRow(['pre_zeyn_uploaded_at']);
         $preApprovedAt = $dateFromRow(['pre_zeyn_approved_at', 'pre_zeyn_doc_approved_at']);
+        $preRejectedAt = $dateFromRow(['pre_zeyn_rejected_at']);
         $preFinanceApprovedAt = $dateFromRow(['pre_zeyn_finance_approved_at']);
         $sakuRequestedAt = $dateFromRow(['saku_finance_requested_at']);
         $sakuReviewedAt = $dateFromRow(['saku_finance_reviewed_at']);
         $releasedAt = $dateFromRow(['released_at']);
         $postUploadedAt = $dateFromRow(['post_zeyn_uploaded_at']);
         $postApprovedAt = $dateFromRow(['post_zeyn_approved_at', 'post_zeyn_doc_approved_at']);
+        $postRejectedAt = $dateFromRow(['post_zeyn_rejected_at']);
         $postFinanceApprovedAt = $dateFromRow(['post_zeyn_finance_approved_at']);
         $astriSubmittedAt = $dateFromRow(['post_zeyn_astri_submitted_at', 'final_astri_submitted_at']);
         $astriApprovedAt = $dateFromRow(['post_zeyn_astri_approved_at', 'final_astri_approved_at']);
         $poDate = $dateFromRow(['po_donasi_date']);
         $invoiceDate = $dateFromRow(['invoice_donasi_date']);
+        $latestRejectedAt = $preRejectedAt;
+        if ($postRejectedAt !== '' && ($latestRejectedAt === '' || strtotime($postRejectedAt) > strtotime($latestRejectedAt))) {
+            $latestRejectedAt = $postRejectedAt;
+        }
+        $needReviseStartAt = $latestRejectedAt ?: $preUploadedAt ?: $postUploadedAt;
+        if ($postRejectedAt !== '' && ($preRejectedAt === '' || strtotime($postRejectedAt) >= strtotime($preRejectedAt))) {
+            $needReviseStartAt = $releasedAt ?: $postRejectedAt;
+        }
 
         $preRequired = (int) ($row['pre_zeyn_doc_total'] ?? 0);
         $preFinanceRequired = (int) ($row['pre_zeyn_finance_required'] ?? $preRequired);
@@ -443,7 +453,7 @@ if (!function_exists('batchSlaInfo')) {
             'INVOICE' => ['Flow Selesai', 0, $invoiceDate, $invoiceDate],
             'COMPLETED' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
             'DONE BATCH APPROVAL' => ['Flow Selesai', 0, $invoiceDate ?: $astriApprovedAt ?: $releasedAt, $invoiceDate ?: $astriApprovedAt ?: $releasedAt],
-            'NEED_REVISE' => ['Revisi Dokumen', 1, $preUploadedAt ?: $postUploadedAt, ''],
+            'NEED_REVISE' => ['Revisi Dokumen', 1, $needReviseStartAt, ''],
         ];
         $selected = $map[$stageCode] ?? ['Draft', 0, '', ''];
         $slaDays = (int) $selected[1];
