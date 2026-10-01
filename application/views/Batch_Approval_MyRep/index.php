@@ -503,6 +503,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $canStartBatchInput = !$hasBatch;
         $batchDocLabel = $hasBatch ? batchDocLabel($row) : 'BELUM ADA DOC';
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
+        if ($uploadBy === '') {
+            $uploadBy = trim((string) ($row['donation_doc_uploaded_by_name'] ?? ''));
+        }
         $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
         $batchPics = $hasBatch ? (array) $batchModel->getBatchPics((int) ($row['id_batch_approval'] ?? 0)) : [];
         $nominalRelease = $row['nominal_release_finance'] ?? null;

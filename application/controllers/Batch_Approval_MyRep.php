@@ -4147,6 +4147,9 @@ class Batch_Approval_MyRep extends CI_Controller
         $isWaitingInputStage = !$hasBatch || $stageCode === 'WAITING INPUT';
         $batchDocLabel = $hasBatch ? $this->getBatchListDocLabel($row) : 'BELUM ADA DOC';
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
+        if ($uploadBy === '') {
+            $uploadBy = trim((string) ($row['donation_doc_uploaded_by_name'] ?? ''));
+        }
         $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
         $batchPics = $hasBatch ? (array) $this->MBatch_Approval_MyRep->getBatchPics((int) ($row['id_batch_approval'] ?? 0)) : [];
 
