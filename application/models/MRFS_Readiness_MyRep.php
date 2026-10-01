@@ -117,7 +117,7 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->row_array();
     }
 
-    public function getPeriodSummary($periodId, $city = '', $regional = '', $priority = '', $finalStatus = '')
+    public function getPeriodSummary($periodId, $city = '', $regional = '', $priority = '', $finalStatus = '', $confirmedOnly = false)
     {
         $summary = [
             'total_cluster' => 0,
@@ -138,6 +138,9 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
 
         $rows = $this->getItems($periodId, $city, $priority, $finalStatus, $regional);
+        if ($confirmedOnly) {
+            $rows = $this->filterConfirmedTargetRows($rows);
+        }
         foreach ($rows as $row) {
             $hp = (float) ($row['homepass_drm_snapshot'] ?? 0);
             $summary['total_cluster']++;
@@ -177,11 +180,14 @@ class MRFS_Readiness_MyRep extends CI_Model
         return $summary;
     }
 
-    public function getAreaSummaries($periodId, $groupBy = 'city')
+    public function getAreaSummaries($periodId, $groupBy = 'city', $confirmedOnly = false)
     {
         $groupBy = strtolower(trim((string) $groupBy));
         $labelField = $groupBy === 'regional' ? 'regional_name' : 'city_name';
         $rows = $this->getItems($periodId);
+        if ($confirmedOnly) {
+            $rows = $this->filterConfirmedTargetRows($rows);
+        }
         $summary = [];
         foreach ($rows as $row) {
             $label = strtoupper(trim((string) ($row[$labelField] ?? '')));
@@ -258,31 +264,39 @@ class MRFS_Readiness_MyRep extends CI_Model
         return array_values($summary);
     }
 
-    public function getWeeklyTargetRealization($periodId, $city = '', $regional = '')
+    public function getWeeklyTargetRealization($periodId, $city = '', $regional = '', $confirmedOnly = false)
     {
         $period = $this->getPeriodById($periodId);
         if (empty($period)) {
             return ['weeks' => [], 'target_total' => 0, 'actual_total' => 0];
         }
 
+        $targetPeriod = $this->getTargetYearMonthFromMeetingPeriod($period);
+        $targetYear = (int) $targetPeriod['year'];
+        $targetMonth = (int) $targetPeriod['month'];
+
         $weeks = [];
-        $daysInMonth = (int) date('t', strtotime((int) $period['year_num'] . '-' . (int) $period['month_num'] . '-01'));
+        $daysInMonth = (int) date('t', strtotime($targetYear . '-' . $targetMonth . '-01'));
         for ($day = 1; $day <= $daysInMonth; $day++) {
-            $date = sprintf('%04d-%02d-%02d', (int) $period['year_num'], (int) $period['month_num'], $day);
+            $date = sprintf('%04d-%02d-%02d', $targetYear, $targetMonth, $day);
             $week = 'W' . date('W', strtotime($date));
             $weeks[$week] = ['week' => $week, 'target_hp' => 0, 'actual_hp' => 0];
         }
 
-        foreach ($this->getItems($periodId, $city, '', '', $regional) as $row) {
+        $rows = $this->getItems($periodId, $city, '', '', $regional);
+        if ($confirmedOnly) {
+            $rows = $this->filterConfirmedTargetRows($rows);
+        }
+        foreach ($rows as $row) {
             $hp = (float) ($row['homepass_drm_snapshot'] ?? 0);
-            if (!empty($row['current_planned_rfs_date']) && $this->dateInPeriod((string) $row['current_planned_rfs_date'], (int) $period['year_num'], (int) $period['month_num'])) {
+            if (!empty($row['current_planned_rfs_date']) && $this->dateInPeriod((string) $row['current_planned_rfs_date'], $targetYear, $targetMonth)) {
                 $week = 'W' . date('W', strtotime((string) $row['current_planned_rfs_date']));
                 if (!isset($weeks[$week])) {
                     $weeks[$week] = ['week' => $week, 'target_hp' => 0, 'actual_hp' => 0];
                 }
                 $weeks[$week]['target_hp'] += $hp;
             }
-            if (!empty($row['actual_rfs_date']) && $this->dateInPeriod((string) $row['actual_rfs_date'], (int) $period['year_num'], (int) $period['month_num'])) {
+            if (!empty($row['actual_rfs_date']) && $this->dateInPeriod((string) $row['actual_rfs_date'], $targetYear, $targetMonth)) {
                 $week = 'W' . date('W', strtotime((string) $row['actual_rfs_date']));
                 if (!isset($weeks[$week])) {
                     $weeks[$week] = ['week' => $week, 'target_hp' => 0, 'actual_hp' => 0];
@@ -309,15 +323,22 @@ class MRFS_Readiness_MyRep extends CI_Model
         ];
     }
 
-    public function getAreaWeeklySummaries($periodId, $groupBy = 'city')
+    public function getAreaWeeklySummaries($periodId, $groupBy = 'city', $confirmedOnly = false)
     {
         $groupBy = strtolower(trim((string) $groupBy));
         $labelField = $groupBy === 'regional' ? 'regional_name' : 'city_name';
-        $periodWeekly = $this->getWeeklyTargetRealization($periodId);
+        $periodWeekly = $this->getWeeklyTargetRealization($periodId, '', '', $confirmedOnly);
         $weekKeys = array_map(static function ($row) {
             return (string) ($row['week'] ?? '');
         }, (array) ($periodWeekly['weeks'] ?? []));
         $rows = $this->getItems($periodId);
+        if ($confirmedOnly) {
+            $rows = $this->filterConfirmedTargetRows($rows);
+        }
+        $period = $this->getPeriodById($periodId);
+        $targetPeriod = $this->getTargetYearMonthFromMeetingPeriod($period);
+        $targetYear = (int) $targetPeriod['year'];
+        $targetMonth = (int) $targetPeriod['month'];
         $summary = [];
         foreach ($rows as $row) {
             $label = strtoupper(trim((string) ($row[$labelField] ?? '')));
@@ -349,10 +370,7 @@ class MRFS_Readiness_MyRep extends CI_Model
                 $summary[$label]['regional_name'] = strtoupper(trim((string) $row['regional_name']));
             }
             $hp = (float) ($row['homepass_drm_snapshot'] ?? 0);
-            $period = $this->getPeriodById($periodId);
-            $periodYear = (int) ($period['year_num'] ?? 0);
-            $periodMonth = (int) ($period['month_num'] ?? 0);
-            if (!empty($row['current_planned_rfs_date']) && $this->dateInPeriod((string) $row['current_planned_rfs_date'], $periodYear, $periodMonth)) {
+            if (!empty($row['current_planned_rfs_date']) && $this->dateInPeriod((string) $row['current_planned_rfs_date'], $targetYear, $targetMonth)) {
                 $week = 'W' . date('W', strtotime((string) $row['current_planned_rfs_date']));
                 if (!isset($summary[$label]['weeks'][$week])) {
                     $summary[$label]['weeks'][$week] = ['target_hp' => 0, 'actual_hp' => 0];
@@ -360,7 +378,7 @@ class MRFS_Readiness_MyRep extends CI_Model
                 $summary[$label]['weeks'][$week]['target_hp'] += $hp;
                 $summary[$label]['target_total'] += $hp;
             }
-            if (!empty($row['actual_rfs_date']) && $this->dateInPeriod((string) $row['actual_rfs_date'], $periodYear, $periodMonth)) {
+            if (!empty($row['actual_rfs_date']) && $this->dateInPeriod((string) $row['actual_rfs_date'], $targetYear, $targetMonth)) {
                 $week = 'W' . date('W', strtotime((string) $row['actual_rfs_date']));
                 if (!isset($summary[$label]['weeks'][$week])) {
                     $summary[$label]['weeks'][$week] = ['target_hp' => 0, 'actual_hp' => 0];
@@ -491,9 +509,14 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->result_array();
     }
 
-    public function getItemsPage($periodId, $city = '', $priority = '', $finalStatus = '', $start = 0, $length = 10, $search = '', array $order = [], $regional = '')
+    public function getItemsPage($periodId, $city = '', $priority = '', $finalStatus = '', $start = 0, $length = 10, $search = '', array $order = [], $regional = '', $targetViewOnly = false)
     {
         $rows = $this->getItems($periodId, $city, $priority, $finalStatus, $regional);
+        if ($targetViewOnly) {
+            $rows = array_values(array_filter($rows, static function ($row) {
+                return !(empty($row['checklist_completed_at']) && strtoupper((string) ($row['final_status'] ?? '')) === 'DROPPED');
+            }));
+        }
         $recordsTotal = count($rows);
         $search = strtoupper(trim((string) $search));
         if ($search !== '') {
@@ -593,17 +616,30 @@ class MRFS_Readiness_MyRep extends CI_Model
             return [];
         }
 
+        $period = $this->getPeriodById($periodId);
+        $isLockedPeriod = strtoupper((string) ($period['status_period'] ?? '')) === 'LOCKED';
         $hasRfsBridge = $this->db->table_exists('tb_rfs_myrep_cluster')
             && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster');
 
         $this->db
-            ->select("c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.province_name, c.city_name, c.status_current, d.drm_date, d.homepass_drm, d.nama_olt", false)
+            ->select("c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.province_name, c.city_name, c.status_current, d.drm_date, d.homepass_drm, d.nama_olt, i.id_item AS readiness_item_id, i.final_status AS readiness_final_status, i.checklist_completed_at AS readiness_confirmed_at", false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_rfs_readiness_item i', 'i.id_period = ' . (int) $periodId . ' AND i.id_myrep_cluster = c.id_myrep_cluster', 'left', false)
-            ->where('i.id_item IS NULL', null, false)
             ->where('COALESCE(d.homepass_drm, 0) >', 0)
             ->where("UPPER(COALESCE(c.status_current, '')) NOT IN ('RFS','ATP','CHECKLIST DOKUMENT','DONE')", null, false);
+        if ($isLockedPeriod) {
+            $this->db
+                ->group_start()
+                    ->where('i.id_item IS NULL', null, false)
+                    ->or_group_start()
+                        ->where('i.checklist_completed_at IS NULL', null, false)
+                        ->where('i.final_status', 'DROPPED')
+                    ->group_end()
+                ->group_end();
+        } else {
+            $this->db->where('i.id_item IS NULL', null, false);
+        }
 
         if ($hasRfsBridge) {
             $this->db
@@ -706,6 +742,17 @@ class MRFS_Readiness_MyRep extends CI_Model
             if (!empty($clusterIdMap) && empty($clusterIdMap[$clusterId])) {
                 continue;
             }
+            $existingItemId = (int) ($cluster['readiness_item_id'] ?? 0);
+            if ($existingItemId > 0) {
+                $this->db->where('id_item', $existingItemId)->update('tb_myrep_rfs_readiness_item', [
+                    'source_type' => 'LATE_ADDITION',
+                    'final_status' => 'OPEN',
+                    'updated_by' => (int) $userId,
+                ]);
+                $this->addHistory($existingItemId, null, 'LATE_ADDITION_REACTIVATED', json_encode(['final_status' => $cluster['readiness_final_status'] ?? 'DROPPED']), json_encode(['source_type' => 'LATE_ADDITION', 'final_status' => 'OPEN']), 'Reaktivasi kandidat setelah period locked.', $userId);
+                $count++;
+                continue;
+            }
             $priority = $this->resolvePriority(['NOT READY', 'NOT READY', 'NOT READY', 'NOT READY', 'NOT READY']);
             $insert = [
                 'id_period' => (int) $periodId,
@@ -748,7 +795,7 @@ class MRFS_Readiness_MyRep extends CI_Model
                 $periodStatus === 'LOCKED'
                 && !(
                     strtoupper((string) ($item['source_type'] ?? '')) === 'LATE_ADDITION'
-                    && empty($item['baseline_week'])
+                    && empty($item['checklist_completed_at'])
                 )
             ) {
                 continue;
@@ -1077,7 +1124,9 @@ class MRFS_Readiness_MyRep extends CI_Model
 
     public function lockPeriod($periodId, $userId)
     {
-        return $this->db
+        $periodId = (int) $periodId;
+        $this->db->trans_start();
+        $locked = $this->db
             ->where('id_period', (int) $periodId)
             ->where('status_period', 'DRAFT')
             ->update('tb_myrep_rfs_readiness_period', [
@@ -1085,6 +1134,30 @@ class MRFS_Readiness_MyRep extends CI_Model
                 'locked_by' => (int) $userId,
                 'locked_at' => date('Y-m-d H:i:s'),
             ]);
+        if ($locked) {
+            $unconfirmedItems = $this->db
+                ->select('id_item')
+                ->from('tb_myrep_rfs_readiness_item')
+                ->where('id_period', $periodId)
+                ->where('checklist_completed_at IS NULL', null, false)
+                ->where('final_status', 'OPEN')
+                ->get()
+                ->result_array();
+            foreach ($unconfirmedItems as $item) {
+                $itemId = (int) ($item['id_item'] ?? 0);
+                if ($itemId <= 0) {
+                    continue;
+                }
+                $this->db->where('id_item', $itemId)->update('tb_myrep_rfs_readiness_item', [
+                    'final_status' => 'DROPPED',
+                    'updated_by' => (int) $userId,
+                ]);
+                $this->addHistory($itemId, null, 'LOCK_EXCLUDE_NOT_CONFIRMED', '', json_encode(['final_status' => 'DROPPED']), 'Tidak ikut target locked karena belum CONFIRMED.', $userId);
+            }
+        }
+        $this->db->trans_complete();
+
+        return $locked && $this->db->trans_status();
     }
 
     public function unlockPeriod($periodId, $remark, $userId)
@@ -1118,6 +1191,7 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->from('tb_myrep_rfs_readiness_item')
             ->where('id_period', (int) $periodId)
             ->where('final_status <>', 'OPEN')
+            ->where("NOT (final_status = 'DROPPED' AND checklist_completed_at IS NULL)", null, false)
             ->get()
             ->row_array();
         if ((int) ($blockedFinal['total'] ?? 0) > 0) {
@@ -1142,6 +1216,25 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->result_array();
         foreach ($items as $item) {
             $this->addHistory((int) $item['id_item'], null, 'PERIOD_UNLOCK', json_encode(['status_period' => 'LOCKED']), json_encode(['status_period' => 'DRAFT']), $remark, $userId);
+        }
+        $restoredItems = $this->db
+            ->select('id_item')
+            ->from('tb_myrep_rfs_readiness_item')
+            ->where('id_period', (int) $periodId)
+            ->where('checklist_completed_at IS NULL', null, false)
+            ->where('final_status', 'DROPPED')
+            ->get()
+            ->result_array();
+        foreach ($restoredItems as $item) {
+            $itemId = (int) ($item['id_item'] ?? 0);
+            if ($itemId <= 0) {
+                continue;
+            }
+            $this->db->where('id_item', $itemId)->update('tb_myrep_rfs_readiness_item', [
+                'final_status' => 'OPEN',
+                'updated_by' => (int) $userId,
+            ]);
+            $this->addHistory($itemId, null, 'UNLOCK_RESTORE_NOT_CONFIRMED', json_encode(['final_status' => 'DROPPED']), json_encode(['final_status' => 'OPEN']), $remark, $userId);
         }
         $this->db->trans_complete();
 
@@ -1169,6 +1262,14 @@ class MRFS_Readiness_MyRep extends CI_Model
                 continue;
             }
             $itemId = (int) $item['id_item'];
+            if (empty($item['checklist_completed_at'])) {
+                $this->db->where('id_item', $itemId)->update('tb_myrep_rfs_readiness_item', [
+                    'final_status' => 'DROPPED',
+                    'updated_by' => (int) $userId,
+                ]);
+                $this->addHistory($itemId, null, 'PERIOD_CLOSING_NOT_CONFIRMED', '', '', 'Tidak masuk target resmi karena belum CONFIRMED saat closing period.', $userId);
+                continue;
+            }
             $finalStatus = strtoupper(trim((string) ($finalStatuses[$itemId] ?? 'CARRY_OVER')));
             if (!in_array($finalStatus, ['CARRY_OVER', 'SHIFTED_OUT', 'IMPOSSIBLE', 'DROPPED'], true)) {
                 $finalStatus = 'CARRY_OVER';
@@ -1213,6 +1314,9 @@ class MRFS_Readiness_MyRep extends CI_Model
         if (empty($period)) {
             return 0;
         }
+        $targetPeriod = $this->getTargetYearMonthFromMeetingPeriod($period);
+        $targetYear = (int) $targetPeriod['year'];
+        $targetMonth = (int) $targetPeriod['month'];
 
         $rows = $this->db
             ->select('i.id_item, i.id_myrep_cluster, i.final_status, c.rfs_cluster_id, MIN(cl.claim_date) AS actual_rfs_date', false)
@@ -1220,8 +1324,8 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = i.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_claim cl', 'cl.cluster_id = c.rfs_cluster_id AND cl.status_claim = "APPROVED"', 'inner')
             ->where('i.id_period', (int) $periodId)
-            ->where('cl.claim_year', (int) $period['year_num'])
-            ->where('cl.claim_month', (int) $period['month_num'])
+            ->where('cl.claim_year', $targetYear)
+            ->where('cl.claim_month', $targetMonth)
             ->group_by('i.id_item, i.id_myrep_cluster, i.final_status, c.rfs_cluster_id')
             ->get()
             ->result_array();
@@ -1403,11 +1507,10 @@ class MRFS_Readiness_MyRep extends CI_Model
             return 0;
         }
 
-        $targetYear = (int) date('Y', strtotime((string) $sourceItem['current_planned_rfs_date']));
-        $targetMonth = (int) date('n', strtotime((string) $sourceItem['current_planned_rfs_date']));
-        $sourceYear = (int) ($sourcePeriod['year_num'] ?? 0);
-        $sourceMonth = (int) ($sourcePeriod['month_num'] ?? 0);
-        if ($targetYear === $sourceYear && $targetMonth === $sourceMonth) {
+        $plannedTargetYear = (int) date('Y', strtotime((string) $sourceItem['current_planned_rfs_date']));
+        $plannedTargetMonth = (int) date('n', strtotime((string) $sourceItem['current_planned_rfs_date']));
+        $sourceTarget = $this->getTargetYearMonthFromMeetingPeriod($sourcePeriod);
+        if ($plannedTargetYear === (int) $sourceTarget['year'] && $plannedTargetMonth === (int) $sourceTarget['month']) {
             if (($sourceItem['final_status'] ?? '') === 'SHIFTED_OUT') {
                 $this->db->where('id_item', (int) $sourceItem['id_item'])->update('tb_myrep_rfs_readiness_item', [
                     'final_status' => 'OPEN',
@@ -1418,6 +1521,9 @@ class MRFS_Readiness_MyRep extends CI_Model
             return 0;
         }
 
+        $targetMeeting = $this->getMeetingYearMonthFromTargetDate((string) $sourceItem['current_planned_rfs_date']);
+        $targetYear = (int) $targetMeeting['year'];
+        $targetMonth = (int) $targetMeeting['month'];
         $targetPeriod = $this->getPeriodByYearMonth($targetYear, $targetMonth);
         $targetPeriodId = (int) ($targetPeriod['id_period'] ?? 0);
         if ($targetPeriodId <= 0) {
@@ -1432,7 +1538,7 @@ class MRFS_Readiness_MyRep extends CI_Model
                 'final_status' => 'SHIFTED_OUT',
                 'updated_by' => (int) $userId,
             ]);
-            $this->addHistory((int) $sourceItem['id_item'], null, 'AUTO_SHIFTED_OUT', '', '', 'Target pindah ke period ' . $targetYear . '-' . str_pad((string) $targetMonth, 2, '0', STR_PAD_LEFT), $userId);
+            $this->addHistory((int) $sourceItem['id_item'], null, 'AUTO_SHIFTED_OUT', '', '', 'Target pindah ke meeting period ' . $targetYear . '-' . str_pad((string) $targetMonth, 2, '0', STR_PAD_LEFT), $userId);
         }
 
         return $this->createShiftedTargetItem($targetPeriodId, $sourceItem, $userId);
@@ -1542,6 +1648,37 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : '';
+    }
+
+    private function filterConfirmedTargetRows(array $rows)
+    {
+        return array_values(array_filter($rows, static function ($row) {
+            return !empty($row['checklist_completed_at']);
+        }));
+    }
+
+    private function getTargetYearMonthFromMeetingPeriod(array $period)
+    {
+        $date = DateTime::createFromFormat('!Y-n-j', (int) ($period['year_num'] ?? 0) . '-' . (int) ($period['month_num'] ?? 0) . '-1');
+        if (!$date) {
+            return ['year' => 0, 'month' => 0];
+        }
+        $date->modify('+1 month');
+        return ['year' => (int) $date->format('Y'), 'month' => (int) $date->format('n')];
+    }
+
+    private function getMeetingYearMonthFromTargetDate($targetDate)
+    {
+        $timestamp = strtotime((string) $targetDate);
+        if (!$timestamp) {
+            return ['year' => 0, 'month' => 0];
+        }
+        $date = DateTime::createFromFormat('!Y-m-d', date('Y-m-d', $timestamp));
+        if (!$date) {
+            return ['year' => 0, 'month' => 0];
+        }
+        $date->modify('-1 month');
+        return ['year' => (int) $date->format('Y'), 'month' => (int) $date->format('n')];
     }
 
     private function dateInPeriod($date, $year, $month)

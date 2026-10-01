@@ -91,6 +91,10 @@ if ($nextMonth > 12) {
     $nextMonth = 1;
     $nextYear++;
 }
+$targetMonthLabel = !empty($period) ? rfs_readiness_target_month_label($period['year_num'], $period['month_num']) : '-';
+$targetStartDate = !empty($period) ? DateTime::createFromFormat('!Y-n-j', (int) $nextYear . '-' . (int) $nextMonth . '-1') : false;
+$targetMonthStarted = $targetStartDate ? date('Y-m-d') >= $targetStartDate->format('Y-m-d') : false;
+$targetLabelPrefix = $isDraft ? 'Calon Target' : 'Target Resmi';
 ?>
 <style>
     .rfs-readiness-shell { background:#f4f7fb; }
@@ -344,9 +348,28 @@ if ($nextMonth > 12) {
                     </div>
                 <?php endif; ?>
 
+                <?php if ($isSummaryMode && !empty($period)): ?>
+                    <div class="alert alert-light border d-flex flex-wrap justify-content-between align-items-center">
+                        <div>
+                            <strong>Preview <?= rfs_readiness_h($targetLabelPrefix) ?> <?= rfs_readiness_h($targetMonthLabel) ?>.</strong>
+                            <?php if ($isDraft): ?>
+                                Dashboard draft menampilkan semua kandidat: <?= number_format((float) ($checklistStatus['total'] ?? 0), 0, ',', '.') ?> cluster. Sudah <strong>CONFIRMED</strong>: <?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?>.
+                            <?php else: ?>
+                                Dashboard locked hanya menghitung target resmi <strong>CONFIRMED</strong>: <?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?> cluster.
+                            <?php endif; ?>
+                            <?php if (!empty($checklistStatus['belum'])): ?>
+                                <span class="text-muted"><?= number_format((float) ($checklistStatus['belum'] ?? 0), 0, ',', '.') ?> cluster masih BELUM dan belum masuk <?= $isDraft ? 'calon target yang siap lock' : 'target resmi' ?>.</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($targetMonthStarted && $isDraft): ?>
+                            <span class="badge badge-warning mt-2 mt-md-0">Target month sudah berjalan</span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <div class="row">
-                    <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">Cluster</div><div class="kpi-value"><?= number_format((float) ($summary['total_cluster'] ?? 0), 0, ',', '.') ?></div></div></div></div>
-                    <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">HP DRM</div><div class="kpi-value"><?= number_format((float) ($summary['total_hp'] ?? 0), 0, ',', '.') ?></div></div></div></div>
+                    <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label"><?= rfs_readiness_h($targetLabelPrefix) ?></div><div class="kpi-value"><?= number_format((float) ($summary['total_cluster'] ?? 0), 0, ',', '.') ?></div></div></div></div>
+                    <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">HP <?= rfs_readiness_h($targetLabelPrefix) ?></div><div class="kpi-value"><?= number_format((float) ($summary['total_hp'] ?? 0), 0, ',', '.') ?></div></div></div></div>
                     <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">Prioritas 1</div><div class="kpi-value"><?= number_format((float) ($summary['priority_1_hp'] ?? 0), 0, ',', '.') ?></div></div></div></div>
                     <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">Prioritas 2</div><div class="kpi-value"><?= number_format((float) ($summary['priority_2_hp'] ?? 0), 0, ',', '.') ?></div></div></div></div>
                     <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">Actual RFS</div><div class="kpi-value"><?= number_format((float) ($summary['rfs_hp'] ?? 0), 0, ',', '.') ?></div></div></div></div>
@@ -355,7 +378,7 @@ if ($nextMonth > 12) {
                     <div class="col-md-2 col-6"><div class="card rfs-kpi"><div class="card-body"><div class="kpi-label">Shifted Out</div><div class="kpi-value"><?= number_format((float) ($summary['shifted_out_hp'] ?? 0), 0, ',', '.') ?></div><div class="small text-muted"><?= number_format((float) ($summary['shifted_out_count'] ?? 0), 0, ',', '.') ?> cluster</div></div></div></div>
                 </div>
 
-                <?php if ($isSummaryMode && $canHoManage && (int) ($summary['total_cluster'] ?? 0) === 0): ?>
+                <?php if ($isSummaryMode && $canHoManage && (int) ($checklistStatus['total'] ?? 0) === 0): ?>
                     <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center">
                         <div>
                             <strong>Meeting period ini belum punya cluster readiness.</strong>
@@ -526,6 +549,9 @@ if ($nextMonth > 12) {
                             </ul>
                         </div>
                         <div class="card-body">
+                            <div class="small text-muted mb-2">
+                                <?= $isDraft ? 'Summary ini menampilkan semua kandidat DRM pada period draft. Angka target resmi baru terbentuk setelah cluster di-confirm dan period di-lock.' : 'Summary ini menampilkan target resmi yang sudah confirmed pada period terkunci/closed.' ?>
+                            </div>
                             <div class="tab-content">
                                 <?php
                                 $summaryColumns = function ($rows, $scope) use ($selectedPeriodId) {
@@ -1116,24 +1142,27 @@ if ($nextMonth > 12) {
             <input type="hidden" name="scope" value="<?= rfs_readiness_h($selectedScope) ?>">
             <input type="hidden" name="city" value="<?= rfs_readiness_h($selectedCity) ?>">
             <input type="hidden" name="regional" value="<?= rfs_readiness_h($selectedRegional) ?>">
-            <div class="modal-header rfs-modal-header-warning"><h5 class="modal-title"><i class="fas fa-lock mr-2"></i>Lock Meeting Period</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+            <div class="modal-header rfs-modal-header-warning"><h5 class="modal-title"><i class="fas fa-lock mr-2"></i>Lock Target <?= rfs_readiness_h($targetMonthLabel) ?></h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
             <div class="modal-body">
                 <div class="rfs-form-section mb-0">
                     <div class="row text-center">
-                        <div class="col-4"><div class="small text-muted font-weight-bold">Total</div><div class="h5"><?= number_format((float) ($checklistStatus['total'] ?? 0), 0, ',', '.') ?></div></div>
-                        <div class="col-4"><div class="small text-muted font-weight-bold">CONFIRMED</div><div class="h5 text-success"><?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?></div></div>
+                        <div class="col-4"><div class="small text-muted font-weight-bold">KANDIDAT</div><div class="h5"><?= number_format((float) ($checklistStatus['total'] ?? 0), 0, ',', '.') ?></div></div>
+                        <div class="col-4"><div class="small text-muted font-weight-bold">AKAN DI-LOCK</div><div class="h5 text-success"><?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?></div></div>
                         <div class="col-4"><div class="small text-muted font-weight-bold">BELUM</div><div class="h5 text-danger"><?= number_format((float) ($checklistStatus['belum'] ?? 0), 0, ',', '.') ?></div></div>
                     </div>
+                    <?php if ($targetMonthStarted): ?>
+                        <div class="alert alert-info mt-3 mb-0">Hari ini sudah masuk bulan target <?= rfs_readiness_h($targetMonthLabel) ?>. Lock tetap mengikuti meeting period yang dipilih, bukan otomatis pindah ke bulan berikutnya.</div>
+                    <?php endif; ?>
                     <?php if (!empty($checklistStatus['belum'])): ?>
-                        <div class="alert alert-warning mt-3 mb-0">Masih ada cluster BELUM CONFIRMED. Meeting period tetap bisa di-lock, tapi setelah lock perubahan harus melalui flow Change Request.</div>
+                        <div class="alert alert-warning mt-3 mb-0">Cluster BELUM tidak ikut dikunci. Setelah lock, hanya cluster CONFIRMED yang menjadi target resmi <?= rfs_readiness_h($targetMonthLabel) ?>; perubahan berikutnya harus melalui flow Change Request.</div>
                     <?php else: ?>
-                        <div class="alert alert-success mt-3 mb-0">Semua cluster sudah CONFIRMED. Meeting period siap di-lock.</div>
+                        <div class="alert alert-success mt-3 mb-0">Semua cluster sudah CONFIRMED. Target <?= rfs_readiness_h($targetMonthLabel) ?> siap di-lock.</div>
                     <?php endif; ?>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline-secondary" type="button" data-dismiss="modal">Batal</button>
-                <button class="btn btn-warning" type="submit" onclick="return confirm('Lock baseline meeting period ini?');"><i class="fas fa-lock"></i> Lock Meeting Period</button>
+                <button class="btn btn-warning" type="submit" onclick="return confirm('Lock target confirmed untuk <?= rfs_readiness_h($targetMonthLabel) ?>?');"><i class="fas fa-lock"></i> Lock Target Confirmed</button>
             </div>
         </form>
     </div>

@@ -77,6 +77,7 @@ class RFS_Readiness_MyRep extends CI_Controller
             ? $this->MRFS_Readiness_MyRep->getCandidateClustersPage($selectedPeriodId, $selectedCity, 0, 1, '', [], $selectedRegional)
             : ['recordsFiltered' => 0];
         $cityOptions = $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getCityOptions($selectedPeriodId) : [];
+        $targetConfirmedOnly = strtoupper((string) ($period['status_period'] ?? '')) !== 'DRAFT';
 
         $data = [
             'title' => 'RFS Readiness MyRep',
@@ -93,13 +94,13 @@ class RFS_Readiness_MyRep extends CI_Controller
             'cityOptions' => array_values($cityOptions),
             'items' => $items,
             'candidateCount' => (int) ($candidatePage['recordsFiltered'] ?? 0),
-            'summary' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getPeriodSummary($selectedPeriodId, $selectedCity, $selectedRegional, $selectedPriority, $selectedFinalStatus) : [],
+            'summary' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getPeriodSummary($selectedPeriodId, $selectedCity, $selectedRegional, $selectedPriority, $selectedFinalStatus, $targetConfirmedOnly) : [],
             'checklistStatus' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getChecklistStatusSummary($selectedPeriodId) : ['fix' => 0, 'belum' => 0, 'total' => 0],
-            'weeklySummary' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getWeeklyTargetRealization($selectedPeriodId, $selectedCity, $selectedRegional) : ['weeks' => []],
-            'citySummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaSummaries($selectedPeriodId, 'city') : [],
-            'regionalSummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaSummaries($selectedPeriodId, 'regional') : [],
-            'cityWeeklySummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($selectedPeriodId, 'city') : [],
-            'regionalWeeklySummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($selectedPeriodId, 'regional') : [],
+            'weeklySummary' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getWeeklyTargetRealization($selectedPeriodId, $selectedCity, $selectedRegional, $targetConfirmedOnly) : ['weeks' => []],
+            'citySummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaSummaries($selectedPeriodId, 'city', $targetConfirmedOnly) : [],
+            'regionalSummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaSummaries($selectedPeriodId, 'regional', $targetConfirmedOnly) : [],
+            'cityWeeklySummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($selectedPeriodId, 'city', $targetConfirmedOnly) : [],
+            'regionalWeeklySummaries' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($selectedPeriodId, 'regional', $targetConfirmedOnly) : [],
             'pendingRequests' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getPendingRequests($selectedPeriodId) : [],
             'notifications' => $this->MRFS_Readiness_MyRep->getUserNotifications($userId, 12),
             'aspectFields' => $this->MRFS_Readiness_MyRep->getAspectFields(),
@@ -133,7 +134,8 @@ class RFS_Readiness_MyRep extends CI_Controller
             return;
         }
 
-        $periodWeekly = $this->MRFS_Readiness_MyRep->getWeeklyTargetRealization($periodId);
+        $targetConfirmedOnly = strtoupper((string) ($period['status_period'] ?? '')) !== 'DRAFT';
+        $periodWeekly = $this->MRFS_Readiness_MyRep->getWeeklyTargetRealization($periodId, '', '', $targetConfirmedOnly);
         $periodSlug = sprintf('%04d-%02d', (int) $period['year_num'], (int) $period['month_num']);
         $periodLabel = $this->readinessPeriodDisplayLabel($period);
         $this->loadPHPExcel();
@@ -147,8 +149,8 @@ class RFS_Readiness_MyRep extends CI_Controller
             $excel->setActiveSheetIndex(0),
             'Summary Kota',
             'city',
-            $this->MRFS_Readiness_MyRep->getAreaSummaries($periodId, 'city'),
-            $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($periodId, 'city'),
+            $this->MRFS_Readiness_MyRep->getAreaSummaries($periodId, 'city', $targetConfirmedOnly),
+            $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($periodId, 'city', $targetConfirmedOnly),
             $periodWeekly,
             $periodLabel
         );
@@ -158,8 +160,8 @@ class RFS_Readiness_MyRep extends CI_Controller
             $regionalSheet,
             'Summary Regional',
             'regional',
-            $this->MRFS_Readiness_MyRep->getAreaSummaries($periodId, 'regional'),
-            $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($periodId, 'regional'),
+            $this->MRFS_Readiness_MyRep->getAreaSummaries($periodId, 'regional', $targetConfirmedOnly),
+            $this->MRFS_Readiness_MyRep->getAreaWeeklySummaries($periodId, 'regional', $targetConfirmedOnly),
             $periodWeekly,
             $periodLabel
         );
@@ -185,6 +187,16 @@ class RFS_Readiness_MyRep extends CI_Controller
         $targetDate = clone $meetingDate;
         $targetDate->modify('+1 month');
         return 'Meeting ' . $meetingDate->format('F Y') . ' / Target ' . $targetDate->format('F Y');
+    }
+
+    private function targetYearMonthFromMeetingPeriod(array $period)
+    {
+        $meetingDate = DateTime::createFromFormat('!Y-n-j', (int) ($period['year_num'] ?? 0) . '-' . (int) ($period['month_num'] ?? 0) . '-1');
+        if (!$meetingDate) {
+            return ['year' => 0, 'month' => 0];
+        }
+        $meetingDate->modify('+1 month');
+        return ['year' => (int) $meetingDate->format('Y'), 'month' => (int) $meetingDate->format('n')];
     }
 
     private function populateReadinessSummarySheet($sheet, $title, $scope, array $statusRows, array $weeklyRows, array $periodWeekly, $periodLabel)
@@ -466,6 +478,8 @@ class RFS_Readiness_MyRep extends CI_Controller
             'Provinsi',
             'Kota',
             'Batch Approval',
+            'Tanggal Pengajuan Donasi',
+            'Tanggal Pembayaran Donasi',
             'Cluster Code',
             'Cluster',
             'OLT',
@@ -519,6 +533,8 @@ class RFS_Readiness_MyRep extends CI_Controller
                 (string) ($item['province_name'] ?? ''),
                 (string) ($item['city_name'] ?? ''),
                 (string) ($item['batch_approval_label'] ?? 'NY'),
+                (string) ($item['donation_submission_date'] ?? ''),
+                (string) ($item['donation_payment_date'] ?? ''),
                 (string) ($item['cluster_code'] ?? ''),
                 (string) ($item['cluster_name'] ?? ''),
                 (string) ($item['nama_olt'] ?? ''),
@@ -569,22 +585,23 @@ class RFS_Readiness_MyRep extends CI_Controller
             ->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER)
             ->setWrapText(true);
         $sheet->getStyle('A5:' . $lastColumn . $lastDataRow)->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
-        $sheet->getStyle('G5:G' . $lastDataRow)->getAlignment()->setWrapText(true);
-        $sheet->getStyle('AA5:AA' . $lastDataRow)->getAlignment()->setWrapText(true);
+        $sheet->getStyle('I5:I' . $lastDataRow)->getAlignment()->setWrapText(true);
+        $sheet->getStyle('AC5:AC' . $lastDataRow)->getAlignment()->setWrapText(true);
 
         $this->setExcelFill($sheet, 'A1:' . $lastColumn . '1', '0F3F93', 'FFFFFF');
         $this->setExcelFill($sheet, 'A2:' . $lastColumn . '2', 'DBEAFE', '0F3F93');
         $this->setExcelFill($sheet, 'A4:' . $lastColumn . '4', 'EAF1F8', '1F2A44');
-        $this->setExcelFill($sheet, 'K4:O4', 'DBEAFE', '1457B8');
-        $this->setExcelFill($sheet, 'P4:Q4', '8B5CF6', 'FFFFFF');
-        $this->setExcelFill($sheet, 'R4:T4', 'F59E0B', '111827');
-        $this->setExcelFill($sheet, 'X4:X4', 'DCFCE7', '11723D');
+        $this->setExcelFill($sheet, 'F4:G4', 'FEF3C7', '92400E');
+        $this->setExcelFill($sheet, 'M4:Q4', 'DBEAFE', '1457B8');
+        $this->setExcelFill($sheet, 'R4:S4', '8B5CF6', 'FFFFFF');
+        $this->setExcelFill($sheet, 'T4:V4', 'F59E0B', '111827');
+        $this->setExcelFill($sheet, 'Z4:Z4', 'DCFCE7', '11723D');
 
         for ($i = 0; $i <= $lastColumnIndex; $i++) {
             $sheet->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($i))->setAutoSize(true);
         }
         if ($lastDataRow >= 5) {
-            $sheet->getStyle('I5:I' . $lastDataRow)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->getStyle('K5:K' . $lastDataRow)->getNumberFormat()->setFormatCode('#,##0');
         }
     }
 
@@ -725,13 +742,14 @@ class RFS_Readiness_MyRep extends CI_Controller
         $orderRows = (array) $this->input->get('order');
         $search = (string) ($searchInput['value'] ?? '');
         $orderInput = (array) ($orderRows[0] ?? []);
-
-        $page = $periodId > 0
-            ? $this->MRFS_Readiness_MyRep->getItemsPage($periodId, $city, $priority, $finalStatus, $start, $length, $search, $orderInput, $regional)
-            : ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
-
         $period = $periodId > 0 ? $this->MRFS_Readiness_MyRep->getPeriodById($periodId) : [];
         $periodStatus = strtoupper((string) ($period['status_period'] ?? ''));
+        $targetViewOnly = $periodStatus !== '' && $periodStatus !== 'DRAFT';
+
+        $page = $periodId > 0
+            ? $this->MRFS_Readiness_MyRep->getItemsPage($periodId, $city, $priority, $finalStatus, $start, $length, $search, $orderInput, $regional, $targetViewOnly)
+            : ['recordsTotal' => 0, 'recordsFiltered' => 0, 'rows' => []];
+
         $canHoManage = $this->isRfsHo();
         $canSubmitChange = $this->hasRole('SPV_AREA');
 
@@ -740,7 +758,7 @@ class RFS_Readiness_MyRep extends CI_Controller
             $row = $this->enrichTargetPeriodState($row, $period);
             $row['can_edit_baseline'] = $canHoManage
                 && $periodStatus !== 'CLOSED'
-                && ($periodStatus === 'DRAFT' || (strtoupper((string) ($row['source_type'] ?? '')) === 'LATE_ADDITION' && empty($row['baseline_week'])));
+                && ($periodStatus === 'DRAFT' || (strtoupper((string) ($row['source_type'] ?? '')) === 'LATE_ADDITION' && empty($row['checklist_completed_at'])));
             $row['can_submit_change'] = $canSubmitChange && $periodStatus === 'LOCKED' && $periodStatus !== 'CLOSED';
             $rows[] = $row;
         }
@@ -767,6 +785,11 @@ class RFS_Readiness_MyRep extends CI_Controller
                 }
                 $batchRow = (array) ($batchCache[$clusterId] ?? []);
                 $displayStatus = strtoupper(trim((string) ($batchRow['display_staging_status'] ?? $batchRow['staging_status'] ?? $displayStatus)));
+                $row['donation_submission_date'] = $this->firstFilledValue($batchRow, ['submission_date', 'submitted_to_ho_at', 'astri_initial_submitted_at', 'created_at']);
+                $row['donation_payment_date'] = $this->firstFilledValue($batchRow, ['released_at']);
+            } else {
+                $row['donation_submission_date'] = '';
+                $row['donation_payment_date'] = '';
             }
 
             if ($displayStatus === '') {
@@ -783,6 +806,18 @@ class RFS_Readiness_MyRep extends CI_Controller
         unset($row);
 
         return $rows;
+    }
+
+    private function firstFilledValue(array $row, array $keys)
+    {
+        foreach ($keys as $key) {
+            $value = trim((string) ($row[$key] ?? ''));
+            if ($value !== '' && $value !== '0000-00-00' && $value !== '0000-00-00 00:00:00') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     private function enrichTargetPeriodRows(array $rows, array $period)
@@ -802,8 +837,9 @@ class RFS_Readiness_MyRep extends CI_Controller
         if ($plannedDate !== '' && !empty($period)) {
             $targetYear = (int) date('Y', strtotime($plannedDate));
             $targetMonth = (int) date('n', strtotime($plannedDate));
-            $periodYear = (int) ($period['year_num'] ?? 0);
-            $periodMonth = (int) ($period['month_num'] ?? 0);
+            $periodTarget = $this->targetYearMonthFromMeetingPeriod($period);
+            $periodYear = (int) ($periodTarget['year'] ?? 0);
+            $periodMonth = (int) ($periodTarget['month'] ?? 0);
             if ($targetYear > $periodYear || ($targetYear === $periodYear && $targetMonth > $periodMonth)) {
                 $state = 'SHIFTED_OUT';
                 $label = 'SHIFTED OUT';
@@ -881,8 +917,19 @@ class RFS_Readiness_MyRep extends CI_Controller
     {
         $this->requireRfsHo();
         $periodId = (int) $this->input->post('period_id');
+        $checklistStatus = $periodId > 0
+            ? $this->MRFS_Readiness_MyRep->getChecklistStatusSummary($periodId)
+            : ['fix' => 0, 'belum' => 0, 'total' => 0];
+        if ((int) ($checklistStatus['fix'] ?? 0) <= 0) {
+            $this->session->set_flashdata('error', 'Period belum bisa di-lock karena belum ada cluster CONFIRMED sebagai target resmi.');
+            redirect($this->periodUrl($periodId));
+            return;
+        }
         $ok = $this->MRFS_Readiness_MyRep->lockPeriod($periodId, $this->userId());
-        $this->session->set_flashdata($ok ? 'success' : 'error', $ok ? 'Period berhasil di-lock.' : 'Period gagal di-lock.');
+        $message = $ok
+            ? 'Period berhasil di-lock. Target resmi: ' . number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') . ' cluster CONFIRMED; belum confirmed: ' . number_format((float) ($checklistStatus['belum'] ?? 0), 0, ',', '.') . ' cluster.'
+            : 'Period gagal di-lock.';
+        $this->session->set_flashdata($ok ? 'success' : 'error', $message);
         redirect($this->periodUrl($periodId));
     }
 
