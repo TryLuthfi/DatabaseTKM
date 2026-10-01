@@ -19,6 +19,7 @@ class RFS_Readiness_MyRep extends CI_Controller
                 'saveItemBaseline' => 'EDIT',
                 'lockPeriod' => 'EDIT',
                 'unlockPeriod' => 'EDIT',
+                'takeOutLateAddition' => 'EDIT',
                 'submitChangeRequest' => 'EDIT',
                 'reviewChangeRequest' => 'APPROVAL',
                 'syncActualRfs' => 'EDIT',
@@ -68,6 +69,7 @@ class RFS_Readiness_MyRep extends CI_Controller
         $period = $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getPeriodById($selectedPeriodId) : [];
         if (!empty($period)) {
             $this->MRFS_Readiness_MyRep->syncActualRfsForPeriod($selectedPeriodId, $userId);
+            $this->MRFS_Readiness_MyRep->syncInactiveClustersForPeriod($selectedPeriodId, $userId);
         }
 
         $items = $selectedPeriodId > 0
@@ -94,6 +96,7 @@ class RFS_Readiness_MyRep extends CI_Controller
             'cityOptions' => array_values($cityOptions),
             'items' => $items,
             'candidateCount' => (int) ($candidatePage['recordsFiltered'] ?? 0),
+            'lateAdditionPending' => $this->getLateAdditionPendingSummary($items),
             'summary' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getPeriodSummary($selectedPeriodId, $selectedCity, $selectedRegional, $selectedPriority, $selectedFinalStatus, $targetConfirmedOnly) : [],
             'checklistStatus' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getChecklistStatusSummary($selectedPeriodId) : ['fix' => 0, 'belum' => 0, 'total' => 0],
             'weeklySummary' => $selectedPeriodId > 0 ? $this->MRFS_Readiness_MyRep->getWeeklyTargetRealization($selectedPeriodId, $selectedCity, $selectedRegional, $targetConfirmedOnly) : ['weeks' => []],
@@ -114,6 +117,39 @@ class RFS_Readiness_MyRep extends CI_Controller
         $this->load->view('RFS_Readiness_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    private function getLateAdditionPendingSummary(array $items)
+    {
+        $summary = [
+            'count' => 0,
+            'hp' => 0,
+            'cities' => [],
+        ];
+        foreach ($items as $item) {
+            if (
+                strtoupper((string) ($item['source_type'] ?? '')) !== 'LATE_ADDITION'
+                || strtoupper((string) ($item['final_status'] ?? '')) !== 'OPEN'
+                || !empty($item['checklist_completed_at'])
+            ) {
+                continue;
+            }
+            $city = strtoupper(trim((string) ($item['city_name'] ?? '-'))) ?: '-';
+            if (!isset($summary['cities'][$city])) {
+                $summary['cities'][$city] = ['label' => $city, 'count' => 0, 'hp' => 0];
+            }
+            $hp = (float) ($item['homepass_drm_snapshot'] ?? 0);
+            $summary['count']++;
+            $summary['hp'] += $hp;
+            $summary['cities'][$city]['count']++;
+            $summary['cities'][$city]['hp'] += $hp;
+        }
+        uasort($summary['cities'], static function ($left, $right) {
+            return strnatcasecmp((string) $left['label'], (string) $right['label']);
+        });
+        $summary['cities'] = array_values($summary['cities']);
+
+        return $summary;
     }
 
     public function exportWeeklySummary()
@@ -167,9 +203,15 @@ class RFS_Readiness_MyRep extends CI_Controller
         );
 
         $detailSheet = $excel->createSheet();
+        $detailItems = array_values(array_filter($this->MRFS_Readiness_MyRep->getItems($periodId), static function ($row) {
+            $inactiveStatuses = ['HOLD', 'REJECTED', 'CANCEL', 'CANCELED', 'CANCELLED'];
+            return strtoupper((string) ($row['final_status'] ?? '')) !== 'CANCELLED_BY_LATE_RFS'
+                && !in_array(strtoupper(trim((string) ($row['status_current'] ?? ''))), $inactiveStatuses, true)
+                && !in_array(strtoupper(trim((string) ($row['batch_approval_status'] ?? ''))), $inactiveStatuses, true);
+        }));
         $this->populateReadinessDetailSheet(
             $detailSheet,
-            $this->enrichTargetPeriodRows($this->enrichBatchApprovalDisplayRows($this->MRFS_Readiness_MyRep->getItems($periodId)), $period),
+            $this->enrichTargetPeriodRows($this->enrichBatchApprovalDisplayRows($detailItems), $period),
             $periodLabel
         );
 
@@ -759,6 +801,11 @@ class RFS_Readiness_MyRep extends CI_Controller
             $row['can_edit_baseline'] = $canHoManage
                 && $periodStatus !== 'CLOSED'
                 && ($periodStatus === 'DRAFT' || (strtoupper((string) ($row['source_type'] ?? '')) === 'LATE_ADDITION' && empty($row['checklist_completed_at'])));
+            $row['can_take_out_late_addition'] = $canHoManage
+                && $periodStatus === 'LOCKED'
+                && strtoupper((string) ($row['source_type'] ?? '')) === 'LATE_ADDITION'
+                && strtoupper((string) ($row['final_status'] ?? '')) === 'OPEN'
+                && empty($row['checklist_completed_at']);
             $row['can_submit_change'] = $canSubmitChange && $periodStatus === 'LOCKED' && $periodStatus !== 'CLOSED';
             $rows[] = $row;
         }
@@ -940,6 +987,25 @@ class RFS_Readiness_MyRep extends CI_Controller
         $remark = trim((string) $this->input->post('unlock_remark'));
         $result = $this->MRFS_Readiness_MyRep->unlockPeriod($periodId, $remark, $this->userId());
         $this->session->set_flashdata(!empty($result['status']) ? 'success' : 'error', (string) ($result['message'] ?? 'Unlock period gagal.'));
+        redirect($this->periodUrl($periodId));
+    }
+
+    public function takeOutLateAddition()
+    {
+        $this->requireRfsHo();
+        $itemId = (int) $this->input->post('item_id');
+        $periodId = (int) $this->input->post('period_id');
+        $remark = trim((string) $this->input->post('remark'));
+        $result = $this->MRFS_Readiness_MyRep->takeOutLateAddition($itemId, $remark, $this->userId());
+        if ($this->isAjaxRequest()) {
+            $this->outputJson([
+                'status' => !empty($result['status']),
+                'message' => (string) ($result['message'] ?? 'Take out gagal.'),
+            ]);
+            return;
+        }
+
+        $this->session->set_flashdata(!empty($result['status']) ? 'success' : 'error', (string) ($result['message'] ?? 'Take out gagal.'));
         redirect($this->periodUrl($periodId));
     }
 

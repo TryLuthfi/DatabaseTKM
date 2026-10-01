@@ -95,6 +95,9 @@ $targetMonthLabel = !empty($period) ? rfs_readiness_target_month_label($period['
 $targetStartDate = !empty($period) ? DateTime::createFromFormat('!Y-n-j', (int) $nextYear . '-' . (int) $nextMonth . '-1') : false;
 $targetMonthStarted = $targetStartDate ? date('Y-m-d') >= $targetStartDate->format('Y-m-d') : false;
 $targetLabelPrefix = $isDraft ? 'Calon Target' : 'Target Resmi';
+$flashSuccess = (string) $this->session->flashdata('success');
+$flashError = (string) $this->session->flashdata('error');
+$this->session->unset_userdata(['success', 'error']);
 ?>
 <style>
     .rfs-readiness-shell { background:#f4f7fb; }
@@ -232,11 +235,11 @@ $targetLabelPrefix = $isDraft ? 'Calon Target' : 'Target Resmi';
                 </div>
             <?php endif; ?>
 
-            <?php if ($this->session->flashdata('success')): ?>
-                <div class="alert alert-success"><?= rfs_readiness_h($this->session->flashdata('success')) ?></div>
+            <?php if ($flashSuccess !== ''): ?>
+                <div class="alert alert-success"><?= rfs_readiness_h($flashSuccess) ?></div>
             <?php endif; ?>
-            <?php if ($this->session->flashdata('error')): ?>
-                <div class="alert alert-danger"><?= rfs_readiness_h($this->session->flashdata('error')) ?></div>
+            <?php if ($flashError !== ''): ?>
+                <div class="alert alert-danger"><?= rfs_readiness_h($flashError) ?></div>
             <?php endif; ?>
 
             <?php if ($isReady): ?>
@@ -365,6 +368,39 @@ $targetLabelPrefix = $isDraft ? 'Calon Target' : 'Target Resmi';
                             <span class="badge badge-warning mt-2 mt-md-0">Target month sudah berjalan</span>
                         <?php endif; ?>
                     </div>
+                    <?php if (!$isDraft && !empty($lateAdditionPending['count'])): ?>
+                        <div class="card border-warning mb-3">
+                            <div class="card-body py-3">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge badge-warning mr-2"><?= number_format((float) ($lateAdditionPending['count'] ?? 0), 0, ',', '.') ?> Late Addition</span>
+                                    <strong>Belum CONFIRMED</strong>
+                                    <span class="text-muted ml-1">dan belum ikut target resmi sampai checklist di-confirm.</span>
+                                </div>
+                                <button class="btn btn-sm btn-warning text-dark mt-2 mt-md-0" type="button" data-toggle="collapse" data-target="#lateAdditionPendingSummary">
+                                    <i class="fas fa-city"></i> Detail Kota
+                                </button>
+                            </div>
+                            <div class="collapse mt-3" id="lateAdditionPendingSummary">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0 bg-white">
+                                        <thead class="thead-light"><tr><th>Kota</th><th class="text-right">Cluster</th><th class="text-right">HP</th><th class="text-center">Aksi</th></tr></thead>
+                                        <tbody>
+                                            <?php foreach ((array) ($lateAdditionPending['cities'] ?? []) as $cityRow): ?>
+                                                <tr>
+                                                    <td><?= rfs_readiness_h($cityRow['label'] ?? '-') ?></td>
+                                                    <td class="text-right"><?= number_format((float) ($cityRow['count'] ?? 0), 0, ',', '.') ?></td>
+                                                    <td class="text-right"><?= number_format((float) ($cityRow['hp'] ?? 0), 0, ',', '.') ?></td>
+                                                    <td class="text-center"><a class="btn btn-xs btn-outline-primary" href="<?= rfs_readiness_summary_url($selectedPeriodId, 'city', (string) ($cityRow['label'] ?? '')) ?>">Buka Detail</a></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <div class="row">
@@ -1630,6 +1666,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (row.can_submit_change) {
                         actions.push('<button type="button" class="btn btn-sm btn-outline-warning js-cr" data-toggle="modal" data-target="#modalChangeRequest" data-item-id="' + h(row.id_item) + '"><i class="fas fa-exchange-alt"></i></button>');
                     }
+                    if (row.can_take_out_late_addition) {
+                        actions.push('<button type="button" class="btn btn-sm btn-outline-danger js-takeout-late-addition" data-item-id="' + h(row.id_item) + '" title="Take out late addition"><i class="fas fa-minus-circle"></i></button>');
+                    }
                     return actions.length ? '<div class="btn-group btn-group-sm">' + actions.join('') + '</div>' : '<span class="text-muted">-</span>';
                 }}
             ]
@@ -1648,6 +1687,34 @@ document.addEventListener('DOMContentLoaded', function () {
             window.setTimeout(adjustReadinessTables, 520);
         }
         $(window).on('resize', scheduleAdjustReadinessTables);
+        $(document).on('click', '.js-takeout-late-addition', function () {
+            var itemId = this.getAttribute('data-item-id') || '';
+            var row = readinessRows[itemId] || {};
+            var clusterName = row.cluster_name || 'cluster ini';
+            var remark = window.prompt('Take out late addition ' + clusterName + '? Isi remark singkat:', 'Salah pilih late addition');
+            if (remark === null) {
+                return;
+            }
+            $.ajax({
+                url: '<?= base_url('RFS_Readiness_MyRep/takeOutLateAddition') ?>',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    period_id: selectedPeriodId,
+                    item_id: itemId,
+                    remark: remark
+                },
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            }).done(function (response) {
+                var ok = !!(response && response.status);
+                showRfsToast(ok ? 'success' : 'error', response && response.message ? response.message : (ok ? 'Late addition sudah di-take out.' : 'Take out gagal.'));
+                if (ok) {
+                    refreshReadinessSurface();
+                }
+            }).fail(function () {
+                showRfsToast('error', 'Take out gagal diproses.');
+            });
+        });
         $(document).on('collapsed.lte.pushmenu shown.lte.pushmenu expanded.lte.pushmenu', scheduleAdjustReadinessTables);
         $('.content-wrapper, body').on('transitionend webkitTransitionEnd', scheduleAdjustReadinessTables);
         scheduleAdjustReadinessTables();

@@ -138,6 +138,7 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
 
         $rows = $this->getItems($periodId, $city, $priority, $finalStatus, $regional);
+        $rows = $this->filterActiveTargetRows($rows);
         if ($confirmedOnly) {
             $rows = $this->filterConfirmedTargetRows($rows);
         }
@@ -180,11 +181,24 @@ class MRFS_Readiness_MyRep extends CI_Model
         return $summary;
     }
 
+    private function inactiveStatusSql($clusterAlias = 'c', $batchAlias = 'ba', $includeBatch = true)
+    {
+        $clusterAlias = trim((string) $clusterAlias) !== '' ? trim((string) $clusterAlias) : 'c';
+        $batchAlias = trim((string) $batchAlias) !== '' ? trim((string) $batchAlias) : 'ba';
+        $sql = "UPPER(COALESCE({$clusterAlias}.status_current, '')) IN ('HOLD','REJECTED','CANCEL','CANCELED','CANCELLED')";
+        if ($includeBatch) {
+            $sql .= " OR UPPER(COALESCE({$batchAlias}.staging_status, '')) IN ('HOLD','REJECTED','CANCEL','CANCELED','CANCELLED')";
+        }
+
+        return '(' . $sql . ')';
+    }
+
     public function getAreaSummaries($periodId, $groupBy = 'city', $confirmedOnly = false)
     {
         $groupBy = strtolower(trim((string) $groupBy));
         $labelField = $groupBy === 'regional' ? 'regional_name' : 'city_name';
         $rows = $this->getItems($periodId);
+        $rows = $this->filterActiveTargetRows($rows);
         if ($confirmedOnly) {
             $rows = $this->filterConfirmedTargetRows($rows);
         }
@@ -284,6 +298,7 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
 
         $rows = $this->getItems($periodId, $city, '', '', $regional);
+        $rows = $this->filterActiveTargetRows($rows);
         if ($confirmedOnly) {
             $rows = $this->filterConfirmedTargetRows($rows);
         }
@@ -332,6 +347,7 @@ class MRFS_Readiness_MyRep extends CI_Model
             return (string) ($row['week'] ?? '');
         }, (array) ($periodWeekly['weeks'] ?? []));
         $rows = $this->getItems($periodId);
+        $rows = $this->filterActiveTargetRows($rows);
         if ($confirmedOnly) {
             $rows = $this->filterConfirmedTargetRows($rows);
         }
@@ -412,6 +428,9 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
 
         $periodId = (int) $periodId;
+        $hasBatchApproval = $this->db->table_exists('tb_myrep_batch_approval');
+        $batchJoinSql = $hasBatchApproval ? 'LEFT JOIN tb_myrep_batch_approval ba ON ba.id_myrep_cluster = c.id_myrep_cluster' : '';
+        $inactiveSql = $this->inactiveStatusSql('c', 'ba', $hasBatchApproval);
         $sql = "
             SELECT DISTINCT UPPER(TRIM(c.city_name)) AS city_name
             FROM tb_myrep_cluster c
@@ -422,10 +441,12 @@ class MRFS_Readiness_MyRep extends CI_Model
             SELECT DISTINCT UPPER(TRIM(c.city_name)) AS city_name
             FROM tb_myrep_cluster c
             INNER JOIN tb_myrep_drm d ON d.id_myrep_cluster = c.id_myrep_cluster
+            {$batchJoinSql}
             LEFT JOIN tb_myrep_rfs_readiness_item i ON i.id_period = ? AND i.id_myrep_cluster = c.id_myrep_cluster
             WHERE i.id_item IS NULL
               AND COALESCE(d.homepass_drm, 0) > 0
               AND UPPER(COALESCE(c.status_current, '')) NOT IN ('RFS','ATP','CHECKLIST DOKUMENT','DONE')
+              AND NOT {$inactiveSql}
               AND TRIM(COALESCE(c.city_name, '')) <> ''
             ORDER BY city_name ASC
         ";
@@ -512,6 +533,7 @@ class MRFS_Readiness_MyRep extends CI_Model
     public function getItemsPage($periodId, $city = '', $priority = '', $finalStatus = '', $start = 0, $length = 10, $search = '', array $order = [], $regional = '', $targetViewOnly = false)
     {
         $rows = $this->getItems($periodId, $city, $priority, $finalStatus, $regional);
+        $rows = $this->filterActiveTargetRows($rows);
         if ($targetViewOnly) {
             $rows = array_values(array_filter($rows, static function ($row) {
                 return !(empty($row['checklist_completed_at']) && strtoupper((string) ($row['final_status'] ?? '')) === 'DROPPED');
@@ -618,6 +640,7 @@ class MRFS_Readiness_MyRep extends CI_Model
 
         $period = $this->getPeriodById($periodId);
         $isLockedPeriod = strtoupper((string) ($period['status_period'] ?? '')) === 'LOCKED';
+        $hasBatchApproval = $this->db->table_exists('tb_myrep_batch_approval');
         $hasRfsBridge = $this->db->table_exists('tb_rfs_myrep_cluster')
             && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster');
 
@@ -627,7 +650,11 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_rfs_readiness_item i', 'i.id_period = ' . (int) $periodId . ' AND i.id_myrep_cluster = c.id_myrep_cluster', 'left', false)
             ->where('COALESCE(d.homepass_drm, 0) >', 0)
-            ->where("UPPER(COALESCE(c.status_current, '')) NOT IN ('RFS','ATP','CHECKLIST DOKUMENT','DONE')", null, false);
+            ->where("UPPER(COALESCE(c.status_current, '')) NOT IN ('RFS','ATP','CHECKLIST DOKUMENT','DONE')", null, false)
+            ->where('NOT ' . $this->inactiveStatusSql('c', 'ba', $hasBatchApproval), null, false);
+        if ($hasBatchApproval) {
+            $this->db->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left');
+        }
         if ($isLockedPeriod) {
             $this->db
                 ->group_start()
@@ -827,6 +854,42 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
 
         return $saved;
+    }
+
+    public function takeOutLateAddition($itemId, $remark, $userId)
+    {
+        $item = $this->getItemById($itemId);
+        if (empty($item)) {
+            return ['status' => false, 'message' => 'Item late addition tidak ditemukan.'];
+        }
+        $period = $this->getPeriodById((int) $item['id_period']);
+        if (strtoupper((string) ($period['status_period'] ?? '')) !== 'LOCKED') {
+            return ['status' => false, 'message' => 'Take out hanya bisa untuk period LOCKED.'];
+        }
+        if (strtoupper((string) ($item['source_type'] ?? '')) !== 'LATE_ADDITION') {
+            return ['status' => false, 'message' => 'Hanya late addition yang bisa di-take out dari period locked.'];
+        }
+        if (!empty($item['checklist_completed_at'])) {
+            return ['status' => false, 'message' => 'Late addition yang sudah CONFIRMED tidak bisa di-take out langsung. Gunakan change request.'];
+        }
+        if (strtoupper((string) ($item['final_status'] ?? '')) !== 'OPEN') {
+            return ['status' => false, 'message' => 'Item ini sudah tidak aktif sebagai target.'];
+        }
+
+        $remark = trim((string) $remark);
+        if ($remark === '') {
+            $remark = 'Late addition di-take out dari target period locked.';
+        }
+        $oldPayload = $this->historyPayload($item);
+        $payload = [
+            'final_status' => 'DROPPED',
+            'updated_by' => (int) $userId,
+        ];
+        $this->db->where('id_item', (int) $itemId)->update('tb_myrep_rfs_readiness_item', $payload);
+        $updated = $this->getItemById($itemId);
+        $this->addHistory((int) $itemId, null, 'LATE_ADDITION_TAKE_OUT', json_encode($oldPayload), json_encode($this->historyPayload($updated)), $remark, $userId);
+
+        return ['status' => true, 'message' => 'Late addition berhasil di-take out.'];
     }
 
     public function createChangeRequest($itemId, array $payload, $fileData, $userId)
@@ -1192,6 +1255,7 @@ class MRFS_Readiness_MyRep extends CI_Model
             ->where('id_period', (int) $periodId)
             ->where('final_status <>', 'OPEN')
             ->where("NOT (final_status = 'DROPPED' AND checklist_completed_at IS NULL)", null, false)
+            ->where('final_status <>', 'CANCELLED_BY_LATE_RFS')
             ->get()
             ->row_array();
         if ((int) ($blockedFinal['total'] ?? 0) > 0) {
@@ -1317,28 +1381,80 @@ class MRFS_Readiness_MyRep extends CI_Model
         $targetPeriod = $this->getTargetYearMonthFromMeetingPeriod($period);
         $targetYear = (int) $targetPeriod['year'];
         $targetMonth = (int) $targetPeriod['month'];
+        $targetStartDate = sprintf('%04d-%02d-01', $targetYear, $targetMonth);
+        $targetEndDate = date('Y-m-t', strtotime($targetStartDate));
 
         $rows = $this->db
-            ->select('i.id_item, i.id_myrep_cluster, i.final_status, c.rfs_cluster_id, MIN(cl.claim_date) AS actual_rfs_date', false)
+            ->select('i.id_item, i.id_myrep_cluster, i.final_status, i.actual_rfs_date AS current_actual_rfs_date, c.rfs_cluster_id, MIN(cl.claim_date) AS actual_rfs_date', false)
             ->from('tb_myrep_rfs_readiness_item i')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = i.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_claim cl', 'cl.cluster_id = c.rfs_cluster_id AND cl.status_claim = "APPROVED"', 'inner')
             ->where('i.id_period', (int) $periodId)
-            ->where('cl.claim_year', $targetYear)
-            ->where('cl.claim_month', $targetMonth)
-            ->group_by('i.id_item, i.id_myrep_cluster, i.final_status, c.rfs_cluster_id')
+            ->where('cl.claim_date <=', $targetEndDate)
+            ->group_by('i.id_item, i.id_myrep_cluster, i.final_status, i.actual_rfs_date, c.rfs_cluster_id')
             ->get()
             ->result_array();
 
         $count = 0;
         foreach ($rows as $row) {
+            $actualDate = (string) ($row['actual_rfs_date'] ?? '');
+            $finalStatus = $actualDate !== '' && $actualDate < $targetStartDate ? 'CANCELLED_BY_LATE_RFS' : 'RFS';
+            if ((string) ($row['final_status'] ?? '') === $finalStatus && $actualDate === (string) ($row['current_actual_rfs_date'] ?? '')) {
+                continue;
+            }
             $this->db->where('id_item', (int) $row['id_item'])->update('tb_myrep_rfs_readiness_item', [
-                'final_status' => 'RFS',
-                'actual_rfs_date' => $row['actual_rfs_date'],
+                'final_status' => $finalStatus,
+                'actual_rfs_date' => $actualDate,
                 'updated_by' => (int) $userId,
             ]);
-            $this->addHistory((int) $row['id_item'], null, 'SYNC_ACTUAL_RFS', '', json_encode($row), 'Actual RFS dari Monitoring RFS.', $userId);
+            $eventType = $finalStatus === 'RFS' ? 'SYNC_ACTUAL_RFS' : 'SYNC_RFS_BEFORE_TARGET';
+            $remark = $finalStatus === 'RFS'
+                ? 'Actual RFS dari Monitoring RFS.'
+                : 'Cluster sudah RFS sebelum bulan target sehingga dikeluarkan dari kandidat target.';
+            $this->addHistory((int) $row['id_item'], null, $eventType, '', json_encode($row), $remark, $userId);
             $this->cancelFutureCarryOver((int) $row['id_myrep_cluster'], (int) $period['year_num'], (int) $period['month_num'], $userId);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function syncInactiveClustersForPeriod($periodId, $userId)
+    {
+        if (!$this->tablesReady()) {
+            return 0;
+        }
+
+        $hasBatchApproval = $this->db->table_exists('tb_myrep_batch_approval');
+        $this->db
+            ->select('i.id_item, i.final_status, c.status_current' . ($hasBatchApproval ? ', ba.staging_status AS batch_approval_status' : ', NULL AS batch_approval_status'), false)
+            ->from('tb_myrep_rfs_readiness_item i')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = i.id_myrep_cluster', 'inner')
+            ->where('i.id_period', (int) $periodId)
+            ->where('i.final_status <>', 'RFS')
+            ->where('i.final_status <>', 'DROPPED')
+            ->where($this->inactiveStatusSql('c', 'ba', $hasBatchApproval), null, false);
+        if ($hasBatchApproval) {
+            $this->db->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = i.id_myrep_cluster', 'left');
+        }
+
+        $rows = $this->db->get()->result_array();
+        $count = 0;
+        foreach ($rows as $row) {
+            $itemId = (int) ($row['id_item'] ?? 0);
+            if ($itemId <= 0) {
+                continue;
+            }
+            $payload = [
+                'final_status' => 'DROPPED',
+                'updated_by' => (int) $userId,
+            ];
+            $this->db->where('id_item', $itemId)->update('tb_myrep_rfs_readiness_item', $payload);
+            $this->addHistory($itemId, null, 'SYNC_INACTIVE_STATUS_TAKE_OUT', json_encode([
+                'final_status' => $row['final_status'] ?? '',
+                'status_current' => $row['status_current'] ?? '',
+                'batch_approval_status' => $row['batch_approval_status'] ?? '',
+            ]), json_encode($payload), 'Cluster/batch HOLD atau CANCEL/REJECTED sehingga dikeluarkan dari target readiness.', $userId);
             $count++;
         }
 
@@ -1654,6 +1770,20 @@ class MRFS_Readiness_MyRep extends CI_Model
     {
         return array_values(array_filter($rows, static function ($row) {
             return !empty($row['checklist_completed_at']);
+        }));
+    }
+
+    private function filterActiveTargetRows(array $rows)
+    {
+        return array_values(array_filter($rows, static function ($row) {
+            $inactiveStatuses = ['HOLD', 'REJECTED', 'CANCEL', 'CANCELED', 'CANCELLED'];
+            $clusterStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+            $batchStatus = strtoupper(trim((string) ($row['batch_approval_status'] ?? '')));
+            if (in_array($clusterStatus, $inactiveStatuses, true) || in_array($batchStatus, $inactiveStatuses, true)) {
+                return false;
+            }
+
+            return strtoupper((string) ($row['final_status'] ?? '')) !== 'CANCELLED_BY_LATE_RFS';
         }));
     }
 
