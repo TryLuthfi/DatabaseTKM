@@ -43,23 +43,6 @@ if (!function_exists('batchStageLabel')) {
         return $labels[$status] ?? ($status !== '' ? ucwords(strtolower(str_replace('_', ' ', $status))) : 'Draft');
     }
 }
-if (!function_exists('batchStatusFlowLabel')) {
-    function batchStatusFlowLabel($row)
-    {
-        $row = is_array($row) ? $row : [];
-        $statusFlowCode = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
-        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
-        $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
-            || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
-        $hasApprovedBoq = (int) ($row['approved_drm_boq_id'] ?? 0) > 0;
-
-        if ($hasBatch || ($hasRabDone && $hasApprovedBoq) || in_array($statusFlowCode, ['RAB DONE', 'RELEASED'], true)) {
-            return 'BATCH APPROVAL';
-        }
-
-        return (string) ($row['status_current'] ?? 'DRAFT');
-    }
-}
 if (!function_exists('batchStagePicMeta')) {
     function batchStagePicMeta($status)
     {
@@ -533,7 +516,10 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
-        $statusFlowLabel = batchStatusFlowLabel($row);
+        $statusFlowCode = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $statusFlowLabel = in_array($statusFlowCode, ['RAB DONE', 'RELEASED'], true)
+            ? 'BATCH APPROVAL'
+            : (string) ($row['status_current'] ?? 'DRAFT');
         $statusFlowBadgeCode = $statusFlowLabel === 'BATCH APPROVAL' ? 'BATCH_APPROVED' : $statusFlowLabel;
         ?>
         <tr data-stage-code="<?= htmlspecialchars($batchStageCode, ENT_QUOTES) ?>">

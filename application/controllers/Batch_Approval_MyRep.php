@@ -257,7 +257,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 (string) (float) ($row['nominal_release_finance'] ?? 0),
                 $this->getIndonesianStagingLabel((string) ($row['staging_status'] ?? '')),
                 $this->getIndonesianStagingLabel((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? '')),
-                $this->getBatchApprovalStatusFlowLabel($row),
+                (string) ($row['status_current'] ?? ''),
                 (string) (int) ($row['pre_zeyn_doc_approved'] ?? 0),
                 (string) (int) ($row['pre_zeyn_doc_total'] ?? 0),
                 (string) (int) ($row['pre_zeyn_finance_approved'] ?? 0),
@@ -4291,7 +4291,10 @@ class Batch_Approval_MyRep extends CI_Controller
         $slaInfo = $this->getBatchListSlaInfo($row);
         $canEdit = $hasBatch && $this->canEditBatchApprovalDetail($row);
         $canHapus = $hasBatch && $this->hasBatchPermission('HAPUS');
-        $statusFlowLabel = $this->getBatchApprovalStatusFlowLabel($row);
+        $statusFlowCode = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $statusFlowLabel = in_array($statusFlowCode, ['RAB DONE', 'RELEASED'], true)
+            ? 'BATCH APPROVAL'
+            : (string) ($row['status_current'] ?? 'DRAFT');
         $statusFlowBadgeCode = $statusFlowLabel === 'BATCH APPROVAL' ? 'BATCH_APPROVED' : $statusFlowLabel;
 
         $clusterName = htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8');
@@ -4430,25 +4433,10 @@ class Batch_Approval_MyRep extends CI_Controller
             case 8:
                 return $this->getIndonesianStagingLabel($stageCode);
             case 10:
-                return $this->getBatchApprovalStatusFlowLabel($row);
+                return $row['status_current'] ?? '';
             default:
                 return $row['created_at'] ?? '';
         }
-    }
-
-    private function getBatchApprovalStatusFlowLabel(array $row)
-    {
-        $statusFlowCode = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
-        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
-        $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
-            || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
-        $hasApprovedBoq = (int) ($row['approved_drm_boq_id'] ?? 0) > 0;
-
-        if ($hasBatch || ($hasRabDone && $hasApprovedBoq) || in_array($statusFlowCode, ['RAB DONE', 'RELEASED'], true)) {
-            return 'BATCH APPROVAL';
-        }
-
-        return (string) ($row['status_current'] ?? 'DRAFT');
     }
 
     private function buildBatchApprovalEditButton(array $row, array $batchPics)
