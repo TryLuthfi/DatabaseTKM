@@ -372,11 +372,8 @@ class MBatch_Approval_MyRep extends CI_Model
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->group_start()
-                ->where('boq_approved.id_drm_boq IS NOT NULL', null, false)
-                ->or_group_start()
-                    ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                    ->where_not_in('c.status_current', ['DRAFT', 'NTP', 'BA OPEN', 'BAK', 'VALSAL', 'RAB DONE'])
-                ->group_end()
+                ->where('rab.id_myrep_rab IS NOT NULL', null, false)
+                ->or_where('ba.id_batch_approval IS NOT NULL', null, false)
             ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->get()
@@ -434,7 +431,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'inner', false)
-            ->join('tb_myrep_drm_boq boq_approved', "boq_approved.id_drm_boq = rab.id_drm_boq AND boq_approved.review_status = 'APPROVED' AND boq_approved.scope_type = 'CLUSTER'", 'inner', false)
+            ->join('tb_myrep_drm_boq boq_approved', "boq_approved.id_drm_boq = rab.id_drm_boq AND boq_approved.review_status = 'APPROVED' AND boq_approved.scope_type = 'CLUSTER'", 'left', false)
             ->where('ba.id_batch_approval IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC');
@@ -3081,9 +3078,6 @@ class MBatch_Approval_MyRep extends CI_Model
     {
         $stagingStatus = strtoupper(trim((string) $stagingStatus));
         $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
-        if (in_array($currentStatus, ['CHECKLIST DOKUMENT', 'RFS', 'ATP', 'DONE', 'DONE BATCH APPROVAL'], true)) {
-            return 'COMPLETED';
-        }
         $hasRabDoneStatus = $currentStatus === 'RAB DONE'
             || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
 
@@ -3119,6 +3113,24 @@ class MBatch_Approval_MyRep extends CI_Model
         $hasAnyAstriRejected = $allAstriRejected > 0;
         $isTerminalStage = in_array($stagingStatus, ['PO_DONASI', 'INVOICE', 'HOLD', 'REJECTED'], true)
             || ($stagingStatus === 'ASTRI_APPROVED' && !$hasAnyAstriRejected);
+
+        if (in_array($currentStatus, ['CHECKLIST DOKUMENT', 'RFS', 'ATP', 'DONE', 'DONE BATCH APPROVAL'], true)) {
+            if ($allAstriRequired > 0 && !$hasAnyAstriRejected && $allAstriApproved >= $allAstriRequired) {
+                return 'ASTRI_APPROVED';
+            }
+            if (in_array($stagingStatus, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true)) {
+                if ($hasAnyAstriRejected) {
+                    return 'NEED_REVISE_ASTRI';
+                }
+                if ((int) ($post['astri_submitted'] ?? 0) > 0 || (int) ($pre['astri_submitted'] ?? 0) > 0) {
+                    return 'ASTRI_ON_REVIEW';
+                }
+
+                return 'WAITING_ASTRI_SUBMISSION';
+            }
+
+            return 'COMPLETED';
+        }
 
         if ($hasSitacOrFinanceRejectedDocument && !in_array($stagingStatus, ['HOLD', 'REJECTED'], true)) {
             return 'NEED_REVISE';
@@ -3266,14 +3278,14 @@ class MBatch_Approval_MyRep extends CI_Model
 
     private function shouldShowBatchRowByRabGate(array $row)
     {
-        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
         $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
             || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
-        $hasApprovedBoq = (int) ($row['approved_drm_boq_id'] ?? 0) > 0;
-        if ($hasRabDone && $hasApprovedBoq) {
+        if ($hasBatch || $hasRabDone) {
             return true;
         }
 
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
         if (in_array($currentStatus, ['DRAFT', 'NTP', 'BA OPEN', 'BAK', 'VALSAL', 'RAB DONE'], true)) {
             return false;
         }
