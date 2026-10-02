@@ -368,11 +368,15 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false)
+            ->join('tb_myrep_drm_boq boq_approved', "boq_approved.id_drm_boq = rab.id_drm_boq AND boq_approved.review_status = 'APPROVED' AND boq_approved.scope_type = 'CLUSTER'", 'left', false)
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->group_start()
-                ->where('ba.id_batch_approval IS NOT NULL', null, false)
-                ->or_where('rab.id_myrep_rab IS NOT NULL', null, false)
+                ->where('boq_approved.id_drm_boq IS NOT NULL', null, false)
+                ->or_group_start()
+                    ->where('ba.id_batch_approval IS NOT NULL', null, false)
+                    ->where_not_in('c.status_current', ['DRAFT', 'NTP', 'BA OPEN', 'BAK', 'VALSAL', 'RAB DONE'])
+                ->group_end()
             ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->get()
@@ -421,6 +425,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 rab.rab_status,
                 rab.detail_rab,
                 rab.rab_done_at,
+                boq_approved.id_drm_boq AS approved_drm_boq_id,
                 t.year_num,
                 t.month_num
             ')
@@ -429,6 +434,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'inner', false)
+            ->join('tb_myrep_drm_boq boq_approved', "boq_approved.id_drm_boq = rab.id_drm_boq AND boq_approved.review_status = 'APPROVED' AND boq_approved.scope_type = 'CLUSTER'", 'inner', false)
             ->where('ba.id_batch_approval IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC');
@@ -496,6 +502,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 rab.rab_status,
                 rab.detail_rab,
                 rab.rab_done_at,
+                boq_approved.id_drm_boq AS approved_drm_boq_id,
                 t.year_num,
                 t.month_num
             ')
@@ -503,6 +510,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_rab rab', 'rab.id_myrep_cluster = c.id_myrep_cluster AND UPPER(rab.rab_status) = \'RAB DONE\'', 'left', false)
+            ->join('tb_myrep_drm_boq boq_approved', "boq_approved.id_drm_boq = rab.id_drm_boq AND boq_approved.review_status = 'APPROVED' AND boq_approved.scope_type = 'CLUSTER'", 'left', false)
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
 
         $optionalBatchColumns = [
@@ -3072,6 +3080,13 @@ class MBatch_Approval_MyRep extends CI_Model
     private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocApproved, array $donationSummary = [], array $row = [])
     {
         $stagingStatus = strtoupper(trim((string) $stagingStatus));
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        if (in_array($currentStatus, ['CHECKLIST DOKUMENT', 'RFS', 'ATP', 'DONE', 'DONE BATCH APPROVAL'], true)) {
+            return 'COMPLETED';
+        }
+        $hasRabDoneStatus = $currentStatus === 'RAB DONE'
+            || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
+
         $postDocTotal = (int) $postDocTotal;
         $postDocApproved = (int) $postDocApproved;
         $pre = $donationSummary['PRE_ZEYN'] ?? [];
@@ -3251,10 +3266,16 @@ class MBatch_Approval_MyRep extends CI_Model
 
     private function shouldShowBatchRowByRabGate(array $row)
     {
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
         $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
             || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
-        if ($hasRabDone) {
+        $hasApprovedBoq = (int) ($row['approved_drm_boq_id'] ?? 0) > 0;
+        if ($hasRabDone && $hasApprovedBoq) {
             return true;
+        }
+
+        if (in_array($currentStatus, ['DRAFT', 'NTP', 'BA OPEN', 'BAK', 'VALSAL', 'RAB DONE'], true)) {
+            return false;
         }
 
         $advancedStages = $this->batchStagesAtOrAboveSakuProcess();

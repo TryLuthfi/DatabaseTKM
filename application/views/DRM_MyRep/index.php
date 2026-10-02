@@ -19,7 +19,7 @@ $nyBatchRows = [];
 $nyAtpRows = [];
 $allDrmRows = $clusterRows;
 $drmStageSummary = [
-    'NY_DRM' => ['label' => 'NY DRM', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-ny-batch-tab', 'filter' => 'ny_drm'],
+    'NY_DRM' => ['label' => 'NY DRM', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_drm'],
     'ON_REVIEW_DRM' => ['label' => 'ON REVIEW DRM', 'pic' => 'HO SND', 'pic_class' => 'sitac', 'pic_icon' => 'users', 'class' => 'primary', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'on_review_drm'],
     'NY_RAB' => ['label' => 'NY RAB', 'pic' => 'HO PLANNING', 'pic_class' => 'planning', 'pic_icon' => 'drafting-compass', 'class' => 'warning', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_rab'],
     'REJECTED' => ['label' => 'REJECTED', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'danger', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rejected'],
@@ -195,8 +195,6 @@ $buildDrmStatusSummary = static function (array $rows) {
     return $summary;
 };
 $drmStatusSummaryByTab = [
-    'ny_batch' => $buildDrmStatusSummary($nyBatchRows),
-    'ny_atp' => $buildDrmStatusSummary($nyAtpRows),
     'all' => $buildDrmStatusSummary($allDrmRows),
 ];
 $drmActiveStatusSummary = $drmStatusSummaryByTab['all'];
@@ -226,8 +224,6 @@ $buildDrmRabSummary = static function (array $rows) use ($getDrmRabToken) {
     return $summary;
 };
 $drmRabSummaryByTab = [
-    'ny_batch' => $buildDrmRabSummary($nyBatchRows),
-    'ny_atp' => $buildDrmRabSummary($nyAtpRows),
     'all' => $buildDrmRabSummary($allDrmRows),
 ];
 $drmActiveRabSummary = $drmRabSummaryByTab['all'];
@@ -334,7 +330,6 @@ if (!function_exists('drmStageSearchTokens')) {
 
         if (drmIsNyBatchRow($row)) {
             $tokens[] = 'ny_drm';
-            $tokens[] = 'ny_batch';
         }
         $statusTokens = drmStatusTokens($row);
 
@@ -636,18 +631,6 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
-                                        <li class="nav-item" role="presentation">
-                                            <a class="nav-link" id="drm-ny-batch-tab" data-toggle="tab" href="#drm-ny-batch-pane" role="tab" aria-controls="drm-ny-batch-pane" aria-selected="false">
-                                                NY BATCH
-                                                <span class="drm-monitor-tabs__count"><?= number_format(count($nyBatchRows), 0, ',', '.') ?></span>
-                                            </a>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <a class="nav-link" id="drm-ny-atp-tab" data-toggle="tab" href="#drm-ny-atp-pane" role="tab" aria-controls="drm-ny-atp-pane" aria-selected="false">
-                                                NY ATP
-                                                <span class="drm-monitor-tabs__count"><?= number_format(count($nyAtpRows), 0, ',', '.') ?></span>
-                                            </a>
-                                        </li>
                                     </ul>
                                 </div>
                                 <div class="drm-status-filter-row">
@@ -688,12 +671,6 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                             <div class="tab-content drm-monitor-tabs__content" id="drm-monitor-tab-content">
                                 <div class="tab-pane fade show active" id="drm-all-pane" role="tabpanel" aria-labelledby="drm-all-tab">
                                     <?php $renderDrmTable('table_drm_all', $allDrmRows); ?>
-                                </div>
-                                <div class="tab-pane fade" id="drm-ny-batch-pane" role="tabpanel" aria-labelledby="drm-ny-batch-tab">
-                                    <?php $renderDrmTable('table_drm_ny_batch', $nyBatchRows); ?>
-                                </div>
-                                <div class="tab-pane fade" id="drm-ny-atp-pane" role="tabpanel" aria-labelledby="drm-ny-atp-tab">
-                                    <?php $renderDrmTable('table_drm_ny_atp', $nyAtpRows); ?>
                                 </div>
                             </div>
                         </div>
@@ -1809,19 +1786,10 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     project_type: <?= json_encode($selectedProjectType) ?>
                 };
                 var drmTableConfigs = {
-                    '#table_drm_ny_batch': { tab: 'ny_batch' },
-                    '#table_drm_ny_atp': { tab: 'ny_atp' },
                     '#table_drm_all': { tab: 'all' }
                 };
 
                 function getActiveDrmTableSelector() {
-                    var href = $('#drm-monitor-tab .nav-link.active').attr('href') || '#drm-all-pane';
-                    if (href === '#drm-ny-atp-pane') {
-                        return '#table_drm_ny_atp';
-                    }
-                    if (href === '#drm-ny-batch-pane') {
-                        return '#table_drm_ny_batch';
-                    }
                     return '#table_drm_all';
                 }
 
@@ -2049,7 +2017,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                 $('a[data-toggle="tab"][href^="#drm-"]').on('shown.bs.tab', function () {
                     var tableSelector = getActiveDrmTableSelector();
-                    var activeTab = drmTableConfigs[tableSelector] ? drmTableConfigs[tableSelector].tab : 'ny_batch';
+                    var activeTab = drmTableConfigs[tableSelector] ? drmTableConfigs[tableSelector].tab : 'all';
                     var activeTable = drmTables[tableSelector];
                     updateDrmStatusCounts(activeTable, activeTab);
                     updateDrmRabCounts(activeTable, activeTab);

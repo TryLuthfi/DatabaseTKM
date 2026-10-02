@@ -82,7 +82,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $tab = strtolower(trim((string) $this->input->post('tab')));
-        if (!in_array($tab, ['all', 'ny_batch', 'ny_atp'], true)) {
+        if (!in_array($tab, ['all'], true)) {
             $tab = 'all';
         }
 
@@ -97,7 +97,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $stageFilter = strtolower(trim((string) $this->input->post('stage_filter')));
-        if (!in_array($stageFilter, ['ny_drm', 'ny_batch', 'on_review_drm', 'on_proses_drm', 'ny_rab', 'done_drm', 'rab_done', 'rejected'], true)) {
+        if (!in_array($stageFilter, ['ny_drm', 'on_review_drm', 'on_proses_drm', 'ny_rab', 'done_drm', 'rab_done', 'rejected'], true)) {
             $stageFilter = '';
         }
 
@@ -2270,14 +2270,6 @@ class DRM_MyRep extends CI_Controller
     private function filterDrmTableRows(array $rows, $tab, $statusFilter, $rabFilter, $stageFilter)
     {
         return array_values(array_filter($rows, function ($row) use ($tab, $statusFilter, $rabFilter, $stageFilter) {
-            if ($tab === 'ny_batch' && !$this->isNyBatchDrmRow($row)) {
-                return false;
-            }
-
-            if ($tab === 'ny_atp' && !$this->isNyAtpDrmRow($row)) {
-                return false;
-            }
-
             if ($statusFilter !== '' && !in_array($statusFilter, $this->getDrmStatusTokens($row), true)) {
                 return false;
             }
@@ -2414,7 +2406,6 @@ class DRM_MyRep extends CI_Controller
 
         if ($this->isNyBatchDrmRow($row)) {
             $tokens[] = 'ny_drm';
-            $tokens[] = 'ny_batch';
         }
         $statusTokens = $this->getDrmStatusTokens($row);
 

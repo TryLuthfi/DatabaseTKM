@@ -257,7 +257,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 (string) (float) ($row['nominal_release_finance'] ?? 0),
                 $this->getIndonesianStagingLabel((string) ($row['staging_status'] ?? '')),
                 $this->getIndonesianStagingLabel((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? '')),
-                (string) ($row['status_current'] ?? ''),
+                $this->getBatchApprovalStatusFlowLabel($row),
                 (string) (int) ($row['pre_zeyn_doc_approved'] ?? 0),
                 (string) (int) ($row['pre_zeyn_doc_total'] ?? 0),
                 (string) (int) ($row['pre_zeyn_finance_approved'] ?? 0),
@@ -4275,7 +4275,6 @@ class Batch_Approval_MyRep extends CI_Controller
         $stageCode = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
         $stageLabel = $hasBatch ? $this->getIndonesianStagingLabel($stageCode) : $this->getIndonesianStagingLabel('WAITING INPUT');
         $isWaitingInputStage = !$hasBatch || $stageCode === 'WAITING INPUT';
-        $batchDocLabel = $hasBatch ? $this->getBatchListDocLabel($row) : 'BELUM ADA DOC';
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
         if ($uploadBy === '') {
             $uploadBy = trim((string) ($row['donation_doc_uploaded_by_name'] ?? ''));
@@ -4292,6 +4291,8 @@ class Batch_Approval_MyRep extends CI_Controller
         $slaInfo = $this->getBatchListSlaInfo($row);
         $canEdit = $hasBatch && $this->canEditBatchApprovalDetail($row);
         $canHapus = $hasBatch && $this->hasBatchPermission('HAPUS');
+        $statusFlowLabel = $this->getBatchApprovalStatusFlowLabel($row);
+        $statusFlowBadgeCode = $statusFlowLabel === 'BATCH APPROVAL' ? 'BATCH_APPROVED' : $statusFlowLabel;
 
         $clusterName = htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES, 'UTF-8');
         if (!empty($row['id_myrep_cluster']) && !$isWaitingInputStage) {
@@ -4307,12 +4308,6 @@ class Batch_Approval_MyRep extends CI_Controller
             . '<div><strong>Area:</strong> ' . htmlspecialchars($uploadBy !== '' ? $uploadBy : '-', ENT_QUOTES, 'UTF-8') . '</div>'
             . '<div><strong>TKM:</strong> ' . htmlspecialchars($picApproval !== '' ? $picApproval : '-', ENT_QUOTES, 'UTF-8') . '</div>'
             . '</div>';
-
-        $docHtml = '<div class="batch-doc-status-stack"><div class="batch-doc-status-stack__item">'
-            . '<span class="batch-doc-name">RAR:</span> '
-            . '<span class="badge badge-' . $this->getBatchListBadgeClass($batchDocLabel) . ' batch-doc-status-badge">'
-            . htmlspecialchars($batchDocLabel, ENT_QUOTES, 'UTF-8')
-            . '</span></div></div>';
 
         $slaHtml = '<div class="batch-sla-aging-cell">'
             . '<span class="badge badge-' . $this->getBatchListSlaBadgeClass($slaInfo) . '">SLA ' . htmlspecialchars($slaInfo['sla_text'], ENT_QUOTES, 'UTF-8') . '</span> '
@@ -4351,8 +4346,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $slaHtml,
             '<span class="badge badge-' . $this->getBatchListBadgeClass($stageCode) . '">' . htmlspecialchars($stageLabel, ENT_QUOTES, 'UTF-8') . '</span>',
             $picHtml,
-            $docHtml,
-            '<span class="badge badge-' . $this->getBatchListBadgeClass($row['status_current'] ?? 'DRAFT') . '">' . htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT'), ENT_QUOTES, 'UTF-8') . '</span>',
+            '<span class="badge badge-' . $this->getBatchListBadgeClass($statusFlowBadgeCode) . '">' . htmlspecialchars($statusFlowLabel, ENT_QUOTES, 'UTF-8') . '</span>',
             $actionHtml,
         ];
     }
@@ -4435,11 +4429,26 @@ class Batch_Approval_MyRep extends CI_Controller
                 return $slaInfo['duration_days'] ?? -1;
             case 8:
                 return $this->getIndonesianStagingLabel($stageCode);
-            case 11:
-                return $row['status_current'] ?? '';
+            case 10:
+                return $this->getBatchApprovalStatusFlowLabel($row);
             default:
                 return $row['created_at'] ?? '';
         }
+    }
+
+    private function getBatchApprovalStatusFlowLabel(array $row)
+    {
+        $statusFlowCode = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
+        $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
+            || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
+        $hasApprovedBoq = (int) ($row['approved_drm_boq_id'] ?? 0) > 0;
+
+        if ($hasBatch || ($hasRabDone && $hasApprovedBoq) || in_array($statusFlowCode, ['RAB DONE', 'RELEASED'], true)) {
+            return 'BATCH APPROVAL';
+        }
+
+        return (string) ($row['status_current'] ?? 'DRAFT');
     }
 
     private function buildBatchApprovalEditButton(array $row, array $batchPics)

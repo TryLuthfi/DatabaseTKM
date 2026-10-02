@@ -43,6 +43,23 @@ if (!function_exists('batchStageLabel')) {
         return $labels[$status] ?? ($status !== '' ? ucwords(strtolower(str_replace('_', ' ', $status))) : 'Draft');
     }
 }
+if (!function_exists('batchStatusFlowLabel')) {
+    function batchStatusFlowLabel($row)
+    {
+        $row = is_array($row) ? $row : [];
+        $statusFlowCode = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
+        $hasRabDone = (int) ($row['id_myrep_rab'] ?? 0) > 0
+            || strtoupper(trim((string) ($row['rab_status'] ?? ''))) === 'RAB DONE';
+        $hasApprovedBoq = (int) ($row['approved_drm_boq_id'] ?? 0) > 0;
+
+        if ($hasBatch || ($hasRabDone && $hasApprovedBoq) || in_array($statusFlowCode, ['RAB DONE', 'RELEASED'], true)) {
+            return 'BATCH APPROVAL';
+        }
+
+        return (string) ($row['status_current'] ?? 'DRAFT');
+    }
+}
 if (!function_exists('batchStagePicMeta')) {
     function batchStagePicMeta($status)
     {
@@ -115,7 +132,6 @@ $nyDrmRows = [];
 $donationStageSummary = [];
 $donationStageOrder = [
     'WAITING_BATCH_APPROVAL' => batchStageLabel('WAITING_BATCH_APPROVAL'),
-    'BATCH_APPROVED' => batchStageLabel('BATCH_APPROVED'),
     'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
     'NEED_REVISE' => batchStageLabel('NEED_REVISE'),
     'PRE_ZEYN_DOC_ON_REVIEW' => batchStageLabel('PRE_ZEYN_DOC_ON_REVIEW'),
@@ -140,6 +156,7 @@ $donationStageOrder = [
 ];
 $postBatchStatuses = [
     'DRM',
+    'CHECKLIST DOKUMENT',
     'RFS',
     'ATP',
     'DONE',
@@ -164,6 +181,9 @@ asort($createCityOptions);
 foreach ($summaryRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
     $batchStatus = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+    if ($batchStatus === 'BATCH_APPROVED') {
+        $batchStatus = 'WAITING_PRE_ZEYN_DOC';
+    }
     $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
 
     if (
@@ -501,7 +521,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $batchStageLabel = $hasBatch ? batchStatusLabel($batchStageCode) : batchStatusLabel('WAITING INPUT');
         $isWaitingInputStage = !$hasBatch || $batchStageCode === 'WAITING INPUT';
         $canStartBatchInput = !$hasBatch;
-        $batchDocLabel = $hasBatch ? batchDocLabel($row) : 'BELUM ADA DOC';
         $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
         if ($uploadBy === '') {
             $uploadBy = trim((string) ($row['donation_doc_uploaded_by_name'] ?? ''));
@@ -514,6 +533,8 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
+        $statusFlowLabel = batchStatusFlowLabel($row);
+        $statusFlowBadgeCode = $statusFlowLabel === 'BATCH APPROVAL' ? 'BATCH_APPROVED' : $statusFlowLabel;
         ?>
         <tr data-stage-code="<?= htmlspecialchars($batchStageCode, ENT_QUOTES) ?>">
             <td><?= $index + 1 ?></td>
@@ -548,17 +569,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                     <div><strong>TKM:</strong> <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
                 </div>
             </td>
-            <td>
-                <div class="batch-doc-status-stack">
-                    <div class="batch-doc-status-stack__item">
-                        <span class="batch-doc-name">RAR:</span>
-                        <span class="badge badge-<?= batchBadgeClass($batchDocLabel) ?> batch-doc-status-badge">
-                            <?= htmlspecialchars($batchDocLabel) ?>
-                        </span>
-                    </div>
-                </div>
-            </td>
-            <td><span class="badge badge-<?= batchBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
+            <td><span class="badge badge-<?= batchBadgeClass($statusFlowBadgeCode) ?>"><?= htmlspecialchars($statusFlowLabel) ?></span></td>
             <td>
                 <?php if ($hasBatch): ?>
                     <?php if ($canEdit): ?>
@@ -797,12 +808,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                         <span class="batch-monitor-tabs__count"><?= number_format(count($summaryRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="batch-ny-drm-tab" data-toggle="tab" href="#batch-ny-drm-pane" role="tab" aria-controls="batch-ny-drm-pane" aria-selected="false">
-                                        Status NY DRM
-                                        <span class="batch-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
                             </ul>
                             <div class="tab-content batch-monitor-tabs__content" id="batch-monitor-tab-content">
                                 <div class="tab-pane fade show active" id="batch-all-pane" role="tabpanel" aria-labelledby="batch-all-tab">
@@ -820,7 +825,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>SLA / Durasi Proses</th>
                                                     <th>Staging</th>
                                                     <th>PIC</th>
-                                                    <th>Review Dokumen</th>
                                                     <th>Status Flow</th>
                                                     <th>Aksi</th>
                                                 </tr>
@@ -832,40 +836,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="6"></th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="tab-pane fade" id="batch-ny-drm-pane" role="tabpanel" aria-labelledby="batch-ny-drm-tab">
-                                    <div class="table-responsive">
-                                        <table id="table_batch_ny_drm" class="table table-bordered table-hover batch-monitor-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>Cluster</th>
-                                                    <th>Regional</th>
-                                                    <th>Kota</th>
-                                                    <th>HP Donasi</th>
-                                                    <th>Nominal Donasi</th>
-                                                    <th>Nominal / Homepass</th>
-                                                    <th>SLA / Durasi Proses</th>
-                                                    <th>Staging</th>
-                                                    <th>PIC</th>
-                                                    <th>Review Dokumen</th>
-                                                    <th>Status Flow</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody></tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <th colspan="4" class="text-right">TOTAL</th>
-                                                    <th class="text-right">0</th>
-                                                    <th class="text-right">0</th>
-                                                    <th class="text-right">0</th>
-                                                    <th colspan="6"></th>
+                                                    <th colspan="5"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -3090,8 +3061,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var activeSummaryStageFilter = batchSelectedStatus || '';
 
                     [
-                        { selector: '#table_batch_all', tab: 'all' },
-                        { selector: '#table_batch_ny_drm', tab: 'ny_drm' }
+                        { selector: '#table_batch_all', tab: 'all' }
                     ].forEach(function (config) {
                         var selector = config.selector;
                         var table = $(selector).DataTable({
