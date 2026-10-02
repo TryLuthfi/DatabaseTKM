@@ -3118,13 +3118,13 @@ class MBatch_Approval_MyRep extends CI_Model
             if ($allAstriRequired > 0 && !$hasAnyAstriRejected && $allAstriApproved >= $allAstriRequired) {
                 return 'ASTRI_APPROVED';
             }
+            if ($hasAnyAstriRejected) {
+                return 'NEED_REVISE_ASTRI';
+            }
+            if ((int) ($post['astri_submitted'] ?? 0) > 0 || (int) ($pre['astri_submitted'] ?? 0) > 0) {
+                return 'ASTRI_ON_REVIEW';
+            }
             if (in_array($stagingStatus, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true)) {
-                if ($hasAnyAstriRejected) {
-                    return 'NEED_REVISE_ASTRI';
-                }
-                if ((int) ($post['astri_submitted'] ?? 0) > 0 || (int) ($pre['astri_submitted'] ?? 0) > 0) {
-                    return 'ASTRI_ON_REVIEW';
-                }
 
                 return 'WAITING_ASTRI_SUBMISSION';
             }
