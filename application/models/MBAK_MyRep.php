@@ -1913,6 +1913,11 @@ class MBAK_MyRep extends CI_Model
         }
 
         if (count($candidateTokens) >= count($targetTokens)) {
+            $candidateHead = array_slice($candidateTokens, 0, count($targetTokens));
+            if (implode(' ', $candidateHead) === implode(' ', $targetTokens)) {
+                return true;
+            }
+
             $candidateTail = array_slice($candidateTokens, -count($targetTokens));
             if (implode(' ', $candidateTail) === implode(' ', $targetTokens)) {
                 return true;
@@ -1920,6 +1925,11 @@ class MBAK_MyRep extends CI_Model
         }
 
         if (count($targetTokens) >= count($candidateTokens)) {
+            $targetHead = array_slice($targetTokens, 0, count($candidateTokens));
+            if (implode(' ', $targetHead) === implode(' ', $candidateTokens)) {
+                return true;
+            }
+
             $targetTail = array_slice($targetTokens, -count($candidateTokens));
             if (implode(' ', $targetTail) === implode(' ', $candidateTokens)) {
                 return true;

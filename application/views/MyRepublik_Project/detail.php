@@ -551,6 +551,10 @@ $quickRfsOptions = [
 ];
 $quickAtpOptions = ['', 'DONE', 'PUNCLIST'];
 $quickChecklistOptions = ['', 'AREA', 'HO', 'EMR', 'NRO', 'CLOSED'];
+$quickDistrictId = trim((string) ($cluster['district_id'] ?? ''));
+$quickDistrictName = trim((string) ($quickUpdateData['district_name'] ?? $cluster['district_name'] ?? ''));
+$quickVillageId = trim((string) ($cluster['village_id'] ?? ''));
+$quickVillageName = trim((string) ($quickUpdateData['village_name'] ?? $cluster['village_name'] ?? ''));
 ?>
 <div class="modal fade" id="modal-myrep-quick-update" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
@@ -606,13 +610,23 @@ $quickChecklistOptions = ['', 'AREA', 'HO', 'EMR', 'NRO', 'CLOSED'];
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label>District Name</label>
-                                        <input type="text" name="district_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'district_name') ?>">
+                                        <select name="district_id" id="quick_district_id" class="form-control js-quick-district-select">
+                                            <?php if ($quickDistrictId !== '' && $quickDistrictName !== ''): ?>
+                                                <option value="<?= htmlspecialchars($quickDistrictId, ENT_QUOTES, 'UTF-8') ?>" selected><?= htmlspecialchars($quickDistrictName, ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="hidden" name="district_name" id="quick_district_name" value="<?= htmlspecialchars($quickDistrictName, ENT_QUOTES, 'UTF-8') ?>">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label>Village Name</label>
-                                        <input type="text" name="village_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'village_name') ?>">
+                                        <select name="village_id" id="quick_village_id" class="form-control js-quick-village-select">
+                                            <?php if ($quickVillageId !== '' && $quickVillageName !== ''): ?>
+                                                <option value="<?= htmlspecialchars($quickVillageId, ENT_QUOTES, 'UTF-8') ?>" selected><?= htmlspecialchars($quickVillageName, ENT_QUOTES, 'UTF-8') ?></option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="hidden" name="village_name" id="quick_village_name" value="<?= htmlspecialchars($quickVillageName, ENT_QUOTES, 'UTF-8') ?>">
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -799,6 +813,90 @@ $quickChecklistOptions = ['', 'AREA', 'HO', 'EMR', 'NRO', 'CLOSED'];
         if (!form) {
             return;
         }
+        function initQuickLocationSelects() {
+            if (!window.jQuery || !jQuery.fn.select2) {
+                return;
+            }
+
+            var $ = window.jQuery;
+            var $modal = $('#modal-myrep-quick-update');
+            var $district = $('#quick_district_id');
+            var $village = $('#quick_village_id');
+            var $districtName = $('#quick_district_name');
+            var $villageName = $('#quick_village_name');
+            var $city = $('#form-myrep-quick-update [name="city_name"]');
+            var targetId = '<?= (int) ($cluster['id_target'] ?? 0) ?>';
+
+            if (!$district.length || $district.data('select2')) {
+                return;
+            }
+
+            $district.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Pilih Kecamatan',
+                allowClear: true,
+                dropdownParent: $modal.length ? $modal : $(document.body),
+                ajax: {
+                    url: '<?= base_url('MyRepublik_Project/getDistrictOptions') ?>',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term || '',
+                            target_id: targetId,
+                            city_name: $city.val() || ''
+                        };
+                    },
+                    processResults: function (data) {
+                        return data || { results: [] };
+                    }
+                }
+            });
+
+            $village.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Pilih Desa / Kelurahan',
+                allowClear: true,
+                dropdownParent: $modal.length ? $modal : $(document.body),
+                ajax: {
+                    url: '<?= base_url('MyRepublik_Project/getVillageOptions') ?>',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term || '',
+                            district_id: $district.val() || ''
+                        };
+                    },
+                    processResults: function (data) {
+                        return data || { results: [] };
+                    }
+                }
+            });
+
+            $district.on('change', function () {
+                var selected = $district.select2('data');
+                $districtName.val(selected && selected[0] ? selected[0].text : '');
+                $village.val(null).trigger('change');
+                $villageName.val('');
+            });
+
+            $village.on('change', function () {
+                var selected = $village.select2('data');
+                $villageName.val(selected && selected[0] ? selected[0].text : '');
+            });
+
+            $city.on('input', function () {
+                $district.val(null).trigger('change');
+                $districtName.val('');
+                $villageName.val('');
+            });
+        }
+
+        initQuickLocationSelects();
+
         form.addEventListener('submit', function (event) {
             var status = (form.querySelector('[name="status_current"]') || {}).value || '';
             var isRfsOrAfter = ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'].indexOf(status.toUpperCase()) !== -1;

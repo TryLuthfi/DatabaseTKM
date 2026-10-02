@@ -31,10 +31,13 @@ class MyRepublik_Project extends CI_Controller
         $this->load->model('MPO_MyRep');
         $this->load->model('MPO_Monitor');
         $this->load->model('MChecklist_Dokument_MyRep');
+        $this->load->model('MBAK_MyRep');
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('MyRepublik_Project');
             $this->myrepAccess->enforceByMethod('MyRepublik_Project', (string) $this->router->fetch_method(), [
+                'getDistrictOptions' => 'VIEW',
+                'getVillageOptions' => 'VIEW',
                 'previewCutoffImport' => 'TAMBAH',
                 'previewPoCertificateImport' => 'TAMBAH',
                 'deleteCluster' => 'HAPUS',
@@ -358,6 +361,66 @@ class MyRepublik_Project extends CI_Controller
         $this->load->view('MyRepublik_Project/detail', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function getDistrictOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['results' => []]));
+            return;
+        }
+
+        $rows = $this->MBAK_MyRep->searchDistrictOptionsByTarget(
+            (int) $this->input->get('target_id'),
+            trim((string) $this->input->get('q')),
+            50,
+            trim((string) $this->input->get('city_name'))
+        );
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'id' => (string) ($row['id'] ?? ''),
+                'text' => (string) ($row['name'] ?? ''),
+                'regency_id' => (string) ($row['regency_id'] ?? ''),
+                'regency_name' => (string) ($row['regency_name'] ?? ''),
+            ];
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['results' => $results]));
+    }
+
+    public function getVillageOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['results' => []]));
+            return;
+        }
+
+        $rows = $this->MBAK_MyRep->searchVillageOptionsByDistrict(
+            trim((string) $this->input->get('district_id')),
+            trim((string) $this->input->get('q')),
+            50
+        );
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'id' => (string) ($row['id'] ?? ''),
+                'text' => (string) ($row['name'] ?? ''),
+                'district_id' => (string) ($row['district_id'] ?? ''),
+            ];
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['results' => $results]));
     }
 
     public function updateQuick($clusterId = 0)
@@ -4059,7 +4122,9 @@ class MyRepublik_Project extends CI_Controller
         $keys = [
             'status_current',
             'city_name',
+            'district_id',
             'district_name',
+            'village_id',
             'village_name',
             'cluster_name',
             'cluster_code',
@@ -4136,12 +4201,15 @@ class MyRepublik_Project extends CI_Controller
             }
         }
 
-        return $row;
+        return $this->resolveQuickUpdateWilayahSelection($row);
     }
 
     private function validateQuickUpdateRow(array $row)
     {
         $errors = $this->validateCutoffImportRow($row);
+        if (trim((string) ($row['_wilayah_error'] ?? '')) !== '') {
+            $errors[] = (string) $row['_wilayah_error'];
+        }
         foreach ([
             'ba_open_date',
             'bak_date',
@@ -4181,6 +4249,53 @@ class MyRepublik_Project extends CI_Controller
         }
 
         return array_values(array_unique($errors));
+    }
+
+    private function resolveQuickUpdateWilayahSelection(array $row)
+    {
+        $districtId = trim((string) ($row['district_id'] ?? ''));
+        $villageId = trim((string) ($row['village_id'] ?? ''));
+        $row['_wilayah_error'] = '';
+
+        if ($districtId !== '') {
+            $district = $this->MBAK_MyRep->getDistrictById($districtId);
+            if (empty($district['id'])) {
+                $row['_wilayah_error'] = 'Kecamatan yang dipilih tidak ditemukan di master wilayah.';
+                return $row;
+            }
+
+            $row['regency_id'] = (string) ($district['regency_id'] ?? '');
+            $row['district_id'] = (string) ($district['id'] ?? '');
+            $row['district_name'] = (string) ($district['name'] ?? $row['district_name'] ?? '');
+        }
+
+        if ($villageId !== '') {
+            $village = $this->MBAK_MyRep->getVillageById($villageId);
+            if (empty($village['id'])) {
+                $row['_wilayah_error'] = 'Desa / Kelurahan yang dipilih tidak ditemukan di master wilayah.';
+                return $row;
+            }
+
+            $villageDistrictId = (string) ($village['district_id'] ?? '');
+            if ($districtId !== '' && $villageDistrictId !== '' && $villageDistrictId !== $districtId) {
+                $row['_wilayah_error'] = 'Desa / Kelurahan tidak sesuai dengan Kecamatan yang dipilih.';
+                return $row;
+            }
+
+            if ($districtId === '' && $villageDistrictId !== '') {
+                $district = $this->MBAK_MyRep->getDistrictById($villageDistrictId);
+                if (!empty($district['id'])) {
+                    $row['regency_id'] = (string) ($district['regency_id'] ?? '');
+                    $row['district_id'] = (string) ($district['id'] ?? '');
+                    $row['district_name'] = (string) ($district['name'] ?? $row['district_name'] ?? '');
+                }
+            }
+
+            $row['village_id'] = (string) ($village['id'] ?? '');
+            $row['village_name'] = (string) ($village['name'] ?? $row['village_name'] ?? '');
+        }
+
+        return $row;
     }
 
     private function applyQuickUpdateToCluster(array $cluster, array $row, $userId)
@@ -4247,7 +4362,10 @@ class MyRepublik_Project extends CI_Controller
             'regional_name' => $target['regional_name'] ?? null,
             'province_name' => $target['province_name'] ?? null,
             'city_name' => strtoupper(trim((string) ($row['city_name'] ?? ''))),
+            'regency_id' => trim((string) ($row['regency_id'] ?? '')) ?: null,
+            'district_id' => trim((string) ($row['district_id'] ?? '')) ?: null,
             'district_name' => trim((string) ($row['district_name'] ?? '')) ?: null,
+            'village_id' => trim((string) ($row['village_id'] ?? '')) ?: null,
             'village_name' => trim((string) ($row['village_name'] ?? '')) ?: null,
             'team_name' => $target['team_name'] ?? null,
             'chief' => $target['chief'] ?? null,

@@ -3330,6 +3330,10 @@ $detailEditBatchOptionalStages = ['DRAFT', 'WAITING_INPUT', 'WAITING INPUT', 'WA
 $detailEditBatchRequired = !in_array($detailEditCurrentStage, $detailEditBatchOptionalStages, true);
 $detailEditBaseDataRequired = !in_array($detailEditCurrentStage, $detailEditBatchOptionalStages, true);
 $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr((string) $cluster['astri_batch_approved_at'], 0, 10) : '';
+$detailDistrictId = trim((string) ($cluster['district_id'] ?? ''));
+$detailDistrictName = trim((string) ($cluster['district_name'] ?? ''));
+$detailVillageId = trim((string) ($cluster['village_id'] ?? ''));
+$detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
 ?>
 <div class="modal fade" id="modal-batch-edit-detail" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xxl" role="document">
@@ -3349,8 +3353,28 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
                             <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['regional_name'] ?? '')) ?>" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['province_name'] ?? '')) ?>" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '')) ?>" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kecamatan</label><input type="text" name="district_name" class="form-control js-revision-required" data-field-label="Kecamatan" value="<?= htmlspecialchars((string) ($cluster['district_name'] ?? '')) ?>" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Desa / Kelurahan</label><input type="text" name="village_name" class="form-control js-revision-required" data-field-label="Desa / Kelurahan" value="<?= htmlspecialchars((string) ($cluster['village_name'] ?? '')) ?>" required></div></div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Kecamatan</label>
+                                    <select name="district_id" id="detail_edit_district_id" class="form-control js-batch-district-select js-revision-required" data-field-label="Kecamatan" required>
+                                        <?php if ($detailDistrictId !== '' && $detailDistrictName !== ''): ?>
+                                            <option value="<?= htmlspecialchars($detailDistrictId, ENT_QUOTES, 'UTF-8') ?>" selected><?= htmlspecialchars($detailDistrictName, ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <input type="hidden" name="district_name" id="detail_edit_district_name" value="<?= htmlspecialchars($detailDistrictName, ENT_QUOTES, 'UTF-8') ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Desa / Kelurahan</label>
+                                    <select name="village_id" id="detail_edit_village_id" class="form-control js-batch-village-select js-revision-required" data-field-label="Desa / Kelurahan" required>
+                                        <?php if ($detailVillageId !== '' && $detailVillageName !== ''): ?>
+                                            <option value="<?= htmlspecialchars($detailVillageId, ENT_QUOTES, 'UTF-8') ?>" selected><?= htmlspecialchars($detailVillageName, ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <input type="hidden" name="village_name" id="detail_edit_village_name" value="<?= htmlspecialchars($detailVillageName, ENT_QUOTES, 'UTF-8') ?>">
+                                </div>
+                            </div>
                             <div class="col-md-8"><div class="form-group mb-md-0"><label>Cluster</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '')) ?>" readonly></div></div>
                             <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['valsal_date'] ?? '')) ?>" readonly></div></div>
                         </div>
@@ -4706,6 +4730,81 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
         function batchUploadDebug(eventName, payload) {
         }
 
+        function initBatchLocationSelects() {
+            if (!$.fn.select2) {
+                return;
+            }
+
+            var $modal = $('#modal-batch-edit-detail');
+            var $district = $('#detail_edit_district_id');
+            var $village = $('#detail_edit_village_id');
+            var $districtName = $('#detail_edit_district_name');
+            var $villageName = $('#detail_edit_village_name');
+            var targetId = '<?= (int) ($cluster['id_target'] ?? 0) ?>';
+            var cityName = '<?= htmlspecialchars((string) ($cluster['city_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>';
+
+            if (!$district.length || $district.data('select2')) {
+                return;
+            }
+
+            $district.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Pilih Kecamatan',
+                allowClear: true,
+                dropdownParent: $modal.length ? $modal : $(document.body),
+                ajax: {
+                    url: '<?= base_url('Batch_Approval_MyRep/getDistrictOptions') ?>',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term || '',
+                            target_id: targetId,
+                            city_name: cityName
+                        };
+                    },
+                    processResults: function (data) {
+                        return data || { results: [] };
+                    }
+                }
+            });
+
+            $village.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Pilih Desa / Kelurahan',
+                allowClear: true,
+                dropdownParent: $modal.length ? $modal : $(document.body),
+                ajax: {
+                    url: '<?= base_url('Batch_Approval_MyRep/getVillageOptions') ?>',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term || '',
+                            district_id: $district.val() || ''
+                        };
+                    },
+                    processResults: function (data) {
+                        return data || { results: [] };
+                    }
+                }
+            });
+
+            $district.on('change', function () {
+                var selected = $district.select2('data');
+                $districtName.val(selected && selected[0] ? selected[0].text : '');
+                $village.val(null).trigger('change');
+                $villageName.val('');
+            });
+
+            $village.on('change', function () {
+                var selected = $village.select2('data');
+                $villageName.val(selected && selected[0] ? selected[0].text : '');
+            });
+        }
+
         function ensureDonationRejectModal() {
             if ($('#modal-donation-reject').length) {
                 return;
@@ -4788,6 +4887,8 @@ $detailBatchApprovedDate = !empty($cluster['astri_batch_approved_at']) ? substr(
         window.openDonationFinanceRejectModal = openDonationFinanceRejectModal;
 
         $(function () {
+            initBatchLocationSelects();
+
             $(document).on('click', '.batch-edit-btn', function (event) {
                 event.preventDefault();
                 event.stopPropagation();

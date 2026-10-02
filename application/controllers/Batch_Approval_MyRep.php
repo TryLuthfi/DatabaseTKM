@@ -8,6 +8,7 @@ class Batch_Approval_MyRep extends CI_Controller
         parent::__construct();
         $this->load->model('MBatch_Approval_MyRep');
         $this->load->model('MPost_Donasi_MyRep');
+        $this->load->model('MBAK_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
         $this->load->library('Myrep_reject_email_service', null, 'myrepRejectEmail');
@@ -16,6 +17,8 @@ class Batch_Approval_MyRep extends CI_Controller
             $this->myrepAccess->enforceView('Batch_Approval_MyRep');
             $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method(), [
                 'tableData' => 'VIEW',
+                'getDistrictOptions' => 'VIEW',
+                'getVillageOptions' => 'VIEW',
                 'previewBatchImport' => 'TAMBAH',
                 'printChecklistPengajuan' => 'VIEW',
                 'saveImportedBatch' => 'TAMBAH',
@@ -663,8 +666,9 @@ class Batch_Approval_MyRep extends CI_Controller
         $recipientPeriod = trim((string) $this->input->post('recipient_period'));
         $bankName = trim((string) $this->input->post('bank_name'));
         $bankAccountNumber = trim((string) $this->input->post('bank_account_number'));
-        $districtName = trim((string) $this->input->post('district_name'));
-        $villageName = trim((string) $this->input->post('village_name'));
+        $location = $this->resolvePostedWilayahSelection();
+        $districtName = (string) $location['district_name'];
+        $villageName = (string) $location['village_name'];
         $submissionDate = $this->normalizeDate($this->input->post('submission_date'));
         $stagingStatus = strtoupper(trim((string) $this->input->post('staging_status')));
         $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
@@ -695,8 +699,14 @@ class Batch_Approval_MyRep extends CI_Controller
             return;
         }
 
+        if ($location['error'] !== '') {
+            $this->session->set_flashdata('error', $location['error']);
+            redirect($this->resolveBatchRedirectPath($clusterId));
+            return;
+        }
+
         if ($districtName === '' || $villageName === '') {
-            $this->session->set_flashdata('error', 'Kecamatan dan Desa / Kelurahan wajib diisi.');
+            $this->session->set_flashdata('error', 'Kecamatan dan Desa / Kelurahan wajib dipilih.');
             redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
@@ -783,7 +793,10 @@ class Batch_Approval_MyRep extends CI_Controller
             'updated_by' => $userId,
         ], [
             'status_current' => $this->mapClusterStatusFromStaging($stagingStatus),
+            'regency_id' => $location['regency_id'],
+            'district_id' => $location['district_id'],
             'district_name' => $districtName,
+            'village_id' => $location['village_id'],
             'village_name' => $villageName,
             'updated_by' => $userId,
         ], $pics);
@@ -798,6 +811,66 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $this->session->set_flashdata('success', $isSubmittingRevisedBatchData ? 'Revisi data batch berhasil disubmit ulang ke SITAC HO.' : 'Data Batch Approval berhasil diperbarui.');
         redirect($redirectPath);
+    }
+
+    public function getDistrictOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['results' => []]));
+            return;
+        }
+
+        $rows = $this->MBAK_MyRep->searchDistrictOptionsByTarget(
+            (int) $this->input->get('target_id'),
+            trim((string) $this->input->get('q')),
+            50,
+            trim((string) $this->input->get('city_name'))
+        );
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'id' => (string) ($row['id'] ?? ''),
+                'text' => (string) ($row['name'] ?? ''),
+                'regency_id' => (string) ($row['regency_id'] ?? ''),
+                'regency_name' => (string) ($row['regency_name'] ?? ''),
+            ];
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['results' => $results]));
+    }
+
+    public function getVillageOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['results' => []]));
+            return;
+        }
+
+        $rows = $this->MBAK_MyRep->searchVillageOptionsByDistrict(
+            trim((string) $this->input->get('district_id')),
+            trim((string) $this->input->get('q')),
+            50
+        );
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'id' => (string) ($row['id'] ?? ''),
+                'text' => (string) ($row['name'] ?? ''),
+                'district_id' => (string) ($row['district_id'] ?? ''),
+            ];
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['results' => $results]));
     }
 
     public function rejectBatchData()
@@ -3525,6 +3598,63 @@ class Batch_Approval_MyRep extends CI_Controller
     {
         $value = trim((string) $value);
         return $value === '' ? null : (int) $this->normalizeNumber($value);
+    }
+
+    private function resolvePostedWilayahSelection()
+    {
+        $districtId = trim((string) $this->input->post('district_id'));
+        $villageId = trim((string) $this->input->post('village_id'));
+        $districtName = trim((string) $this->input->post('district_name'));
+        $villageName = trim((string) $this->input->post('village_name'));
+
+        $location = [
+            'regency_id' => null,
+            'district_id' => $districtId !== '' ? $districtId : null,
+            'district_name' => $districtName,
+            'village_id' => $villageId !== '' ? $villageId : null,
+            'village_name' => $villageName,
+            'error' => '',
+        ];
+
+        if ($districtId !== '') {
+            $district = $this->MBAK_MyRep->getDistrictById($districtId);
+            if (empty($district['id'])) {
+                $location['error'] = 'Kecamatan yang dipilih tidak ditemukan di master wilayah.';
+                return $location;
+            }
+
+            $location['regency_id'] = (string) ($district['regency_id'] ?? '');
+            $location['district_id'] = (string) ($district['id'] ?? '');
+            $location['district_name'] = (string) ($district['name'] ?? $districtName);
+        }
+
+        if ($villageId !== '') {
+            $village = $this->MBAK_MyRep->getVillageById($villageId);
+            if (empty($village['id'])) {
+                $location['error'] = 'Desa / Kelurahan yang dipilih tidak ditemukan di master wilayah.';
+                return $location;
+            }
+
+            $villageDistrictId = (string) ($village['district_id'] ?? '');
+            if ($districtId !== '' && $villageDistrictId !== '' && $villageDistrictId !== $districtId) {
+                $location['error'] = 'Desa / Kelurahan tidak sesuai dengan Kecamatan yang dipilih.';
+                return $location;
+            }
+
+            if ($districtId === '' && $villageDistrictId !== '') {
+                $district = $this->MBAK_MyRep->getDistrictById($villageDistrictId);
+                if (!empty($district['id'])) {
+                    $location['regency_id'] = (string) ($district['regency_id'] ?? '');
+                    $location['district_id'] = (string) ($district['id'] ?? '');
+                    $location['district_name'] = (string) ($district['name'] ?? $districtName);
+                }
+            }
+
+            $location['village_id'] = (string) ($village['id'] ?? '');
+            $location['village_name'] = (string) ($village['name'] ?? $villageName);
+        }
+
+        return $location;
     }
 
     private function normalizeDateTimeInput($value)
