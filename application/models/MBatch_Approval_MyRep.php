@@ -3129,7 +3129,7 @@ class MBatch_Approval_MyRep extends CI_Model
             if ($hasSitacOrFinanceRejectedDocument) {
                 return 'NEED_REVISE';
             }
-            if ($postRequired > 0 && ($hasRelease || $isPostPaymentStage || $postPackageExists || (int) ($post['uploaded'] ?? 0) > 0)) {
+            if ($postRequired > 0 && $hasRelease && ($postPackageExists || (int) ($post['uploaded'] ?? 0) > 0 || (int) ($post['approved'] ?? 0) > 0 || (int) ($post['finance_approved'] ?? 0) > 0 || (int) ($post['finance_rejected'] ?? 0) > 0)) {
                 if ((int) ($post['approved'] ?? 0) < $postRequired) {
                     return (int) ($post['uploaded'] ?? 0) >= $postRequired ? 'POST_ZEYN_DOC_ON_REVIEW' : 'WAITING_POST_ZEYN_DOC';
                 }
@@ -3145,10 +3145,6 @@ class MBatch_Approval_MyRep extends CI_Model
             }
             if ((int) ($post['astri_submitted'] ?? 0) > 0 || (int) ($pre['astri_submitted'] ?? 0) > 0) {
                 return 'ASTRI_ON_REVIEW';
-            }
-            if (in_array($stagingStatus, ['WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI'], true)) {
-
-                return 'WAITING_ASTRI_SUBMISSION';
             }
 
             return 'COMPLETED';
