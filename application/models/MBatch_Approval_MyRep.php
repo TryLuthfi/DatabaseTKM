@@ -3110,11 +3110,33 @@ class MBatch_Approval_MyRep extends CI_Model
             || (int) ($post['astri_approved'] ?? 0) > 0
             || (int) ($post['astri_rejected'] ?? 0) > 0
         );
+        $isPostPaymentStage = in_array($stagingStatus, [
+            'RELEASED',
+            'WAITING_POST_ZEYN_DOC',
+            'POST_ZEYN_DOC_ON_REVIEW',
+            'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
+            'WAITING_ASTRI_SUBMISSION',
+            'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
+            'ASTRI_APPROVED',
+        ], true);
         $hasAnyAstriRejected = $allAstriRejected > 0;
         $isTerminalStage = in_array($stagingStatus, ['PO_DONASI', 'INVOICE', 'HOLD', 'REJECTED'], true)
             || ($stagingStatus === 'ASTRI_APPROVED' && !$hasAnyAstriRejected);
 
         if (in_array($currentStatus, ['CHECKLIST DOKUMENT', 'RFS', 'ATP', 'DONE', 'DONE BATCH APPROVAL'], true)) {
+            if ($hasSitacOrFinanceRejectedDocument) {
+                return 'NEED_REVISE';
+            }
+            if ($postRequired > 0 && ($hasRelease || $isPostPaymentStage || $postPackageExists || (int) ($post['uploaded'] ?? 0) > 0)) {
+                if ((int) ($post['approved'] ?? 0) < $postRequired) {
+                    return (int) ($post['uploaded'] ?? 0) >= $postRequired ? 'POST_ZEYN_DOC_ON_REVIEW' : 'WAITING_POST_ZEYN_DOC';
+                }
+                if ((int) ($post['finance_approved'] ?? 0) < $postFinanceRequired) {
+                    return 'POST_ZEYN_FINANCE_ON_REVIEW';
+                }
+            }
             if ($allAstriRequired > 0 && !$hasAnyAstriRejected && $allAstriApproved >= $allAstriRequired) {
                 return 'ASTRI_APPROVED';
             }
