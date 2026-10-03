@@ -13,6 +13,7 @@ class MDRM_MyRep extends CI_Model
     {
         parent::__construct();
         $this->ensureRabSchema();
+        $this->ensureSpkSchema();
         if ($this->shouldRestrictCityByUser()) {
             $this->getCurrentUserAllowedCitySet();
         }
@@ -139,6 +140,58 @@ class MDRM_MyRep extends CI_Model
     public function rabTablesReady()
     {
         return $this->db->table_exists('tb_myrep_rab');
+    }
+
+    private function ensureSpkSchema()
+    {
+        if (!$this->db->table_exists('tb_myrep_spk')) {
+            $this->db->query("
+                CREATE TABLE `tb_myrep_spk` (
+                    `id_myrep_spk` INT(11) NOT NULL AUTO_INCREMENT,
+                    `id_myrep_cluster` INT(11) NOT NULL,
+                    `scope_type` VARCHAR(20) NOT NULL DEFAULT 'CLUSTER',
+                    `spk_mode` VARCHAR(30) NOT NULL DEFAULT 'CLUSTER_ONLY',
+                    `spk_number` VARCHAR(120) NOT NULL,
+                    `spk_status` VARCHAR(30) NOT NULL DEFAULT 'SPK DONE',
+                    `spk_done_at` DATETIME DEFAULT NULL,
+                    `spk_done_by` INT(11) DEFAULT NULL,
+                    `cancelled_at` DATETIME DEFAULT NULL,
+                    `cancelled_by` INT(11) DEFAULT NULL,
+                    `cancel_reason` TEXT NULL,
+                    `migrated_from_rfs` TINYINT(1) NOT NULL DEFAULT 0,
+                    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id_myrep_spk`),
+                    UNIQUE KEY `uniq_myrep_spk_cluster_scope` (`id_myrep_cluster`, `scope_type`),
+                    KEY `idx_myrep_spk_status` (`spk_status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        }
+
+        if ($this->db->table_exists('tb_myrep_spk')) {
+            $columns = [
+                'scope_type' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `scope_type` VARCHAR(20) NOT NULL DEFAULT 'CLUSTER' AFTER `id_myrep_cluster`",
+                'spk_mode' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `spk_mode` VARCHAR(30) NOT NULL DEFAULT 'CLUSTER_ONLY' AFTER `scope_type`",
+                'spk_number' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `spk_number` VARCHAR(120) NOT NULL AFTER `spk_mode`",
+                'spk_status' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `spk_status` VARCHAR(30) NOT NULL DEFAULT 'SPK DONE' AFTER `spk_number`",
+                'spk_done_at' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `spk_done_at` DATETIME DEFAULT NULL AFTER `spk_status`",
+                'spk_done_by' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `spk_done_by` INT(11) DEFAULT NULL AFTER `spk_done_at`",
+                'cancelled_at' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `cancelled_at` DATETIME DEFAULT NULL AFTER `spk_done_by`",
+                'cancelled_by' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `cancelled_by` INT(11) DEFAULT NULL AFTER `cancelled_at`",
+                'cancel_reason' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `cancel_reason` TEXT NULL AFTER `cancelled_by`",
+                'migrated_from_rfs' => "ALTER TABLE `tb_myrep_spk` ADD COLUMN `migrated_from_rfs` TINYINT(1) NOT NULL DEFAULT 0 AFTER `cancel_reason`",
+            ];
+            foreach ($columns as $columnName => $sql) {
+                if (!$this->db->field_exists($columnName, 'tb_myrep_spk')) {
+                    $this->db->query($sql);
+                }
+            }
+        }
+    }
+
+    public function spkTablesReady()
+    {
+        return $this->db->table_exists('tb_myrep_spk');
     }
 
     public function drmTablesReady()
@@ -359,6 +412,7 @@ class MDRM_MyRep extends CI_Model
         $docSummaryMap = $this->getDocumentSummaryMap(array_column($rows, 'id_myrep_cluster'));
         $boqStatusMap = $this->getDrmBoqStatusMap(array_column($rows, 'id_myrep_cluster'));
         $rabStatusMap = $this->getRabStatusMap(array_column($rows, 'id_myrep_cluster'));
+        $spkStatusMap = $this->getSpkStatusMap(array_column($rows, 'id_myrep_cluster'));
         $scopeRequirementStatusMap = $this->getScopeRequirementStatusMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
             $row['project_type'] = 'CLUSTER';
@@ -377,6 +431,10 @@ class MDRM_MyRep extends CI_Model
             $row['rab_status'] = $rabStatusMap[$clusterId]['rab_status'] ?? '';
             $row['detail_rab'] = $rabStatusMap[$clusterId]['detail_rab'] ?? '';
             $row['rab_done_at'] = $rabStatusMap[$clusterId]['rab_done_at'] ?? '';
+            $row['spk_cluster_status'] = $spkStatusMap[$clusterId]['CLUSTER']['spk_status'] ?? '';
+            $row['spk_cluster_number'] = $spkStatusMap[$clusterId]['CLUSTER']['spk_number'] ?? '';
+            $row['spk_subfeeder_status'] = $spkStatusMap[$clusterId]['SUBFEEDER']['spk_status'] ?? '';
+            $row['spk_subfeeder_number'] = $spkStatusMap[$clusterId]['SUBFEEDER']['spk_number'] ?? '';
         }
         unset($row);
 
@@ -762,6 +820,11 @@ class MDRM_MyRep extends CI_Model
         $row['detail_rab'] = (string) ($rab['detail_rab'] ?? '');
         $row['rab_done_at'] = (string) ($rab['rab_done_at'] ?? '');
         $row['rab_done_by'] = (int) ($rab['rab_done_by'] ?? 0);
+        $spkMap = $this->getSpkStatusMap([(int) $clusterId]);
+        $row['spk_cluster_status'] = $spkMap[(int) $clusterId]['CLUSTER']['spk_status'] ?? '';
+        $row['spk_cluster_number'] = $spkMap[(int) $clusterId]['CLUSTER']['spk_number'] ?? '';
+        $row['spk_subfeeder_status'] = $spkMap[(int) $clusterId]['SUBFEEDER']['spk_status'] ?? '';
+        $row['spk_subfeeder_number'] = $spkMap[(int) $clusterId]['SUBFEEDER']['spk_number'] ?? '';
 
         return $row;
     }
@@ -804,6 +867,60 @@ class MDRM_MyRep extends CI_Model
         $map = [];
         foreach ($rows as $row) {
             $map[(int) ($row['id_myrep_cluster'] ?? 0)] = $row;
+        }
+        return $map;
+    }
+
+    public function getSpkByClusterId($clusterId, $activeOnly = true)
+    {
+        if (!$this->spkTablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->from('tb_myrep_spk')
+            ->where('id_myrep_cluster', (int) $clusterId);
+        if ($activeOnly) {
+            $this->db->where('UPPER(spk_status)', 'SPK DONE');
+        }
+
+        $rows = (array) $this->db
+            ->order_by('scope_type', 'ASC')
+            ->order_by('id_myrep_spk', 'DESC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $scopeType = $this->normalizeDrmScopeType($row['scope_type'] ?? 'CLUSTER');
+            if (!isset($map[$scopeType])) {
+                $map[$scopeType] = $row;
+            }
+        }
+
+        return $map;
+    }
+
+    private function getSpkStatusMap($clusterIds)
+    {
+        $clusterIds = array_values(array_unique(array_filter(array_map('intval', (array) $clusterIds))));
+        if (empty($clusterIds) || !$this->spkTablesReady()) {
+            return [];
+        }
+
+        $rows = (array) $this->db
+            ->select('id_myrep_cluster, scope_type, spk_mode, spk_number, spk_status, spk_done_at')
+            ->from('tb_myrep_spk')
+            ->where('UPPER(spk_status)', 'SPK DONE')
+            ->where_in('id_myrep_cluster', $clusterIds)
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $scopeType = $this->normalizeDrmScopeType($row['scope_type'] ?? 'CLUSTER');
+            $map[$clusterId][$scopeType] = $row;
         }
         return $map;
     }
@@ -1916,6 +2033,136 @@ class MDRM_MyRep extends CI_Model
         return $this->cancelRabDone($clusterId, (int) $userId, $reason, true);
     }
 
+    public function saveSpkDone($clusterId, $userId, $spkMode, $spkNumber)
+    {
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $spkMode = strtoupper(trim((string) $spkMode));
+        $spkNumber = trim((string) $spkNumber);
+        if ($clusterId <= 0 || $spkNumber === '' || !$this->spkTablesReady()) {
+            return false;
+        }
+        if (!in_array($spkMode, ['CLUSTER_ONLY', 'SUBFEEDER_ONLY', 'GABUNGAN'], true)) {
+            return false;
+        }
+
+        $cluster = $this->getDrmByClusterId($clusterId);
+        $rabStatus = strtoupper(trim((string) ($cluster['rab_status'] ?? '')));
+        $currentStatus = strtoupper(trim((string) ($cluster['status_current'] ?? '')));
+        if ($rabStatus !== 'RAB DONE' && $currentStatus !== 'RAB DONE') {
+            return false;
+        }
+
+        $subfeederRequired = $this->isSubfeederRequiredForSpk($clusterId);
+        if (!$subfeederRequired && in_array($spkMode, ['SUBFEEDER_ONLY', 'GABUNGAN'], true)) {
+            return false;
+        }
+
+        $scopes = ['CLUSTER'];
+        if ($spkMode === 'SUBFEEDER_ONLY') {
+            $scopes = ['SUBFEEDER'];
+        } elseif ($spkMode === 'GABUNGAN') {
+            $scopes = ['CLUSTER', 'SUBFEEDER'];
+        }
+
+        $activeSpk = $this->getSpkByClusterId($clusterId);
+        foreach ($scopes as $scopeType) {
+            if (!empty($activeSpk[$scopeType])) {
+                return false;
+            }
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $this->db->trans_start();
+        foreach ($scopes as $scopeType) {
+            $payload = [
+                'id_myrep_cluster' => $clusterId,
+                'scope_type' => $scopeType,
+                'spk_mode' => $spkMode,
+                'spk_number' => $spkNumber,
+                'spk_status' => 'SPK DONE',
+                'spk_done_at' => $now,
+                'spk_done_by' => $userId > 0 ? $userId : null,
+                'cancelled_at' => null,
+                'cancelled_by' => null,
+                'cancel_reason' => null,
+                'migrated_from_rfs' => 0,
+                'updated_at' => $now,
+            ];
+
+            $existing = $this->db
+                ->select('id_myrep_spk')
+                ->from('tb_myrep_spk')
+                ->where('id_myrep_cluster', $clusterId)
+                ->where('scope_type', $scopeType)
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($existing['id_myrep_spk'])) {
+                $this->db->where('id_myrep_spk', (int) $existing['id_myrep_spk'])->update('tb_myrep_spk', $payload);
+            } else {
+                $payload['created_at'] = $now;
+                $this->db->insert('tb_myrep_spk', $payload);
+            }
+        }
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    public function rollbackSpkDone($clusterId, $userId, $reason = '', array $scopes = [])
+    {
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $reason = trim((string) $reason);
+        if ($clusterId <= 0 || !$this->spkTablesReady()) {
+            return false;
+        }
+
+        $scopes = array_values(array_unique(array_filter(array_map(function ($scopeType) {
+            return $this->normalizeDrmScopeType($scopeType);
+        }, $scopes))));
+        if (empty($scopes)) {
+            return false;
+        }
+
+        $activeRows = $this->getSpkByClusterId($clusterId);
+        if (empty($activeRows)) {
+            return false;
+        }
+        $hasMatchingScope = false;
+        foreach ($scopes as $scopeType) {
+            if (!empty($activeRows[$scopeType])) {
+                $hasMatchingScope = true;
+                break;
+            }
+        }
+        if (!$hasMatchingScope) {
+            return false;
+        }
+
+        return $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(spk_status)', 'SPK DONE')
+            ->where_in('scope_type', $scopes)
+            ->update('tb_myrep_spk', [
+                'spk_status' => 'CANCELLED',
+                'cancelled_at' => date('Y-m-d H:i:s'),
+                'cancelled_by' => $userId > 0 ? $userId : null,
+                'cancel_reason' => $reason !== '' ? $reason : null,
+            ]);
+    }
+
+    public function isSubfeederRequiredForSpk($clusterId)
+    {
+        if (!$this->drmScopeRequirementTablesReady()) {
+            return true;
+        }
+
+        $requirement = $this->getScopeRequirement((int) $clusterId, 'SUBFEEDER');
+        return strtoupper(trim((string) ($requirement['requirement_status'] ?? 'REQUIRED'))) !== 'NOT_REQUIRED_APPROVED';
+    }
+
     private function rebuildCombinedBaselineIfReady($clusterId, $approvedAt, $userId)
     {
         $clusterHeader = $this->getDrmBoqHeader($clusterId, 'CLUSTER');
@@ -2220,6 +2467,7 @@ class MDRM_MyRep extends CI_Model
                 'cancel_reason' => trim((string) $reason) !== '' ? trim((string) $reason) : null,
                 'updated_at' => $now,
             ]);
+        $this->cancelSpkDone($clusterId, (int) $userId, trim((string) $reason) !== '' ? trim((string) $reason) : 'RAB cancelled');
 
         if ($this->db->table_exists('tb_myrep_batch_approval')) {
             $existingBatch = $this->db
@@ -2243,6 +2491,24 @@ class MDRM_MyRep extends CI_Model
             ]);
 
         return true;
+    }
+
+    private function cancelSpkDone($clusterId, $userId, $reason = '')
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || !$this->spkTablesReady()) {
+            return false;
+        }
+
+        return $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('UPPER(spk_status)', 'SPK DONE')
+            ->update('tb_myrep_spk', [
+                'spk_status' => 'CANCELLED',
+                'cancelled_at' => date('Y-m-d H:i:s'),
+                'cancelled_by' => (int) $userId > 0 ? (int) $userId : null,
+                'cancel_reason' => trim((string) $reason) !== '' ? trim((string) $reason) : null,
+            ]);
     }
 
     public function getDrmFileById($fileId)

@@ -97,7 +97,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $stageFilter = strtolower(trim((string) $this->input->post('stage_filter')));
-        if (!in_array($stageFilter, ['ny_drm', 'on_review_drm', 'on_proses_drm', 'ny_rab', 'done_drm', 'rab_done', 'rejected'], true)) {
+        if (!in_array($stageFilter, ['ny_drm', 'on_review_drm', 'on_proses_drm', 'ny_rab', 'ny_spk', 'done_drm', 'rab_done', 'rejected'], true)) {
             $stageFilter = '';
         }
 
@@ -246,11 +246,13 @@ class DRM_MyRep extends CI_Controller
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
         $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
         $data['rabReady'] = $this->MDRM_MyRep->rabTablesReady();
+        $data['spkReady'] = $this->MDRM_MyRep->spkTablesReady();
         $data['subfeederReady'] = $this->MDRM_MyRep->drmSubfeederReady();
         $data['scopeRequirementReady'] = $this->MDRM_MyRep->drmScopeRequirementTablesReady();
         $data['canApprove'] = $this->isApprover();
         $data['canChecklistRabDone'] = $this->canChecklistRabDone();
         $data['rabDetail'] = $this->MDRM_MyRep->getRabByClusterId($clusterId, false);
+        $data['spkRows'] = $this->MDRM_MyRep->getSpkByClusterId($clusterId, true);
         $subfeederRequirement = $data['scopeRequirementReady']
             ? $this->MDRM_MyRep->getScopeRequirement($clusterId, 'SUBFEEDER')
             : ['requirement_status' => 'REQUIRED'];
@@ -2028,6 +2030,70 @@ class DRM_MyRep extends CI_Controller
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
+    public function saveSpkDone()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->canChecklistRabDone()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses input SPK.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $spkNumber = trim((string) $this->input->post('spk_number'));
+        if ($spkNumber === '') {
+            $this->session->set_flashdata('error', 'Nomor SPK wajib diisi.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->saveSpkDone(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            (string) $this->input->post('spk_mode'),
+            $spkNumber
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'SPK berhasil disimpan.' : 'Gagal menyimpan SPK. Pastikan RAB sudah DONE dan pilihan SPK sesuai scope.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function rollbackSpkDone()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->canChecklistRabDone()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses rollback SPK.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $rollbackScopes = $this->input->post('rollback_scopes');
+        $rollbackScopes = is_array($rollbackScopes) ? $rollbackScopes : [];
+        if (empty($rollbackScopes)) {
+            $this->session->set_flashdata('error', 'Pilih minimal satu scope SPK untuk rollback.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+        $result = $this->MDRM_MyRep->rollbackSpkDone(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            trim((string) $this->input->post('reason')),
+            $rollbackScopes
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Rollback SPK berhasil disimpan.' : 'Gagal rollback SPK.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
     public function deleteCluster()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -2416,15 +2482,38 @@ class DRM_MyRep extends CI_Controller
         if ($this->getDrmRabToken($row) === 'belum_rab') {
             $tokens[] = 'ny_rab';
         }
+        if ($this->isNySpkDrmRow($row)) {
+            $tokens[] = 'ny_spk';
+        }
         if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
             $tokens[] = 'rejected';
         }
-        if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+        if (($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') && !$this->isNySpkDrmRow($row)) {
             $tokens[] = 'done_drm';
             $tokens[] = 'rab_done';
         }
 
         return array_values(array_unique($tokens));
+    }
+
+    private function isNySpkDrmRow(array $row)
+    {
+        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        if ($rabStatus !== 'RAB DONE' && $currentStatus !== 'RAB DONE') {
+            return false;
+        }
+
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            return false;
+        }
+
+        $clusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
+        $subfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
+        $subfeederNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
+
+        return !($clusterDone && ($subfeederDone || $subfeederNotRequired));
     }
 
     private function getDrmStatusTokens(array $row)
@@ -2467,10 +2556,8 @@ class DRM_MyRep extends CI_Controller
         $columnMap = [
             1 => 'cluster_name',
             2 => 'city_name',
-            3 => 'released_at',
-            4 => 'hp_donasi',
-            5 => 'homepass_drm',
-            9 => 'status_current',
+            3 => 'homepass_drm',
+            7 => 'status_current',
         ];
         $key = $columnMap[$column] ?? 'cluster_name';
 
@@ -2522,6 +2609,19 @@ class DRM_MyRep extends CI_Controller
         }
         $statusHtml .= '</div>';
 
+        $spkClusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
+        $spkSubfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
+        $subfeederNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
+        $spkHtml = '<div class="drm-status-scope">'
+            . '<div class="drm-status-scope__item"><span class="drm-status-scope__name">Cluster :</span> '
+            . '<span class="badge badge-' . $this->attr($this->drmBadgeClass($spkClusterDone ? 'SPK DONE' : '')) . ' drm-status-scope__badge">' . ($spkClusterDone ? 'SPK DONE' : 'BELUM SPK') . '</span></div>';
+        if (!$isMainfeeder) {
+            $subfeederSpkLabel = $subfeederNotRequired ? 'TIDAK DIBUTUHKAN' : ($spkSubfeederDone ? 'SPK DONE' : 'BELUM SPK');
+            $spkHtml .= '<div class="drm-status-scope__item"><span class="drm-status-scope__name">Subfeeder :</span> '
+                . '<span class="badge badge-' . $this->attr($this->drmBadgeClass($subfeederSpkLabel)) . ' drm-status-scope__badge">' . $this->html($subfeederSpkLabel) . '</span></div>';
+        }
+        $spkHtml .= '</div>';
+
         $actionHtml = '';
         if ($isMainfeeder) {
             $actionHtml = '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-outline-primary">' . ($hasDrm ? 'Detail' : 'Input DRM') . '</a>';
@@ -2541,12 +2641,10 @@ class DRM_MyRep extends CI_Controller
             (int) $no,
             $clusterHtml,
             $this->html((string) ($row['city_name'] ?? '-')),
-            !empty($row['released_at']) ? $this->html((string) $row['released_at']) : '-',
-            number_format((float) ($row['hp_donasi'] ?? 0), 0, ',', '.'),
             number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.'),
             $statusHtml,
-            (int) ($row['doc_approved'] ?? 0) . '/' . (int) ($row['doc_total'] ?? 0) . ' approved',
             '<span class="sr-only">drm_rab_filter_' . $this->html($rabFilterToken) . '</span><span class="badge badge-' . $this->attr($this->drmBadgeClass($rabStatusLabel)) . '">' . $this->html($rabStatusLabel) . '</span>',
+            $spkHtml,
             '<span class="sr-only">' . $this->html(implode(' ', $stageSearchTokens)) . '</span><span class="badge badge-' . $this->attr($this->drmBadgeClass($row['status_current'] ?? 'RELEASED')) . '">' . $this->html((string) ($row['status_current'] ?? 'RELEASED')) . '</span>',
             $actionHtml,
         ];
@@ -2559,6 +2657,7 @@ class DRM_MyRep extends CI_Controller
             case 'COMPLETE':
             case 'APPROVED':
             case 'RAB DONE':
+            case 'SPK DONE':
             case 'TIDAK DIBUTUHKAN':
             case 'NOT REQUIRED':
             case 'DRM':

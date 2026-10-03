@@ -8,6 +8,21 @@ $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermissi
 $rabDetail = (array) ($rabDetail ?? []);
 $rabStatus = strtoupper(trim((string) ($rabDetail['rab_status'] ?? $cluster['rab_status'] ?? '')));
 $isRabDone = $rabStatus === 'RAB DONE';
+$spkRows = (array) ($spkRows ?? []);
+$spkCluster = (array) ($spkRows['CLUSTER'] ?? []);
+$spkSubfeeder = (array) ($spkRows['SUBFEEDER'] ?? []);
+$isSpkClusterDone = strtoupper(trim((string) ($spkCluster['spk_status'] ?? ''))) === 'SPK DONE';
+$isSpkSubfeederDone = strtoupper(trim((string) ($spkSubfeeder['spk_status'] ?? ''))) === 'SPK DONE';
+$subfeederRequirementForSpk = strtoupper(trim((string) ($drmScopes['SUBFEEDER']['requirement']['requirement_status'] ?? 'REQUIRED')));
+$isSubfeederAvailableForSpk = $subfeederRequirementForSpk !== 'NOT_REQUIRED_APPROVED';
+$canManageSpk = !empty($spkReady)
+    && !empty($canChecklistRabDone)
+    && $isRabDone;
+$canInputSpkCluster = $canManageSpk && !$isSpkClusterDone;
+$canInputSpkSubfeeder = $canManageSpk && $isSubfeederAvailableForSpk && !$isSpkSubfeederDone;
+$canInputSpkGabungan = $canInputSpkCluster && $canInputSpkSubfeeder;
+$canShowSpkDoneButton = $canInputSpkCluster || $canInputSpkSubfeeder;
+$canShowSpkRollbackButton = $canManageSpk && ($isSpkClusterDone || $isSpkSubfeederDone);
 $clusterBoqHeaderForRab = (array) ($drmScopes['CLUSTER']['boqHeader'] ?? []);
 $canShowRabDoneButton = !empty($rabReady)
     && !empty($canChecklistRabDone)
@@ -23,6 +38,7 @@ if (!function_exists('drmDetailBadgeClass')) {
         switch (strtoupper(trim((string) $status))) {
             case 'APPROVED':
             case 'DONE':
+            case 'SPK DONE':
                 return 'success';
             case 'REJECTED':
                 return 'danger';
@@ -287,6 +303,104 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
                 .drm-rab-detail {
                     white-space: pre-wrap;
+                }
+
+                .drm-spk-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: .85rem;
+                }
+
+                .drm-spk-scope-card {
+                    border: 1px solid #dbeafe;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #ffffff, #f8fbff);
+                    padding: .9rem;
+                    min-height: 118px;
+                }
+
+                .drm-spk-scope-card__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: .75rem;
+                    margin-bottom: .55rem;
+                }
+
+                .drm-spk-scope-card__title {
+                    color: #1e3a8a;
+                    font-size: .92rem;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                }
+
+                .drm-spk-number {
+                    color: #0f172a;
+                    font-size: 1rem;
+                    font-weight: 800;
+                    overflow-wrap: anywhere;
+                }
+
+                .drm-spk-meta {
+                    color: #64748b;
+                    font-size: .78rem;
+                    font-weight: 600;
+                    margin-top: .35rem;
+                }
+
+                .drm-spk-option-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    gap: .75rem;
+                }
+
+                .drm-spk-option {
+                    position: relative;
+                    display: block;
+                    margin: 0;
+                    cursor: pointer;
+                }
+
+                .drm-spk-option input {
+                    position: absolute;
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
+                .drm-spk-option__body {
+                    min-height: 106px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 12px;
+                    background: #fff;
+                    padding: .85rem;
+                    transition: all .18s ease;
+                }
+
+                .drm-spk-option input:checked + .drm-spk-option__body {
+                    border-color: #2563eb;
+                    background: #eff6ff;
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+                }
+
+                .drm-spk-option__title {
+                    display: block;
+                    color: #0f172a;
+                    font-weight: 800;
+                    margin-bottom: .25rem;
+                }
+
+                .drm-spk-option__text {
+                    display: block;
+                    color: #64748b;
+                    font-size: .82rem;
+                    line-height: 1.35;
+                }
+
+                @media (max-width: 767.98px) {
+                    .drm-spk-grid,
+                    .drm-spk-option-grid {
+                        grid-template-columns: 1fr;
+                    }
                 }
 
                 .drm-scope-tabs .nav-link {
@@ -682,6 +796,17 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                         <span class="badge badge-<?= drmDetailBadgeClass($isRabDone ? 'APPROVED' : '') ?>"><?= htmlspecialchars($isRabDone ? 'RAB DONE' : 'BELUM RAB DONE') ?></span>
                                         <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
                                             <div class="small text-muted mt-1"><?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="drm-detail-field">
+                                    <span class="drm-detail-field__label">Status SPK</span>
+                                    <div class="drm-detail-field__value">
+                                        <div>Cluster: <span class="badge badge-<?= drmDetailBadgeClass($isSpkClusterDone ? 'SPK DONE' : '') ?>"><?= htmlspecialchars($isSpkClusterDone ? 'SPK DONE' : 'BELUM SPK') ?></span></div>
+                                        <?php if ($isSubfeederAvailableForSpk): ?>
+                                            <div class="mt-1">Subfeeder: <span class="badge badge-<?= drmDetailBadgeClass($isSpkSubfeederDone ? 'SPK DONE' : '') ?>"><?= htmlspecialchars($isSpkSubfeederDone ? 'SPK DONE' : 'BELUM SPK') ?></span></div>
+                                        <?php else: ?>
+                                            <div class="mt-1">Subfeeder: <span class="badge badge-success">TIDAK DIBUTUHKAN</span></div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -1178,6 +1303,67 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="card card-outline card-primary shadow-sm mt-3">
+                                            <div class="card-header d-flex justify-content-between align-items-center">
+                                                <h3 class="card-title mb-0">SPK Cluster</h3>
+                                                <div>
+                                                    <span class="badge badge-<?= drmDetailBadgeClass($isSpkClusterDone ? 'SPK DONE' : '') ?>">Cluster <?= htmlspecialchars($isSpkClusterDone ? 'SPK DONE' : 'BELUM SPK') ?></span>
+                                                    <?php if ($isSubfeederAvailableForSpk): ?>
+                                                        <span class="badge badge-<?= drmDetailBadgeClass($isSpkSubfeederDone ? 'SPK DONE' : '') ?> ml-1">Subfeeder <?= htmlspecialchars($isSpkSubfeederDone ? 'SPK DONE' : 'BELUM SPK') ?></span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-success ml-1">Subfeeder Tidak Dibutuhkan</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-8">
+                                                        <div class="drm-spk-grid">
+                                                            <div class="drm-spk-scope-card">
+                                                                <div class="drm-spk-scope-card__head">
+                                                                    <span class="drm-spk-scope-card__title">SPK Cluster</span>
+                                                                    <span class="badge badge-<?= drmDetailBadgeClass($isSpkClusterDone ? 'SPK DONE' : '') ?>"><?= htmlspecialchars($isSpkClusterDone ? 'SPK DONE' : 'BELUM SPK') ?></span>
+                                                                </div>
+                                                                <div class="drm-spk-number"><?= $isSpkClusterDone ? htmlspecialchars((string) ($spkCluster['spk_number'] ?? '-')) : '-' ?></div>
+                                                                <div class="drm-spk-meta"><?= $isSpkClusterDone && !empty($spkCluster['spk_done_at']) ? 'Input: ' . htmlspecialchars((string) $spkCluster['spk_done_at']) : 'Menunggu input nomor SPK' ?></div>
+                                                            </div>
+                                                            <div class="drm-spk-scope-card">
+                                                                <div class="drm-spk-scope-card__head">
+                                                                    <span class="drm-spk-scope-card__title">SPK Subfeeder</span>
+                                                                    <?php if ($isSubfeederAvailableForSpk): ?>
+                                                                        <span class="badge badge-<?= drmDetailBadgeClass($isSpkSubfeederDone ? 'SPK DONE' : '') ?>"><?= htmlspecialchars($isSpkSubfeederDone ? 'SPK DONE' : 'BELUM SPK') ?></span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge badge-success">TIDAK DIBUTUHKAN</span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                                <?php if ($isSubfeederAvailableForSpk): ?>
+                                                                    <div class="drm-spk-number"><?= $isSpkSubfeederDone ? htmlspecialchars((string) ($spkSubfeeder['spk_number'] ?? '-')) : '-' ?></div>
+                                                                    <div class="drm-spk-meta"><?= $isSpkSubfeederDone && !empty($spkSubfeeder['spk_done_at']) ? 'Input: ' . htmlspecialchars((string) $spkSubfeeder['spk_done_at']) : 'Menunggu input nomor SPK' ?></div>
+                                                                <?php else: ?>
+                                                                    <div class="drm-spk-number">Tidak dibutuhkan</div>
+                                                                    <div class="drm-spk-meta">Scope subfeeder sudah diset tidak dibutuhkan.</div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                                                        <?php if ($canShowSpkDoneButton): ?>
+                                                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-spk-done">Input SPK</button>
+                                                            <?php if ($canShowSpkRollbackButton): ?>
+                                                                <button type="button" class="btn btn-outline-danger mt-2" data-toggle="modal" data-target="#modal-spk-rollback">Rollback SPK</button>
+                                                            <?php endif; ?>
+                                                        <?php elseif ($canManageSpk && ($isSpkClusterDone || $isSpkSubfeederDone)): ?>
+                                                            <div class="text-success font-weight-bold mb-2">SPK sudah lengkap untuk scope aktif.</div>
+                                                            <?php if ($canShowSpkRollbackButton): ?>
+                                                                <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#modal-spk-rollback">Rollback SPK</button>
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            <span class="text-muted small">Input SPK tersedia setelah RAB DONE dan user memiliki akses Planning HO.</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </div>
@@ -1339,6 +1525,119 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-danger" onclick="return confirm('Rollback status RAB DONE untuk cluster ini?');">Rollback RAB</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($canShowSpkDoneButton): ?>
+<div class="modal fade" id="modal-spk-done" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/saveSpkDone') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Input SPK</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        SPK dapat diinput karena RAB sudah DONE. Nomor SPK wajib diisi.
+                    </div>
+                    <div class="form-group">
+                        <label>Tipe SPK</label>
+                        <div class="drm-spk-option-grid">
+                            <?php if ($canInputSpkCluster): ?>
+                                <label class="drm-spk-option">
+                                    <input type="radio" name="spk_mode" value="CLUSTER_ONLY" required checked>
+                                    <span class="drm-spk-option__body">
+                                        <span class="drm-spk-option__title">SPK Cluster Only</span>
+                                        <span class="drm-spk-option__text">Mengisi nomor SPK hanya untuk scope cluster.</span>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
+                            <?php if ($canInputSpkSubfeeder): ?>
+                                <label class="drm-spk-option">
+                                    <input type="radio" name="spk_mode" value="SUBFEEDER_ONLY" required <?= !$canInputSpkCluster ? 'checked' : '' ?>>
+                                    <span class="drm-spk-option__body">
+                                        <span class="drm-spk-option__title">SPK Subfeeder Only</span>
+                                        <span class="drm-spk-option__text">Mengisi nomor SPK hanya untuk scope subfeeder.</span>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
+                            <?php if ($canInputSpkGabungan): ?>
+                                <label class="drm-spk-option">
+                                    <input type="radio" name="spk_mode" value="GABUNGAN" required>
+                                    <span class="drm-spk-option__body">
+                                        <span class="drm-spk-option__title">SPK Gabungan</span>
+                                        <span class="drm-spk-option__text">Nomor SPK yang sama untuk cluster dan subfeeder.</span>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Nomor SPK</label>
+                        <input type="text" name="spk_number" class="form-control" required placeholder="Isi nomor SPK">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Simpan SPK untuk cluster ini?');">Simpan SPK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($canShowSpkRollbackButton): ?>
+<div class="modal fade" id="modal-spk-rollback" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content drm-modal">
+            <form method="post" action="<?= base_url('DRM_MyRep/rollbackSpkDone') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Rollback SPK</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning small">
+                        Pilih scope SPK yang ingin dikembalikan menjadi BELUM SPK.
+                    </div>
+                    <div class="form-group">
+                        <label>Scope Rollback</label>
+                        <div class="drm-spk-option-grid">
+                            <?php if ($isSpkClusterDone): ?>
+                                <label class="drm-spk-option">
+                                    <input type="checkbox" name="rollback_scopes[]" value="CLUSTER" checked>
+                                    <span class="drm-spk-option__body">
+                                        <span class="drm-spk-option__title">SPK Cluster</span>
+                                        <span class="drm-spk-option__text"><?= htmlspecialchars((string) ($spkCluster['spk_number'] ?? '-')) ?></span>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
+                            <?php if ($isSpkSubfeederDone): ?>
+                                <label class="drm-spk-option">
+                                    <input type="checkbox" name="rollback_scopes[]" value="SUBFEEDER" checked>
+                                    <span class="drm-spk-option__body">
+                                        <span class="drm-spk-option__title">SPK Subfeeder</span>
+                                        <span class="drm-spk-option__text"><?= htmlspecialchars((string) ($spkSubfeeder['spk_number'] ?? '-')) ?></span>
+                                    </span>
+                                </label>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Alasan Rollback <span class="text-muted font-weight-normal">(opsional)</span></label>
+                        <textarea name="reason" rows="4" class="form-control" placeholder="Contoh: nomor SPK perlu diperbaiki"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Rollback SPK untuk scope yang dipilih?');">Rollback SPK</button>
                 </div>
             </form>
         </div>

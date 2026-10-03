@@ -22,6 +22,7 @@ $drmStageSummary = [
     'NY_DRM' => ['label' => 'NY DRM', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_drm'],
     'ON_REVIEW_DRM' => ['label' => 'ON REVIEW DRM', 'pic' => 'HO SND', 'pic_class' => 'sitac', 'pic_icon' => 'users', 'class' => 'primary', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'on_review_drm'],
     'NY_RAB' => ['label' => 'NY RAB', 'pic' => 'HO PLANNING', 'pic_class' => 'planning', 'pic_icon' => 'drafting-compass', 'class' => 'warning', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_rab'],
+    'NY_SPK' => ['label' => 'NY SPK', 'pic' => 'HO PLANNING', 'pic_class' => 'planning', 'pic_icon' => 'file-signature', 'class' => 'warning', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_spk'],
     'REJECTED' => ['label' => 'REJECTED', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'danger', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'rejected'],
     'DONE_DRM' => ['label' => 'DONE DRM', 'pic' => '', 'pic_class' => 'done', 'pic_icon' => 'check-circle', 'class' => 'success', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'done_drm'],
 ];
@@ -69,6 +70,29 @@ $getDrmRabToken = static function (array $row) use ($getDrmStatusTokens) {
     }
 
     return in_array('approved', $getDrmStatusTokens($row), true) ? 'belum_rab' : '';
+};
+
+$isRabDoneRow = static function (array $row) {
+    $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+    $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+    return $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
+};
+
+$isSpkCompleteRow = static function (array $row) {
+    $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+    if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+        return true;
+    }
+
+    $clusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
+    $subfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
+    $subfeederNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
+
+    return $clusterDone && ($subfeederDone || $subfeederNotRequired);
+};
+
+$isNySpkRow = static function (array $row) use ($isRabDoneRow, $isSpkCompleteRow) {
+    return $isRabDoneRow($row) && !$isSpkCompleteRow($row);
 };
 
 $isNyBatchRow = static function (array $row) {
@@ -143,7 +167,12 @@ foreach ($clusterRows as $row) {
         $drmStageSummary['REJECTED']['hp'] += $summaryHomepass;
     }
 
-    if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+    if ($isNySpkRow($row)) {
+        $drmStageSummary['NY_SPK']['count']++;
+        $drmStageSummary['NY_SPK']['hp'] += $summaryHomepass;
+    }
+
+    if (($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') && !$isNySpkRow($row)) {
         $summaryRabDone++;
         $summaryRabDoneHp += $summaryHomepass;
         $drmStageSummary['DONE_DRM']['count']++;
@@ -238,6 +267,7 @@ if (!function_exists('drmBadgeClass')) {
             case 'COMPLETE':
             case 'APPROVED':
             case 'RAB DONE':
+            case 'SPK DONE':
             case 'TIDAK DIBUTUHKAN':
             case 'NOT REQUIRED':
             case 'DRM':
@@ -319,6 +349,38 @@ if (!function_exists('drmStatusTokens')) {
     }
 }
 
+if (!function_exists('drmIsRabDoneRow')) {
+    function drmIsRabDoneRow(array $row)
+    {
+        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        return $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
+    }
+}
+
+if (!function_exists('drmIsSpkCompleteRow')) {
+    function drmIsSpkCompleteRow(array $row)
+    {
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            return true;
+        }
+
+        $clusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
+        $subfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
+        $subfeederNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
+
+        return $clusterDone && ($subfeederDone || $subfeederNotRequired);
+    }
+}
+
+if (!function_exists('drmIsNySpkRow')) {
+    function drmIsNySpkRow(array $row)
+    {
+        return drmIsRabDoneRow($row) && !drmIsSpkCompleteRow($row);
+    }
+}
+
 if (!function_exists('drmStageSearchTokens')) {
     function drmStageSearchTokens(array $row)
     {
@@ -343,7 +405,10 @@ if (!function_exists('drmStageSearchTokens')) {
         if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
             $tokens[] = 'rejected';
         }
-        if ($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') {
+        if (drmIsNySpkRow($row)) {
+            $tokens[] = 'ny_spk';
+        }
+        if (($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') && !drmIsNySpkRow($row)) {
             $tokens[] = 'done_drm';
             $tokens[] = 'rab_done';
         }
@@ -371,6 +436,9 @@ $renderDrmTableRows = static function (array $rows) {
         $rabDone = $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
         $rabFilterToken = $rabDone ? 'rab_done' : (in_array('approved', $statusTokens, true) ? 'belum_rab' : '');
         $rabStatusLabel = $rabDone ? 'RAB DONE' : ($rabFilterToken === 'belum_rab' ? 'BELUM RAB DONE' : '-');
+        $spkClusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
+        $spkSubfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
+        $subfeederSpkNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
         $stageSearchTokens = array_map(static function ($token) {
             return 'drm_stage_filter_' . $token;
         }, drmStageSearchTokens($row));
@@ -391,8 +459,6 @@ $renderDrmTableRows = static function (array $rows) {
                 <div class="text-muted small"><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></div>
             </td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td><?= !empty($row['released_at']) ? htmlspecialchars((string) $row['released_at']) : '-' ?></td>
-            <td class="text-right"><?= number_format((float) ($row['hp_donasi'] ?? 0), 0, ',', '.') ?></td>
             <td class="text-right"><?= number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.') ?></td>
             <td>
                 <span class="sr-only"><?= htmlspecialchars(implode(' ', $statusSearchTokens), ENT_QUOTES, 'UTF-8') ?></span>
@@ -409,10 +475,24 @@ $renderDrmTableRows = static function (array $rows) {
                     <?php endif; ?>
                 </div>
             </td>
-            <td><?= (int) ($row['doc_approved'] ?? 0) ?>/<?= (int) ($row['doc_total'] ?? 0) ?> approved</td>
             <td>
                 <span class="sr-only">drm_rab_filter_<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?></span>
                 <span class="badge badge-<?= drmBadgeClass($rabStatusLabel) ?>"><?= htmlspecialchars($rabStatusLabel, ENT_QUOTES, 'UTF-8') ?></span>
+            </td>
+            <td>
+                <div class="drm-status-scope">
+                    <div class="drm-status-scope__item">
+                        <span class="drm-status-scope__name">Cluster :</span>
+                        <span class="badge badge-<?= drmBadgeClass($spkClusterDone ? 'SPK DONE' : '') ?> drm-status-scope__badge"><?= htmlspecialchars($spkClusterDone ? 'SPK DONE' : 'BELUM SPK') ?></span>
+                    </div>
+                    <?php if (!$isMainfeeder): ?>
+                        <?php $subfeederSpkLabel = $subfeederSpkNotRequired ? 'TIDAK DIBUTUHKAN' : ($spkSubfeederDone ? 'SPK DONE' : 'BELUM SPK'); ?>
+                        <div class="drm-status-scope__item">
+                            <span class="drm-status-scope__name">Subfeeder :</span>
+                            <span class="badge badge-<?= drmBadgeClass($subfeederSpkLabel) ?> drm-status-scope__badge"><?= htmlspecialchars($subfeederSpkLabel) ?></span>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </td>
             <td>
                 <span class="sr-only"><?= htmlspecialchars(implode(' ', $stageSearchTokens), ENT_QUOTES, 'UTF-8') ?></span>
@@ -453,12 +533,10 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                     <th>No</th>
                     <th>Cluster</th>
                     <th>Kota</th>
-                    <th>Released</th>
-                    <th>HP Donasi</th>
                     <th>HP DRM</th>
                     <th>Status DRM</th>
-                    <th>Progress Dokumen</th>
                     <th>Status RAB</th>
+                    <th>Status SPK</th>
                     <th>Status Flow</th>
                     <th>Aksi</th>
                 </tr>
@@ -466,8 +544,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
             <tbody></tbody>
             <tfoot>
                 <tr>
-                    <th colspan="4" class="text-right">TOTAL</th>
-                    <th class="text-right">0</th>
+                    <th colspan="3" class="text-right">TOTAL</th>
                     <th class="text-right">0</th>
                     <th colspan="5"></th>
                 </tr>
@@ -1994,8 +2071,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             }
                         },
                         columnDefs: [
-                            { targets: [6, 8, 9, 10], orderable: false },
-                            { targets: [1, 6, 8, 9, 10], searchable: true }
+                            { targets: [4, 5, 6, 7, 8], orderable: false },
+                            { targets: [1, 4, 5, 6, 7, 8], searchable: true }
                         ],
                         language: {
                             emptyTable: 'Belum ada data DRM.'
@@ -2007,10 +2084,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                     return parseDrmNumber(a) + parseDrmNumber(b);
                                 }, 0);
                             };
-                            var hpDonasiTotal = sumColumn(4);
-                            var hpDrmTotal = sumColumn(5);
-                            $(api.column(4).footer()).html(hpDonasiTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                            $(api.column(5).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                            var hpDrmTotal = sumColumn(3);
+                            $(api.column(3).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                         }
                     });
                 });
