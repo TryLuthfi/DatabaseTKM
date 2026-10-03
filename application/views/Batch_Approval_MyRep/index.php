@@ -3163,6 +3163,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     $('.js-stage-summary-filter').on('click', function (event) {
                         event.preventDefault();
                         var stageCode = String($(this).data('stage-code') || '').toUpperCase().trim();
+                        if (stageCode && stageCode === activeSummaryStageFilter) {
+                            stageCode = '';
+                        }
                         applySummaryStageFilter(stageCode, true);
                     });
 
