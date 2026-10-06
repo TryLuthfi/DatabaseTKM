@@ -96,6 +96,11 @@ class DRM_MyRep extends CI_Controller
             $rabFilter = '';
         }
 
+        $spkFilter = strtolower(trim((string) $this->input->post('spk_filter')));
+        if (!in_array($spkFilter, ['ny_spk', 'done_spk'], true)) {
+            $spkFilter = '';
+        }
+
         $stageFilter = strtolower(trim((string) $this->input->post('stage_filter')));
         if (!in_array($stageFilter, ['ny_drm', 'on_review_drm', 'on_proses_drm', 'ny_rab', 'ny_spk', 'done_drm', 'rab_done', 'rejected'], true)) {
             $stageFilter = '';
@@ -120,12 +125,13 @@ class DRM_MyRep extends CI_Controller
 
         try {
             $rows = $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus, '', [], [], '', '', $selectedProjectType);
-            $tabRows = $this->filterDrmTableRows($rows, $tab, '', '', '');
+            $tabRows = $this->filterDrmTableRows($rows, $tab, '', '', '', '');
             $searchedRows = $this->applyDrmTableSearch($tabRows, $searchValue);
-            $filteredRows = $this->filterDrmTableRows($searchedRows, $tab, $statusFilter, $rabFilter, $stageFilter);
+            $filteredRows = $this->filterDrmTableRows($searchedRows, $tab, $statusFilter, $rabFilter, $spkFilter, $stageFilter);
             $summary = [
                 'status' => $this->summarizeDrmStatusRows($filteredRows),
                 'rab' => $this->summarizeDrmRabRows($filteredRows),
+                'spk' => $this->summarizeDrmSpkRows($filteredRows),
             ];
 
             $recordsTotal = count($tabRows);
@@ -2314,14 +2320,18 @@ class DRM_MyRep extends CI_Controller
             ->set_output(json_encode($payload));
     }
 
-    private function filterDrmTableRows(array $rows, $tab, $statusFilter, $rabFilter, $stageFilter)
+    private function filterDrmTableRows(array $rows, $tab, $statusFilter, $rabFilter, $spkFilter, $stageFilter)
     {
-        return array_values(array_filter($rows, function ($row) use ($tab, $statusFilter, $rabFilter, $stageFilter) {
+        return array_values(array_filter($rows, function ($row) use ($tab, $statusFilter, $rabFilter, $spkFilter, $stageFilter) {
             if ($statusFilter !== '' && !in_array($statusFilter, $this->getDrmStatusTokens($row), true)) {
                 return false;
             }
 
             if ($rabFilter !== '' && $rabFilter !== $this->getDrmRabToken($row)) {
+                return false;
+            }
+
+            if ($spkFilter !== '' && $spkFilter !== $this->getDrmSpkToken($row)) {
                 return false;
             }
 
@@ -2409,6 +2419,28 @@ class DRM_MyRep extends CI_Controller
         return $summary;
     }
 
+    private function summarizeDrmSpkRows(array $rows)
+    {
+        $summary = [
+            'nySpkCount' => 0,
+            'doneSpkCount' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $spkToken = $this->getDrmSpkToken($row);
+            if ($spkToken === 'ny_spk') {
+                $summary['nySpkCount']++;
+                continue;
+            }
+
+            if ($spkToken === 'done_spk') {
+                $summary['doneSpkCount']++;
+            }
+        }
+
+        return $summary;
+    }
+
     private function isNyBatchDrmRow(array $row)
     {
         if ((int) ($row['id_batch_approval'] ?? 0) <= 0) {
@@ -2469,7 +2501,7 @@ class DRM_MyRep extends CI_Controller
         if ($hasDrm && ($drmStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
             $tokens[] = 'rejected';
         }
-        if (($rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE') && !$this->isNySpkDrmRow($row)) {
+        if ($this->isRabDoneDrmRow($row) && !$this->isNySpkDrmRow($row)) {
             $tokens[] = 'done_drm';
             $tokens[] = 'rab_done';
         }
@@ -2479,22 +2511,38 @@ class DRM_MyRep extends CI_Controller
 
     private function isNySpkDrmRow(array $row)
     {
-        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
-        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
-        if ($rabStatus !== 'RAB DONE' && $currentStatus !== 'RAB DONE') {
-            return false;
+        return $this->isRabDoneDrmRow($row) && !$this->isSpkCompleteDrmRow($row);
+    }
+
+    private function getDrmSpkToken(array $row)
+    {
+        if (!$this->isRabDoneDrmRow($row)) {
+            return '';
         }
 
+        return $this->isSpkCompleteDrmRow($row) ? 'done_spk' : 'ny_spk';
+    }
+
+    private function isRabDoneDrmRow(array $row)
+    {
+        $rabStatus = strtoupper(trim((string) ($row['rab_status'] ?? '')));
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
+
+        return $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
+    }
+
+    private function isSpkCompleteDrmRow(array $row)
+    {
         $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
         if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
-            return false;
+            return true;
         }
 
         $clusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
         $subfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
         $subfeederNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
 
-        return !($clusterDone && ($subfeederDone || $subfeederNotRequired));
+        return $clusterDone && ($subfeederDone || $subfeederNotRequired);
     }
 
     private function getDrmStatusTokens(array $row)

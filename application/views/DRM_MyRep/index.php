@@ -259,6 +259,38 @@ $drmActiveRabSummary = $drmRabSummaryByTab['all'];
 $drmBelumRabCount = (int) ($drmActiveRabSummary['belumRabCount'] ?? 0);
 $drmRabDoneCount = (int) ($drmActiveRabSummary['rabDoneCount'] ?? 0);
 
+$getDrmSpkToken = static function (array $row) use ($isRabDoneRow, $isSpkCompleteRow) {
+    if (!$isRabDoneRow($row)) {
+        return '';
+    }
+
+    return $isSpkCompleteRow($row) ? 'done_spk' : 'ny_spk';
+};
+
+$buildDrmSpkSummary = static function (array $rows) use ($getDrmSpkToken) {
+    $summary = [
+        'nySpkCount' => 0,
+        'doneSpkCount' => 0,
+    ];
+
+    foreach ($rows as $row) {
+        $spkToken = $getDrmSpkToken($row);
+        if ($spkToken === 'ny_spk') {
+            $summary['nySpkCount']++;
+        } elseif ($spkToken === 'done_spk') {
+            $summary['doneSpkCount']++;
+        }
+    }
+
+    return $summary;
+};
+$drmSpkSummaryByTab = [
+    'all' => $buildDrmSpkSummary($allDrmRows),
+];
+$drmActiveSpkSummary = $drmSpkSummaryByTab['all'];
+$drmNySpkCount = (int) ($drmActiveSpkSummary['nySpkCount'] ?? 0);
+$drmDoneSpkCount = (int) ($drmActiveSpkSummary['doneSpkCount'] ?? 0);
+
 if (!function_exists('drmBadgeClass')) {
     function drmBadgeClass($status)
     {
@@ -381,6 +413,17 @@ if (!function_exists('drmIsNySpkRow')) {
     }
 }
 
+if (!function_exists('drmSpkToken')) {
+    function drmSpkToken(array $row)
+    {
+        if (!drmIsRabDoneRow($row)) {
+            return '';
+        }
+
+        return drmIsSpkCompleteRow($row) ? 'done_spk' : 'ny_spk';
+    }
+}
+
 if (!function_exists('drmStageSearchTokens')) {
     function drmStageSearchTokens(array $row)
     {
@@ -443,7 +486,7 @@ $renderDrmTableRows = static function (array $rows) {
             return 'drm_stage_filter_' . $token;
         }, drmStageSearchTokens($row));
         ?>
-        <tr data-drm-statuses="<?= htmlspecialchars(implode(' ', $statusTokens), ENT_QUOTES, 'UTF-8') ?>" data-drm-rab="<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?>" data-drm-stages="<?= htmlspecialchars(implode(' ', drmStageSearchTokens($row)), ENT_QUOTES, 'UTF-8') ?>">
+        <tr data-drm-statuses="<?= htmlspecialchars(implode(' ', $statusTokens), ENT_QUOTES, 'UTF-8') ?>" data-drm-rab="<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?>" data-drm-spk="<?= htmlspecialchars(drmSpkToken($row), ENT_QUOTES, 'UTF-8') ?>" data-drm-stages="<?= htmlspecialchars(implode(' ', drmStageSearchTokens($row)), ENT_QUOTES, 'UTF-8') ?>">
             <td><?= $index + 1 ?></td>
             <td>
                 <?php if (!empty($row['id_myrep_cluster']) || !empty($row['id_mainfeeder'])): ?>
@@ -737,6 +780,19 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                         <button type="button" class="drm-status-pill js-drm-rab-filter" data-drm-rab="rab_done" data-role-guard-exempt="1">
                                             <span>RAB Done</span>
                                             <span class="drm-status-pill__count" data-drm-rab-count="rabDoneCount"><?= number_format($drmRabDoneCount, 0, ',', '.') ?></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="drm-status-filter-row">
+                                    <div class="drm-tab-section__label">Filter SPK</div>
+                                    <div class="drm-status-pillbar" aria-label="Filter SPK DRM">
+                                        <button type="button" class="drm-status-pill js-drm-spk-filter" data-drm-spk="ny_spk" data-role-guard-exempt="1">
+                                            <span>NY SPK</span>
+                                            <span class="drm-status-pill__count" data-drm-spk-count="nySpkCount"><?= number_format($drmNySpkCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="drm-status-pill js-drm-spk-filter" data-drm-spk="done_spk" data-role-guard-exempt="1">
+                                            <span>Done SPK</span>
+                                            <span class="drm-status-pill__count" data-drm-spk-count="doneSpkCount"><?= number_format($drmDoneSpkCount, 0, ',', '.') ?></span>
                                         </button>
                                     </div>
                                 </div>
@@ -1288,6 +1344,12 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         box-shadow: 0 8px 18px rgba(25, 135, 84, 0.18);
     }
 
+    .drm-status-pill[data-drm-spk="done_spk"].is-active {
+        background: #198754;
+        border-color: #198754;
+        box-shadow: 0 8px 18px rgba(25, 135, 84, 0.18);
+    }
+
     .drm-status-pill__count {
         display: inline-flex;
         align-items: center;
@@ -1598,6 +1660,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         var drmSelectedProjectType = '<?= htmlspecialchars((string) $selectedProjectType, ENT_QUOTES) ?>';
         var drmStatusSummaryByTab = <?= json_encode($drmStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var drmRabSummaryByTab = <?= json_encode($drmRabSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
+        var drmSpkSummaryByTab = <?= json_encode($drmSpkSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var importedDrmRows = [];
 
         function initDrmSelects() {
@@ -1864,6 +1927,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 var drmTables = {};
                 var drmStatusFilter = '';
                 var drmRabFilter = '';
+                var drmSpkFilter = '';
                 var drmStageFilter = '';
                 var drmAjaxUrl = <?= json_encode(base_url('DRM_MyRep/tableData')) ?>;
                 var drmBaseFilters = {
@@ -1896,6 +1960,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     return String($row.attr('data-drm-rab') || '') === rab;
                 }
 
+                function rowMatchesSpk($row, spk) {
+                    if (!spk) {
+                        return true;
+                    }
+
+                    return String($row.attr('data-drm-spk') || '') === spk;
+                }
+
                 function rowMatchesStage($row, stage) {
                     if (!stage) {
                         return true;
@@ -1920,6 +1992,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     table.rows().nodes().each(function (row) {
                         var $row = $(row);
                         if (!rowMatchesRab($row, drmRabFilter)) {
+                            return;
+                        }
+                        if (!rowMatchesSpk($row, drmSpkFilter)) {
                             return;
                         }
                         if (!rowMatchesStage($row, drmStageFilter)) {
@@ -1959,6 +2034,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         if (!rowMatchesStatus($row, drmStatusFilter)) {
                             return;
                         }
+                        if (!rowMatchesSpk($row, drmSpkFilter)) {
+                            return;
+                        }
                         if (!rowMatchesStage($row, drmStageFilter)) {
                             return;
                         }
@@ -1968,6 +2046,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             summary.rabDoneCount++;
                         } else if (rabToken === 'belum_rab') {
                             summary.belumRabCount++;
+                        }
+                    });
+
+                    return summary;
+                }
+
+                function buildSpkCountsFromTable(table) {
+                    var summary = {
+                        nySpkCount: 0,
+                        doneSpkCount: 0
+                    };
+
+                    if (!table) {
+                        return summary;
+                    }
+
+                    table.rows().nodes().each(function (row) {
+                        var $row = $(row);
+                        if (!rowMatchesStatus($row, drmStatusFilter)) {
+                            return;
+                        }
+                        if (!rowMatchesRab($row, drmRabFilter)) {
+                            return;
+                        }
+                        if (!rowMatchesStage($row, drmStageFilter)) {
+                            return;
+                        }
+
+                        var spkToken = String($row.attr('data-drm-spk') || '');
+                        if (spkToken === 'ny_spk') {
+                            summary.nySpkCount++;
+                        } else if (spkToken === 'done_spk') {
+                            summary.doneSpkCount++;
                         }
                     });
 
@@ -1994,6 +2105,16 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     });
                 }
 
+                function updateDrmSpkCounts(table, tab) {
+                    var activeTab = tab || (drmTableConfigs[getActiveDrmTableSelector()] ? drmTableConfigs[getActiveDrmTableSelector()].tab : 'all');
+                    var summary = drmSpkSummaryByTab[activeTab] || {};
+                    $('[data-drm-spk-count]').each(function () {
+                        var key = String($(this).data('drm-spk-count') || '');
+                        var value = Number(summary[key] || 0);
+                        $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    });
+                }
+
                 function applyDrmAjaxSummary(payload) {
                     if (!payload || !payload.summary) {
                         return;
@@ -2010,6 +2131,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     $('[data-drm-rab-count]').each(function () {
                         var key = String($(this).data('drm-rab-count') || '');
                         var value = Number(rabSummary[key] || 0);
+                        $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    });
+
+                    var spkSummary = payload.summary.spk || {};
+                    $('[data-drm-spk-count]').each(function () {
+                        var key = String($(this).data('drm-spk-count') || '');
+                        var value = Number(spkSummary[key] || 0);
                         $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                     });
                 }
@@ -2037,6 +2165,12 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 function syncDrmRabFilterButtons() {
                     $('.js-drm-rab-filter').each(function () {
                         $(this).toggleClass('is-active', String($(this).data('drm-rab') || '').trim() === drmRabFilter);
+                    });
+                }
+
+                function syncDrmSpkFilterButtons() {
+                    $('.js-drm-spk-filter').each(function () {
+                        $(this).toggleClass('is-active', String($(this).data('drm-spk') || '').trim() === drmSpkFilter);
                     });
                 }
 
@@ -2070,6 +2204,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                 data.tab = config.tab;
                                 data.status_filter = drmStatusFilter;
                                 data.rab_filter = drmRabFilter;
+                                data.spk_filter = drmSpkFilter;
                                 data.stage_filter = drmStageFilter;
                             },
                             dataSrc: function (payload) {
@@ -2105,6 +2240,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var activeTable = drmTables[tableSelector];
                     updateDrmStatusCounts(activeTable, activeTab);
                     updateDrmRabCounts(activeTable, activeTab);
+                    updateDrmSpkCounts(activeTable, activeTab);
                     syncDrmStageSummaryButtons();
 
                     Object.keys(drmTables).forEach(function (selector) {
@@ -2129,6 +2265,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
                 });
 
+                $(document).on('click', '.js-drm-spk-filter', function () {
+                    var nextSpk = String($(this).data('drm-spk') || '').trim();
+                    drmSpkFilter = drmSpkFilter === nextSpk ? '' : nextSpk;
+                    syncDrmSpkFilterButtons();
+                    syncDrmStageSummaryButtons();
+                    applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
+                });
+
                 $(document).on('click', '.js-drm-stage-summary-filter', function (event) {
                     event.preventDefault();
                     var $button = $(this);
@@ -2138,9 +2282,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                     drmStatusFilter = '';
                     drmRabFilter = '';
+                    drmSpkFilter = '';
                     drmStageFilter = isSameActive ? '' : nextStage;
                     syncDrmStatusFilterButtons();
                     syncDrmRabFilterButtons();
+                    syncDrmSpkFilterButtons();
                     syncDrmStageSummaryButtons();
 
                     var applySummaryFilter = function () {
