@@ -364,13 +364,6 @@ class BAK_MyRep extends CI_Controller
                 . ' data-documents="' . $this->attr(json_encode(array_values($clusterDocs))) . '">Detail Dokumen</button>';
         }
 
-        if (!empty($permissions['canHapus'])) {
-            $html .= '<form method="post" action="' . base_url('BAK_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?\');">'
-                . '<input type="hidden" name="cluster_id" value="' . $clusterId . '">'
-                . '<button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>'
-                . '</form>';
-        }
-
         return $html !== '' ? $html : '<span class="text-muted small">Tidak tersedia</span>';
     }
 
@@ -1685,25 +1678,6 @@ class BAK_MyRep extends CI_Controller
         readfile($zipFile);
         @unlink($zipFile);
         exit;
-    }
-
-    public function deleteCluster()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $this->input->post('cluster_id');
-        if ($clusterId <= 0) {
-            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
-            redirect('BAK_MyRep');
-            return;
-        }
-
-        $deleted = $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
-        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta seluruh flow sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep.');
-        redirect('BAK_MyRep');
     }
 
     private function buildCurrentStatus($baOpenDate, $bakDate, $statusBak)

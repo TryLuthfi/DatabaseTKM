@@ -503,10 +503,6 @@ $renderDrmTableRows = static function (array $rows) {
                     <a href="<?= $detailUrl ?>" class="btn btn-sm btn-outline-primary"><?= $hasDrm ? 'Detail' : 'Input DRM' ?></a>
                 <?php elseif ($hasDrm): ?>
                     <a href="<?= $detailUrl ?>" class="btn btn-sm btn-outline-primary">Detail</a>
-                    <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
-                    </form>
                 <?php else: ?>
                     <button
                         type="button"
@@ -822,7 +818,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                         <div>
                             <div class="budget-modal__eyebrow">DRM MyRep</div>
                             <h5 class="modal-title mb-1">Input DRM Baru</h5>
-                            <p class="budget-modal__subtitle mb-0">Pilih cluster released yang siap masuk proses DRM, lalu lengkapi header DRM. Status dokumen akan bergerak otomatis dari waiting doc sampai complete.</p>
+                            <p class="budget-modal__subtitle mb-0">Lengkapi header DRM untuk cluster yang dipilih. Status dokumen akan bergerak otomatis dari waiting doc sampai complete.</p>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -830,38 +826,40 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                     </div>
                     <div class="modal-body">
                         <div class="drm-form-section">
-                            <div class="drm-form-section__title">Pilih Cluster</div>
+                            <div class="drm-form-section__title">Cluster Terpilih</div>
+                            <select class="form-control js-drm-city-selector js-drm-hidden-selector d-none" tabindex="-1" aria-hidden="true">
+                                <option value="">Pilih kota</option>
+                                <?php foreach ($createCityOptions as $cityValue => $cityLabel): ?>
+                                    <option value="<?= htmlspecialchars($cityValue, ENT_QUOTES) ?>"><?= htmlspecialchars($cityLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <select name="cluster_id" class="form-control js-drm-cluster-selector js-drm-cluster-select js-drm-hidden-selector d-none" tabindex="-1" aria-hidden="true">
+                                <option value="">Pilih cluster released</option>
+                                <?php foreach ($eligibleClusterOptions as $option): ?>
+                                    <option
+                                        value="<?= (int) $option['id_myrep_cluster'] ?>"
+                                        data-city-filter="<?= htmlspecialchars(strtoupper((string) ($option['city_name'] ?? '')), ENT_QUOTES) ?>"
+                                        data-cluster-name="<?= htmlspecialchars((string) ($option['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-regional-name="<?= htmlspecialchars((string) ($option['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-city-name="<?= htmlspecialchars((string) ($option['city_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-released-at="<?= htmlspecialchars((string) ($option['released_at'] ?? ''), ENT_QUOTES) ?>"
+                                        data-hp-donasi="<?= (int) ($option['hp_donasi'] ?? 0) ?>"
+                                        data-hp-valsal="<?= (int) ($option['homepass_valsal'] ?? 0) ?>">
+                                        <?= htmlspecialchars((string) ($option['cluster_name'] ?? '-')) ?> | <?= htmlspecialchars((string) ($option['city_name'] ?? '-')) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label>Kota</label>
-                                        <select class="form-control js-drm-city-selector">
-                                            <option value="">Pilih kota</option>
-                                            <?php foreach ($createCityOptions as $cityValue => $cityLabel): ?>
-                                                <option value="<?= htmlspecialchars($cityValue, ENT_QUOTES) ?>"><?= htmlspecialchars($cityLabel) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                        <label>Cluster</label>
+                                        <input type="text" class="form-control js-cluster-name" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group mb-0">
-                                        <label>Cluster Eligible</label>
-                                        <select name="cluster_id" class="form-control js-drm-cluster-selector js-drm-cluster-select" required>
-                                            <option value="">Pilih cluster released</option>
-                                            <?php foreach ($eligibleClusterOptions as $option): ?>
-                                                <option
-                                                    value="<?= (int) $option['id_myrep_cluster'] ?>"
-                                                    data-city-filter="<?= htmlspecialchars(strtoupper((string) ($option['city_name'] ?? '')), ENT_QUOTES) ?>"
-                                                    data-cluster-name="<?= htmlspecialchars((string) ($option['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                    data-regional-name="<?= htmlspecialchars((string) ($option['regional_name'] ?? ''), ENT_QUOTES) ?>"
-                                                    data-city-name="<?= htmlspecialchars((string) ($option['city_name'] ?? ''), ENT_QUOTES) ?>"
-                                                    data-released-at="<?= htmlspecialchars((string) ($option['released_at'] ?? ''), ENT_QUOTES) ?>"
-                                                    data-hp-donasi="<?= (int) ($option['hp_donasi'] ?? 0) ?>"
-                                                    data-hp-valsal="<?= (int) ($option['homepass_valsal'] ?? 0) ?>">
-                                                    <?= htmlspecialchars((string) ($option['cluster_name'] ?? '-')) ?> | <?= htmlspecialchars((string) ($option['city_name'] ?? '-')) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                        <label>Kota</label>
+                                        <input type="text" class="form-control js-cluster-city" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -870,12 +868,8 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                         <div class="drm-form-section">
                             <div class="drm-form-section__title">Informasi Cluster</div>
                             <div class="row">
-                                <div class="col-md-6"><div class="form-group"><label>Cluster</label><input type="text" class="form-control js-cluster-name" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-cluster-regional" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Kota</label><input type="text" class="form-control js-cluster-city" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group mb-md-0"><label>Tanggal Released</label><input type="text" class="form-control js-released-at" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group mb-md-0"><label>HP Valsal</label><input type="text" class="form-control js-hp-valsal js-number-format" data-decimals="0" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group mb-0"><label>HP Donasi</label><input type="text" class="form-control js-hp-donasi js-number-format" data-decimals="0" readonly></div></div>
+                                <div class="col-md-6"><div class="form-group mb-md-0"><label>Regional</label><input type="text" class="form-control js-cluster-regional" readonly></div></div>
+                                <div class="col-md-6"><div class="form-group mb-0"><label>HP Valsal</label><input type="text" class="form-control js-hp-valsal js-number-format" data-decimals="0" readonly></div></div>
                             </div>
                         </div>
 
@@ -1612,7 +1606,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 return;
             }
 
-            $modal.find('.js-drm-city-selector, .js-drm-cluster-select').each(function () {
+            $modal.find('.js-drm-city-selector:not(.js-drm-hidden-selector), .js-drm-cluster-select:not(.js-drm-hidden-selector)').each(function () {
                 var $select = $(this);
                 if ($select.hasClass('select2-hidden-accessible')) {
                     $select.select2('destroy');
@@ -1695,6 +1689,10 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             });
         }
 
+        function normalizeDrmCity(value) {
+            return ((value || '') + '').toUpperCase().replace(/\s+/g, ' ').trim();
+        }
+
         function syncCityFromCluster($container) {
             var $clusterSelect = $container.find('.js-drm-cluster-selector').first();
             var $citySelect = $container.find('.js-drm-city-selector').first();
@@ -1707,18 +1705,18 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 return;
             }
 
-            var clusterCity = ((selectedOption.getAttribute('data-city-filter') || '') + '').toUpperCase();
+            var clusterCity = normalizeDrmCity(selectedOption.getAttribute('data-city-filter'));
             if (!clusterCity) {
                 return;
             }
 
-            if (($citySelect.val() || '').toString().toUpperCase() !== clusterCity) {
+            if (normalizeDrmCity($citySelect.val()) !== clusterCity) {
                 $citySelect.val(clusterCity).trigger('change.select2');
             }
         }
 
         function filterDrmClusterOptions($modal) {
-            var selectedCity = ($modal.find('.js-drm-city-selector').val() || '').toUpperCase();
+            var selectedCity = normalizeDrmCity($modal.find('.js-drm-city-selector').val());
             var $clusterSelect = $modal.find('.js-drm-cluster-selector');
 
             $clusterSelect.find('option').each(function () {
@@ -1730,14 +1728,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     return;
                 }
 
-                var optionCity = (($option.attr('data-city-filter') || '') + '').toUpperCase();
+                var optionCity = normalizeDrmCity($option.attr('data-city-filter'));
                 var shouldShow = selectedCity === '' || optionCity === selectedCity;
                 $option.prop('hidden', !shouldShow).prop('disabled', !shouldShow);
             });
 
             if (selectedCity !== '') {
                 var currentOption = $clusterSelect.find('option:selected');
-                var currentCity = ((currentOption.attr('data-city-filter') || '') + '').toUpperCase();
+                var currentCity = normalizeDrmCity(currentOption.attr('data-city-filter'));
                 if (currentCity !== selectedCity) {
                     $clusterSelect.val('');
                 }
@@ -1749,14 +1747,25 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
         function applyCreateDrmPreset($modal) {
             var presetClusterId = ($modal.attr('data-preset-cluster-id') || '').toString();
-            var presetCity = ($modal.attr('data-preset-city') || '').toString().toUpperCase();
+            var presetCity = normalizeDrmCity($modal.attr('data-preset-city'));
+            var $citySelect = $modal.find('.js-drm-city-selector');
+            var $clusterSelect = $modal.find('.js-drm-cluster-selector');
+            var $presetOption = presetClusterId !== ''
+                ? $clusterSelect.find('option').filter(function () {
+                    return (this.value || '').toString() === presetClusterId;
+                }).first()
+                : $();
+            var optionCity = normalizeDrmCity($presetOption.attr('data-city-filter'));
+            var cityToApply = optionCity || presetCity;
 
-            if (presetCity !== '') {
-                $modal.find('.js-drm-city-selector').val(presetCity).trigger('change.select2');
+            if (cityToApply !== '') {
+                $citySelect.val(cityToApply).trigger('change.select2');
             }
 
+            filterDrmClusterOptions($modal);
+
             if (presetClusterId !== '') {
-                $modal.find('.js-drm-cluster-selector').val(presetClusterId).trigger('change');
+                $clusterSelect.val(presetClusterId).trigger('change');
             }
         }
 

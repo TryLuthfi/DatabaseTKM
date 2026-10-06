@@ -4213,28 +4213,6 @@ class Batch_Approval_MyRep extends CI_Controller
         return '';
     }
 
-    public function deleteCluster()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $this->input->post('cluster_id');
-        if ($clusterId <= 0) {
-            $this->session->set_flashdata('error', 'Data Batch Approval tidak valid.');
-            redirect('Batch_Approval_MyRep');
-            return;
-        }
-
-        $deleted = $this->MBatch_Approval_MyRep->deleteBatchApprovalOnly($clusterId);
-        $message = $deleted
-            ? 'Data Batch Approval berhasil dihapus. Cluster MyRep tetap tersimpan.'
-            : ($this->MBatch_Approval_MyRep->getLastErrorMessage() ?: 'Gagal menghapus data Batch Approval.');
-        $this->session->set_flashdata($deleted ? 'success' : 'error', $message);
-        redirect('Batch_Approval_MyRep');
-    }
-
     private function isApprover()
     {
         if ($this->session->userdata('nama_level') === 'Super Admin') {
@@ -4326,12 +4304,6 @@ class Batch_Approval_MyRep extends CI_Controller
                 $actionHtml .= $this->buildBatchApprovalEditButton($row, $batchPics);
             }
             $actionHtml .= ' <a href="' . base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) . '" class="btn btn-sm btn-outline-secondary mt-1">Detail</a>';
-            if ($canHapus) {
-                $actionHtml .= ' <form method="post" action="' . base_url('Batch_Approval_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus data Batch Approval ini? Cluster MyRep tetap tersimpan.\');">'
-                    . '<input type="hidden" name="cluster_id" value="' . (int) $row['id_myrep_cluster'] . '">'
-                    . '<button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Batch</button>'
-                    . '</form>';
-            }
         } elseif ($this->hasBatchPermission('TAMBAH')) {
             $actionHtml = '<button type="button" class="btn btn-sm btn-outline-primary js-start-batch" data-toggle="modal" data-target="#modal-batch-create" data-cluster_id="' . (int) $row['id_myrep_cluster'] . '" data-city_name="' . htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '">Input Batch</button>';
         } else {

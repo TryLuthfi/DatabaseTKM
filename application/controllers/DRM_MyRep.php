@@ -2094,25 +2094,6 @@ class DRM_MyRep extends CI_Controller
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
-    public function deleteCluster()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $this->input->post('cluster_id');
-        if ($clusterId <= 0) {
-            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
-            redirect('DRM_MyRep');
-            return;
-        }
-
-        $deleted = $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
-        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta flow DRM dan seluruh tahap sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep.');
-        redirect('DRM_MyRep');
-    }
-
     public function downloadDrmImportTemplate()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -2626,11 +2607,7 @@ class DRM_MyRep extends CI_Controller
         if ($isMainfeeder) {
             $actionHtml = '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-outline-primary">' . ($hasDrm ? 'Detail' : 'Input DRM') . '</a>';
         } elseif ($hasDrm) {
-            $actionHtml = '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-outline-primary">Detail</a>'
-                . '<form method="post" action="' . $this->attr(base_url('DRM_MyRep/deleteCluster')) . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?\');">'
-                . '<input type="hidden" name="cluster_id" value="' . (int) ($row['id_myrep_cluster'] ?? 0) . '">'
-                . '<button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>'
-                . '</form>';
+            $actionHtml = '<a href="' . $this->attr($detailUrl) . '" class="btn btn-sm btn-outline-primary">Detail</a>';
         } else {
             $actionHtml = '<button type="button" class="btn btn-sm btn-outline-primary js-start-drm" data-toggle="modal" data-target="#modal-drm-create"'
                 . ' data-cluster_id="' . (int) ($row['id_myrep_cluster'] ?? 0) . '"'

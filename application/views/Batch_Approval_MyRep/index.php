@@ -611,12 +611,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                     <span class="text-muted small">Menunggu proses tahap berikutnya</span>
                 <?php endif; ?>
 
-                <?php if ($hasBatch && $canHapus): ?>
-                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus data Batch Approval ini? Cluster MyRep tetap tersimpan.');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Batch</button>
-                    </form>
-                <?php endif; ?>
             </td>
         </tr>
         <?php

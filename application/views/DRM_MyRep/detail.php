@@ -117,12 +117,6 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 </div>
                 <div class="col-sm-6 text-right">
                     <a href="<?= base_url('DRM_MyRep') ?>" class="btn btn-outline-secondary">Kembali</a>
-                    <?php if ($canHapus): ?>
-                        <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
-                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                            <button type="submit" class="btn btn-outline-danger">Hapus Cluster</button>
-                        </form>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

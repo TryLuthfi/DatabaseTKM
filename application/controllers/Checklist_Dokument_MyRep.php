@@ -312,11 +312,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                     $this->formatDateDisplay($row['reviewed_at'] ?? null),
                     $this->formatDateDisplay($row['approved_at'] ?? null),
                     $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
-                    '<a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="btn btn-primary btn-sm">Detail</a> '
-                    . '<form method="post" action="' . base_url('Checklist_Dokument_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?\');">'
-                    . '<input type="hidden" name="cluster_id" value="' . $idCluster . '">'
-                    . '<button type="submit" class="btn btn-danger btn-sm">Hapus</button>'
-                    . '</form>',
+                    '<a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="btn btn-primary btn-sm">Detail</a>',
                 ];
             }
 
@@ -1591,13 +1587,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
     {
         $html = '<div class="action-stack">'
             . '<a href="' . base_url('Checklist_Dokument_MyRep/detail/' . (int) $idCluster) . '" class="btn btn-primary btn-sm">Detail</a>';
-
-        if ($canHapus) {
-            $html .= '<form method="post" action="' . base_url('Checklist_Dokument_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?\');">'
-                . '<input type="hidden" name="cluster_id" value="' . (int) $idCluster . '">'
-                . '<button type="submit" class="btn btn-danger btn-sm">Hapus</button>'
-                . '</form>';
-        }
 
         return $html . '</div>';
     }
@@ -3438,25 +3427,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         header('X-Content-Type-Options: nosniff');
         readfile($fullPath);
         exit;
-    }
-
-    public function deleteCluster()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $this->input->post('cluster_id');
-        if ($clusterId <= 0) {
-            $this->session->set_flashdata('error', 'Cluster ATP/RFS tidak valid.');
-            redirect('Checklist_Dokument_MyRep');
-            return;
-        }
-
-        $deleted = $this->MMyRep_Cleanup->deleteWholeClusterByRfsCluster($clusterId);
-        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta ATP, RFS, dan seluruh tahap sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep dari flow ATP/RFS.');
-        redirect('Checklist_Dokument_MyRep');
     }
 
     private function isApprover()

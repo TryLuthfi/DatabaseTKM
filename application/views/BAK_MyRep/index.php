@@ -392,12 +392,6 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         Detail Dokumen
                     </button>
                 <?php endif; ?>
-                <?php if ($canHapus): ?>
-                    <form method="post" action="<?= base_url('BAK_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
-                    </form>
-                <?php endif; ?>
             </td>
         </tr>
         <?php
@@ -738,90 +732,103 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     </div>
                     <div class="modal-body">
                         <div class="budget-form-section">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Kab / Kota</label>
-                                    <input type="hidden" name="id_target" class="js-bak-target-id" value="">
-                                    <select class="form-control js-bak-target-selector js-bak-city-select" required>
-                                        <option value="">Pilih target Kab / Kota</option>
-                                        <?php foreach ($createTargetOptions as $targetOption): ?>
-                                            <option value="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-target_id="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>" data-match_city_name="<?= htmlspecialchars((string) ($targetOption['match_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? '-')) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-target-regional" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-target-province" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Kecamatan</label>
-                                    <select name="district_id" class="form-control js-bak-district-select">
-                                        <option value="">Pilih Kecamatan</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Desa / Kelurahan</label>
-                                    <select name="village_id" class="form-control js-bak-village-select">
-                                        <option value="">Pilih Desa / Kelurahan</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" name="cluster_name" class="form-control" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kode Cluster</label><input type="text" name="cluster_code" class="form-control"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>HP Estimasi</label><input type="number" name="homepass_bak" min="1" class="form-control" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal BA OPEN</label><input type="date" name="ba_open_date" class="form-control" value="<?= $today ?>"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="date" name="bak_date" class="form-control" value="<?= $today ?>"></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Nomor NTP</label><input type="text" name="nomor_ntp" class="form-control" placeholder="Contoh: NTP/EMR/001"></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Tanggal NTP</label><input type="date" name="tanggal_ntp" class="form-control" value="<?= $today ?>"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status BAK</label><input type="text" class="form-control" value="ON REVIEW" readonly></div></div>
-                            <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_bak" rows="3" class="form-control"></textarea></div></div>
-                            <?php if ($docReady): ?>
+                            <div class="budget-form-section__title">Lokasi Target</div>
+                            <div class="row">
                                 <div class="col-md-12">
-                                    <div class="doc-modal-panel">
-                                        <div class="doc-modal-title">Upload 3 Dokumen BAK</div>
-                                        <p class="doc-modal-subtitle">Saat input cluster BAK baru, lengkapi dokumen Surat Ijin, Form Survey, dan BA Open. Status BAK akan tetap `ON REVIEW` sampai seluruh dokumen di-approve HO.</p>
+                                    <div class="form-group">
+                                        <label>Kab / Kota</label>
+                                        <input type="hidden" name="id_target" class="js-bak-target-id" value="">
+                                        <select class="form-control js-bak-target-selector js-bak-city-select" required>
+                                            <option value="">Pilih target Kab / Kota</option>
+                                            <?php foreach ($createTargetOptions as $targetOption): ?>
+                                                <option value="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-target_id="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>" data-match_city_name="<?= htmlspecialchars((string) ($targetOption['match_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
+                                                    <?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? '-')) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
+                                </div>
+                                <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-target-regional" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-target-province" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-md-0">
+                                        <label>Kecamatan</label>
+                                        <select name="district_id" class="form-control js-bak-district-select">
+                                            <option value="">Pilih Kecamatan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-0">
+                                        <label>Desa / Kelurahan</label>
+                                        <select name="village_id" class="form-control js-bak-village-select">
+                                            <option value="">Pilih Desa / Kelurahan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Detail Cluster</div>
+                            <div class="row">
+                                <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" name="cluster_name" class="form-control" required></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kode Cluster</label><input type="text" name="cluster_code" class="form-control"></div></div>
+                                <div class="col-md-4"><div class="form-group mb-md-0"><label>HP Estimasi</label><input type="text" name="homepass_bak" inputmode="numeric" class="form-control js-homepass-format" required></div></div>
+                                <div class="col-md-8"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_bak" rows="2" class="form-control"></textarea></div></div>
+                            </div>
+                        </div>
+
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Timeline & Status</div>
+                            <div class="row">
+                                <div class="col-md-4"><div class="form-group"><label>Tanggal BA OPEN</label><input type="date" name="ba_open_date" class="form-control" value="<?= $today ?>"></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="date" name="bak_date" class="form-control" value="<?= $today ?>"></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Status BAK</label><input type="text" class="form-control" value="ON REVIEW" readonly></div></div>
+                                <div class="col-md-6"><div class="form-group mb-md-0"><label>Nomor NTP</label><input type="text" name="nomor_ntp" class="form-control" placeholder="Contoh: NTP/EMR/001"></div></div>
+                                <div class="col-md-6"><div class="form-group mb-0"><label>Tanggal NTP</label><input type="date" name="tanggal_ntp" class="form-control" value="<?= $today ?>"></div></div>
+                            </div>
+                        </div>
+
+                        <?php if ($docReady): ?>
+                            <div class="budget-form-section budget-form-section--last">
+                                <div class="budget-form-section__title">Dokumen BAK</div>
+                                <div class="doc-modal-panel">
+                                    <div class="doc-modal-title">Upload 3 Dokumen BAK</div>
+                                    <p class="doc-modal-subtitle">Saat input cluster BAK baru, lengkapi dokumen Surat Ijin, Form Survey, dan BA Open. Status BAK akan tetap `ON REVIEW` sampai seluruh dokumen di-approve HO.</p>
                                 </div>
                                 <?php foreach ($bakDocumentDefinitions as $documentDefinition): ?>
                                     <?php
                                         $docItemId = (int) $documentDefinition['id_doc_item'];
                                         $docName = (string) ($documentDefinition['doc_name'] ?? '-');
                                     ?>
-                                    <div class="col-md-12">
-                                        <div class="doc-modal-panel">
-                                            <div class="form-group mb-3">
-                                                <label class="font-weight-bold d-block">
-                                                    <?= htmlspecialchars($docName) ?>
-                                                    <span class="badge badge-info ml-1">Wajib PDF</span>
-                                                </label>
-                                                <div class="upload-dropzone create-doc-dropzone" id="bak-create-dropzone-<?= $docItemId ?>">
-                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="bak-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" data-required-extension="pdf" accept=".pdf,application/pdf" required>
-                                                    <div class="upload-dropzone-content">
-                                                        <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars($docName) ?></div>
-                                                        <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
-                                                        <div class="upload-dropzone-file create-doc-file-name" id="bak-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
-                                                    </div>
+                                    <div class="doc-modal-panel">
+                                        <div class="form-group mb-3">
+                                            <label class="font-weight-bold d-block">
+                                                <?= htmlspecialchars($docName) ?>
+                                                <span class="badge badge-info ml-1">Wajib PDF</span>
+                                            </label>
+                                            <div class="upload-dropzone create-doc-dropzone" id="bak-create-dropzone-<?= $docItemId ?>">
+                                                <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="bak-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" data-required-extension="pdf" accept=".pdf,application/pdf" required>
+                                                <div class="upload-dropzone-content">
+                                                    <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                    <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars($docName) ?></div>
+                                                    <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                                    <div class="upload-dropzone-file create-doc-file-name" id="bak-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
                                                 </div>
-                                                <small class="text-muted d-block mt-2">Format wajib: .pdf. Maksimal 30 MB.</small>
                                             </div>
-                                            <div class="alert alert-info py-2 px-3 small mb-3"><?= htmlspecialchars($docName) ?> wajib diupload dalam format .pdf.</div>
-                                            <div class="form-group mb-0">
-                                                <label class="font-weight-bold">Remark <?= htmlspecialchars($docName) ?></label>
-                                                <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
-                                            </div>
+                                            <small class="text-muted d-block mt-2">Format wajib: .pdf. Maksimal 30 MB.</small>
+                                        </div>
+                                        <div class="alert alert-info py-2 px-3 small mb-3"><?= htmlspecialchars($docName) ?> wajib diupload dalam format .pdf.</div>
+                                        <div class="form-group mb-0">
+                                            <label class="font-weight-bold">Remark <?= htmlspecialchars($docName) ?></label>
+                                            <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
-                        </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="modal-footer budget-modal__footer">
                         <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
@@ -849,50 +856,63 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     </div>
                     <div class="modal-body">
                         <div class="budget-form-section">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Kab / Kota</label>
-                                    <input type="hidden" name="id_target" id="edit_id_target" class="js-bak-target-id" value="">
-                                    <select id="edit_regency_selector" class="form-control js-bak-target-selector js-bak-edit-city-select" required>
-                                        <option value="">Pilih target Kab / Kota</option>
-                                        <?php foreach ($createTargetOptions as $targetOption): ?>
-                                            <option value="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-target_id="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>" data-match_city_name="<?= htmlspecialchars((string) ($targetOption['match_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? '-')) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                            <div class="budget-form-section__title">Lokasi Target</div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Kab / Kota</label>
+                                        <input type="hidden" name="id_target" id="edit_id_target" class="js-bak-target-id" value="">
+                                        <select id="edit_regency_selector" class="form-control js-bak-target-selector js-bak-edit-city-select" required>
+                                            <option value="">Pilih target Kab / Kota</option>
+                                            <?php foreach ($createTargetOptions as $targetOption): ?>
+                                                <option value="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-target_id="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>" data-match_city_name="<?= htmlspecialchars((string) ($targetOption['match_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
+                                                    <?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? '-')) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-target-regional" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-target-province" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-md-0">
+                                        <label>Kecamatan</label>
+                                        <select name="district_id" id="edit_district_id" class="form-control js-bak-district-select">
+                                            <option value="">Pilih Kecamatan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-0">
+                                        <label>Desa / Kelurahan</label>
+                                        <select name="village_id" id="edit_village_id" class="form-control js-bak-village-select">
+                                            <option value="">Pilih Desa / Kelurahan</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-target-regional" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-target-province" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Kecamatan</label>
-                                    <select name="district_id" id="edit_district_id" class="form-control js-bak-district-select">
-                                        <option value="">Pilih Kecamatan</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Desa / Kelurahan</label>
-                                    <select name="village_id" id="edit_village_id" class="form-control js-bak-village-select">
-                                        <option value="">Pilih Desa / Kelurahan</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" name="cluster_name" id="edit_cluster_name" class="form-control" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kode Cluster</label><input type="text" name="cluster_code" id="edit_cluster_code" class="form-control"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>HP Estimasi</label><input type="number" name="homepass_bak" id="edit_homepass_bak" min="1" class="form-control" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal BA OPEN</label><input type="date" name="ba_open_date" id="edit_ba_open_date" class="form-control"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="date" name="bak_date" id="edit_bak_date" class="form-control"></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Nomor NTP</label><input type="text" name="nomor_ntp" id="edit_nomor_ntp" class="form-control" placeholder="Contoh: NTP/EMR/001"></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Tanggal NTP</label><input type="date" name="tanggal_ntp" id="edit_tanggal_ntp" class="form-control"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status BAK</label><input type="text" id="edit_status_bak" class="form-control" readonly></div></div>
-                            <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_bak" id="edit_remark_bak" rows="3" class="form-control"></textarea></div></div>
                         </div>
+
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Detail Cluster</div>
+                            <div class="row">
+                                <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" name="cluster_name" id="edit_cluster_name" class="form-control" required></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kode Cluster</label><input type="text" name="cluster_code" id="edit_cluster_code" class="form-control"></div></div>
+                                <div class="col-md-4"><div class="form-group mb-md-0"><label>HP Estimasi</label><input type="text" name="homepass_bak" id="edit_homepass_bak" inputmode="numeric" class="form-control js-homepass-format" required></div></div>
+                                <div class="col-md-8"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_bak" id="edit_remark_bak" rows="2" class="form-control"></textarea></div></div>
+                            </div>
+                        </div>
+
+                        <div class="budget-form-section budget-form-section--last">
+                            <div class="budget-form-section__title">Timeline & Status</div>
+                            <div class="row">
+                                <div class="col-md-4"><div class="form-group"><label>Tanggal BA OPEN</label><input type="date" name="ba_open_date" id="edit_ba_open_date" class="form-control"></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="date" name="bak_date" id="edit_bak_date" class="form-control"></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Status BAK</label><input type="text" id="edit_status_bak" class="form-control" readonly></div></div>
+                                <div class="col-md-6"><div class="form-group mb-md-0"><label>Nomor NTP</label><input type="text" name="nomor_ntp" id="edit_nomor_ntp" class="form-control" placeholder="Contoh: NTP/EMR/001"></div></div>
+                                <div class="col-md-6"><div class="form-group mb-0"><label>Tanggal NTP</label><input type="date" name="tanggal_ntp" id="edit_tanggal_ntp" class="form-control"></div></div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer budget-modal__footer">
@@ -1586,6 +1606,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
         display: flex;
         flex-direction: column;
+        height: auto;
         max-height: calc(100vh - 3.5rem);
     }
 
@@ -1597,6 +1618,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .budget-modal__header {
+        flex: 0 0 auto;
         border-bottom: 0;
         padding: 1.4rem 1.5rem 1.1rem;
         background:
@@ -1622,6 +1644,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .budget-modal .modal-body {
+        flex: 1 1 auto;
         padding: 1.5rem;
         background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
         overflow-y: auto;
@@ -1629,6 +1652,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .budget-modal__footer {
+        flex: 0 0 auto;
         display: flex;
         gap: 10px;
         justify-content: flex-end;
@@ -1638,12 +1662,27 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .budget-form-section {
-        margin-bottom: 0;
+        margin-bottom: 1rem;
         padding: 1rem 1rem 0.9rem;
         border: 1px solid #dbe9f4;
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.92);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .budget-form-section--last {
+        margin-bottom: 0;
+    }
+
+    .budget-form-section__title {
+        margin-bottom: .9rem;
+        padding-bottom: .55rem;
+        border-bottom: 1px solid #e4edf5;
+        color: #153f60;
+        font-size: .92rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
     }
 
     .bak-modal-shell .form-group label,
@@ -2494,6 +2533,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             return fileName.slice(-1 * (requiredExtension.length + 1)) === '.' + requiredExtension;
         }
 
+        function bakDigitsOnly(value) {
+            return String(value || '').replace(/\D/g, '');
+        }
+
+        function bakFormatNumberInputValue(value) {
+            var digits = bakDigitsOnly(value);
+            return digits === '' ? '' : Number(digits).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        }
+
+        function bakSetFormattedNumber($input, value) {
+            $input.val(bakFormatNumberInputValue(value));
+        }
+
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
             var input = document.querySelector(inputSelector);
@@ -2738,6 +2790,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
             handleBakFlashAlerts();
 
+            $(document).on('input', '.js-homepass-format', function () {
+                bakSetFormattedNumber($(this), this.value);
+            });
+
+            $('.js-homepass-format').each(function () {
+                bakSetFormattedNumber($(this), this.value);
+            });
+
             if ($.fn.DataTable) {
                 initBakMonitorTable('#table_bak_all');
 
@@ -2813,9 +2873,6 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $(this).find('.js-bak-village-select').val(null).trigger('change');
                 updateBakCreateSubmitState();
 
-                window.setTimeout(function () {
-                    $('#modal-bak-create').find('.js-bak-city-select').select2('open');
-                }, 120);
             }).on('hidden.bs.modal', function () {
                 var $select = $(this).find('.js-bak-city-select');
                 if ($select.hasClass('select2-hidden-accessible')) {
@@ -2863,7 +2920,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $modal.find('#edit_regency_selector').val($button.data('id_target')).trigger('change.select2');
                 $modal.find('#edit_cluster_name').val($button.data('cluster_name'));
                 $modal.find('#edit_cluster_code').val($button.data('cluster_code'));
-                $modal.find('#edit_homepass_bak').val($button.data('homepass_bak'));
+                bakSetFormattedNumber($modal.find('#edit_homepass_bak'), $button.data('homepass_bak'));
                 $modal.find('#edit_ba_open_date').val($button.data('ba_open_date'));
                 $modal.find('#edit_bak_date').val($button.data('bak_date'));
                 $modal.find('#edit_nomor_ntp').val($button.attr('data-ntp-name') || $button.data('ntpName') || '');

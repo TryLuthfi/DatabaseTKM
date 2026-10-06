@@ -1442,12 +1442,6 @@ $projectOpnameFlowSummary += ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, '
                                             <div class="action-stack">
                                                 <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $cluster['id_cluster']) ?>"
                                                     class="btn btn-primary btn-sm">Detail</a>
-                                                <?php if ($canHapus): ?>
-                                                    <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
-                                                        <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
-                                                        <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                                                    </form>
-                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>

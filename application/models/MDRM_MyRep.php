@@ -304,13 +304,16 @@ class MDRM_MyRep extends CI_Model
         }
 
         $query = $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, v.homepass_valsal AS hp_donasi, NULL AS released_at, v.homepass_valsal, d.id_drm, t.year_num, t.month_num', false)
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, COALESCE(v.homepass_valsal, c.hp_plan, 0) AS hp_donasi, NULL AS released_at, v.homepass_valsal, d.id_drm, t.year_num, t.month_num', false)
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
             ->where('d.id_drm IS NULL', null, false)
+            ->group_start()
+                ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->or_where($this->collatedUpperInSql('c.status_current', ['DRM', 'RAB DONE', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
+            ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC');
 
@@ -748,12 +751,15 @@ class MDRM_MyRep extends CI_Model
         }
 
         $row = $this->db
-            ->select('c.*, v.id_valsal, v.homepass_valsal AS hp_donasi, NULL AS released_at, d.id_drm', false)
+            ->select('c.*, v.id_valsal, COALESCE(v.homepass_valsal, c.hp_plan, 0) AS hp_donasi, NULL AS released_at, d.id_drm', false)
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
-            ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+            ->group_start()
+                ->where($this->collatedUpperInSql('v.status_valsal', ['DONE', 'APPROVED']), null, false)
+                ->or_where($this->collatedUpperInSql('c.status_current', ['DRM', 'RAB DONE', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE']), null, false)
+            ->group_end()
             ->get()
             ->row_array();
 

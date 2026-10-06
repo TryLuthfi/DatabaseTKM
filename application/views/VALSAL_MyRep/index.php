@@ -448,12 +448,6 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         </button>
                     <?php endif; ?>
                 <?php endif; ?>
-                <?php if ($canHapus): ?>
-                    <form method="post" action="<?= base_url('VALSAL_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta flow VALSAL dan seluruh tahap MyRep sebelumnya/sesudahnya?');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
-                    </form>
-                <?php endif; ?>
             </td>
         </tr>
         <?php
@@ -613,12 +607,6 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 <div class="col-md-12">
                     <div class="valsal-toolbar">
                         <?php if ($isReady && $canTambah): ?>
-                            <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-valsal-create">
-                                <i class="fas fa-plus mr-1"></i> Input VALSAL
-                            </button>
-                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-valsal-import">
-                                <i class="fas fa-file-import mr-1"></i> Import VALSAL Batch
-                            </button>
                             <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-valsal-download-report">
                                 <i class="fas fa-download mr-1"></i> Download Report Valsal
                             </button>
@@ -792,7 +780,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         <div>
                             <span class="budget-modal__eyebrow">VALSAL MyRep</span>
                             <h5 class="modal-title mb-1">Input Cluster VALSAL Baru</h5>
-                            <p class="mb-0 budget-modal__subtitle">Pilih cluster yang sudah selesai BAK, isi data VALSAL, dan upload 3 dokumen dalam satu workflow yang lebih rapi.</p>
+                            <p class="mb-0 budget-modal__subtitle">Lengkapi data VALSAL untuk cluster BAK yang dipilih, lalu upload 3 dokumen dalam satu workflow yang lebih rapi.</p>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -800,55 +788,71 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                     </div>
                     <div class="modal-body">
                         <div class="budget-form-section">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Kota</label>
-                                    <select class="form-control js-valsal-city-selector" id="create_valsal_city">
-                                        <option value="">Pilih kota</option>
-                                        <?php foreach ($createCityOptions as $cityValue => $cityLabel): ?>
-                                            <option value="<?= htmlspecialchars($cityValue, ENT_QUOTES) ?>"><?= htmlspecialchars($cityLabel) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Nama Cluster</label>
-                                    <select name="cluster_id" class="form-control js-valsal-cluster-selector js-valsal-cluster-select" required>
-                                        <option value="">Pilih cluster yang sudah BAK</option>
-                                        <?php foreach ($eligibleClusterOptions as $clusterOption): ?>
-                                            <option
-                                                value="<?= (int) $clusterOption['id_myrep_cluster'] ?>"
-                                                data-city-filter="<?= htmlspecialchars(strtoupper((string) ($clusterOption['city_name'] ?? '')), ENT_QUOTES) ?>"
-                                                data-cluster_name="<?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                data-regional_name="<?= htmlspecialchars((string) ($clusterOption['regional_name'] ?? ''), ENT_QUOTES) ?>"
-                                                data-province_name="<?= htmlspecialchars((string) ($clusterOption['province_name'] ?? ''), ENT_QUOTES) ?>"
-                                                data-city_name="<?= htmlspecialchars((string) ($clusterOption['city_name'] ?? ''), ENT_QUOTES) ?>"
-                                                data-homepass_bak="<?= (int) ($clusterOption['homepass_bak'] ?? 0) ?>"
-                                                data-bak_date="<?= htmlspecialchars((string) ($clusterOption['bak_date'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-cluster-regional" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-cluster-province" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" class="form-control js-cluster-city" readonly></div></div>
-                            <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" class="form-control js-cluster-name" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="text" class="form-control js-bak-date" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Homepass BAK</label><input type="number" class="form-control js-homepass-bak" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Homepass VALSAL</label><input type="number" name="homepass_valsal" min="1" class="form-control js-homepass-valsal" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" class="form-control" value="<?= $today ?>"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status VALSAL</label><input type="text" class="form-control" value="ON REVIEW" readonly></div></div>
-                            <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_valsal" rows="3" class="form-control"></textarea></div></div>
-                            <?php if ($docReady): ?>
-                                <div class="col-md-12">
-                                    <div class="doc-modal-panel">
-                                        <div class="doc-modal-title">Upload 3 Dokumen VALSAL</div>
-                                        <p class="doc-modal-subtitle">Saat input VALSAL baru, lengkapi dokumen SND Kasar, Form SND, dan Boundary KMZ. Status VALSAL akan tetap `ON REVIEW` sampai seluruh dokumen di-approve HO.</p>
+                            <div class="budget-form-section__title">Cluster BAK Terpilih</div>
+                            <select class="form-control js-valsal-city-selector js-valsal-hidden-selector d-none" id="create_valsal_city" tabindex="-1" aria-hidden="true">
+                                <option value="">Pilih kota</option>
+                                <?php foreach ($createCityOptions as $cityValue => $cityLabel): ?>
+                                    <option value="<?= htmlspecialchars($cityValue, ENT_QUOTES) ?>"><?= htmlspecialchars($cityLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <select name="cluster_id" class="form-control js-valsal-cluster-selector js-valsal-cluster-select js-valsal-hidden-selector d-none" tabindex="-1" aria-hidden="true">
+                                <option value="">Pilih cluster yang sudah BAK</option>
+                                <?php foreach ($eligibleClusterOptions as $clusterOption): ?>
+                                    <option
+                                        value="<?= (int) $clusterOption['id_myrep_cluster'] ?>"
+                                        data-city-filter="<?= htmlspecialchars(strtoupper((string) ($clusterOption['city_name'] ?? '')), ENT_QUOTES) ?>"
+                                        data-cluster_name="<?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-regional_name="<?= htmlspecialchars((string) ($clusterOption['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-province_name="<?= htmlspecialchars((string) ($clusterOption['province_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-city_name="<?= htmlspecialchars((string) ($clusterOption['city_name'] ?? ''), ENT_QUOTES) ?>"
+                                        data-homepass_bak="<?= (int) ($clusterOption['homepass_bak'] ?? 0) ?>"
+                                        data-bak_date="<?= htmlspecialchars((string) ($clusterOption['bak_date'] ?? ''), ENT_QUOTES) ?>">
+                                        <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group mb-md-0">
+                                        <label>Kota</label>
+                                        <input type="text" class="form-control js-cluster-city" readonly>
                                     </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="form-group mb-0">
+                                        <label>Nama Cluster</label>
+                                        <input type="text" class="form-control js-cluster-name" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Detail Cluster</div>
+                            <div class="row">
+                                <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-cluster-regional" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-cluster-province" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal BAK</label><input type="text" class="form-control js-bak-date" readonly></div></div>
+                            </div>
+                        </div>
+
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Data VALSAL</div>
+                            <div class="row">
+                                <div class="col-md-4"><div class="form-group"><label>Homepass BAK</label><input type="text" inputmode="numeric" class="form-control js-homepass-bak js-homepass-format" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Homepass VALSAL</label><input type="text" name="homepass_valsal" inputmode="numeric" class="form-control js-homepass-valsal js-homepass-format" required></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" class="form-control" value="<?= $today ?>"></div></div>
+                                <div class="col-md-4"><div class="form-group mb-md-0"><label>Status VALSAL</label><input type="text" class="form-control" value="ON REVIEW" readonly></div></div>
+                                <div class="col-md-8"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_valsal" rows="2" class="form-control"></textarea></div></div>
+                            </div>
+                        </div>
+
+                        <?php if ($docReady): ?>
+                            <div class="budget-form-section budget-form-section--last">
+                                <div class="budget-form-section__title">Dokumen VALSAL</div>
+                                <div class="doc-modal-panel">
+                                    <div class="doc-modal-title">Upload 3 Dokumen VALSAL</div>
+                                    <p class="doc-modal-subtitle">Saat input VALSAL baru, lengkapi dokumen SND Kasar, Form SND, dan Boundary KMZ. Status VALSAL akan tetap `ON REVIEW` sampai seluruh dokumen di-approve HO.</p>
                                 </div>
                                 <?php foreach ($valsalDocumentDefinitions as $documentDefinition): ?>
                                     <?php
@@ -856,35 +860,32 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                         $docName = (string) ($documentDefinition['doc_name'] ?? '-');
                                         $docUploadMeta = valsalDocumentUploadMeta($docName);
                                     ?>
-                                    <div class="col-md-12">
-                                        <div class="doc-modal-panel">
-                                            <div class="form-group mb-3">
-                                                <label class="font-weight-bold d-block">
-                                                    <?= htmlspecialchars($docName) ?>
-                                                    <span class="badge badge-info ml-1"><?= htmlspecialchars($docUploadMeta['title_suffix']) ?></span>
-                                                </label>
-                                                <div class="upload-dropzone create-doc-dropzone" id="valsal-create-dropzone-<?= $docItemId ?>">
-                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="valsal-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" data-required-extension="<?= htmlspecialchars($docUploadMeta['extension'], ENT_QUOTES) ?>" accept="<?= htmlspecialchars($docUploadMeta['accept'], ENT_QUOTES) ?>" required>
-                                                    <div class="upload-dropzone-content">
-                                                        <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars($docName) ?></div>
-                                                        <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
-                                                        <div class="upload-dropzone-file create-doc-file-name" id="valsal-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
-                                                    </div>
+                                    <div class="doc-modal-panel">
+                                        <div class="form-group mb-3">
+                                            <label class="font-weight-bold d-block">
+                                                <?= htmlspecialchars($docName) ?>
+                                                <span class="badge badge-info ml-1"><?= htmlspecialchars($docUploadMeta['title_suffix']) ?></span>
+                                            </label>
+                                            <div class="upload-dropzone create-doc-dropzone" id="valsal-create-dropzone-<?= $docItemId ?>">
+                                                <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="valsal-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" data-required-extension="<?= htmlspecialchars($docUploadMeta['extension'], ENT_QUOTES) ?>" accept="<?= htmlspecialchars($docUploadMeta['accept'], ENT_QUOTES) ?>" required>
+                                                <div class="upload-dropzone-content">
+                                                    <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                    <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars($docName) ?></div>
+                                                    <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                                    <div class="upload-dropzone-file create-doc-file-name" id="valsal-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
                                                 </div>
-                                                <small class="text-muted d-block mt-2"><?= htmlspecialchars($docUploadMeta['hint']) ?></small>
                                             </div>
-                                            <div class="alert alert-info py-2 px-3 small mb-3"><?= htmlspecialchars($docName) ?> wajib diupload dalam format .<?= htmlspecialchars($docUploadMeta['extension']) ?>.</div>
-                                            <div class="form-group mb-0">
-                                                <label class="font-weight-bold">Remark <?= htmlspecialchars($docName) ?></label>
-                                                <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
-                                            </div>
+                                            <small class="text-muted d-block mt-2"><?= htmlspecialchars($docUploadMeta['hint']) ?></small>
+                                        </div>
+                                        <div class="alert alert-info py-2 px-3 small mb-3"><?= htmlspecialchars($docName) ?> wajib diupload dalam format .<?= htmlspecialchars($docUploadMeta['extension']) ?>.</div>
+                                        <div class="form-group mb-0">
+                                            <label class="font-weight-bold">Remark <?= htmlspecialchars($docName) ?></label>
+                                            <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
-                        </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="modal-footer budget-modal__footer">
                         <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
@@ -912,23 +913,36 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                     </div>
                     <div class="modal-body">
                         <div class="budget-form-section">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Cluster</label>
-                                    <input type="text" id="edit_cluster_name" class="form-control" readonly>
+                            <div class="budget-form-section__title">Informasi Cluster</div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Cluster</label>
+                                        <input type="text" id="edit_cluster_name" class="form-control" readonly>
+                                    </div>
                                 </div>
+                                <div class="col-md-4"><div class="form-group mb-md-0"><label>Regional</label><input type="text" id="edit_regional_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group mb-md-0"><label>Provinsi</label><input type="text" id="edit_province_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group mb-0"><label>Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
                             </div>
-                            <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" id="edit_regional_name" class="form-control" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" id="edit_province_name" class="form-control" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Homepass BAK</label><input type="number" id="edit_homepass_bak" class="form-control" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Homepass VALSAL</label><input type="number" name="homepass_valsal" id="edit_homepass_valsal" min="1" class="form-control" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="text" id="edit_bak_date" class="form-control" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" id="edit_valsal_date" class="form-control"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status VALSAL</label><input type="text" id="edit_status_valsal" class="form-control" readonly></div></div>
-                            <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_valsal" id="edit_remark_valsal" rows="3" class="form-control"></textarea></div></div>
                         </div>
+
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Data VALSAL</div>
+                            <div class="row">
+                                <div class="col-md-4"><div class="form-group"><label>Homepass BAK</label><input type="text" id="edit_homepass_bak" inputmode="numeric" class="form-control js-homepass-format" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Homepass VALSAL</label><input type="text" name="homepass_valsal" id="edit_homepass_valsal" inputmode="numeric" class="form-control js-homepass-format" required></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="text" id="edit_bak_date" class="form-control" readonly></div></div>
+                                <div class="col-md-8"><div class="form-group mb-md-0"><label>Remark</label><textarea name="remark_valsal" id="edit_remark_valsal" rows="2" class="form-control"></textarea></div></div>
+                                <div class="col-md-4"><div class="form-group mb-0"><label>Status VALSAL</label><input type="text" id="edit_status_valsal" class="form-control" readonly></div></div>
+                            </div>
+                        </div>
+
+                        <div class="budget-form-section budget-form-section--last">
+                            <div class="budget-form-section__title">Timeline VALSAL</div>
+                            <div class="row">
+                                <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" id="edit_valsal_date" class="form-control"></div></div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer budget-modal__footer">
@@ -1623,9 +1637,21 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border-radius: 24px;
         overflow: hidden;
         box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        max-height: calc(100vh - 3.5rem);
+    }
+
+    .budget-modal>form {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1 1 auto;
     }
 
     .budget-modal__header {
+        flex: 0 0 auto;
         border-bottom: 0;
         padding: 1.4rem 1.5rem 1.1rem;
         background:
@@ -1651,11 +1677,15 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .budget-modal .modal-body {
+        flex: 1 1 auto;
         padding: 1.5rem;
         background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
+        overflow-y: auto;
+        min-height: 0;
     }
 
     .budget-modal__footer {
+        flex: 0 0 auto;
         display: flex;
         gap: 10px;
         justify-content: flex-end;
@@ -1665,12 +1695,27 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .budget-form-section {
-        margin-bottom: 0;
+        margin-bottom: 1rem;
         padding: 1rem 1rem 0.9rem;
         border: 1px solid #dbe9f4;
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.92);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .budget-form-section--last {
+        margin-bottom: 0;
+    }
+
+    .budget-form-section__title {
+        margin-bottom: .9rem;
+        padding-bottom: .55rem;
+        border-bottom: 1px solid #e4edf5;
+        color: #153f60;
+        font-size: .92rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
     }
 
     .doc-modal .modal-content {
@@ -2234,6 +2279,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             return fileName.slice(-1 * (requiredExtension.length + 1)) === '.' + requiredExtension;
         }
 
+        function valsalDigitsOnly(value) {
+            return String(value || '').replace(/\D/g, '');
+        }
+
+        function valsalFormatNumberInputValue(value) {
+            var digits = valsalDigitsOnly(value);
+            return digits === '' ? '' : Number(digits).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        }
+
+        function valsalSetFormattedNumber($input, value) {
+            $input.val(valsalFormatNumberInputValue(value));
+        }
+
         function getValsalStatusBadgeClass(statusLabel) {
             var value = String(statusLabel || '').toUpperCase().trim();
             if (value === 'DONE' || value === 'APPROVED' || value === 'VALSAL') return 'success';
@@ -2536,9 +2594,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $container.find('.js-cluster-city').val($selected.data('city_name') || '');
             $container.find('.js-cluster-name').val($selected.data('cluster_name') || '');
             $container.find('.js-bak-date').val($selected.data('bak_date') || '');
-            $container.find('.js-homepass-bak').val($selected.data('homepass_bak') || '');
+            valsalSetFormattedNumber($container.find('.js-homepass-bak'), $selected.data('homepass_bak') || '');
             if ($container.find('.js-homepass-valsal').length) {
-                $container.find('.js-homepass-valsal').val($selected.data('homepass_bak') || '');
+                valsalSetFormattedNumber($container.find('.js-homepass-valsal'), $selected.data('homepass_bak') || '');
             }
         }
 
@@ -2659,6 +2717,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
             handleValsalFlashAlerts();
 
+            $(document).on('input', '.js-homepass-format', function () {
+                valsalSetFormattedNumber($(this), this.value);
+            });
+
+            $('.js-homepass-format').each(function () {
+                valsalSetFormattedNumber($(this), this.value);
+            });
+
             if ($.fn.DataTable) {
                 Object.keys(valsalTableConfigs).forEach(function (selector) {
                     if (!$(selector).length) {
@@ -2742,8 +2808,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 });
             }
 
-            initValsalSelect('.js-valsal-city-selector', '#modal-valsal-create', 'Pilih kota');
-            initValsalSelect('.js-valsal-cluster-select', '#modal-valsal-create', 'Pilih cluster');
+            initValsalSelect('.js-valsal-city-selector:not(.js-valsal-hidden-selector)', '#modal-valsal-create', 'Pilih kota');
+            initValsalSelect('.js-valsal-cluster-select:not(.js-valsal-hidden-selector)', '#modal-valsal-create', 'Pilih cluster');
 
             $(document).on('change', '.js-valsal-cluster-selector', function () {
                 if (valsalSyncingSelection) {
@@ -2812,8 +2878,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $modal.find('#edit_regional_name').val($button.data('regional_name'));
                 $modal.find('#edit_province_name').val($button.data('province_name'));
                 $modal.find('#edit_city_name').val($button.data('city_name'));
-                $modal.find('#edit_homepass_bak').val($button.data('homepass_bak'));
-                $modal.find('#edit_homepass_valsal').val($button.data('homepass_valsal'));
+                valsalSetFormattedNumber($modal.find('#edit_homepass_bak'), $button.data('homepass_bak'));
+                valsalSetFormattedNumber($modal.find('#edit_homepass_valsal'), $button.data('homepass_valsal'));
                 $modal.find('#edit_bak_date').val($button.data('bak_date'));
                 $modal.find('#edit_valsal_date').val($button.data('valsal_date'));
                 $modal.find('#edit_status_valsal').val($button.data('status_valsal'));

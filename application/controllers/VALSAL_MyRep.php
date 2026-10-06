@@ -327,25 +327,6 @@ class VALSAL_MyRep extends CI_Controller
         );
     }
 
-    public function deleteCluster()
-    {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $this->input->post('cluster_id');
-        if ($clusterId <= 0) {
-            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
-            redirect('VALSAL_MyRep');
-            return;
-        }
-
-        $deleted = $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
-        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta flow VALSAL dan seluruh tahap sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep.');
-        redirect('VALSAL_MyRep');
-    }
-
     public function approveDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
