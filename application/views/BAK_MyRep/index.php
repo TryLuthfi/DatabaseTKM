@@ -19,7 +19,7 @@ $bakApprovalSummaryByTab = [
     'ny_valsal' => array_merge($emptyBakApprovalSummary, (array) ($bakApprovalStatusSummary['ny_valsal'] ?? [])),
     'all' => array_merge($emptyBakApprovalSummary, (array) ($bakApprovalStatusSummary['all'] ?? [])),
 ];
-$bakActiveApprovalSummary = $bakApprovalSummaryByTab['on_process'];
+$bakActiveApprovalSummary = $bakApprovalSummaryByTab['all'];
 $renderBakRows = !empty($renderBakRows);
 $summaryTotal = (int) ($bakSummary['totalCount'] ?? count($clusterRows));
 $summaryBaOpen = (int) ($bakSummary['baOpenCount'] ?? 0);
@@ -501,45 +501,54 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="small-box bg-info shadow-sm bak-summary-box bak-summary-box--info">
-                        <div class="inner">
-                            <h3><?= number_format($summaryTotal, 0, ',', '.') ?></h3>
-                            <p>Total Cluster BAK</p>
-                            <p class="bak-summary-box__meta mb-0">HP <?= number_format($summaryTotalHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-layer-group"></i></div>
+            <div class="card card-outline card-info shadow-sm bak-stage-summary-card">
+                <div class="card-header bak-section-header">
+                    <div>
+                        <h3 class="card-title mb-1">Summary Staging BAK</h3>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-primary shadow-sm bak-summary-box bak-summary-box--primary">
-                        <div class="inner">
-                            <h3><?= number_format($summaryBaOpen, 0, ',', '.') ?></h3>
-                            <p>Stage BA OPEN</p>
-                            <p class="bak-summary-box__meta mb-0">HP <?= number_format($summaryBaOpenHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-folder-open"></i></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-success shadow-sm bak-summary-box bak-summary-box--success">
-                        <div class="inner">
-                            <h3><?= number_format($summaryDone, 0, ',', '.') ?></h3>
-                            <p>Done BAK</p>
-                            <p class="bak-summary-box__meta mb-0">HP <?= number_format($summaryDoneHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-check-circle"></i></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-danger shadow-sm bak-summary-box bak-summary-box--danger">
-                        <div class="inner">
-                            <h3><?= number_format($summaryRejected, 0, ',', '.') ?></h3>
-                            <p>Rejected</p>
-                            <p class="bak-summary-box__meta mb-0">HP <?= number_format($summaryRejectedHp, 0, ',', '.') ?></p>
-                        </div>
-                        <div class="icon"><i class="fas fa-times-circle"></i></div>
+                <div class="card-body">
+                    <div class="bak-stage-summary-grid">
+                        <a href="#" class="bak-stage-summary-item bak-stage-summary-item--info js-bak-summary-filter" data-bak-tab="#bak-all-tab" data-bak-status="" data-bak-approval="" data-role-guard-exempt="1">
+                            <span class="bak-stage-summary-item__head">
+                                <span class="bak-stage-summary-item__label">Total Cluster BAK</span>
+                                <span class="bak-stage-summary-pic bak-stage-summary-pic--area">
+                                    <i class="fas fa-layer-group"></i> ALL
+                                </span>
+                            </span>
+                            <span class="bak-stage-summary-item__count"><?= number_format($summaryTotal, 0, ',', '.') ?></span>
+                            <span class="bak-stage-summary-item__meta">HP <?= number_format($summaryTotalHp, 0, ',', '.') ?></span>
+                        </a>
+                        <a href="#" class="bak-stage-summary-item bak-stage-summary-item--primary js-bak-summary-filter" data-bak-tab="#bak-all-tab" data-bak-status="BA OPEN" data-bak-approval="" data-role-guard-exempt="1">
+                            <span class="bak-stage-summary-item__head">
+                                <span class="bak-stage-summary-item__label">Stage BA OPEN</span>
+                                <span class="bak-stage-summary-pic bak-stage-summary-pic--sitac">
+                                    <i class="fas fa-folder-open"></i> AREA
+                                </span>
+                            </span>
+                            <span class="bak-stage-summary-item__count"><?= number_format($summaryBaOpen, 0, ',', '.') ?></span>
+                            <span class="bak-stage-summary-item__meta">HP <?= number_format($summaryBaOpenHp, 0, ',', '.') ?></span>
+                        </a>
+                        <a href="#" class="bak-stage-summary-item bak-stage-summary-item--success js-bak-summary-filter" data-bak-tab="#bak-all-tab" data-bak-status="DONE" data-bak-approval="" data-role-guard-exempt="1">
+                            <span class="bak-stage-summary-item__head">
+                                <span class="bak-stage-summary-item__label">Done BAK</span>
+                                <span class="bak-stage-summary-pic bak-stage-summary-pic--done">
+                                    <i class="fas fa-check-circle"></i> DONE
+                                </span>
+                            </span>
+                            <span class="bak-stage-summary-item__count"><?= number_format($summaryDone, 0, ',', '.') ?></span>
+                            <span class="bak-stage-summary-item__meta">HP <?= number_format($summaryDoneHp, 0, ',', '.') ?></span>
+                        </a>
+                        <a href="#" class="bak-stage-summary-item bak-stage-summary-item--danger js-bak-summary-filter" data-bak-tab="#bak-all-tab" data-bak-status="" data-bak-approval="rejected" data-role-guard-exempt="1">
+                            <span class="bak-stage-summary-item__head">
+                                <span class="bak-stage-summary-item__label">Rejected</span>
+                                <span class="bak-stage-summary-pic bak-stage-summary-pic--danger">
+                                    <i class="fas fa-times-circle"></i> AREA
+                                </span>
+                            </span>
+                            <span class="bak-stage-summary-item__count"><?= number_format($summaryRejected, 0, ',', '.') ?></span>
+                            <span class="bak-stage-summary-item__meta">HP <?= number_format($summaryRejectedHp, 0, ',', '.') ?></span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -550,9 +559,6 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         <?php if ($isReady && $canTambah): ?>
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-bak-create">
                                 <i class="fas fa-plus mr-1"></i> Input BAK
-                            </button>
-                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-bak-import">
-                                <i class="fas fa-file-import mr-1"></i> Import Cluster Batch
                             </button>
                             <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-bak-download-report">
                                 <i class="fas fa-download mr-1"></i> Download Report BAK
@@ -576,19 +582,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                     <div class="bak-tab-section__label">Flow</div>
                                     <ul class="nav nav-tabs bak-monitor-tabs" id="bak-monitor-tab" role="tablist">
                                         <li class="nav-item">
-                                            <a class="nav-link active" id="bak-on-process-tab" data-toggle="tab" href="#bak-on-process-pane" role="tab" aria-controls="bak-on-process-pane" aria-selected="true">
-                                                On Proses
-                                                <span class="bak-monitor-tabs__count"><?= number_format($bakOnProcessCount, 0, ',', '.') ?></span>
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="false">
-                                                Status NY VALSAL
-                                                <span class="bak-monitor-tabs__count"><?= number_format($nyValsalCount, 0, ',', '.') ?></span>
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="false">
+                                            <a class="nav-link active" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="true">
                                                 ALL BAK
                                                 <span class="bak-monitor-tabs__count"><?= number_format($allBakCount, 0, ',', '.') ?></span>
                                             </a>
@@ -610,77 +604,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                 </div>
                             </div>
                             <div class="tab-content bak-monitor-tabs__content" id="bak-monitor-tab-content">
-                                <div class="tab-pane fade show active" id="bak-on-process-pane" role="tabpanel" aria-labelledby="bak-on-process-tab">
-                                    <div class="table-responsive">
-                                        <table id="table_bak_on_process" class="table table-bordered table-hover bak-monitor-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>Cluster</th>
-                                                    <th>Regional</th>
-                                                    <th>Kota</th>
-                                                    <th>HP Estimasi</th>
-                                                    <th>Tanggal BA OPEN</th>
-                                                    <th>SLA &amp; Aging</th>
-                                                    <th>Tanggal BAK</th>
-                                                    <th>Status BAK</th>
-                                                    <th>Dokumen BAK</th>
-                                                    <th>Review Dokumen</th>
-                                                    <th>Status Flow</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php if ($renderBakRows): ?>
-                                                    <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
-                                                <?php endif; ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <th colspan="4" class="text-right">TOTAL HP HALAMAN</th>
-                                                    <th class="text-right">0</th>
-                                                    <th colspan="8"></th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="tab-pane fade" id="bak-ny-valsal-pane" role="tabpanel" aria-labelledby="bak-ny-valsal-tab">
-                                    <div class="table-responsive">
-                                        <table id="table_bak_ny_valsal" class="table table-bordered table-hover bak-monitor-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>Cluster</th>
-                                                    <th>Regional</th>
-                                                    <th>Kota</th>
-                                                    <th>HP Estimasi</th>
-                                                    <th>Tanggal BA OPEN</th>
-                                                    <th>SLA &amp; Aging</th>
-                                                    <th>Tanggal BAK</th>
-                                                    <th>Status BAK</th>
-                                                    <th>Dokumen BAK</th>
-                                                    <th>Review Dokumen</th>
-                                                    <th>Status Flow</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php if ($renderBakRows): ?>
-                                                    <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
-                                                <?php endif; ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <th colspan="4" class="text-right">TOTAL HP HALAMAN</th>
-                                                    <th class="text-right">0</th>
-                                                    <th colspan="8"></th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="tab-pane fade" id="bak-all-pane" role="tabpanel" aria-labelledby="bak-all-tab">
+                                <div class="tab-pane fade show active" id="bak-all-pane" role="tabpanel" aria-labelledby="bak-all-tab">
                                     <div class="table-responsive">
                                         <table id="table_bak_all" class="table table-bordered table-hover bak-monitor-table">
                                             <thead>
@@ -1342,20 +1266,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .bak-section-header {
-        background:
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
-            linear-gradient(135deg, #103b5a, #1f6da1 55%, #53a9d8);
-        color: #fff;
-        border-bottom: 0;
-        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        color: #0f172a;
+        border-bottom: 1px solid #dbeafe;
+        padding: 1.15rem 1.35rem;
     }
 
     .bak-section-header .card-title {
+        color: #0f172a;
         font-weight: 700;
     }
 
     .bak-section-subtitle {
-        color: rgba(255, 255, 255, 0.84);
+        color: #64748b;
         font-size: 0.92rem;
         max-width: 760px;
     }
@@ -1367,19 +1294,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         font-weight: 800;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: #2d6287;
+        color: #2f5f84;
     }
 
     .bak-input {
-        border-radius: 12px;
-        border: 1px solid #cfe0ee;
+        border-radius: 14px;
+        border: 1px solid #d7e0ea;
         min-height: 44px;
         box-shadow: none;
     }
 
     .bak-input:focus {
-        border-color: #55a7d5;
-        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 .2rem rgba(96, 165, 250, 0.16);
     }
 
     .bak-filter-actions {
@@ -1388,22 +1315,20 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .budget-btn {
         border: 0;
-        border-radius: 12px;
-        padding: 0.68rem 1.15rem;
+        border-radius: 999px;
+        padding: .72rem 1.2rem;
         font-weight: 700;
-        letter-spacing: 0.01em;
-        transition: all 0.2s ease;
-        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.12);
+        letter-spacing: .01em;
+        transition: transform .18s ease, box-shadow .18s ease;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
     }
 
-    .budget-btn:hover,
-    .budget-btn:focus {
+    .budget-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 16px 28px rgba(16, 59, 90, 0.16);
     }
 
     .budget-btn--primary {
-        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        background: linear-gradient(135deg, #0f4c81, #1d7ed6);
         color: #fff;
     }
 
@@ -1414,9 +1339,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .budget-btn--ghost {
         background: #fff;
-        color: #315d7f;
-        border: 1px solid #d7e6f2;
-        box-shadow: 0 10px 22px rgba(112, 141, 165, 0.12);
+        color: #334155;
+        border: 1px solid #d7e0ea;
+        box-shadow: none;
     }
 
     .budget-btn--danger {
@@ -1424,20 +1349,123 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         color: #fff;
     }
 
-    .bak-summary-box {
-        border-radius: 18px;
+    .bak-stage-summary-card {
+        border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+        margin-bottom: 1rem;
     }
 
-    .bak-summary-box .inner h3 {
-        font-weight: 800;
+    .bak-stage-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: .75rem;
     }
 
-    .bak-summary-box__meta {
-        font-size: .88rem;
-        font-weight: 600;
-        opacity: .92;
+    .bak-stage-summary-item {
+        display: grid;
+        min-height: 108px;
+        padding: .85rem .9rem;
+        border: 1px solid #dbe7f3;
+        border-left: 5px solid #64748b;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f172a;
+        text-decoration: none;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+        transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+
+    .bak-stage-summary-item:hover,
+    .bak-stage-summary-item:focus {
+        color: #0f172a;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+        outline: none;
+    }
+
+    .bak-stage-summary-item.is-active {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18), 0 16px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    .bak-stage-summary-item--success {
+        border-left-color: #16a34a;
+    }
+
+    .bak-stage-summary-item--info {
+        border-left-color: #0284c7;
+    }
+
+    .bak-stage-summary-item--primary {
+        border-left-color: #2563eb;
+    }
+
+    .bak-stage-summary-item--danger {
+        border-left-color: #dc2626;
+    }
+
+    .bak-stage-summary-item__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .65rem;
+    }
+
+    .bak-stage-summary-item__label {
+        color: #475569;
+        font-size: .76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .bak-stage-summary-pic {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        flex-shrink: 0;
+        padding: .18rem .45rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 900;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .bak-stage-summary-pic--area {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .bak-stage-summary-pic--sitac {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .bak-stage-summary-pic--done {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .bak-stage-summary-pic--danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .bak-stage-summary-item__count {
+        display: block;
+        margin-top: .15rem;
+        font-size: 1.55rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .bak-stage-summary-item__meta {
+        display: block;
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
     }
 
     .bak-toolbar {
@@ -2047,21 +2075,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .bak-monitor-tabs .nav-link.active {
         color: #fff;
-        background: linear-gradient(135deg, #1e88cf, #2ca58d);
+        background: linear-gradient(135deg, #0f4c81, #1d7ed6);
         border-color: transparent;
-        box-shadow: 0 12px 28px rgba(30, 136, 207, 0.24);
     }
 
     .bak-monitor-tabs__count {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 28px;
-        margin-left: .45rem;
-        padding: .15rem .5rem;
+        min-width: 1.6rem;
+        min-height: 1.6rem;
+        padding: 0 .45rem;
+        margin-left: .4rem;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.18);
-        font-size: .8rem;
+        background: rgba(255, 255, 255, .9);
+        color: #0f4c81;
+        font-size: .75rem;
+        font-weight: 800;
     }
 
     .bak-monitor-tabs .nav-link:not(.active) .bak-monitor-tabs__count {
@@ -2595,11 +2625,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             var bakFilterCity = <?= json_encode($selectedCity) ?>;
             var bakFilterStatus = <?= json_encode($selectedStatus) ?>;
             var bakApprovalStatus = '';
-            var bakActiveFlowTab = 'on_process';
+            var bakActiveFlowTab = 'all';
             var bakApprovalStatusSummaryByTab = <?= json_encode($bakApprovalSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
             var bakTableConfigs = {
-                '#table_bak_on_process': { selector: '#table_bak_on_process', tab: 'on_process' },
-                '#table_bak_ny_valsal': { selector: '#table_bak_ny_valsal', tab: 'ny_valsal' },
                 '#table_bak_all': { selector: '#table_bak_all', tab: 'all' }
             };
 
@@ -2609,6 +2637,40 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var key = String($(this).data('approval-count') || '');
                     var value = Number(summary[key] || 0);
                     $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                });
+            }
+
+            function getActiveBakTableSelector() {
+                return '#table_bak_all';
+            }
+
+            function reloadBakMonitorTables(activeSelector) {
+                activeSelector = activeSelector || getActiveBakTableSelector();
+                initBakMonitorTable(activeSelector);
+
+                Object.keys(bakTables).forEach(function (selector) {
+                    if (bakTables[selector]) {
+                        bakTables[selector].ajax.reload(null, true);
+                    }
+                });
+            }
+
+            function syncBakQuickFilterState() {
+                $('.js-bak-approval-filter').each(function () {
+                    $(this).toggleClass('is-active', String($(this).data('approval-status') || '').trim() === bakApprovalStatus);
+                });
+
+                $('.js-bak-summary-filter').each(function () {
+                    var summaryStatus = String($(this).data('bak-status') || '').trim().toUpperCase();
+                    var summaryApproval = String($(this).data('bak-approval') || '').trim();
+                    var summaryTab = String($(this).data('bak-tab') || '').trim();
+                    var activeTabId = '#' + ($('#bak-monitor-tab .nav-link.active').attr('id') || '');
+                    $(this).toggleClass(
+                        'is-active',
+                        summaryStatus === String(bakFilterStatus || '').trim().toUpperCase()
+                            && summaryApproval === bakApprovalStatus
+                            && summaryTab === activeTabId
+                    );
                 });
             }
 
@@ -2677,14 +2739,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             handleBakFlashAlerts();
 
             if ($.fn.DataTable) {
-                initBakMonitorTable('#table_bak_on_process');
+                initBakMonitorTable('#table_bak_all');
 
                 $('a[data-toggle="tab"][href^="#bak-"]').on('shown.bs.tab', function () {
-                    var tableSelector = $(this).attr('href') === '#bak-ny-valsal-pane'
-                        ? '#table_bak_ny_valsal'
-                        : ($(this).attr('href') === '#bak-all-pane' ? '#table_bak_all' : '#table_bak_on_process');
-                    bakActiveFlowTab = bakTableConfigs[tableSelector] ? bakTableConfigs[tableSelector].tab : 'on_process';
+                    var tableSelector = '#table_bak_all';
+                    bakActiveFlowTab = 'all';
                     updateBakApprovalStatusCounts(bakActiveFlowTab);
+                    syncBakQuickFilterState();
                     var table = initBakMonitorTable(tableSelector);
                     if (table) {
                         table.columns.adjust().draw(false);
@@ -2694,27 +2755,42 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $('.js-bak-approval-filter').on('click', function () {
                     var nextStatus = String($(this).data('approval-status') || '').trim();
                     bakApprovalStatus = bakApprovalStatus === nextStatus ? '' : nextStatus;
+                    syncBakQuickFilterState();
 
-                    $('.js-bak-approval-filter').each(function () {
-                        $(this).toggleClass('is-active', String($(this).data('approval-status') || '').trim() === bakApprovalStatus);
-                    });
-
-                    var activeSelector = '#table_bak_on_process';
-                    var $activePane = $('#bak-monitor-tab-content .tab-pane.active');
-                    if ($activePane.is('#bak-ny-valsal-pane')) {
-                        activeSelector = '#table_bak_ny_valsal';
-                    } else if ($activePane.is('#bak-all-pane')) {
-                        activeSelector = '#table_bak_all';
-                    }
-                    bakActiveFlowTab = bakTableConfigs[activeSelector] ? bakTableConfigs[activeSelector].tab : 'on_process';
+                    var activeSelector = getActiveBakTableSelector();
+                    bakActiveFlowTab = 'all';
                     updateBakApprovalStatusCounts(bakActiveFlowTab);
-                    initBakMonitorTable(activeSelector);
+                    reloadBakMonitorTables(activeSelector);
+                });
 
-                    Object.keys(bakTables).forEach(function (selector) {
-                        if (bakTables[selector]) {
-                            bakTables[selector].ajax.reload(null, true);
-                        }
-                    });
+                $('.js-bak-summary-filter').on('click', function (event) {
+                    event.preventDefault();
+
+                    var $summary = $(this);
+                    var targetTab = String($summary.data('bak-tab') || '#bak-all-tab').trim();
+                    var targetStatus = String($summary.data('bak-status') || '').trim();
+                    var targetApproval = String($summary.data('bak-approval') || '').trim();
+                    var isSameSummaryActive = $summary.hasClass('is-active')
+                        && String(bakFilterStatus || '').trim().toUpperCase() === targetStatus.toUpperCase()
+                        && String(bakApprovalStatus || '').trim() === targetApproval;
+
+                    bakFilterStatus = isSameSummaryActive ? '' : targetStatus;
+                    bakApprovalStatus = isSameSummaryActive ? '' : targetApproval;
+                    $('select[name="status"]').val(bakFilterStatus);
+
+                    var activeSelector = '#table_bak_all';
+                    bakActiveFlowTab = 'all';
+                    updateBakApprovalStatusCounts(bakActiveFlowTab);
+
+                    if ($(targetTab).length && !$(targetTab).hasClass('active')) {
+                        $(targetTab).tab('show');
+                    }
+
+                    syncBakQuickFilterState();
+                    window.setTimeout(function () {
+                        reloadBakMonitorTables(activeSelector);
+                        syncBakQuickFilterState();
+                    }, 80);
                 });
             }
 
