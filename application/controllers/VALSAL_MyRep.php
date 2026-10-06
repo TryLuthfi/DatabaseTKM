@@ -378,7 +378,6 @@ class VALSAL_MyRep extends CI_Controller
 
         if ($result) {
             $this->MVALSAL_MyRep->syncValsalStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
-            $this->myrepRejectEmail->enqueueReject('VALSAL_MyRep', $fileId);
         }
 
         $docName = (string) ($file['doc_name'] ?? 'VALSAL');
@@ -455,6 +454,7 @@ class VALSAL_MyRep extends CI_Controller
 
         if ($result) {
             $this->MVALSAL_MyRep->syncValsalStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
+            $this->myrepRejectEmail->enqueueReject('VALSAL_MyRep', $fileId);
         }
 
         $docName = (string) ($file['doc_name'] ?? 'VALSAL');

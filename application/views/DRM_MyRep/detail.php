@@ -344,7 +344,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
                 .drm-spk-option-grid {
                     display: grid;
-                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
                     gap: .75rem;
                 }
 
@@ -357,12 +357,22 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
                 .drm-spk-option input {
                     position: absolute;
+                    inset: 0;
+                    z-index: 2;
+                    width: 100%;
+                    height: 100%;
+                    margin: 0;
                     opacity: 0;
-                    pointer-events: none;
+                    cursor: pointer;
+                    appearance: none;
                 }
 
                 .drm-spk-option__body {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
                     min-height: 106px;
+                    height: 100%;
                     border: 1px solid #cbd5e1;
                     border-radius: 12px;
                     background: #fff;
@@ -381,6 +391,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     color: #0f172a;
                     font-weight: 800;
                     margin-bottom: .25rem;
+                    overflow-wrap: anywhere;
                 }
 
                 .drm-spk-option__text {
@@ -388,6 +399,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     color: #64748b;
                     font-size: .82rem;
                     line-height: 1.35;
+                    overflow-wrap: anywhere;
                 }
 
                 @media (max-width: 767.98px) {
@@ -1528,7 +1540,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
 <?php if ($canShowSpkDoneButton): ?>
 <div class="modal fade" id="modal-spk-done" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content drm-modal">
             <form method="post" action="<?= base_url('DRM_MyRep/saveSpkDone') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
