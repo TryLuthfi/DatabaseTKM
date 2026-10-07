@@ -3146,6 +3146,13 @@ class MBatch_Approval_MyRep extends CI_Model
             if ((int) ($post['astri_submitted'] ?? 0) > 0 || (int) ($pre['astri_submitted'] ?? 0) > 0) {
                 return 'ASTRI_ON_REVIEW';
             }
+            if (!$isTerminalStage
+                && $postRequired > 0
+                && $hasRelease
+                && (int) ($post['finance_approved'] ?? 0) >= $postFinanceRequired
+                && ($postPackageExists || (int) ($post['uploaded'] ?? 0) > 0 || (int) ($post['approved'] ?? 0) > 0 || (int) ($post['finance_approved'] ?? 0) > 0)) {
+                return 'WAITING_ASTRI_SUBMISSION';
+            }
 
             return 'COMPLETED';
         }

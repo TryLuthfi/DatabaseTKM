@@ -189,6 +189,12 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             ->from($tableName . ' m')
             ->select('m.id, m.regional_name, m.province_name, m.city_name, m.team_name, m.chief');
 
+        if ($this->db->field_exists('area', $tableName)) {
+            $this->db->select('m.area');
+        } else {
+            $this->db->select('NULL AS area', false);
+        }
+
         if ($this->db->field_exists('is_active', $tableName)) {
             $this->db->select('m.is_active');
         } else {
@@ -213,6 +219,284 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             ->result_array();
 
         return $this->decorateCityPicMappingNames($rows);
+    }
+
+    public function searchRegencyOptions($term = '', $limit = 20, $offset = 0)
+    {
+        if (!$this->db->table_exists('md_kokab_indonesia') || !$this->db->table_exists('md_provinsi_indonesia')) {
+            return [];
+        }
+
+        $term = trim((string) $term);
+        $limit = max(1, min(100, (int) $limit));
+        $offset = max(0, (int) $offset);
+
+        $fetchLimit = ($limit + $offset) * 3;
+        $fetchLimit = max($limit, min(300, $fetchLimit));
+
+        $this->db
+            ->select('r.id, r.name, r.province_id, p.name AS province_name')
+            ->from('md_kokab_indonesia r')
+            ->join('md_provinsi_indonesia p', 'p.id = r.province_id', 'left');
+
+        if ($term !== '') {
+            $this->db->group_start()
+                ->like('r.name', $term)
+                ->or_like('p.name', $term)
+                ->group_end();
+        }
+
+        $rows = (array) $this->db
+            ->order_by('p.name', 'ASC')
+            ->order_by('r.name', 'ASC')
+            ->limit($fetchLimit)
+            ->get()
+            ->result_array();
+
+        $groupedRows = [];
+        foreach ($rows as &$row) {
+            $row['name'] = $this->generalizeCityMappingName($row['name'] ?? '');
+            $provinceName = (string) ($row['province_name'] ?? '');
+            $provinceAlias = $this->suggestProvinceAlias($provinceName);
+            $row['province_alias'] = $provinceAlias;
+            $row['mapping_default'] = $this->getProvinceMappingDefault($provinceAlias);
+
+            $key = strtoupper((string) ($row['province_id'] ?? '')) . '|' . $this->normalizeCityMappingName($row['name'] ?? '');
+            if (!isset($groupedRows[$key])) {
+                $groupedRows[$key] = $row;
+            }
+        }
+        unset($row);
+
+        return array_slice(array_values($groupedRows), $offset, $limit);
+    }
+
+    public function searchCityMappingOptions($term = '', $limit = 20, $offset = 0)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $term = trim((string) $term);
+        $limit = max(1, min(100, (int) $limit));
+        $offset = max(0, (int) $offset);
+
+        $this->db
+            ->select('id, regional_name, province_name, city_name')
+            ->from('tb_myrep_pic_mapping_city');
+
+        if ($term !== '') {
+            $this->db->group_start()
+                ->like('city_name', $term)
+                ->or_like('province_name', $term)
+                ->or_like('regional_name', $term)
+                ->group_end();
+        }
+
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+
+        return (array) $this->db
+            ->order_by('regional_name', 'ASC')
+            ->order_by('province_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->limit($limit, $offset)
+            ->get()
+            ->result_array();
+    }
+
+    public function saveCityMapping(array $payload)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return ['ok' => false, 'message' => 'Tabel mapping kota belum tersedia.'];
+        }
+        $this->ensureCityPicExtraMappingColumns();
+
+        $id = (int) ($payload['id'] ?? 0);
+        $regionalName = strtoupper(trim((string) ($payload['regional_name'] ?? '')));
+        $provinceName = strtoupper(trim((string) ($payload['province_name'] ?? '')));
+        $cityName = strtoupper(trim((string) ($payload['city_name'] ?? '')));
+        $teamName = trim((string) ($payload['team_name'] ?? ''));
+        $chief = trim((string) ($payload['chief'] ?? ''));
+        $copyFromId = (int) ($payload['copy_from_id'] ?? 0);
+
+        if ($regionalName === '' || $provinceName === '' || $cityName === '') {
+            return ['ok' => false, 'message' => 'Regional, provinsi, dan kota wajib diisi.'];
+        }
+
+        if ($this->cityMappingExists($regionalName, $provinceName, $cityName, $id)) {
+            return ['ok' => false, 'message' => 'Mapping kota tersebut sudah ada.'];
+        }
+
+        $data = [
+            'regional_name' => $regionalName,
+            'province_name' => $provinceName,
+            'city_name' => $cityName,
+            'team_name' => $teamName === '' ? null : $teamName,
+            'chief' => $chief === '' ? null : $chief,
+        ];
+
+        if ($this->db->field_exists('area', 'tb_myrep_pic_mapping_city')) {
+            $area = trim((string) ($payload['area'] ?? ''));
+            $data['area'] = ctype_digit($area) ? (int) $area : null;
+        }
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $data['is_active'] = !empty($payload['is_active']) ? 1 : 0;
+        }
+        if ($this->db->field_exists('updated_at', 'tb_myrep_pic_mapping_city')) {
+            $data['updated_at'] = date('Y-m-d H:i:s');
+        }
+
+        if ($id > 0) {
+            $ok = (bool) $this->db->where('id', $id)->update('tb_myrep_pic_mapping_city', $data);
+            return ['ok' => $ok, 'message' => $ok ? 'Mapping kota berhasil diperbarui.' : 'Gagal memperbarui mapping kota.'];
+        }
+
+        if ($this->db->field_exists('created_at', 'tb_myrep_pic_mapping_city')) {
+            $data['created_at'] = date('Y-m-d H:i:s');
+        }
+        if ($this->db->field_exists('submitted_at', 'tb_myrep_pic_mapping_city')) {
+            $data['submitted_at'] = date('Y-m-d H:i:s');
+        }
+
+        if ($copyFromId > 0) {
+            $source = $this->getCityMappingRaw($copyFromId);
+            if (!empty($source)) {
+                foreach ($this->cityPicRoleColumns as $columnName) {
+                    if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                        $data[$columnName] = $source[$columnName] ?? null;
+                    }
+                }
+            }
+        }
+
+        $ok = (bool) $this->db->insert('tb_myrep_pic_mapping_city', $data);
+        return ['ok' => $ok, 'message' => $ok ? 'Mapping kota berhasil ditambahkan.' : 'Gagal menambahkan mapping kota.'];
+    }
+
+    public function deleteCityMapping($id)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return ['ok' => false, 'message' => 'Tabel mapping kota belum tersedia.'];
+        }
+
+        $id = (int) $id;
+        if ($id <= 0) {
+            return ['ok' => false, 'message' => 'ID mapping tidak valid.'];
+        }
+
+        $ok = (bool) $this->db->where('id', $id)->delete('tb_myrep_pic_mapping_city');
+        return ['ok' => $ok, 'message' => $ok ? 'Mapping kota berhasil dihapus.' : 'Gagal menghapus mapping kota.'];
+    }
+
+    private function cityMappingExists($regionalName, $provinceName, $cityName, $excludeId = 0)
+    {
+        $this->db
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(`regional_name`) = ' . $this->db->escape(strtoupper((string) $regionalName)), null, false)
+            ->where('UPPER(`province_name`) = ' . $this->db->escape(strtoupper((string) $provinceName)), null, false)
+            ->where('UPPER(`city_name`) = ' . $this->db->escape(strtoupper((string) $cityName)), null, false);
+
+        if ((int) $excludeId > 0) {
+            $this->db->where('id !=', (int) $excludeId);
+        }
+
+        return $this->db->count_all_results() > 0;
+    }
+
+    private function getCityMappingRaw($id)
+    {
+        return (array) $this->db
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('id', (int) $id)
+            ->get()
+            ->row_array();
+    }
+
+    private function getProvinceMappingDefault($provinceAlias)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $this->db
+            ->select('id, regional_name, province_name, city_name')
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(`province_name`) = ' . $this->db->escape(strtoupper((string) $provinceAlias)), null, false);
+
+        if ($this->db->field_exists('area', 'tb_myrep_pic_mapping_city')) {
+            $this->db->select('area');
+        } else {
+            $this->db->select('NULL AS area', false);
+        }
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+
+        return (array) $this->db
+            ->order_by('city_name', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    private function suggestProvinceAlias($provinceName)
+    {
+        $normalized = preg_replace('/\s+/', ' ', strtoupper(trim((string) $provinceName)));
+        $aliases = [
+            'ACEH' => 'NAD',
+            'BALI' => 'BALI',
+            'BANTEN' => 'BANTEN',
+            'BENGKULU' => 'BENGKULU',
+            'DAERAH ISTIMEWA YOGYAKARTA' => 'DIY',
+            'DKI JAKARTA' => 'DKI',
+            'GORONTALO' => 'GORONTALO',
+            'JAMBI' => 'JAMBI',
+            'JAWA BARAT' => 'JABAR',
+            'JAWA TENGAH' => 'JATENG',
+            'JAWA TIMUR' => 'JATIM',
+            'KALIMANTAN BARAT' => 'KALBAR',
+            'KALIMANTAN SELATAN' => 'KALSEL',
+            'KALIMANTAN TENGAH' => 'KALTENG',
+            'KALIMANTAN TIMUR' => 'KALTIM',
+            'KALIMANTAN UTARA' => 'KALTARA',
+            'KEPULAUAN BANGKA BELITUNG' => 'BABEL',
+            'KEPULAUAN RIAU' => 'KEPRI',
+            'LAMPUNG' => 'LAMPUNG',
+            'MALUKU' => 'MALUKU',
+            'MALUKU UTARA' => 'MALUT',
+            'NUSA TENGGARA BARAT' => 'NTB',
+            'NUSA TENGGARA TIMUR' => 'NTT',
+            'PAPUA' => 'PAPUA',
+            'PAPUA BARAT' => 'PAPUA BARAT',
+            'RIAU' => 'RIAU',
+            'SULAWESI BARAT' => 'SULBAR',
+            'SULAWESI SELATAN' => 'SULSEL',
+            'SULAWESI TENGAH' => 'SULTENG',
+            'SULAWESI TENGGARA' => 'SULTRA',
+            'SULAWESI UTARA' => 'SULUT',
+            'SUMATERA BARAT' => 'SUMBAR',
+            'SUMATERA SELATAN' => 'SUMSEL',
+            'SUMATERA UTARA' => 'SUMUT',
+        ];
+
+        return $aliases[$normalized] ?? $normalized;
+    }
+
+    private function generalizeCityMappingName($cityName)
+    {
+        $cityName = strtoupper(trim((string) $cityName));
+        $cityName = preg_replace('/^(KABUPATEN|KOTA|KAB\.?)\s+/u', '', $cityName);
+        $cityName = preg_replace('/\s+/u', ' ', trim($cityName));
+        return $cityName;
+    }
+
+    private function normalizeCityMappingName($cityName)
+    {
+        $cityName = $this->generalizeCityMappingName($cityName);
+        $cityName = preg_replace('/[^A-Z0-9]+/u', ' ', $cityName);
+        return preg_replace('/\s+/u', ' ', trim($cityName));
     }
 
     private function decorateCityPicMappingNames(array $rows)

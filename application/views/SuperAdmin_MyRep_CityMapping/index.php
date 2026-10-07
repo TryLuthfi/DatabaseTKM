@@ -91,6 +91,7 @@ sort($provinceOptions);
                         Default mode hanya view (nama PIC). Klik <strong>Update Data</strong> untuk masuk mode edit.
                     </div>
                     <div class="mb-3">
+                        <button type="button" class="btn btn-success btn-sm" id="btn_add_city_mapping">Tambah Kota</button>
                         <button type="button" class="btn btn-warning btn-sm" id="btn_enable_edit_city_mapping">Update Data</button>
                         <button type="button" class="btn btn-primary btn-sm d-none" id="btn_save_city_mapping">Save All (Changed Only)</button>
                         <button type="button" class="btn btn-secondary btn-sm d-none" id="btn_cancel_edit_city_mapping">Batal Edit</button>
@@ -124,6 +125,7 @@ sort($provinceOptions);
                                 <tr>
                                     <th>No</th>
                                     <th>Regional</th>
+                                    <th>Area</th>
                                     <th>Provinsi</th>
                                     <th>Kota</th>
                                     <th>Team</th>
@@ -132,6 +134,7 @@ sort($provinceOptions);
                                         <th><?= htmlspecialchars((string) ($roleHeader[$roleCol] ?? strtoupper($roleCol))) ?></th>
                                     <?php endforeach; ?>
                                     <th>Active</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -140,6 +143,7 @@ sort($provinceOptions);
                                     <tr data-row-id="<?= (int) ($row['id'] ?? 0) ?>">
                                         <td><?= $no++ ?></td>
                                         <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
+                                        <td><?= htmlspecialchars((string) ($row['area'] ?? '-')) ?></td>
                                         <td><?= htmlspecialchars((string) ($row['province_name'] ?? '-')) ?></td>
                                         <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
                                         <td><?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?></td>
@@ -169,6 +173,23 @@ sort($provinceOptions);
                                             </td>
                                         <?php endforeach; ?>
                                         <td><?= (int) ($row['is_active'] ?? 0) === 1 ? '1' : '0' ?></td>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                class="btn btn-info btn-xs js-edit-city-mapping"
+                                                data-id="<?= (int) ($row['id'] ?? 0) ?>"
+                                                data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                                                data-area="<?= htmlspecialchars((string) ($row['area'] ?? ''), ENT_QUOTES) ?>"
+                                                data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
+                                                data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
+                                                data-team_name="<?= htmlspecialchars((string) ($row['team_name'] ?? ''), ENT_QUOTES) ?>"
+                                                data-chief="<?= htmlspecialchars((string) ($row['chief'] ?? ''), ENT_QUOTES) ?>"
+                                                data-is_active="<?= (int) ($row['is_active'] ?? 0) === 1 ? '1' : '0' ?>"
+                                            >Edit</button>
+                                            <form method="post" action="<?= base_url('SuperAdmin_MyRep_CityMapping/deleteCity/' . (int) ($row['id'] ?? 0)) ?>" class="d-inline js-delete-city-mapping">
+                                                <button type="submit" class="btn btn-danger btn-xs">Hapus</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -180,10 +201,92 @@ sort($provinceOptions);
     </section>
 </div>
 
+<div class="modal fade" id="modal_city_mapping" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <form method="post" action="<?= base_url('SuperAdmin_MyRep_CityMapping/saveCity') ?>" class="modal-content" id="form_city_mapping">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal_city_mapping_title">Tambah Kota Mapping</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="id" id="city_mapping_id" value="">
+                <div class="form-group js-create-only">
+                    <label>Kota/Kabupaten dari ListArea</label>
+                    <select id="city_mapping_regency" class="form-control" style="width:100%"></select>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Regional</label>
+                            <input type="text" name="regional_name" id="city_mapping_regional" class="form-control" list="city_mapping_regional_options" required>
+                            <datalist id="city_mapping_regional_options">
+                                <?php foreach ($regionalOptions as $regionalOption): ?>
+                                    <option value="<?= htmlspecialchars($regionalOption) ?>"></option>
+                                <?php endforeach; ?>
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Area</label>
+                            <input type="number" min="1" max="255" name="area" id="city_mapping_area" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Provinsi Mapping</label>
+                            <input type="text" name="province_name" id="city_mapping_province" class="form-control" list="city_mapping_province_options" required>
+                            <datalist id="city_mapping_province_options">
+                                <?php foreach ($provinceOptions as $provinceOption): ?>
+                                    <option value="<?= htmlspecialchars($provinceOption) ?>"></option>
+                                <?php endforeach; ?>
+                            </datalist>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Kota Mapping</label>
+                    <input type="text" name="city_name" id="city_mapping_city" class="form-control" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Team</label>
+                            <input type="text" name="team_name" id="city_mapping_team" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Chief</label>
+                            <input type="text" name="chief" id="city_mapping_chief" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group js-create-only">
+                    <label>Copy PIC Dari Kota</label>
+                    <select name="copy_from_id" id="city_mapping_copy_from" class="form-control" style="width:100%"></select>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="is_active" value="1" id="city_mapping_active" class="form-check-input" checked>
+                    <label class="form-check-label" for="city_mapping_active">Active</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     $(function () {
         var roleColumns = <?= json_encode(array_values($roleColumns)) ?>;
         var userOptionsUrl = <?= json_encode(base_url('SuperAdmin_MyRep_CityMapping/userOptions')) ?>;
+        var regencyOptionsUrl = <?= json_encode(base_url('SuperAdmin_MyRep_CityMapping/regencyOptions')) ?>;
+        var cityMappingOptionsUrl = <?= json_encode(base_url('SuperAdmin_MyRep_CityMapping/cityMappingOptions')) ?>;
         var isEditMode = false;
         var cityTable = null;
 
@@ -265,7 +368,7 @@ sort($provinceOptions);
         if (window.jQuery && $.fn.DataTable) {
             cityTable = $('#table_myrep_city_mapping_edit').DataTable({
                 pageLength: 10,
-                order: [[1, 'asc'], [2, 'asc'], [3, 'asc']],
+                order: [[1, 'asc'], [3, 'asc'], [4, 'asc']],
                 scrollX: true,
                 autoWidth: false
             });
@@ -284,7 +387,7 @@ sort($provinceOptions);
 
             $('#filter_city_province').on('change', function () {
                 var value = String($(this).val() || '');
-                cityTable.column(2).search(value ? '^' + $.fn.dataTable.util.escapeRegex(value) + '$' : '', true, false).draw();
+                cityTable.column(3).search(value ? '^' + $.fn.dataTable.util.escapeRegex(value) + '$' : '', true, false).draw();
             });
 
             $(window).on('resize', syncTableLayout);
@@ -367,6 +470,123 @@ sort($provinceOptions);
 
             $('#form_city_mapping_bulk').html(html).trigger('submit');
         });
+
+        function initCityCrudSelects() {
+            if (!window.jQuery || !$.fn.select2) {
+                return;
+            }
+
+            $('#city_mapping_regency').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modal_city_mapping'),
+                placeholder: 'Cari kota/kabupaten',
+                allowClear: true,
+                ajax: {
+                    url: regencyOptionsUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term || '',
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+                        return {
+                            results: data.results || [],
+                            pagination: {
+                                more: !!(data.pagination && data.pagination.more)
+                            }
+                        };
+                    },
+                    cache: true
+                }
+            }).on('select2:select', function (event) {
+                var data = event.params && event.params.data ? event.params.data : {};
+                $('#city_mapping_city').val(String(data.city_name || '').toUpperCase());
+                $('#city_mapping_province').val(String(data.province_alias || data.province_name || '').toUpperCase());
+                if (data.default_regional_name) {
+                    $('#city_mapping_regional').val(String(data.default_regional_name).toUpperCase());
+                }
+                if (data.default_area) {
+                    $('#city_mapping_area').val(data.default_area);
+                }
+                if (data.default_copy_from_id && data.default_copy_from_text) {
+                    var option = new Option(data.default_copy_from_text, data.default_copy_from_id, true, true);
+                    $('#city_mapping_copy_from').append(option).trigger('change');
+                }
+            });
+
+            $('#city_mapping_copy_from').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modal_city_mapping'),
+                placeholder: 'Opsional',
+                allowClear: true,
+                ajax: {
+                    url: cityMappingOptionsUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term || '',
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+                        return {
+                            results: data.results || [],
+                            pagination: {
+                                more: !!(data.pagination && data.pagination.more)
+                            }
+                        };
+                    },
+                    cache: true
+                }
+            });
+        }
+
+        function resetCityForm() {
+            $('#form_city_mapping')[0].reset();
+            $('#city_mapping_id').val('');
+            $('#city_mapping_regency').val(null).trigger('change');
+            $('#city_mapping_copy_from').val(null).trigger('change');
+            $('#city_mapping_active').prop('checked', true);
+            $('.js-create-only').removeClass('d-none');
+            $('#modal_city_mapping_title').text('Tambah Kota Mapping');
+        }
+
+        initCityCrudSelects();
+
+        $('#btn_add_city_mapping').on('click', function () {
+            resetCityForm();
+            $('#modal_city_mapping').modal('show');
+        });
+
+        $('#table_myrep_city_mapping_edit').on('click', '.js-edit-city-mapping', function () {
+            var $button = $(this);
+            resetCityForm();
+            $('#modal_city_mapping_title').text('Edit Kota Mapping');
+            $('.js-create-only').addClass('d-none');
+            $('#city_mapping_id').val($button.data('id') || '');
+            $('#city_mapping_regional').val($button.data('regional_name') || '');
+            $('#city_mapping_area').val($button.data('area') || '');
+            $('#city_mapping_province').val($button.data('province_name') || '');
+            $('#city_mapping_city').val($button.data('city_name') || '');
+            $('#city_mapping_team').val($button.data('team_name') || '');
+            $('#city_mapping_chief').val($button.data('chief') || '');
+            $('#city_mapping_active').prop('checked', String($button.data('is_active') || '0') === '1');
+            $('#modal_city_mapping').modal('show');
+        });
+
+        $('#table_myrep_city_mapping_edit').on('submit', '.js-delete-city-mapping', function (event) {
+            if (!confirm('Hapus mapping kota ini?')) {
+                event.preventDefault();
+            }
+        });
     });
 </script>
 
@@ -376,7 +596,7 @@ sort($provinceOptions);
     }
 
     #table_myrep_city_mapping_edit {
-        min-width: 2200px;
+        min-width: 2350px;
     }
 
     #table_myrep_city_mapping_edit th,
