@@ -536,7 +536,6 @@ $slaDefinitions = [
     ['Pembayaran Donasi', 'FINANCE TKM', 2, $cluster['released_at'] ?? ''],
     ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'AREA', 1, batchDetailLatestUploadedDateWhenAllRequiredUsable((array) ($postZeynDocumentRows ?? []))],
     ['Approve SITAC Tahap 2', 'SITAC TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($postZeynDocumentRows ?? []), 'approved_at', 'status_file', 'APPROVED')],
-    ['Approve Finance Tahap 2', 'FINANCE TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($postZeynDocumentRows ?? []), 'finance_approved_at', 'finance_status', 'APPROVED', 'status_file', 'APPROVED')],
     ['Submit Final ke Astri', 'MYREP', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_submitted_date', true)],
     ['Approved Astri', 'MYREP', 3, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_approved_date', true, 'astri_status', 'APPROVED')],
     ['PO Donasi', 'MYREP', 3, $cluster['po_donasi_date'] ?? ''],
@@ -2565,11 +2564,12 @@ if ($canApprove && $canApprovalAction) {
                 <?php
                 $renderDonationDocumentTable = function ($title, $groupKey, array $rows) use ($cluster, $currentDonationStage, $canDonationUpload, $canApprove, $canDonationInternalApprovalAction, $canReplaceDonationFile, $canFinanceApprovalAction) {
                     $safeGroupKey = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $groupKey);
+                    $requiresFinanceReview = $groupKey !== 'POST_ZEYN';
                     $isPostZeynLocked = $groupKey === 'POST_ZEYN'
                         && (empty($cluster['released_at'] ?? '') || (float) ($cluster['nominal_release_finance'] ?? 0) <= 0);
                     $canUploadThisGroup = $canDonationUpload && !$isPostZeynLocked;
                     $canApproveThisGroup = $canApprove && $canDonationInternalApprovalAction && !$isPostZeynLocked;
-                    $canFinanceApproveThisGroup = $canFinanceApprovalAction && !$isPostZeynLocked;
+                    $canFinanceApproveThisGroup = $requiresFinanceReview && $canFinanceApprovalAction && !$isPostZeynLocked;
                     $requiredRows = array_filter($rows, static function ($row) {
                         return (int) ($row['is_required'] ?? 1) === 1;
                     });
@@ -2596,7 +2596,7 @@ if ($canApprove && $canApprovalAction) {
                         $rowFinanceStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
                         $rowAstriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
                         $isAstriRejectedRevision = $rowStatus === 'APPROVED' && $rowAstriStatus === 'REJECTED';
-                        $isFinanceRejectedRevision = $rowStatus === 'APPROVED' && $rowFinanceStatus === 'REJECTED';
+                        $isFinanceRejectedRevision = $requiresFinanceReview && $rowStatus === 'APPROVED' && $rowFinanceStatus === 'REJECTED';
                         if ($rowStatus === 'UPLOADED') {
                             $onReviewCount++;
                         }
@@ -2635,8 +2635,10 @@ if ($canApprove && $canApprovalAction) {
                             <h3 class="donation-upload-title"><?= htmlspecialchars($title) ?></h3>
                             <div class="donation-upload-actions">
                                 <span class="donation-count-badge"><?= $approvedCount ?>/<?= $requiredCount ?></span>
-                                <span class="donation-count-badge">Finance <?= $financeApprovedCount ?>/<?= $requiredCount ?></span>
-                                <a href="<?= base_url('Batch_Approval_MyRep/downloadDonationDocumentBundle/' . (int) ($cluster['id_myrep_cluster'] ?? 0) . '/' . rawurlencode($groupKey)) ?>" class="btn btn-sm btn-outline-primary" title="Download dokumen yang sudah approved SITAC dan Finance">
+                                <?php if ($requiresFinanceReview): ?>
+                                    <span class="donation-count-badge">Finance <?= $financeApprovedCount ?>/<?= $requiredCount ?></span>
+                                <?php endif; ?>
+                                <a href="<?= base_url('Batch_Approval_MyRep/downloadDonationDocumentBundle/' . (int) ($cluster['id_myrep_cluster'] ?? 0) . '/' . rawurlencode($groupKey)) ?>" class="btn btn-sm btn-outline-primary" title="Download dokumen yang sudah approved">
                                     <i class="fas fa-download mr-1"></i>Download All
                                 </a>
                                 <?php if (!empty($bulkUploadRows)): ?>
@@ -2689,13 +2691,17 @@ if ($canApprove && $canApprovalAction) {
                                             <th>Nama Dokumen</th>
                                             <th>Verification By</th>
                                             <th>Status SITAC</th>
-                                            <th>Status Finance</th>
+                                            <?php if ($requiresFinanceReview): ?>
+                                                <th>Status Finance</th>
+                                            <?php endif; ?>
                                             <th>File</th>
                                             <th>Uploaded At</th>
                                             <th>Reviewed SITAC</th>
                                             <th>Approved SITAC</th>
-                                            <th>Reviewed Finance</th>
-                                            <th>Approved Finance</th>
+                                            <?php if ($requiresFinanceReview): ?>
+                                                <th>Reviewed Finance</th>
+                                                <th>Approved Finance</th>
+                                            <?php endif; ?>
                                             <th>Submit Astri</th>
                                             <th>Status Astri</th>
                                             <th>Remark</th>
@@ -2729,7 +2735,9 @@ if ($canApprove && $canApprovalAction) {
                                                 </td>
                                                 <td>SITAC HO / ASTRI</td>
                                                 <td><span class="badge badge-<?= batchDetailBadgeClass($statusLabel) ?>"><?= htmlspecialchars($statusLabel) ?></span></td>
-                                                <td><span class="badge badge-<?= batchDetailBadgeClass($financeStatusLabel) ?>"><?= htmlspecialchars($financeStatusLabel) ?></span></td>
+                                                <?php if ($requiresFinanceReview): ?>
+                                                    <td><span class="badge badge-<?= batchDetailBadgeClass($financeStatusLabel) ?>"><?= htmlspecialchars($financeStatusLabel) ?></span></td>
+                                                <?php endif; ?>
                                                 <td>
                                                     <?php if (!empty($row['file_name'])): ?>
                                                         <?php if ($isImageDonationDoc): ?>
@@ -2767,18 +2775,22 @@ if ($canApprove && $canApprovalAction) {
                                                 <td><?= batchDetailDateText($row['uploaded_at'] ?? '', 'd/m/Y H:i') ?></td>
                                                 <td><?= batchDetailDateText($row['reviewed_at'] ?? '', 'd/m/Y H:i') ?></td>
                                                 <td><?= batchDetailDateText($row['approved_at'] ?? '', 'd/m/Y H:i') ?></td>
-                                                <td><?= batchDetailDateText($row['finance_reviewed_at'] ?? '', 'd/m/Y H:i') ?></td>
-                                                <td><?= batchDetailDateText($row['finance_approved_at'] ?? '', 'd/m/Y H:i') ?></td>
+                                                <?php if ($requiresFinanceReview): ?>
+                                                    <td><?= batchDetailDateText($row['finance_reviewed_at'] ?? '', 'd/m/Y H:i') ?></td>
+                                                    <td><?= batchDetailDateText($row['finance_approved_at'] ?? '', 'd/m/Y H:i') ?></td>
+                                                <?php endif; ?>
                                                 <td><?= batchDetailDateText($row['astri_submitted_date'] ?? '') ?></td>
                                                 <td><span class="badge badge-<?= batchDetailBadgeClass($astriStatus) ?>"><?= htmlspecialchars($astriStatus) ?></span></td>
                                                 <td>
                                                     <div><strong>Internal:</strong> <?= !empty($row['remark']) ? htmlspecialchars((string) $row['remark']) : '-' ?></div>
-                                                    <div><strong>Finance:</strong> <?= !empty($row['finance_remark']) ? htmlspecialchars((string) $row['finance_remark']) : '-' ?></div>
+                                                    <?php if ($requiresFinanceReview): ?>
+                                                        <div><strong>Finance:</strong> <?= !empty($row['finance_remark']) ? htmlspecialchars((string) $row['finance_remark']) : '-' ?></div>
+                                                    <?php endif; ?>
                                                     <div><strong>ASTRI:</strong> <?= !empty($row['astri_remark']) ? htmlspecialchars((string) $row['astri_remark']) : '-' ?></div>
                                                 </td>
                                                 <td style="min-width:270px;">
                                                     <div class="donation-action-stack">
-                                                        <?php $isFinanceRejectedRevision = $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) === 'REJECTED'; ?>
+                                                        <?php $isFinanceRejectedRevision = $requiresFinanceReview && $rawStatus === 'APPROVED' && strtoupper(trim((string) ($row['finance_status'] ?? 'NY'))) === 'REJECTED'; ?>
                                                         <?php if ($canUploadThisGroup && (in_array($rawStatus, ['', 'REJECTED'], true) || ($rawStatus === 'APPROVED' && $astriStatus === 'REJECTED') || $isFinanceRejectedRevision)): ?>
                                                             <?php $canMarkNotRequired = strtoupper(trim((string) ($row['doc_name'] ?? ''))) === 'FORM FREE WIFI & KTP'; ?>
                                                             <a
@@ -2890,7 +2902,7 @@ if ($canApprove && $canApprovalAction) {
                                             </tr>
                                         <?php endforeach; ?>
                                         <?php if (empty($rows)): ?>
-                                            <tr><td colspan="15" class="text-center text-muted">Master dokumen belum tersedia.</td></tr>
+                                            <tr><td colspan="<?= $requiresFinanceReview ? 15 : 12 ?>" class="text-center text-muted">Master dokumen belum tersedia.</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>

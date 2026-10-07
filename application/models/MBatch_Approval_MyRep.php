@@ -200,6 +200,14 @@ class MBatch_Approval_MyRep extends CI_Model
             return;
         }
 
+        $this->db
+            ->where('id_doc_group', (int) $groupIds['POST PAYMENT ZEYN DOCUMENT'])
+            ->where('UPPER(TRIM(doc_name)) = ' . $this->db->escape('KWITANSI'), null, false)
+            ->update('md_myrep_flow_doc_item', [
+                'doc_name' => 'Tanda Terima Donasi',
+                'doc_requirement_note' => 'Dokumen setelah pembayaran donasi',
+            ]);
+
         $definitions = [
             'PRE ZEYN DOCUMENT' => [
                 ['Screenshot Evidence Upload DRM di Astri', 'Upload gambar screenshot evidence upload DRM di Astri', 1],
@@ -217,7 +225,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 ['Form Free Wifi & KTP', 'Opsional jika ada free wifi', 0],
             ],
             'POST PAYMENT ZEYN DOCUMENT' => [
-                ['Kwitansi', 'Dokumen setelah pembayaran donasi', 1],
+                ['Tanda Terima Donasi', 'Dokumen setelah pembayaran donasi', 1],
                 ['Bukti Transfer', 'Area wajib upload ulang bukti transfer', 1],
                 ['Bukti Penyerahan Dana', 'Dokumen setelah pembayaran donasi', 1],
             ],
@@ -2579,7 +2587,7 @@ class MBatch_Approval_MyRep extends CI_Model
             $astriStatus = strtoupper(trim((string) ($row['astri_status'] ?? 'NY')));
             $financeStatus = strtoupper(trim((string) ($row['finance_status'] ?? 'NY')));
             $isRequired = (int) ($row['is_required'] ?? 1) === 1;
-            if ($isRequired) {
+            if ($isRequired && $key === 'PRE_ZEYN') {
                 $map[$clusterId][$key]['finance_required']++;
             }
             if ($hasFile && $isRequired) {
@@ -3098,8 +3106,7 @@ class MBatch_Approval_MyRep extends CI_Model
         $sakuFinanceApprovalStatus = strtoupper(trim((string) ($row['saku_finance_approval_status'] ?? 'NY')));
         $hasSitacOrFinanceRejectedDocument = (int) ($pre['rejected'] ?? 0) > 0
             || (int) ($pre['finance_rejected'] ?? 0) > 0
-            || (int) ($post['rejected'] ?? 0) > 0
-            || (int) ($post['finance_rejected'] ?? 0) > 0;
+            || (int) ($post['rejected'] ?? 0) > 0;
         $hasPostProgress = $postRequired > 0 && $hasRelease && (
             $postPackageExists
             || (int) ($post['uploaded'] ?? 0) > 0
@@ -3133,9 +3140,6 @@ class MBatch_Approval_MyRep extends CI_Model
                 if ((int) ($post['approved'] ?? 0) < $postRequired) {
                     return (int) ($post['uploaded'] ?? 0) >= $postRequired ? 'POST_ZEYN_DOC_ON_REVIEW' : 'WAITING_POST_ZEYN_DOC';
                 }
-                if ((int) ($post['finance_approved'] ?? 0) < $postFinanceRequired) {
-                    return 'POST_ZEYN_FINANCE_ON_REVIEW';
-                }
             }
             if ($allAstriRequired > 0 && !$hasAnyAstriRejected && $allAstriApproved >= $allAstriRequired) {
                 return 'ASTRI_APPROVED';
@@ -3149,7 +3153,6 @@ class MBatch_Approval_MyRep extends CI_Model
             if (!$isTerminalStage
                 && $postRequired > 0
                 && $hasRelease
-                && (int) ($post['finance_approved'] ?? 0) >= $postFinanceRequired
                 && ($postPackageExists || (int) ($post['uploaded'] ?? 0) > 0 || (int) ($post['approved'] ?? 0) > 0 || (int) ($post['finance_approved'] ?? 0) > 0)) {
                 return 'WAITING_ASTRI_SUBMISSION';
             }
@@ -3189,9 +3192,6 @@ class MBatch_Approval_MyRep extends CI_Model
                     return 'POST_ZEYN_DOC_ON_REVIEW';
                 }
                 return 'WAITING_POST_ZEYN_DOC';
-            }
-            if ((int) ($post['finance_approved'] ?? 0) < $postFinanceRequired) {
-                return 'POST_ZEYN_FINANCE_ON_REVIEW';
             }
             if ($hasAnyAstriRejected) {
                 return 'NEED_REVISE_ASTRI';
@@ -3244,20 +3244,12 @@ class MBatch_Approval_MyRep extends CI_Model
                     }
                     return 'WAITING_POST_ZEYN_DOC';
                 }
-                if ((int) ($post['finance_approved'] ?? 0) < (int) ($post['finance_required'] ?? $postRequired)) {
-                    return 'POST_ZEYN_FINANCE_ON_REVIEW';
-                }
                 return 'WAITING_ASTRI_SUBMISSION';
             }
         }
 
         if ($stagingStatus === 'POST_ZEYN_DOC_APPROVED' || $stagingStatus === 'POST_ZEYN_FINANCE_ON_REVIEW') {
-            if ($postFinanceRequired > 0 && (int) ($post['finance_approved'] ?? 0) >= $postFinanceRequired) {
-                return 'WAITING_ASTRI_SUBMISSION';
-            }
-            if ($postFinanceRequired > 0) {
-                return 'POST_ZEYN_FINANCE_ON_REVIEW';
-            }
+            return 'WAITING_ASTRI_SUBMISSION';
         }
 
         if ($stagingStatus === 'WAITING_ASTRI_SUBMISSION' || $stagingStatus === 'ASTRI_ON_REVIEW' || $stagingStatus === 'NEED_REVISE_ASTRI') {
