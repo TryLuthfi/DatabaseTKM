@@ -290,10 +290,7 @@ class MRFS_Readiness_MyRep extends CI_Model
         $targetMonth = (int) $targetPeriod['month'];
 
         $weeks = [];
-        $daysInMonth = (int) date('t', strtotime($targetYear . '-' . $targetMonth . '-01'));
-        for ($day = 1; $day <= $daysInMonth; $day++) {
-            $date = sprintf('%04d-%02d-%02d', $targetYear, $targetMonth, $day);
-            $week = 'W' . date('W', strtotime($date));
+        foreach ($this->customWeekKeysForMonth($targetYear, $targetMonth) as $week) {
             $weeks[$week] = ['week' => $week, 'target_hp' => 0, 'actual_hp' => 0];
         }
 
@@ -304,15 +301,15 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
         foreach ($rows as $row) {
             $hp = (float) ($row['homepass_drm_snapshot'] ?? 0);
-            if (!empty($row['current_planned_rfs_date']) && $this->dateInPeriod((string) $row['current_planned_rfs_date'], $targetYear, $targetMonth)) {
-                $week = 'W' . date('W', strtotime((string) $row['current_planned_rfs_date']));
+            if (!empty($row['current_planned_rfs_date']) && $this->dateInCustomWeekPeriod((string) $row['current_planned_rfs_date'], $targetYear, $targetMonth)) {
+                $week = $this->customWeekKeyFromDate((string) $row['current_planned_rfs_date']);
                 if (!isset($weeks[$week])) {
                     $weeks[$week] = ['week' => $week, 'target_hp' => 0, 'actual_hp' => 0];
                 }
                 $weeks[$week]['target_hp'] += $hp;
             }
-            if (!empty($row['actual_rfs_date']) && $this->dateInPeriod((string) $row['actual_rfs_date'], $targetYear, $targetMonth)) {
-                $week = 'W' . date('W', strtotime((string) $row['actual_rfs_date']));
+            if (!empty($row['actual_rfs_date']) && $this->dateInCustomWeekPeriod((string) $row['actual_rfs_date'], $targetYear, $targetMonth)) {
+                $week = $this->customWeekKeyFromDate((string) $row['actual_rfs_date']);
                 if (!isset($weeks[$week])) {
                     $weeks[$week] = ['week' => $week, 'target_hp' => 0, 'actual_hp' => 0];
                 }
@@ -386,16 +383,16 @@ class MRFS_Readiness_MyRep extends CI_Model
                 $summary[$label]['regional_name'] = strtoupper(trim((string) $row['regional_name']));
             }
             $hp = (float) ($row['homepass_drm_snapshot'] ?? 0);
-            if (!empty($row['current_planned_rfs_date']) && $this->dateInPeriod((string) $row['current_planned_rfs_date'], $targetYear, $targetMonth)) {
-                $week = 'W' . date('W', strtotime((string) $row['current_planned_rfs_date']));
+            if (!empty($row['current_planned_rfs_date']) && $this->dateInCustomWeekPeriod((string) $row['current_planned_rfs_date'], $targetYear, $targetMonth)) {
+                $week = $this->customWeekKeyFromDate((string) $row['current_planned_rfs_date']);
                 if (!isset($summary[$label]['weeks'][$week])) {
                     $summary[$label]['weeks'][$week] = ['target_hp' => 0, 'actual_hp' => 0];
                 }
                 $summary[$label]['weeks'][$week]['target_hp'] += $hp;
                 $summary[$label]['target_total'] += $hp;
             }
-            if (!empty($row['actual_rfs_date']) && $this->dateInPeriod((string) $row['actual_rfs_date'], $targetYear, $targetMonth)) {
-                $week = 'W' . date('W', strtotime((string) $row['actual_rfs_date']));
+            if (!empty($row['actual_rfs_date']) && $this->dateInCustomWeekPeriod((string) $row['actual_rfs_date'], $targetYear, $targetMonth)) {
+                $week = $this->customWeekKeyFromDate((string) $row['actual_rfs_date']);
                 if (!isset($summary[$label]['weeks'][$week])) {
                     $summary[$label]['weeks'][$week] = ['target_hp' => 0, 'actual_hp' => 0];
                 }
@@ -1074,14 +1071,14 @@ class MRFS_Readiness_MyRep extends CI_Model
             return ['fix' => 0, 'belum' => 0, 'total' => 0];
         }
 
-        $row = (array) $this->db
-            ->select('COUNT(*) AS total, SUM(CASE WHEN checklist_completed_at IS NOT NULL THEN 1 ELSE 0 END) AS fix_count', false)
-            ->from('tb_myrep_rfs_readiness_item')
-            ->where('id_period', (int) $periodId)
-            ->get()
-            ->row_array();
-        $total = (int) ($row['total'] ?? 0);
-        $fix = (int) ($row['fix_count'] ?? 0);
+        $rows = $this->filterActiveTargetRows($this->getItems($periodId));
+        $total = count($rows);
+        $fix = 0;
+        foreach ($rows as $row) {
+            if (!empty($row['checklist_completed_at'])) {
+                $fix++;
+            }
+        }
 
         return [
             'fix' => $fix,
@@ -1381,8 +1378,9 @@ class MRFS_Readiness_MyRep extends CI_Model
         $targetPeriod = $this->getTargetYearMonthFromMeetingPeriod($period);
         $targetYear = (int) $targetPeriod['year'];
         $targetMonth = (int) $targetPeriod['month'];
-        $targetStartDate = sprintf('%04d-%02d-01', $targetYear, $targetMonth);
-        $targetEndDate = date('Y-m-t', strtotime($targetStartDate));
+        $targetBounds = $this->customWeekMonthBounds($targetYear, $targetMonth);
+        $targetStartDate = $targetBounds['start'] ?? sprintf('%04d-%02d-01', $targetYear, $targetMonth);
+        $targetEndDate = $targetBounds['end'] ?? date('Y-m-t', strtotime($targetStartDate));
 
         $rows = $this->db
             ->select('i.id_item, i.id_myrep_cluster, i.final_status, i.actual_rfs_date AS current_actual_rfs_date, c.rfs_cluster_id, MIN(cl.claim_date) AS actual_rfs_date', false)
@@ -1402,16 +1400,21 @@ class MRFS_Readiness_MyRep extends CI_Model
             if ((string) ($row['final_status'] ?? '') === $finalStatus && $actualDate === (string) ($row['current_actual_rfs_date'] ?? '')) {
                 continue;
             }
-            $this->db->where('id_item', (int) $row['id_item'])->update('tb_myrep_rfs_readiness_item', [
+            $payload = [
                 'final_status' => $finalStatus,
                 'actual_rfs_date' => $actualDate,
                 'updated_by' => (int) $userId,
-            ]);
+            ];
+            if ($finalStatus === 'RFS') {
+                $payload = array_merge($payload, $this->readyAspectPayload());
+                $payload['priority_level'] = 'PRIORITAS 1';
+            }
+            $this->db->where('id_item', (int) $row['id_item'])->update('tb_myrep_rfs_readiness_item', $payload);
             $eventType = $finalStatus === 'RFS' ? 'SYNC_ACTUAL_RFS' : 'SYNC_RFS_BEFORE_TARGET';
             $remark = $finalStatus === 'RFS'
                 ? 'Actual RFS dari Monitoring RFS.'
                 : 'Cluster sudah RFS sebelum bulan target sehingga dikeluarkan dari kandidat target.';
-            $this->addHistory((int) $row['id_item'], null, $eventType, '', json_encode($row), $remark, $userId);
+            $this->addHistory((int) $row['id_item'], null, $eventType, json_encode($row), json_encode($payload), $remark, $userId);
             $this->cancelFutureCarryOver((int) $row['id_myrep_cluster'], (int) $period['year_num'], (int) $period['month_num'], $userId);
             $count++;
         }
@@ -1425,6 +1428,7 @@ class MRFS_Readiness_MyRep extends CI_Model
             return 0;
         }
 
+        $period = $this->getPeriodById($periodId);
         $hasBatchApproval = $this->db->table_exists('tb_myrep_batch_approval');
         $this->db
             ->select('i.id_item, i.final_status, c.status_current' . ($hasBatchApproval ? ', ba.staging_status AS batch_approval_status' : ', NULL AS batch_approval_status'), false)
@@ -1456,6 +1460,45 @@ class MRFS_Readiness_MyRep extends CI_Model
                 'batch_approval_status' => $row['batch_approval_status'] ?? '',
             ]), json_encode($payload), 'Cluster/batch HOLD atau CANCEL/REJECTED sehingga dikeluarkan dari target readiness.', $userId);
             $count++;
+        }
+
+        if (strtoupper((string) ($period['status_period'] ?? '')) === 'DRAFT') {
+            $this->db
+                ->select('i.id_item, i.final_status, c.status_current' . ($hasBatchApproval ? ', ba.staging_status AS batch_approval_status' : ', NULL AS batch_approval_status'), false)
+                ->from('tb_myrep_rfs_readiness_item i')
+                ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = i.id_myrep_cluster', 'inner')
+                ->where('i.id_period', (int) $periodId)
+                ->where('i.final_status', 'DROPPED')
+                ->where('i.checklist_completed_at IS NULL', null, false)
+                ->where('NOT ' . $this->inactiveStatusSql('c', 'ba', $hasBatchApproval), null, false)
+                ->where("EXISTS (
+                    SELECT 1
+                    FROM tb_myrep_rfs_readiness_history h
+                    WHERE h.id_item = i.id_item
+                        AND h.event_type = 'SYNC_INACTIVE_STATUS_TAKE_OUT'
+                )", null, false);
+            if ($hasBatchApproval) {
+                $this->db->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = i.id_myrep_cluster', 'left');
+            }
+
+            $restoredRows = $this->db->get()->result_array();
+            foreach ($restoredRows as $row) {
+                $itemId = (int) ($row['id_item'] ?? 0);
+                if ($itemId <= 0) {
+                    continue;
+                }
+                $payload = [
+                    'final_status' => 'OPEN',
+                    'updated_by' => (int) $userId,
+                ];
+                $this->db->where('id_item', $itemId)->update('tb_myrep_rfs_readiness_item', $payload);
+                $this->addHistory($itemId, null, 'SYNC_INACTIVE_STATUS_RESTORE', json_encode([
+                    'final_status' => $row['final_status'] ?? '',
+                    'status_current' => $row['status_current'] ?? '',
+                    'batch_approval_status' => $row['batch_approval_status'] ?? '',
+                ]), json_encode($payload), 'Cluster/batch sudah aktif kembali sehingga dikembalikan ke draft readiness.', $userId);
+                $count++;
+            }
         }
 
         return $count;
@@ -1732,7 +1775,7 @@ class MRFS_Readiness_MyRep extends CI_Model
         $plannedDate = $this->normalizeDate($payload['planned_rfs_date'] ?? ($item['current_planned_rfs_date'] ?? null));
         $week = (int) ($payload['target_week'] ?? 0);
         if ($plannedDate !== '') {
-            $week = (int) date('W', strtotime($plannedDate));
+            $week = $this->customWeekNumberFromDate($plannedDate);
         }
         if ($week < 1 || $week > 53) {
             $week = (int) ($item['current_week'] ?? 0);
@@ -1764,6 +1807,112 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : '';
+    }
+
+    private function customWeekKeysForMonth($year, $month)
+    {
+        $keys = [];
+        for ($week = 1; $week <= 53; $week++) {
+            $period = $this->customWeekPeriod((int) $year, $week);
+            if ($this->majorityMonthKey($period['start'], $period['end']) === sprintf('%04d-%02d', (int) $year, (int) $month)) {
+                $keys[] = 'W' . $week;
+            }
+        }
+
+        return $keys;
+    }
+
+    private function customWeekMonthBounds($year, $month)
+    {
+        $keys = $this->customWeekKeysForMonth($year, $month);
+        if (empty($keys)) {
+            return [
+                'start' => sprintf('%04d-%02d-01', (int) $year, (int) $month),
+                'end' => date('Y-m-t', strtotime(sprintf('%04d-%02d-01', (int) $year, (int) $month))),
+            ];
+        }
+
+        $weekNumbers = array_map(static function ($weekKey) {
+            return (int) ltrim((string) $weekKey, 'W');
+        }, $keys);
+        sort($weekNumbers);
+        $firstPeriod = $this->customWeekPeriod((int) $year, (int) reset($weekNumbers));
+        $lastPeriod = $this->customWeekPeriod((int) $year, (int) end($weekNumbers));
+
+        return [
+            'start' => $firstPeriod['start'],
+            'end' => $lastPeriod['end'],
+        ];
+    }
+
+    private function customWeekNumberFromDate($date)
+    {
+        return $this->customWeekNumberFromRawDate($date);
+    }
+
+    private function customWeekKeyFromDate($date)
+    {
+        $week = $this->customWeekNumberFromDate($date);
+        return $week > 0 ? 'W' . $week : '';
+    }
+
+    private function customWeekPeriod($year, $week)
+    {
+        $jan1 = new DateTime((int) $year . '-01-01');
+        $start = clone $jan1;
+        $start->modify('-' . (int) $jan1->format('w') . ' days');
+        $start->modify('+' . (((int) $week - 1) * 7) . ' days');
+        $end = clone $start;
+        $end->modify('+6 days');
+
+        return [
+            'start' => $start->format('Y-m-d'),
+            'end' => $end->format('Y-m-d'),
+        ];
+    }
+
+    private function majorityMonthKey($startDate, $endDate)
+    {
+        $start = new DateTime($startDate);
+        $end = new DateTime($endDate);
+        $counts = [];
+
+        while ($start <= $end) {
+            $key = $start->format('Y-m');
+            $counts[$key] = isset($counts[$key]) ? $counts[$key] + 1 : 1;
+            $start->modify('+1 day');
+        }
+
+        arsort($counts);
+        return (string) array_key_first($counts);
+    }
+
+    private function customWeekNumberFromRawDate($date)
+    {
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp) {
+            return 0;
+        }
+        $year = (int) date('Y', $timestamp);
+        $jan1 = new DateTime($year . '-01-01');
+        $weekZeroStart = clone $jan1;
+        $weekZeroStart->modify('-' . (int) $jan1->format('w') . ' days');
+        $targetDate = new DateTime(date('Y-m-d', $timestamp));
+        $diffDays = (int) floor(($targetDate->getTimestamp() - $weekZeroStart->getTimestamp()) / 86400);
+
+        return (int) floor($diffDays / 7) + 1;
+    }
+
+    private function dateInCustomWeekPeriod($date, $year, $month)
+    {
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp || (int) $year <= 0 || (int) $month <= 0) {
+            return false;
+        }
+        $week = $this->customWeekNumberFromRawDate(date('Y-m-d', $timestamp));
+        $period = $this->customWeekPeriod((int) date('Y', $timestamp), $week);
+
+        return $this->majorityMonthKey($period['start'], $period['end']) === sprintf('%04d-%02d', (int) $year, (int) $month);
     }
 
     private function filterConfirmedTargetRows(array $rows)
@@ -1836,6 +1985,16 @@ class MRFS_Readiness_MyRep extends CI_Model
         }
 
         return 'PRIORITAS 1';
+    }
+
+    private function readyAspectPayload()
+    {
+        $payload = [];
+        foreach ($this->aspectFields as $field) {
+            $payload[$field] = 'READY';
+        }
+
+        return $payload;
     }
 
     private function needsApproval(array $item, array $new)

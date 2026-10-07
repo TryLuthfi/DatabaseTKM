@@ -723,7 +723,7 @@ class RFS_Readiness_MyRep extends CI_Controller
             return;
         }
         $existingItem = $this->MRFS_Readiness_MyRep->getItemById($itemId);
-        $newWeek = (int) date('W', strtotime($plannedDate));
+        $newWeek = $this->customWeekNumberFromDate($plannedDate);
         $targetChanged = !empty($existingItem)
             && !empty($existingItem['current_planned_rfs_date'])
             && (
@@ -1042,7 +1042,7 @@ class RFS_Readiness_MyRep extends CI_Controller
             'remark' => $this->input->post('remark'),
         ];
         $item = $this->MRFS_Readiness_MyRep->getItemById($itemId);
-        $newWeek = $plannedDate ? (int) date('W', strtotime($plannedDate)) : 0;
+        $newWeek = $plannedDate ? $this->customWeekNumberFromDate($plannedDate) : 0;
         $targetChanged = !empty($item)
             && ((int) ($item['current_week'] ?? 0) !== $newWeek || (string) ($item['current_planned_rfs_date'] ?? '') !== (string) $plannedDate);
         if ($targetChanged && trim((string) $payload['reason_category']) === '') {
@@ -1248,6 +1248,58 @@ class RFS_Readiness_MyRep extends CI_Controller
         }
         $timestamp = strtotime($value);
         return $timestamp ? date('Y-m-d', $timestamp) : null;
+    }
+
+    private function customWeekNumberFromDate($date)
+    {
+        return $this->customWeekNumberFromRawDate($date);
+    }
+
+    private function customWeekNumberFromRawDate($date)
+    {
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp) {
+            return 0;
+        }
+        $year = (int) date('Y', $timestamp);
+        $jan1 = new DateTime($year . '-01-01');
+        $weekZeroStart = clone $jan1;
+        $weekZeroStart->modify('-' . (int) $jan1->format('w') . ' days');
+        $targetDate = new DateTime(date('Y-m-d', $timestamp));
+        $diffDays = (int) floor(($targetDate->getTimestamp() - $weekZeroStart->getTimestamp()) / 86400);
+
+        return (int) floor($diffDays / 7) + 1;
+    }
+
+    private function customWeekPeriod($year, $week)
+    {
+        $jan1 = new DateTime((int) $year . '-01-01');
+        $start = clone $jan1;
+        $start->modify('-' . (int) $jan1->format('w') . ' days');
+        $start->modify('+' . (((int) $week - 1) * 7) . ' days');
+        $end = clone $start;
+        $end->modify('+6 days');
+
+        return [
+            'start' => $start->format('Y-m-d'),
+            'end' => $end->format('Y-m-d'),
+        ];
+    }
+
+    private function majorityMonthKey($startDate, $endDate)
+    {
+        $start = new DateTime($startDate);
+        $end = new DateTime($endDate);
+        $counts = [];
+
+        while ($start <= $end) {
+            $key = $start->format('Y-m');
+            $counts[$key] = isset($counts[$key]) ? $counts[$key] + 1 : 1;
+            $start->modify('+1 day');
+        }
+
+        arsort($counts);
+        return (string) array_key_first($counts);
     }
 
     private function loadPHPExcel()

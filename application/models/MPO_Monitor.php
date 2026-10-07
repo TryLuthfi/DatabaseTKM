@@ -4214,6 +4214,32 @@ class MPO_Monitor extends CI_Model
         return $this->majorityMonthKey($period['start'], $period['end']);
     }
 
+    private function normalizeInvoiceDateForComparison($date)
+    {
+        $timestamp = strtotime((string) $date);
+        if (!$timestamp) {
+            return $date;
+        }
+
+        $dateKey = date('Y-m', $timestamp);
+        $comparisonMonthKey = $this->monthKeyFromInvoiceWeek(date('Y-m-d', $timestamp));
+        if ($comparisonMonthKey === '' || $comparisonMonthKey >= $dateKey) {
+            return date('Y-m-d', $timestamp);
+        }
+
+        $cursor = new DateTime(date('Y-m-01', $timestamp));
+        $end = clone $cursor;
+        $end->modify('last day of this month');
+        while ($cursor <= $end) {
+            if ($cursor->format('N') === '1' && $this->monthKeyFromInvoiceWeek($cursor->format('Y-m-d')) === $dateKey) {
+                return $cursor->format('Y-m-d');
+            }
+            $cursor->modify('+1 day');
+        }
+
+        return date('Y-m-d', $timestamp);
+    }
+
     private function weekKey($year, $week)
     {
         return sprintf('%04d-W%02d', (int) $year, (int) $week);
@@ -4275,6 +4301,7 @@ class MPO_Monitor extends CI_Model
         if (abs($amount) < 0.000001 || empty($invoiceDate)) {
             return ['status' => false, 'message' => 'Invoice date and amount are required'];
         }
+        $invoiceDate = $this->normalizeInvoiceDateForComparison($invoiceDate);
 
         $idAllocation = (int) $idAllocation;
         $allocation = null;
@@ -4382,6 +4409,7 @@ class MPO_Monitor extends CI_Model
         if (abs($amount) < 0.000001 || empty($invoiceDate)) {
             return ['status' => false, 'message' => 'Invoice date and amount are required'];
         }
+        $invoiceDate = $this->normalizeInvoiceDateForComparison($invoiceDate);
 
         $allocation = null;
         $claimValue = (float) ($term['value'] ?? 0);
@@ -5494,7 +5522,8 @@ class MPO_Monitor extends CI_Model
             ])
             ->row_array();
 
-        $invoiceDate = $this->normalizeSyncDate($myrep['invoice_date'] ?? null);
+        $sourceInvoiceDate = $this->normalizeSyncDate($myrep['invoice_date'] ?? null);
+        $invoiceDate = $this->normalizeInvoiceDateForComparison($sourceInvoiceDate);
         $amount = (float) ($myrep['invoice_amount'] ?? 0);
         if (abs($amount) < 0.000001 && isset($myrep['termin_value'])) {
             $amount = (float) $myrep['termin_value'];
@@ -5504,8 +5533,8 @@ class MPO_Monitor extends CI_Model
         $termNo = (int) ($myrep['termin_no'] ?? 0);
         $poNumber = (string) ($myrep['po_number'] ?? '');
         $cutoffDate = $this->normalizeSyncDate($cutoffDate);
-        $isSyncable = $invoiceDate !== null
-            && ($cutoffDate === null || strtotime($invoiceDate) >= strtotime($cutoffDate))
+        $isSyncable = $sourceInvoiceDate !== null
+            && ($cutoffDate === null || strtotime($sourceInvoiceDate) >= strtotime($cutoffDate))
             && abs($amount) >= 0.000001
             && in_array($statusTermin, ['READY BILLING', 'BILLED', 'PAID'], true);
 
@@ -8048,7 +8077,7 @@ class MPO_Monitor extends CI_Model
         $invoiceDate = $this->parseDate($submit);
         if ($invoiceDate !== null) {
             $meta['target_status'] = 'INVOICED';
-            $meta['invoice_date'] = $invoiceDate;
+            $meta['invoice_date'] = $this->normalizeInvoiceDateForComparison($invoiceDate);
         }
 
         return $meta;

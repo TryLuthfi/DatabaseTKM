@@ -118,6 +118,9 @@ $this->session->unset_userdata(['success', 'error']);
     .rfs-table th.rfs-not-ready-head { background:#fde7eb; color:#a61b34; text-align:center; font-weight:800; }
     .rfs-table td.rfs-ready-cell { background:#fbfffc; }
     .rfs-table td.rfs-not-ready-cell { background:#fffafa; }
+    .rfs-table tbody tr.rfs-row-rfs > td { background:#c9f7d8 !important; border-top-color:#69d28b; border-bottom-color:#69d28b; }
+    .rfs-table tbody tr.rfs-row-rfs > td:first-child { border-left:5px solid #16a34a; }
+    .rfs-table tbody tr.rfs-row-rfs:hover > td { background:#b8f0cb !important; }
     .rfs-table td { vertical-align:middle; }
     .rfs-cluster-cell { text-align:left !important; min-width:240px; }
     .rfs-cluster-link { display:block; width:100%; padding:0; text-align:left; white-space:normal; line-height:1.25; word-break:break-word; overflow-wrap:anywhere; }
@@ -291,9 +294,6 @@ $this->session->unset_userdata(['success', 'error']);
                                         <?php if ($selectedPeriodId > 0): ?>
                                             <button class="btn btn-outline-success" type="button" data-toggle="modal" data-target="#modalDownloadSummary"><i class="fas fa-download"></i> Download</button>
                                         <?php endif; ?>
-                                        <?php if ($selectedPeriodId > 0 && $canHoManage): ?>
-                                            <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#modalCandidateClusters"><i class="fas fa-search"></i> Kandidat DRM</button>
-                                        <?php endif; ?>
                                         <?php if ($canHoManage): ?>
                                             <button class="btn btn-success" type="button" data-toggle="modal" data-target="#modalCreatePeriod"><i class="fas fa-calendar-plus"></i> Meeting Period</button>
                                         <?php endif; ?>
@@ -314,20 +314,6 @@ $this->session->unset_userdata(['success', 'error']);
                             <div class="d-flex flex-wrap justify-content-between align-items-center">
                                 <strong><i class="fas fa-layer-group mr-1"></i> Control Meeting Period</strong>
                                 <div class="rfs-action-row">
-                                    <form method="post" action="<?= base_url('RFS_Readiness_MyRep/generateCandidates') ?>">
-                                        <input type="hidden" name="period_id" value="<?= (int) $selectedPeriodId ?>">
-                                        <input type="hidden" name="scope" value="<?= rfs_readiness_h($selectedScope) ?>">
-                                        <input type="hidden" name="city" value="<?= rfs_readiness_h($selectedCity) ?>">
-                                        <input type="hidden" name="regional" value="<?= rfs_readiness_h($selectedRegional) ?>">
-                                        <button class="btn btn-sm btn-outline-primary" type="submit"><i class="fas fa-plus"></i> Generate Kandidat <?= $isLocked ? 'Late' : '' ?></button>
-                                    </form>
-                                    <form method="post" action="<?= base_url('RFS_Readiness_MyRep/syncActualRfs') ?>">
-                                        <input type="hidden" name="period_id" value="<?= (int) $selectedPeriodId ?>">
-                                        <input type="hidden" name="scope" value="<?= rfs_readiness_h($selectedScope) ?>">
-                                        <input type="hidden" name="city" value="<?= rfs_readiness_h($selectedCity) ?>">
-                                        <input type="hidden" name="regional" value="<?= rfs_readiness_h($selectedRegional) ?>">
-                                        <button class="btn btn-sm btn-outline-info" type="submit"><i class="fas fa-sync"></i> Sync RFS</button>
-                                    </form>
                                     <?php if ($isDraft): ?>
                                         <button class="btn btn-sm btn-warning" type="button" data-toggle="modal" data-target="#modalLockPeriod"><i class="fas fa-lock"></i> Lock</button>
                                     <?php endif; ?>
@@ -356,7 +342,7 @@ $this->session->unset_userdata(['success', 'error']);
                         <div>
                             <strong>Preview <?= rfs_readiness_h($targetLabelPrefix) ?> <?= rfs_readiness_h($targetMonthLabel) ?>.</strong>
                             <?php if ($isDraft): ?>
-                                Dashboard draft menampilkan semua kandidat: <?= number_format((float) ($checklistStatus['total'] ?? 0), 0, ',', '.') ?> cluster. Sudah <strong>CONFIRMED</strong>: <?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?>.
+                                Dashboard draft menampilkan item yang sudah masuk period: <?= number_format((float) ($checklistStatus['total'] ?? 0), 0, ',', '.') ?> cluster. Sudah <strong>CONFIRMED</strong>: <?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?>.
                             <?php else: ?>
                                 Dashboard locked hanya menghitung target resmi <strong>CONFIRMED</strong>: <?= number_format((float) ($checklistStatus['fix'] ?? 0), 0, ',', '.') ?> cluster.
                             <?php endif; ?>
@@ -1038,7 +1024,7 @@ $this->session->unset_userdata(['success', 'error']);
                         <input type="checkbox" class="custom-control-input" id="check_is_fixed" name="checklist_is_fixed" value="1">
                         <label class="custom-control-label" for="check_is_fixed">Tandai checklist ini CONFIRMED</label>
                     </div>
-                    <div class="small text-muted">Tanggal wajib diisi dan otomatis dikonversi ke ISO week. Week hanya preview.</div>
+                    <div class="small text-muted">Tanggal wajib diisi dan otomatis dikonversi ke custom week Minggu-Sabtu. Week hanya preview.</div>
                 </div>
             </div>
             <div class="modal-footer"><button class="btn btn-primary" type="submit"><i class="fas fa-save"></i> Simpan Checklist</button></div>
@@ -1471,22 +1457,26 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }, 4200);
     }
-    function isoWeek(dateValue) {
+    function customWeek(dateValue) {
         if (!dateValue) return '';
         var date = new Date(dateValue + 'T00:00:00');
         if (isNaN(date.getTime())) return '';
         date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
-        var week1 = new Date(date.getFullYear(), 0, 4);
-        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+        return customWeekNumber(date);
     }
-
+    function customWeekNumber(date) {
+        var jan1 = new Date(date.getFullYear(), 0, 1);
+        jan1.setHours(0, 0, 0, 0);
+        var weekZeroStart = new Date(jan1);
+        weekZeroStart.setDate(jan1.getDate() - jan1.getDay());
+        return Math.floor((date.getTime() - weekZeroStart.getTime()) / 86400000 / 7) + 1;
+    }
     document.addEventListener('change', function (event) {
         if (!event.target.classList.contains('js-date-week')) return;
         var row = event.target.closest('td') || event.target.closest('.form-row') || event.target.closest('.modal-body');
         var weekInput = row ? row.querySelector('.js-week') : null;
         if (weekInput && event.target.value) {
-            weekInput.value = isoWeek(event.target.value);
+            weekInput.value = customWeek(event.target.value);
         }
     });
 
@@ -1574,6 +1564,11 @@ document.addEventListener('DOMContentLoaded', function () {
             ordering: true,
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            createdRow: function (row, data) {
+                if (String(data.final_status || '').toUpperCase() === 'RFS') {
+                    row.classList.add('rfs-row-rfs');
+                }
+            },
             drawCallback: function () {
                 var api = this.api();
                 var totalHp = 0;
@@ -1646,11 +1641,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     var state = '<div><span class="badge badge-' + stateClass + '">' + h(row.target_period_label || 'IN PERIOD') + '</span>' + shifted + '</div>';
                     return '<strong>' + week + '</strong>' + date + baseline + state;
                 }},
-                { data: 'material_status', render: chip },
-                { data: 'olt_status', render: chip },
-                { data: 'tenaga_kerja_status', render: chip },
-                { data: 'operasional_status', render: chip },
-                { data: 'accessories_status', render: chip },
+                { data: null, render: function (row) { return chip(String(row.final_status || '').toUpperCase() === 'RFS' ? 'READY' : row.material_status); } },
+                { data: null, render: function (row) { return chip(String(row.final_status || '').toUpperCase() === 'RFS' ? 'READY' : row.olt_status); } },
+                { data: null, render: function (row) { return chip(String(row.final_status || '').toUpperCase() === 'RFS' ? 'READY' : row.tenaga_kerja_status); } },
+                { data: null, render: function (row) { return chip(String(row.final_status || '').toUpperCase() === 'RFS' ? 'READY' : row.operasional_status); } },
+                { data: null, render: function (row) { return chip(String(row.final_status || '').toUpperCase() === 'RFS' ? 'READY' : row.accessories_status); } },
                 { data: 'boq_cable_status', render: boqChip },
                 { data: 'boq_fat_status', render: boqChip },
                 { data: 'boq_tiang_status', render: boqChip },
