@@ -5523,7 +5523,7 @@ class MPO_Monitor extends CI_Model
             ->row_array();
 
         $sourceInvoiceDate = $this->normalizeSyncDate($myrep['invoice_date'] ?? null);
-        $invoiceDate = $this->normalizeInvoiceDateForComparison($sourceInvoiceDate);
+        $invoiceDate = $sourceInvoiceDate;
         $amount = (float) ($myrep['invoice_amount'] ?? 0);
         if (abs($amount) < 0.000001 && isset($myrep['termin_value'])) {
             $amount = (float) $myrep['termin_value'];
