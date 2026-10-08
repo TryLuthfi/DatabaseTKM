@@ -524,6 +524,16 @@ $approvalNominal = !is_null($cluster['nominal_nego_emr'] ?? null) ? (float) $clu
 $releaseNominalDefault = $releaseNominal !== null ? $releaseNominal : $approvalNominal;
 $releaseVariance = $releaseNominal !== null && $approvalNominal !== null ? $releaseNominal - $approvalNominal : null;
 $slaStartDate = trim((string) ($cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? $cluster['created_at'] ?? ''));
+$sakuRequestedAt = trim((string) ($cluster['saku_finance_requested_at'] ?? ''));
+$sakuReviewedAt = trim((string) ($cluster['saku_finance_reviewed_at'] ?? ''));
+$financeSubmittedAt = trim((string) ($cluster['submitted_to_finance_at'] ?? $cluster['finance_submitted_at'] ?? ''));
+$releasedAt = trim((string) ($cluster['released_at'] ?? ''));
+if ($sakuRequestedAt === '') {
+    $sakuRequestedAt = $sakuReviewedAt ?: ($financeSubmittedAt ?: $releasedAt);
+}
+if ($sakuReviewedAt === '') {
+    $sakuReviewedAt = $financeSubmittedAt ?: $releasedAt;
+}
 $slaRows = [];
 $slaDefinitions = [
     ['Pengajuan Donasi', 'AREA', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? '', $slaStartDate],
@@ -531,9 +541,9 @@ $slaDefinitions = [
     ['Upload Dokumen Tahap 1 Pra-Finance', 'AREA', 2, batchDetailLatestUploadedDateWhenAllRequiredUsable((array) ($preZeynDocumentRows ?? []))],
     ['Approve SITAC Tahap 1', 'SITAC TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($preZeynDocumentRows ?? []), 'approved_at', 'status_file', 'APPROVED')],
     ['Approve Finance Tahap 1', 'FINANCE TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($preZeynDocumentRows ?? []), 'finance_approved_at', 'finance_status', 'APPROVED', 'status_file', 'APPROVED')],
-    ['Pengajuan Saku', 'AREA', 1, $cluster['saku_finance_requested_at'] ?? ''],
-    ['Approval Saku Finance', 'FINANCE TKM', 1, $cluster['saku_finance_reviewed_at'] ?? ''],
-    ['Pembayaran Donasi', 'FINANCE TKM', 2, $cluster['released_at'] ?? ''],
+    ['Pengajuan Saku', 'AREA', 1, $sakuRequestedAt],
+    ['Approval Saku Finance', 'FINANCE TKM', 1, $sakuReviewedAt],
+    ['Pembayaran Donasi', 'FINANCE TKM', 2, $releasedAt],
     ['Upload Dokumen Tahap 2 Setelah Pembayaran', 'AREA', 1, batchDetailLatestUploadedDateWhenAllRequiredUsable((array) ($postZeynDocumentRows ?? []))],
     ['Approve SITAC Tahap 2', 'SITAC TKM', 1, batchDetailLatestDateWhenAllRequiredMatch((array) ($postZeynDocumentRows ?? []), 'approved_at', 'status_file', 'APPROVED')],
     ['Submit Final ke Astri', 'MYREP', 1, batchDetailLatestDateFromRows((array) ($postZeynDocumentRows ?? []), 'astri_submitted_date', true)],

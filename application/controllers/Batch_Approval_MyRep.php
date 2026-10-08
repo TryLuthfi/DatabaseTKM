@@ -4602,6 +4602,12 @@ class Batch_Approval_MyRep extends CI_Controller
         $sakuRequestedAt = $this->firstBatchListDate($row, ['saku_finance_requested_at']);
         $sakuReviewedAt = $this->firstBatchListDate($row, ['saku_finance_reviewed_at']);
         $releasedAt = $this->firstBatchListDate($row, ['released_at']);
+        if ($sakuRequestedAt === '') {
+            $sakuRequestedAt = $sakuReviewedAt ?: ($this->firstBatchListDate($row, ['submitted_to_finance_at', 'finance_submitted_at']) ?: $releasedAt);
+        }
+        if ($sakuReviewedAt === '') {
+            $sakuReviewedAt = $this->firstBatchListDate($row, ['submitted_to_finance_at', 'finance_submitted_at']) ?: $releasedAt;
+        }
         $postUploadedAt = $this->firstBatchListDate($row, ['post_zeyn_uploaded_at']);
         $postApprovedAt = $this->firstBatchListDate($row, ['post_zeyn_approved_at', 'post_zeyn_doc_approved_at']);
         $postRejectedAt = $this->firstBatchListDate($row, ['post_zeyn_rejected_at']);

@@ -396,6 +396,12 @@ if (!function_exists('batchSlaInfo')) {
         $sakuRequestedAt = $dateFromRow(['saku_finance_requested_at']);
         $sakuReviewedAt = $dateFromRow(['saku_finance_reviewed_at']);
         $releasedAt = $dateFromRow(['released_at']);
+        if ($sakuRequestedAt === '') {
+            $sakuRequestedAt = $sakuReviewedAt ?: ($dateFromRow(['submitted_to_finance_at', 'finance_submitted_at']) ?: $releasedAt);
+        }
+        if ($sakuReviewedAt === '') {
+            $sakuReviewedAt = $dateFromRow(['submitted_to_finance_at', 'finance_submitted_at']) ?: $releasedAt;
+        }
         $postUploadedAt = $dateFromRow(['post_zeyn_uploaded_at']);
         $postApprovedAt = $dateFromRow(['post_zeyn_approved_at', 'post_zeyn_doc_approved_at']);
         $postRejectedAt = $dateFromRow(['post_zeyn_rejected_at']);
