@@ -678,9 +678,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                     <th>Aksi</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                <?php $renderValsalTableRows($allValsalRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap, $clusterReviewPicMap); ?>
-                                            </tbody>
+                                            <tbody></tbody>
                                             <tfoot>
                                                 <tr>
                                                     <th colspan="4" class="text-right">TOTAL</th>
@@ -962,7 +960,9 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 <div class="modal-content budget-modal valsal-modal-shell">
                     <div class="modal-header budget-modal__header">
                         <div>
-                            <h4 class="modal-title mb-0">Detail Dokumen Cluster</h4>
+                            <span class="budget-modal__eyebrow">VALSAL MyRep</span>
+                            <h4 class="modal-title mb-1">Detail Dokumen Cluster</h4>
+                            <p class="mb-0 budget-modal__subtitle">Ringkasan cluster, status dokumen, dan riwayat review VALSAL.</p>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -1007,7 +1007,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         </div>
                         <div class="doc-modal-panel mb-0">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
+                                <table class="table table-hover doc-detail-table">
                                     <thead>
                                         <tr>
                                             <th>Dokumen</th>
@@ -1798,7 +1798,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         grid-template-columns: 92px max-content;
         column-gap: 0.35rem;
         align-items: center;
-        color: #000;
+        color: #1f2937;
         font-size: 0.76rem;
         max-width: 100%;
         overflow: hidden;
@@ -1807,8 +1807,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .valsal-doc-name {
-        color: #111;
-        font-weight: 600;
+        color: #334155;
+        font-weight: 700;
     }
 
     .valsal-doc-status-badge {
@@ -1819,29 +1819,38 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     .valsal-doc-cluster-detail {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.85rem;
+        gap: .8rem;
     }
 
     .valsal-doc-cluster-detail__item {
         min-width: 0;
+        min-height: 74px;
+        padding: .75rem .8rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #f8fafc;
     }
 
     .valsal-doc-cluster-detail__label {
         display: block;
-        color: #6b7280;
-        font-size: 0.74rem;
-        font-weight: 700;
+        margin-bottom: .28rem;
+        color: #64748b;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .06em;
         text-transform: uppercase;
     }
 
     .valsal-doc-cluster-detail__value {
         display: block;
-        color: #111827;
-        font-size: 0.92rem;
-        font-weight: 700;
+        color: #0f172a;
+        font-size: .9rem;
+        font-weight: 800;
+        line-height: 1.35;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     @media (max-width: 767.98px) {
@@ -1944,31 +1953,32 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border: 0;
         border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+        box-shadow: 0 22px 46px rgba(15, 23, 42, 0.18);
     }
 
     .doc-modal .modal-header {
         border-bottom: 0;
-        padding: 1rem 1.25rem;
+        padding: 1.15rem 1.25rem;
         color: #fff;
     }
 
     .doc-modal .modal-body {
-        background: #f6f8fb;
+        background: #f8fafc;
         padding: 1.25rem;
     }
 
     .doc-modal .modal-footer {
         border-top: 0;
-        background: #eef2f7;
+        background: #f8fafc;
     }
 
     .doc-modal-panel {
         background: #fff;
-        border: 1px solid #e7ecf3;
+        border: 1px solid #e2e8f0;
         border-radius: 14px;
         padding: 1rem 1.1rem;
         margin-bottom: 1rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
     }
 
     .doc-modal-panel:last-child {
@@ -1976,16 +1986,108 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .doc-modal-title {
-        font-size: 1rem;
-        font-weight: 700;
+        font-size: .96rem;
+        font-weight: 800;
         margin-bottom: .35rem;
-        color: #1f2937;
+        color: #0f172a;
     }
 
     .doc-modal-subtitle {
         margin: 0;
-        color: #6b7280;
-        font-size: .9rem;
+        color: #475569;
+        font-size: .86rem;
+    }
+
+    .doc-detail-table {
+        min-width: 1120px;
+        margin-bottom: 0;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    .doc-detail-table thead th {
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .doc-detail-table tbody td {
+        padding: .65rem .7rem;
+        border-top: 1px solid #e5edf6;
+        vertical-align: middle;
+        line-height: 1.35;
+    }
+
+    .doc-detail-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .doc-detail-table tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    .doc-detail-table .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 25px;
+        min-width: 94px;
+        padding: .35rem .58rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: .68rem;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .doc-detail-table .badge-info,
+    .doc-detail-table .badge-primary {
+        background: #dbeafe;
+        border-color: #bfdbfe;
+        color: #1e40af;
+    }
+
+    .doc-detail-table .badge-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+
+    .doc-detail-table .badge-success {
+        background: #dcfce7;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .doc-detail-table .badge-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .doc-detail-table .badge-secondary {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .doc-detail-table .btn-sm {
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .32rem .62rem;
     }
 
     .upload-dropzone {
@@ -2488,8 +2590,10 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         var valsalPreviewImportUrl = '<?= base_url('VALSAL_MyRep/previewValsalImport') ?>';
         var valsalSaveImportUrl = '<?= base_url('VALSAL_MyRep/saveImportedValsal') ?>';
         var valsalDownloadReportUrl = '<?= base_url('VALSAL_MyRep/downloadReport') ?>';
+        var valsalTableDataUrl = '<?= base_url('VALSAL_MyRep/tableData') ?>';
         var valsalCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
         var valsalRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
+        var valsalSelectedCity = '<?= htmlspecialchars((string) $selectedCity, ENT_QUOTES) ?>';
         var valsalSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
         var valsalStatusSummaryByTab = <?= json_encode($valsalStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var currentValsalDetailClusterId = 0;
@@ -2952,18 +3056,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     return;
                 }
 
-                var keyword = '';
-                if (valsalStatusFilter === 'waiting_input') {
-                    keyword = 'WAITING INPUT';
-                } else if (valsalStatusFilter === 'on_review') {
-                    keyword = 'ON REVIEW';
-                } else if (valsalStatusFilter === 'rejected') {
-                    keyword = 'REJECTED';
-                } else if (valsalStatusFilter === 'done') {
-                    keyword = 'DONE';
-                }
-
-                table.column(9).search(keyword, false, false).draw();
+                table.ajax.reload(null, true);
             }
 
             function syncValsalStatusFilterButtons() {
@@ -2997,7 +3090,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             scrollX: true,
                             scrollCollapse: true,
                             autoWidth: false,
+                            processing: true,
+                            serverSide: true,
+                            ajax: {
+                                url: valsalTableDataUrl,
+                                type: 'POST',
+                                data: function (payload) {
+                                    payload.city = valsalSelectedCity;
+                                    payload.status = valsalSelectedStatus;
+                                    payload.tab = valsalTableConfigs[selector].tab;
+                                    payload.status_filter = valsalStatusFilter;
+                                }
+                            },
                             order: [[0, 'asc']],
+                            columnDefs: [
+                                { targets: [7, 10, 11, 12, 13], orderable: false },
+                                { targets: [4, 5], className: 'text-right' }
+                            ],
                             pageLength: 10,
                             lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                             footerCallback: function (row, data, start, end, display) {

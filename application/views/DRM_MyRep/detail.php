@@ -139,27 +139,82 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
             <style>
                 .drm-header-card .card-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 1rem 1.15rem;
                     background: linear-gradient(135deg, #f8fbff, #eef6ff);
                     border-bottom: 1px solid #dbeafe;
+                }
+
+                .drm-header-title {
+                    min-width: 0;
+                }
+
+                .drm-header-eyebrow {
+                    display: block;
+                    margin-bottom: .2rem;
+                    color: #64748b;
+                    font-size: .68rem;
+                    font-weight: 900;
+                    letter-spacing: .08em;
+                    text-transform: uppercase;
+                }
+
+                .drm-header-title .card-title {
+                    color: #0f172a;
+                    font-size: 1.05rem;
+                    font-weight: 900;
+                }
+
+                .drm-header-actions {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    gap: .8rem;
+                    margin-left: auto;
+                }
+
+                .drm-header-action-copy {
+                    text-align: right;
+                    line-height: 1.25;
+                }
+
+                .drm-header-action-copy span {
+                    display: block;
+                    color: #0f172a;
+                    font-size: .78rem;
+                    font-weight: 900;
+                }
+
+                .drm-header-action-copy small {
+                    display: block;
+                    color: #64748b;
+                    font-size: .72rem;
+                    font-weight: 700;
                 }
 
                 .drm-edit-btn {
                     display: inline-flex;
                     align-items: center;
                     gap: .45rem;
-                    padding: .55rem .95rem;
+                    min-height: 38px;
+                    padding: .55rem 1rem;
                     border-radius: 999px;
-                    border: 1px solid rgba(255, 255, 255, 0.65);
-                    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+                    border: 1px solid rgba(30, 64, 175, 0.12);
+                    background: linear-gradient(135deg, #103b5a, #1f6da1);
                     color: #fff;
-                    font-weight: 700;
-                    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+                    font-size: .82rem;
+                    font-weight: 900;
+                    box-shadow: 0 12px 24px rgba(15, 59, 90, 0.22);
                 }
 
                 .drm-edit-btn:hover,
                 .drm-edit-btn:focus {
                     color: #fff;
-                    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+                    background: linear-gradient(135deg, #0f2f49, #185f90);
+                    box-shadow: 0 14px 28px rgba(15, 59, 90, 0.28);
                 }
 
                 .drm-info-grid strong {
@@ -299,6 +354,153 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     white-space: pre-wrap;
                 }
 
+                .drm-rab-card {
+                    border: 1px solid rgba(148, 163, 184, .22);
+                    border-radius: 18px;
+                    overflow: hidden;
+                    background: #fff;
+                    box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
+                }
+
+                .drm-rab-card .card-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 1rem 1.2rem;
+                    border-bottom: 1px solid #e5edf6;
+                    background: #fff;
+                }
+
+                .drm-rab-heading {
+                    display: flex;
+                    align-items: center;
+                    min-width: 0;
+                    gap: .85rem;
+                }
+
+                .drm-rab-heading__icon {
+                    width: 38px;
+                    height: 38px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex: 0 0 38px;
+                    border-radius: 10px;
+                    background: #ecfdf5;
+                    color: #047857;
+                }
+
+                .drm-rab-heading__title {
+                    margin: 0;
+                    color: #0f172a;
+                    font-size: 1rem;
+                    font-weight: 850;
+                }
+
+                .drm-rab-heading__subtitle {
+                    margin: .18rem 0 0;
+                    color: #475569;
+                    font-size: .86rem;
+                    font-weight: 600;
+                }
+
+                .drm-rab-card .card-body {
+                    padding: 1.15rem 1.2rem 1.2rem;
+                    background: #fff;
+                }
+
+                .drm-rab-content {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: center;
+                    gap: 1rem;
+                }
+
+                .drm-rab-detail-box {
+                    min-height: 88px;
+                    padding: .95rem 1rem;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 14px;
+                    background: #f8fafc;
+                }
+
+                .drm-rab-detail-label {
+                    display: block;
+                    margin-bottom: .35rem;
+                    color: #64748b;
+                    font-size: .72rem;
+                    font-weight: 900;
+                    letter-spacing: .06em;
+                    text-transform: uppercase;
+                }
+
+                .drm-rab-detail {
+                    color: #0f172a;
+                    font-weight: 700;
+                    line-height: 1.5;
+                }
+
+                .drm-rab-meta {
+                    margin-top: .6rem;
+                    color: #64748b;
+                    font-size: .78rem;
+                    font-weight: 700;
+                }
+
+                .drm-rab-actions {
+                    min-width: 220px;
+                    text-align: right;
+                }
+
+                .drm-rab-action-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: .45rem;
+                    min-height: 40px;
+                    padding: .58rem 1rem;
+                    border-radius: 999px;
+                    font-size: .82rem;
+                    font-weight: 900;
+                    box-shadow: 0 12px 24px rgba(22, 163, 74, .2);
+                }
+
+                .drm-rab-done-note {
+                    color: #047857;
+                    font-weight: 900;
+                    margin-bottom: .55rem;
+                }
+
+                .drm-rab-help {
+                    display: block;
+                    max-width: 300px;
+                    margin-left: auto;
+                    color: #64748b;
+                    font-size: .8rem;
+                    font-weight: 700;
+                    line-height: 1.4;
+                }
+
+                .drm-rab-alert {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: .75rem;
+                    padding: .85rem .95rem;
+                    border: 1px solid #bfdbfe;
+                    border-radius: 14px;
+                    background: #eff6ff;
+                    color: #1e3a8a;
+                    font-size: .86rem;
+                    font-weight: 700;
+                    line-height: 1.45;
+                }
+
+                .drm-rab-alert i {
+                    margin-top: .16rem;
+                    color: #1d4ed8;
+                }
+
                 .drm-spk-grid {
                     display: grid;
                     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -403,6 +605,21 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 }
 
                 @media (max-width: 767.98px) {
+                    .drm-rab-content {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .drm-rab-actions,
+                    .drm-rab-help {
+                        max-width: none;
+                        margin-left: 0;
+                        text-align: left;
+                    }
+
+                    .drm-rab-action-btn {
+                        width: 100%;
+                    }
+
                     .drm-spk-grid,
                     .drm-spk-option-grid {
                         grid-template-columns: 1fr;
@@ -421,18 +638,215 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
                 .drm-doc-card .card-header,
                 .drm-boq-card .card-header {
-                    background: #eff6ff;
-                    color: #1e3a8a;
+                    background: #fff;
+                    color: #0f172a;
+                    border-bottom: 1px solid #e5edf6;
                 }
 
-                .drm-doc-card .table thead th,
+                .drm-doc-card {
+                    border: 1px solid rgba(148, 163, 184, .22);
+                    border-radius: 18px;
+                    overflow: hidden;
+                    background: #fff;
+                    box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
+                }
+
+                .drm-doc-card .card-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 1rem 1.2rem;
+                }
+
+                .drm-doc-card .card-body {
+                    padding: 1.15rem 1.2rem 1.2rem;
+                    background: #fff;
+                }
+
+                .drm-doc-heading {
+                    display: flex;
+                    align-items: center;
+                    min-width: 0;
+                    gap: .85rem;
+                }
+
+                .drm-doc-heading__icon {
+                    width: 38px;
+                    height: 38px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex: 0 0 38px;
+                    border-radius: 10px;
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                }
+
+                .drm-doc-heading__title {
+                    margin: 0;
+                    color: #0f172a;
+                    font-size: 1rem;
+                    font-weight: 800;
+                }
+
+                .drm-doc-heading__subtitle {
+                    margin: .18rem 0 0;
+                    color: #475569;
+                    font-size: .86rem;
+                    font-weight: 600;
+                }
+
+                .drm-doc-toolbar {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: .75rem;
+                    margin-bottom: 1rem;
+                    padding: .78rem .85rem;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 14px;
+                    background: #f8fafc;
+                }
+
+                .drm-doc-toolbar__hint {
+                    color: #64748b;
+                    font-size: .82rem;
+                    font-weight: 700;
+                }
+
+                .drm-doc-toolbar__actions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: .45rem;
+                }
+
+                .drm-doc-table-wrap {
+                    border: 1px solid #e2e8f0;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    background: #fff;
+                }
+
+                .drm-doc-table {
+                    min-width: 1180px;
+                    margin-bottom: 0 !important;
+                    color: #1f2937;
+                    font-size: .82rem;
+                    border-collapse: separate !important;
+                    border-spacing: 0;
+                }
+
+                .drm-doc-table thead th,
                 .drm-boq-card .table thead th {
+                    padding: .72rem .7rem;
+                    background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+                    color: #334155;
+                    border-top: 0;
+                    border-bottom: 1px solid #cbd5e1;
+                    font-size: .68rem;
+                    font-weight: 900;
+                    letter-spacing: .05em;
+                    text-transform: uppercase;
                     white-space: nowrap;
+                    vertical-align: middle;
+                }
+
+                .drm-doc-table tbody td {
+                    padding: .68rem .7rem;
+                    border-top: 1px solid #e5edf6;
+                    vertical-align: middle;
+                    line-height: 1.35;
+                }
+
+                .drm-doc-table tbody tr:nth-child(even) {
+                    background: #f8fafc;
+                }
+
+                .drm-doc-table tbody tr:hover {
+                    background: #eff6ff;
+                }
+
+                .drm-doc-name-cell {
+                    display: block;
+                    color: #0f172a;
+                    font-weight: 850;
+                    overflow-wrap: anywhere;
+                }
+
+                .drm-doc-note-cell,
+                .drm-doc-remark-cell {
+                    color: #475569;
+                    font-weight: 600;
+                    overflow-wrap: anywhere;
+                }
+
+                .drm-doc-muted {
+                    color: #64748b;
+                    font-size: .78rem;
+                    font-weight: 700;
+                }
+
+                .drm-doc-table .badge {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 98px;
+                    min-height: 25px;
+                    padding: .35rem .58rem;
+                    border: 1px solid transparent;
+                    border-radius: 999px;
+                    font-size: .68rem;
+                    font-weight: 800;
+                    line-height: 1.2;
+                    text-align: center;
+                    white-space: normal;
+                }
+
+                .drm-doc-table .badge-info,
+                .drm-doc-table .badge-primary {
+                    background: #dbeafe;
+                    border-color: #bfdbfe;
+                    color: #1e40af;
+                }
+
+                .drm-doc-table .badge-warning {
+                    background: #fef3c7;
+                    border-color: #fde68a;
+                    color: #92400e;
+                }
+
+                .drm-doc-table .badge-success {
+                    background: #dcfce7;
+                    border-color: #bbf7d0;
+                    color: #166534;
+                }
+
+                .drm-doc-table .badge-danger {
+                    background: #fee2e2;
+                    border-color: #fecaca;
+                    color: #991b1b;
+                }
+
+                .drm-doc-table .badge-secondary {
+                    background: #f1f5f9;
+                    border-color: #e2e8f0;
+                    color: #475569;
+                }
+
+                .drm-doc-table .btn-sm,
+                .drm-doc-toolbar .btn-sm {
+                    border-radius: 999px;
+                    font-size: .72rem;
+                    font-weight: 700;
+                    padding: .32rem .62rem;
                 }
 
                 .drm-doc-file-link {
                     max-width: 260px;
                     overflow-wrap: anywhere;
+                    font-weight: 700;
                 }
 
                 .drm-doc-file-actions {
@@ -499,29 +913,59 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     font-size: .88rem;
                 }
 
+                .modal-content.drm-modal,
                 .drm-modal .modal-content {
                     border: 0;
                     border-radius: 18px;
                     overflow: hidden;
-                    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+                    box-shadow: 0 22px 46px rgba(15, 23, 42, 0.18);
+                }
+
+                .drm-modal__header {
+                    border-bottom: 0;
+                    padding: 1.15rem 1.25rem;
+                    background:
+                        radial-gradient(circle at top right, rgba(255, 255, 255, .18), transparent 30%),
+                        linear-gradient(135deg, #103b5a 0%, #1f6da1 58%, #53a9d8 100%);
+                    color: #fff;
+                }
+
+                .drm-modal__eyebrow {
+                    display: inline-block;
+                    margin-bottom: .35rem;
+                    color: rgba(255, 255, 255, .76);
+                    font-size: .72rem;
+                    font-weight: 900;
+                    letter-spacing: .08em;
+                    text-transform: uppercase;
+                }
+
+                .drm-modal__subtitle {
+                    max-width: 720px;
+                    color: rgba(255, 255, 255, .84);
+                    font-size: .86rem;
+                    font-weight: 600;
+                    line-height: 1.4;
                 }
 
                 .drm-modal .modal-body {
-                    background: #f6f8fb;
+                    background: #f8fafc;
                     padding: 1.25rem;
                 }
 
                 .drm-modal .modal-footer {
                     border-top: 0;
-                    background: #eef2f7;
+                    background: #f8fafc;
+                    gap: .65rem;
                 }
 
                 .drm-form-box {
                     background: #fff;
-                    border: 1px solid #e5edf6;
+                    border: 1px solid #e2e8f0;
                     border-radius: 14px;
                     padding: 1rem 1.1rem;
                     margin-bottom: 1rem;
+                    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
                 }
 
                 .drm-form-box:last-child {
@@ -529,9 +973,204 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 }
 
                 .drm-form-box__title {
-                    font-weight: 700;
-                    color: #1f2937;
+                    font-size: .94rem;
+                    font-weight: 800;
+                    color: #0f172a;
                     margin-bottom: .85rem;
+                }
+
+                .drm-form-box label {
+                    color: #475569;
+                    font-size: .72rem;
+                    font-weight: 900;
+                    letter-spacing: .06em;
+                    text-transform: uppercase;
+                }
+
+                .drm-form-box .form-control {
+                    min-height: 42px;
+                    border: 1px solid #d7e0ea;
+                    border-radius: 10px;
+                    background-color: #fbfdff;
+                    color: #0f172a;
+                    font-weight: 600;
+                    box-shadow: none;
+                    transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+                }
+
+                .drm-form-box .form-control:not([readonly]):not(:disabled),
+                .drm-form-box select.form-control:not(:disabled) {
+                    background-color: #ffffff;
+                    border-color: #b9d4f2;
+                    box-shadow: inset 3px 0 0 #3b82f6;
+                }
+
+                .drm-form-box .form-control:not([readonly]):not(:disabled):focus,
+                .drm-form-box select.form-control:not(:disabled):focus {
+                    border-color: #2563eb;
+                    background-color: #ffffff;
+                    box-shadow: inset 3px 0 0 #2563eb, 0 0 0 3px rgba(37, 99, 235, .12);
+                }
+
+                .drm-form-box .form-control[readonly],
+                .drm-form-box .form-control:disabled,
+                .drm-form-box select.form-control:disabled {
+                    background-color: #f1f5f9;
+                    border-color: #e2e8f0;
+                    color: #64748b;
+                    box-shadow: inset 3px 0 0 #cbd5e1;
+                    cursor: not-allowed;
+                }
+
+                .drm-form-box textarea.form-control {
+                    min-height: 92px;
+                    line-height: 1.45;
+                }
+
+                .drm-boq-summary-card {
+                    border: 1px solid rgba(148, 163, 184, .22);
+                    border-radius: 18px;
+                    overflow: hidden;
+                    background: #fff;
+                    box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
+                }
+
+                .drm-boq-summary-card .card-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 1rem 1.2rem;
+                    border-bottom: 1px solid #e5edf6;
+                    background: #fff;
+                }
+
+                .drm-boq-summary-heading {
+                    display: flex;
+                    align-items: center;
+                    min-width: 0;
+                    gap: .85rem;
+                }
+
+                .drm-boq-summary-heading__icon {
+                    width: 38px;
+                    height: 38px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex: 0 0 38px;
+                    border-radius: 10px;
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                }
+
+                .drm-boq-summary-title {
+                    margin: 0;
+                    color: #0f172a;
+                    font-size: 1rem;
+                    font-weight: 800;
+                }
+
+                .drm-boq-summary-subtitle {
+                    margin: .18rem 0 0;
+                    color: #475569;
+                    font-size: .86rem;
+                    font-weight: 600;
+                }
+
+                .drm-boq-summary-card .card-body {
+                    padding: 1.15rem 1.2rem 1.2rem;
+                    background: #fff;
+                }
+
+                .drm-boq-summary-table-wrap {
+                    border: 1px solid #e2e8f0;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    background: #fff;
+                }
+
+                .drm-boq-summary-table {
+                    min-width: 880px;
+                    margin-bottom: 0 !important;
+                    color: #1f2937;
+                    font-size: .82rem;
+                    border-collapse: separate !important;
+                    border-spacing: 0;
+                }
+
+                .drm-boq-summary-table thead th {
+                    padding: .72rem .7rem;
+                    background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+                    color: #334155;
+                    border-top: 0;
+                    border-bottom: 1px solid #cbd5e1;
+                    font-size: .68rem;
+                    font-weight: 900;
+                    letter-spacing: .05em;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                    vertical-align: middle;
+                }
+
+                .drm-boq-summary-table tbody td,
+                .drm-boq-summary-table tfoot td {
+                    padding: .65rem .7rem;
+                    border-top: 1px solid #e5edf6;
+                    vertical-align: middle;
+                    line-height: 1.35;
+                }
+
+                .drm-boq-summary-table tbody tr:nth-child(even) {
+                    background: #f8fafc;
+                }
+
+                .drm-boq-summary-table tbody tr:hover {
+                    background: #eff6ff;
+                }
+
+                .drm-boq-summary-table td:nth-child(4),
+                .drm-boq-summary-table td:nth-child(5),
+                .drm-boq-summary-table td:nth-child(6) {
+                    color: #0f172a;
+                    font-weight: 800;
+                    text-align: right;
+                    font-variant-numeric: tabular-nums;
+                }
+
+                .drm-boq-summary-table thead th:nth-child(4),
+                .drm-boq-summary-table thead th:nth-child(5),
+                .drm-boq-summary-table thead th:nth-child(6) {
+                    text-align: right;
+                }
+
+                .drm-boq-summary-table .drm-boq-total-row td {
+                    background: #f1f5f9;
+                    color: #0f172a;
+                    font-size: .8rem;
+                    font-weight: 900;
+                    border-top: 1px solid #cbd5e1;
+                }
+
+                .drm-boq-summary-table .drm-boq-total-row td:not(:first-child) {
+                    text-align: right;
+                    font-variant-numeric: tabular-nums;
+                }
+
+                .drm-boq-summary-table .boq-zero-cell {
+                    background: transparent !important;
+                    color: #94a3b8;
+                    font-weight: 800;
+                }
+
+                .drm-boq-empty-state {
+                    padding: 1.15rem;
+                    border: 1px dashed #cbd5e1;
+                    border-radius: 14px;
+                    background: #f8fafc;
+                    color: #64748b;
+                    font-weight: 700;
+                    text-align: center;
                 }
                 .boq-zero-cell {
                     background-color: #fdecec !important;
@@ -539,15 +1178,20 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     font-weight: 600;
                 }
                 .doc-history-list {
+                    display: grid;
+                    gap: .75rem;
                     list-style: none;
                     margin: 0;
                     padding: 0;
                 }
 
                 .doc-history-item {
-                    border-left: 3px solid #d8e3ee;
-                    padding-left: 1rem;
-                    margin-bottom: 1rem;
+                    border: 1px solid #dbe7f3;
+                    border-left: 4px solid #1f6da1;
+                    border-radius: 12px;
+                    padding: .9rem 1rem;
+                    background: #fff;
+                    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
                 }
 
                 .doc-history-item:last-child {
@@ -555,14 +1199,43 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 }
 
                 .doc-history-title {
-                    font-weight: 700;
-                    color: #1f2937;
+                    display: inline-flex;
+                    align-items: center;
+                    padding: .2rem .55rem;
+                    border-radius: 999px;
+                    background: #eaf4fb;
+                    color: #103b5a;
+                    font-size: .76rem;
+                    font-weight: 900;
+                    text-transform: uppercase;
                 }
 
                 .doc-history-meta {
-                    color: #6b7280;
+                    color: #64748b;
+                    font-size: .82rem;
+                    font-weight: 700;
+                    margin: .55rem 0 .35rem;
+                }
+
+                .doc-history-detail {
+                    color: #334155;
                     font-size: .86rem;
-                    margin-bottom: .2rem;
+                    line-height: 1.45;
+                }
+
+                .doc-history-detail strong {
+                    color: #0f172a;
+                    font-weight: 900;
+                }
+
+                .doc-history-empty {
+                    padding: 1rem;
+                    border: 1px dashed #cbd5e1;
+                    border-radius: 12px;
+                    background: #fff;
+                    color: #64748b;
+                    font-weight: 800;
+                    text-align: center;
                 }
 
                 .drm-bulk-summary {
@@ -650,6 +1323,21 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 }
 
                 @media (max-width: 767.98px) {
+                    .drm-header-card .card-header,
+                    .drm-header-actions {
+                        align-items: stretch;
+                        flex-direction: column;
+                    }
+
+                    .drm-header-action-copy {
+                        text-align: left;
+                    }
+
+                    .drm-edit-btn {
+                        justify-content: center;
+                        width: 100%;
+                    }
+
                     .drm-detail-fields {
                         grid-template-columns: 1fr;
                     }
@@ -684,13 +1372,22 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
             </style>
 
             <div class="card card-primary shadow-sm drm-header-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Header DRM</h3>
+                <div class="card-header">
+                    <div class="drm-header-title">
+                        <span class="drm-header-eyebrow">Detail Cluster</span>
+                        <h3 class="card-title mb-0">Header DRM</h3>
+                    </div>
                     <?php if ($canEdit): ?>
-                        <button type="button" class="btn btn-sm drm-edit-btn" data-toggle="modal" data-target="#modal-drm-edit">
-                            <i class="fas fa-pen"></i>
-                            Edit DRM
-                        </button>
+                        <div class="drm-header-actions">
+                            <div class="drm-header-action-copy">
+                                <span>Perbarui data DRM</span>
+                                <small>Header, homepass, OLT, dan catatan</small>
+                            </div>
+                            <button type="button" class="btn drm-edit-btn" data-toggle="modal" data-target="#modal-drm-edit">
+                                <i class="fas fa-pen"></i>
+                                Edit DRM
+                            </button>
+                        </div>
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
@@ -935,16 +1632,22 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
             });
             ?>
 
-            <div class="card card-outline card-info shadow-sm">
+            <div class="card drm-boq-summary-card">
                 <div class="card-header">
-                    <h3 class="card-title mb-0">Ringkasan BOQ</h3>
+                    <div class="drm-boq-summary-heading">
+                        <span class="drm-boq-summary-heading__icon"><i class="fas fa-layer-group"></i></span>
+                        <div>
+                            <h3 class="drm-boq-summary-title">Ringkasan BOQ</h3>
+                            <p class="drm-boq-summary-subtitle">Rekap item BOQ implementasi dari scope cluster dan subfeeder.</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($boqCombinedRows)): ?>
                         <div class="drm-form-box mb-0">
                             <div class="drm-form-box__title">Baseline BOQ Implementasi Cluster</div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover mb-0">
+                            <div class="table-responsive drm-boq-summary-table-wrap">
+                                <table class="table table-hover drm-boq-summary-table">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -977,7 +1680,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
-                                        <tr class="table-secondary font-weight-bold">
+                                        <tr class="drm-boq-total-row">
                                             <td colspan="3" class="text-right">TOTAL</td>
                                             <td class="<?= abs($boqClusterTotal) < 0.00001 ? 'boq-zero-cell' : '' ?>">
                                                 <?= abs($boqClusterTotal) < 0.00001 ? '-' : number_format($boqClusterTotal, 0, ',', '.') ?>
@@ -993,6 +1696,8 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                 </table>
                             </div>
                         </div>
+                    <?php else: ?>
+                        <div class="drm-boq-empty-state">Belum ada item BOQ yang bisa diringkas.</div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1067,9 +1772,15 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                         Struktur <?= htmlspecialchars($scopeLabel) ?> belum siap. Jalankan patch database DRM subfeeder dulu.
                                     </div>
                                 <?php else: ?>
-                                    <div class="card card-outline card-primary shadow-sm drm-doc-card">
+                                    <div class="card drm-doc-card">
                                         <div class="card-header">
-                                            <h3 class="card-title mb-0">Dokumen <?= htmlspecialchars($scopeLabel) ?></h3>
+                                            <div class="drm-doc-heading">
+                                                <span class="drm-doc-heading__icon"><i class="fas fa-folder-open"></i></span>
+                                                <div>
+                                                    <h3 class="drm-doc-heading__title">Dokumen <?= htmlspecialchars($scopeLabel) ?></h3>
+                                                    <p class="drm-doc-heading__subtitle">Upload, review, dan pantau dokumen scope <?= htmlspecialchars($scopeLabel) ?>.</p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="card-body">
                                             <?php if ($isSubfeederScope && !empty($scopeRequirementReady)): ?>
@@ -1109,19 +1820,19 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                             <?php if (!$isSubfeederWorkflowLocked): ?>
-                                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem;">
-                                                <div class="small text-muted">
+                                            <div class="drm-doc-toolbar">
+                                                <div class="drm-doc-toolbar__hint">
                                                     Bulk upload & approve all tidak mencakup <strong>APD BOQ</strong> dan <strong>Manual BOQ</strong>.
                                                 </div>
-                                                <div class="d-flex flex-wrap" style="gap:.45rem;">
+                                                <div class="drm-doc-toolbar__actions">
                                                     <?php if (!empty($downloadableRows)): ?>
                                                         <a href="<?= base_url('DRM_MyRep/downloadDocumentBundle/' . (int) $cluster['id_myrep_cluster'] . '/' . urlencode((string) $scopeKey)) ?>" class="btn btn-sm btn-outline-dark">
-                                                            Download RAR
+                                                            <i class="fas fa-file-archive mr-1"></i> Download RAR
                                                         </a>
                                                     <?php endif; ?>
                                                     <?php if ($canTambah && !empty($bulkUploadableRows)): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#modal-drm-bulk-upload-<?= strtolower($scopeKey) ?>">
-                                                            Bulk Upload
+                                                            <i class="fas fa-upload mr-1"></i> Bulk Upload
                                                         </button>
                                                     <?php endif; ?>
                                                     <?php if ($canApprove && $canApprovalAction && !empty($reviewableRows)): ?>
@@ -1129,14 +1840,14 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                             <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                                             <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
                                                             <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve semua dokumen upload/reject untuk scope ini? APD BOQ dan Manual BOQ tidak ikut.');">
-                                                                Approve All
+                                                                <i class="fas fa-check-double mr-1"></i> Approve All
                                                             </button>
                                                         </form>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
-                                            <div class="table-responsive">
-                                                <table class="table table-bordered table-hover">
+                                            <div class="table-responsive drm-doc-table-wrap">
+                                                <table class="table table-hover drm-doc-table">
                                                     <thead>
                                                         <tr>
                                                             <th>Dokumen</th>
@@ -1156,8 +1867,8 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                             $docCanUpload = !$isSubfeederWorkflowLocked && ($docStatus === 'BELUM UPLOAD' || $docRawStatus === 'REJECTED');
                                                             ?>
                                                             <tr>
-                                                                <td><strong><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></strong></td>
-                                                                <td><?= !empty($row['doc_requirement_note']) ? htmlspecialchars((string) $row['doc_requirement_note']) : '-' ?></td>
+                                                                <td><span class="drm-doc-name-cell"><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></span></td>
+                                                                <td><span class="drm-doc-note-cell"><?= !empty($row['doc_requirement_note']) ? htmlspecialchars((string) $row['doc_requirement_note']) : '-' ?></span></td>
                                                                 <td><span class="badge badge-<?= drmDetailBadgeClass($docStatus) ?>"><?= htmlspecialchars($docStatus) ?></span></td>
                                                                 <td>
                                                                     <?php if (!empty($row['file_name'])): ?>
@@ -1181,7 +1892,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                             </button>
                                                                         </div>
                                                                     <?php else: ?>
-                                                                        <span class="text-muted">Belum ada file</span>
+                                                                        <span class="drm-doc-muted">Belum ada file</span>
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td style="min-width:320px;">
@@ -1215,11 +1926,11 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                             Upload
                                                                         </button>
                                                                     <?php else: ?>
-                                                                        <span class="text-muted small">Upload tidak tersedia</span>
+                                                                        <span class="drm-doc-muted">Upload tidak tersedia</span>
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td style="min-width:220px;">
-                                                                    <?= !empty($row['remark']) ? nl2br(htmlspecialchars((string) $row['remark'])) : '-' ?>
+                                                                    <span class="drm-doc-remark-cell"><?= !empty($row['remark']) ? nl2br(htmlspecialchars((string) $row['remark'])) : '-' ?></span>
                                                                 </td>
                                                                 <?php if ($canApprove && $canApprovalAction): ?>
                                                                     <td style="min-width:220px;">
@@ -1257,7 +1968,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                         <?php elseif ($docRawStatus === 'REJECTED'): ?>
                                                                             <span class="text-danger small font-weight-bold">Sudah rejected</span>
                                                                         <?php else: ?>
-                                                                            <span class="text-muted small">Belum ada review langsung</span>
+                                                                            <span class="drm-doc-muted">Belum ada review langsung</span>
                                                                         <?php endif; ?>
                                                                     </td>
                                                                 <?php endif; ?>
@@ -1280,30 +1991,42 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                         </div>
                                     </div>
                                     <?php if ($scopeKey === 'CLUSTER'): ?>
-                                        <div class="card card-outline card-success shadow-sm mt-3">
-                                            <div class="card-header d-flex justify-content-between align-items-center">
-                                                <h3 class="card-title mb-0">RAB Cluster</h3>
+                                        <div class="card drm-rab-card mt-3">
+                                            <div class="card-header">
+                                                <div class="drm-rab-heading">
+                                                    <span class="drm-rab-heading__icon"><i class="fas fa-clipboard-check"></i></span>
+                                                    <div>
+                                                        <h3 class="drm-rab-heading__title">RAB Cluster</h3>
+                                                        <p class="drm-rab-heading__subtitle">Gate final setelah BOQ cluster/APD disetujui.</p>
+                                                    </div>
+                                                </div>
                                                 <span class="badge badge-<?= drmDetailBadgeClass($isRabDone ? 'APPROVED' : '') ?>"><?= htmlspecialchars($isRabDone ? 'RAB DONE' : 'BELUM RAB DONE') ?></span>
                                             </div>
                                             <div class="card-body">
-                                                <div class="row align-items-center">
-                                                    <div class="col-md-8">
-                                                        <strong>Detail RAB</strong>
-                                                        <div class="drm-rab-detail mt-1"><?= $isRabDone && !empty($rabDetail['detail_rab']) ? nl2br(htmlspecialchars((string) $rabDetail['detail_rab'])) : '-' ?></div>
+                                                <div class="drm-rab-content">
+                                                    <div class="drm-rab-detail-box">
+                                                        <span class="drm-rab-detail-label">Detail RAB</span>
+                                                        <div class="drm-rab-detail"><?= $isRabDone && !empty($rabDetail['detail_rab']) ? nl2br(htmlspecialchars((string) $rabDetail['detail_rab'])) : '-' ?></div>
                                                         <?php if ($isRabDone && !empty($rabDetail['rab_done_at'])): ?>
-                                                            <div class="small text-muted mt-2">Checklist: <?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
+                                                            <div class="drm-rab-meta">Checklist: <?= htmlspecialchars((string) $rabDetail['rab_done_at']) ?></div>
                                                         <?php endif; ?>
                                                     </div>
-                                                    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                                                    <div class="drm-rab-actions">
                                                         <?php if ($canShowRabDoneButton): ?>
-                                                            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modal-rab-done">Checklist RAB DONE</button>
+                                                            <button type="button" class="btn btn-success drm-rab-action-btn" data-toggle="modal" data-target="#modal-rab-done">
+                                                                <i class="fas fa-check-circle"></i>
+                                                                Checklist RAB DONE
+                                                            </button>
                                                         <?php elseif ($isRabDone): ?>
-                                                            <div class="text-success font-weight-bold mb-2">RAB sudah selesai.</div>
+                                                            <div class="drm-rab-done-note"><i class="fas fa-check-circle mr-1"></i> RAB sudah selesai.</div>
                                                             <?php if ($canShowRabRollbackButton): ?>
-                                                                <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#modal-rab-rollback">Rollback RAB</button>
+                                                                <button type="button" class="btn btn-outline-danger drm-rab-action-btn" data-toggle="modal" data-target="#modal-rab-rollback">
+                                                                    <i class="fas fa-undo-alt"></i>
+                                                                    Rollback RAB
+                                                                </button>
                                                             <?php endif; ?>
                                                         <?php else: ?>
-                                                            <span class="text-muted small">Checklist RAB DONE tersedia setelah APD BOQ/BOQ Cluster approved dan user memiliki akses Planning HO.</span>
+                                                            <span class="drm-rab-help">Checklist RAB DONE tersedia setelah APD BOQ/BOQ Cluster approved dan user memiliki akses Planning HO.</span>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -1486,22 +2209,32 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
         <div class="modal-content drm-modal">
             <form method="post" action="<?= base_url('DRM_MyRep/checklistRabDone') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Checklist RAB DONE</h5>
+                <div class="modal-header drm-modal__header">
+                    <div>
+                        <span class="drm-modal__eyebrow">RAB Cluster</span>
+                        <h5 class="modal-title mb-1">Checklist RAB DONE</h5>
+                        <p class="drm-modal__subtitle mb-0">Simpan status RAB DONE setelah gate BOQ cluster/APD sudah approved.</p>
+                    </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info small">
-                        Status RAB dapat disimpan karena APD BOQ/BOQ Cluster sudah approved. Subfeeder tidak menjadi syarat.
+                    <div class="drm-rab-alert mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Status RAB dapat disimpan karena APD BOQ/BOQ Cluster sudah approved. Subfeeder tidak menjadi syarat.</span>
                     </div>
-                    <div class="form-group mb-0">
-                        <label>Detail RAB</label>
-                        <textarea name="detail_rab" rows="5" class="form-control" required placeholder="Isi detail RAB"></textarea>
+                    <div class="drm-form-box mb-0">
+                        <div class="form-group mb-0">
+                            <label>Detail RAB</label>
+                            <textarea name="detail_rab" rows="5" class="form-control" required placeholder="Isi detail RAB"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success" onclick="return confirm('Simpan checklist RAB DONE untuk cluster ini?');">Simpan RAB DONE</button>
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Simpan checklist RAB DONE untuk cluster ini?');">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Simpan RAB DONE
+                    </button>
                 </div>
             </form>
         </div>
@@ -1515,17 +2248,24 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
         <div class="modal-content drm-modal">
             <form method="post" action="<?= base_url('DRM_MyRep/rollbackRabDone') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Rollback RAB DONE</h5>
+                <div class="modal-header drm-modal__header">
+                    <div>
+                        <span class="drm-modal__eyebrow">RAB Cluster</span>
+                        <h5 class="modal-title mb-1">Rollback RAB DONE</h5>
+                        <p class="drm-modal__subtitle mb-0">Kembalikan status RAB menjadi BELUM RAB DONE jika data perlu diperbaiki.</p>
+                    </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-warning small">
-                        Status RAB akan dikembalikan menjadi BELUM RAB DONE. Cluster yang belum memenuhi gate RAB tidak akan tampil lagi di list Batch Approval tahap awal.
+                    <div class="drm-rab-alert mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Status RAB akan dikembalikan menjadi BELUM RAB DONE. Cluster yang belum memenuhi gate RAB tidak akan tampil lagi di list Batch Approval tahap awal.</span>
                     </div>
-                    <div class="form-group mb-0">
-                        <label>Alasan Rollback <span class="text-muted font-weight-normal">(opsional)</span></label>
-                        <textarea name="reason" rows="4" class="form-control" placeholder="Contoh: detail RAB perlu diperbaiki"></textarea>
+                    <div class="drm-form-box mb-0">
+                        <div class="form-group mb-0">
+                            <label>Alasan Rollback <span class="text-muted font-weight-normal">(opsional)</span></label>
+                            <textarea name="reason" rows="4" class="form-control" placeholder="Contoh: detail RAB perlu diperbaiki"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1658,8 +2398,12 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
             <form method="post" action="<?= base_url(!empty($cluster['id_drm']) ? 'DRM_MyRep/updateDrm' : 'DRM_MyRep/saveDrm') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="id_drm" value="<?= (int) ($cluster['id_drm'] ?? 0) ?>">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><?= !empty($cluster['id_drm']) ? 'Edit Header DRM' : 'Lengkapi Header DRM' ?></h5>
+                <div class="modal-header drm-modal__header">
+                    <div>
+                        <span class="drm-modal__eyebrow">DRM MyRep</span>
+                        <h5 class="modal-title mb-1"><?= !empty($cluster['id_drm']) ? 'Edit Header DRM' : 'Lengkapi Header DRM' ?></h5>
+                        <p class="drm-modal__subtitle mb-0">Lengkapi tanggal, homepass, OLT, status, dan catatan DRM untuk cluster ini.</p>
+                    </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
@@ -1726,7 +2470,8 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary btn-sm"><?= !empty($cluster['id_drm']) ? 'Update DRM' : 'Simpan DRM' ?></button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary"><?= !empty($cluster['id_drm']) ? 'Update DRM' : 'Simpan DRM' ?></button>
                 </div>
             </form>
         </div>
@@ -1810,14 +2555,21 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 <div class="modal fade" id="modal-doc-history" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content drm-modal">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title">History Dokumen</h5>
+            <div class="modal-header drm-modal__header">
+                <div>
+                    <span class="drm-modal__eyebrow">Audit Dokumen</span>
+                    <h5 class="modal-title mb-1">History Dokumen</h5>
+                    <p class="drm-modal__subtitle mb-0">Riwayat perubahan dan review dokumen cluster DRM.</p>
+                </div>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3"><strong>Dokumen:</strong> <span id="history_doc_label">-</span></div>
+                <div class="drm-form-box mb-3">
+                    <div class="drm-form-box__title">Dokumen</div>
+                    <div class="doc-history-detail" id="history_doc_label">-</div>
+                </div>
                 <ul class="doc-history-list" id="history_doc_items">
-                    <li class="text-muted">Belum ada history.</li>
+                    <li class="doc-history-empty">Belum ada history.</li>
                 </ul>
             </div>
         </div>
@@ -2486,7 +3238,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
 
         function renderHistory(history) {
             if (!history.length) {
-                return '<li class="text-muted">Belum ada history.</li>';
+                return '<li class="doc-history-empty">Belum ada history.</li>';
             }
 
             var html = '';
@@ -2494,8 +3246,8 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                 html += '<li class="doc-history-item">' +
                     '<div class="doc-history-title">' + (entry.action_type || '-') + '</div>' +
                     '<div class="doc-history-meta">' + (entry.action_at || '-') + ' | ' + (entry.nama_user || 'System') + '</div>' +
-                    '<div><strong>File:</strong> ' + (entry.file_name || '-') + '</div>' +
-                    '<div><strong>Remark:</strong> ' + (entry.remark || '-') + '</div>' +
+                    '<div class="doc-history-detail"><strong>File:</strong> ' + (entry.file_name || '-') + '</div>' +
+                    '<div class="doc-history-detail"><strong>Remark:</strong> ' + (entry.remark || '-') + '</div>' +
                 '</li>';
             });
             return html;

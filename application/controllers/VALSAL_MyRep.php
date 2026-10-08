@@ -47,20 +47,98 @@ class VALSAL_MyRep extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MVALSAL_MyRep->getValsalRows($selectedCity, $selectedStatus)
             : [];
-        $data['clusterReviewPicMap'] = $this->MVALSAL_MyRep->getValsalClusterReviewPicMap($data['clusterRows']);
-        $clusterIds = array_values(array_filter(array_map(static function ($row) {
-            return (int) ($row['id_myrep_cluster'] ?? 0);
-        }, $data['clusterRows'])));
+        $data['clusterReviewPicMap'] = [];
         $data['valsalDocumentDefinitions'] = $data['docReady'] ? $this->MVALSAL_MyRep->getValsalDocumentDefinitions() : [];
-        $data['valsalDocumentMap'] = ($data['docReady'] && !empty($clusterIds))
-            ? $this->MVALSAL_MyRep->getValsalDocumentItemsByClusterIds($clusterIds)
-            : [];
+        $data['valsalDocumentMap'] = [];
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('VALSAL_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function tableData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        if (!$this->MVALSAL_MyRep->valsalTablesReady()) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $statusFilter = strtolower(trim((string) $this->input->post('status_filter')));
+        if (!in_array($statusFilter, ['waiting_input', 'on_review', 'rejected', 'done'], true)) {
+            $statusFilter = '';
+        }
+
+        $searchPayload = $this->input->post('search');
+        $searchValue = is_array($searchPayload) ? trim((string) ($searchPayload['value'] ?? '')) : '';
+        $start = max(0, (int) $this->input->post('start'));
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        try {
+            $rows = $this->MVALSAL_MyRep->getValsalRows($selectedCity, $selectedStatus);
+            $recordsTotal = count($rows);
+
+            if ($statusFilter !== '') {
+                $rows = array_values(array_filter($rows, function ($row) use ($statusFilter) {
+                    return $this->rowMatchesValsalStatusFilter($row, $statusFilter);
+                }));
+            }
+
+            if ($searchValue !== '') {
+                $needle = strtoupper($searchValue);
+                $rows = array_values(array_filter($rows, static function ($row) use ($needle) {
+                    $haystack = strtoupper(implode(' ', [
+                        $row['cluster_name'] ?? '',
+                        $row['cluster_code'] ?? '',
+                        $row['regional_name'] ?? '',
+                        $row['city_name'] ?? '',
+                        $row['status_valsal'] ?? '',
+                        $row['status_current'] ?? '',
+                    ]));
+                    return strpos($haystack, $needle) !== false;
+                }));
+            }
+
+            $recordsFiltered = count($rows);
+            $pageRows = array_slice($rows, $start, $length);
+            $clusterIds = array_values(array_filter(array_map(static function ($row) {
+                return (int) ($row['id_myrep_cluster'] ?? 0);
+            }, $pageRows)));
+
+            $docReady = $this->MVALSAL_MyRep->valsalDocumentTablesReady();
+            $documentDefinitions = $docReady ? $this->MVALSAL_MyRep->getValsalDocumentDefinitions() : [];
+            $documentMap = ($docReady && !empty($clusterIds))
+                ? $this->MVALSAL_MyRep->getValsalDocumentItemsByClusterIds($clusterIds)
+                : [];
+            $clusterReviewPicMap = $this->MVALSAL_MyRep->getValsalClusterReviewPicMap($pageRows);
+            $permissions = [
+                'canTambah' => isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'TAMBAH') : true,
+                'canEdit' => isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'EDIT') : true,
+                'canHapus' => isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'HAPUS') : true,
+            ];
+
+            $data = [];
+            $no = $start + 1;
+            foreach ($pageRows as $row) {
+                $data[] = $this->buildValsalTableRow($row, $no++, $docReady, $documentDefinitions, $documentMap, $clusterReviewPicMap, $permissions);
+            }
+
+            $this->jsonDataTableResponse($recordsTotal, $recordsFiltered, $data);
+        } catch (\Throwable $e) {
+            log_message('error', 'VALSAL tableData failed: ' . $e->getMessage());
+            $this->jsonDataTableResponse(0, 0, []);
+        }
     }
 
     public function saveValsal()
@@ -1473,6 +1551,243 @@ class VALSAL_MyRep extends CI_Controller
     {
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data)
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'draw' => (int) $this->input->post('draw'),
+                'recordsTotal' => (int) $recordsTotal,
+                'recordsFiltered' => (int) $recordsFiltered,
+                'data' => $data,
+            ]));
+    }
+
+    private function buildValsalTableRow(array $row, $no, $docReady, array $documentDefinitions, array $documentMap, array $clusterReviewPicMap, array $permissions)
+    {
+        $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+        $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
+        $clusterDocs = $documentMap[$clusterId] ?? [];
+        $docsById = [];
+        foreach ($clusterDocs as $clusterDoc) {
+            $docsById[(int) ($clusterDoc['id_doc_item'] ?? 0)] = $clusterDoc;
+        }
+
+        $clusterName = (string) ($row['cluster_name'] ?? '-');
+        $clusterHtml = $docReady && $hasValsal
+            ? '<button type="button" class="btn btn-link p-0 border-0 align-baseline font-weight-bold js-valsal-doc-detail" data-toggle="modal" data-target="#modal-valsal-doc-detail" data-cluster_name="' . $this->attr($clusterName) . '" data-documents="' . $this->attr(json_encode(array_values($clusterDocs))) . '">' . $this->html($clusterName) . '</button>'
+            : '<strong>' . $this->html($clusterName) . '</strong>';
+        if (!empty($row['cluster_code'])) {
+            $clusterHtml .= '<div class="text-muted small">' . $this->html((string) $row['cluster_code']) . '</div>';
+        }
+
+        $slaInfo = $this->valsalSlaInfo($row);
+        $agingText = $slaInfo['aging_days'] === null ? 'Aging -' : 'Aging ' . (int) $slaInfo['aging_days'] . ' HK';
+        $slaHtml = '<div class="valsal-sla-aging-cell">'
+            . '<span class="badge badge-' . $this->attr($this->valsalSlaBadgeClass($slaInfo)) . '">SLA 5 HK</span>'
+            . '<span class="badge badge-' . $this->attr($this->valsalAgingBadgeClass($slaInfo['aging_days'])) . '">' . $this->html($agingText) . '</span>'
+            . '</div>';
+
+        $statusValsalLabel = $hasValsal ? (string) ($row['status_valsal'] ?? 'DRAFT') : 'WAITING INPUT';
+        $documentHtml = '';
+        if ($hasValsal && !empty($documentDefinitions)) {
+            $documentHtml .= '<div class="valsal-doc-status-stack">';
+            foreach ($documentDefinitions as $documentDefinition) {
+                $docRow = $docsById[(int) ($documentDefinition['id_doc_item'] ?? 0)] ?? [];
+                $docStatusRaw = $this->valsalDocLabel($docRow);
+                $documentHtml .= '<div class="valsal-doc-status-stack__item">'
+                    . '<span class="valsal-doc-name">' . $this->html(ucwords(strtolower((string) ($documentDefinition['doc_name'] ?? '-')))) . ' :</span>'
+                    . '<span class="badge badge-' . $this->attr($this->valsalBadgeClass($docStatusRaw)) . ' valsal-doc-status-badge">' . $this->html(ucwords(strtolower($docStatusRaw))) . '</span>'
+                    . '</div>';
+            }
+            $documentHtml .= '</div>';
+        } elseif (!empty($permissions['canTambah'])) {
+            $documentHtml = '<span class="badge badge-secondary">BELUM ADA DOC</span>';
+        }
+
+        $reviewHtml = '<span class="text-muted small">Belum ada pengajuan</span>';
+        if ($hasValsal) {
+            $uploadBy = '-';
+            $picApproval = '';
+            $clusterMappedPic = trim((string) ($clusterReviewPicMap[$clusterId] ?? ''));
+            $documentMappedPic = trim((string) ($clusterDocs[0]['city_pic_approval_name'] ?? ''));
+            foreach ($clusterDocs as $docRow) {
+                $uploadCandidate = trim((string) ($docRow['uploaded_by_name'] ?? ''));
+                if ($uploadBy === '-' && $uploadCandidate !== '') {
+                    $uploadBy = $uploadCandidate;
+                }
+                $approvedCandidate = trim((string) ($docRow['approved_by_name'] ?? ''));
+                if ($approvedCandidate !== '') {
+                    $picApproval = $approvedCandidate;
+                    break;
+                }
+            }
+            if ($picApproval === '') {
+                $picApproval = $clusterMappedPic !== '' ? $clusterMappedPic : $documentMappedPic;
+            }
+            $reviewHtml = '<div class="small text-muted"><div>Upload by : ' . $this->html($uploadBy) . '</div><div>PIC approval : ' . $this->html($picApproval !== '' ? $picApproval : '-') . '</div></div>';
+        }
+
+        $actionHtml = '';
+        if ($hasValsal) {
+            if (!empty($permissions['canEdit'])) {
+                $actionHtml .= '<button type="button" class="btn btn-sm btn-outline-primary js-edit-valsal" data-toggle="modal" data-target="#modal-valsal-edit"'
+                    . ' data-id_myrep_cluster="' . $clusterId . '"'
+                    . ' data-cluster_name="' . $this->attr($clusterName) . '"'
+                    . ' data-regional_name="' . $this->attr((string) ($row['regional_name'] ?? '')) . '"'
+                    . ' data-province_name="' . $this->attr((string) ($row['province_name'] ?? '')) . '"'
+                    . ' data-city_name="' . $this->attr((string) ($row['city_name'] ?? '')) . '"'
+                    . ' data-homepass_bak="' . (int) ($row['homepass_bak'] ?? 0) . '"'
+                    . ' data-homepass_valsal="' . (int) ($row['homepass_valsal'] ?? 0) . '"'
+                    . ' data-bak_date="' . $this->attr((string) ($row['bak_date'] ?? '')) . '"'
+                    . ' data-valsal_date="' . $this->attr((string) ($row['valsal_date'] ?? '')) . '"'
+                    . ' data-status_valsal="' . $this->attr((string) ($row['status_valsal'] ?? 'DRAFT')) . '"'
+                    . ' data-remark_valsal="' . $this->attr((string) ($row['remark_valsal'] ?? '')) . '">Edit</button>';
+            }
+            if ($docReady) {
+                $actionHtml .= ' <button type="button" class="btn btn-sm btn-outline-dark js-valsal-doc-detail mt-1" data-toggle="modal" data-target="#modal-valsal-doc-detail" data-cluster_name="' . $this->attr($clusterName) . '" data-documents="' . $this->attr(json_encode(array_values($clusterDocs))) . '">Detail Dokumen</button>';
+            }
+        } elseif (!empty($permissions['canTambah'])) {
+            $actionHtml = '<button type="button" class="btn btn-sm btn-outline-primary js-start-valsal" data-toggle="modal" data-target="#modal-valsal-create" data-cluster-id="' . $clusterId . '" data-city-name="' . $this->attr((string) ($row['city_name'] ?? '')) . '">Input VALSAL</button>';
+        }
+
+        return [
+            (int) $no,
+            $clusterHtml,
+            $this->html((string) ($row['regional_name'] ?? '-')),
+            $this->html((string) ($row['city_name'] ?? '-')),
+            '<span class="d-block text-right valsal-table-number">' . $this->formatValsalListQty($row['homepass_bak'] ?? 0) . '</span>',
+            '<span class="d-block text-right valsal-table-number">' . $this->formatValsalListQty($row['homepass_valsal'] ?? 0) . '</span>',
+            !empty($slaInfo['start_date']) ? $this->html((string) $slaInfo['start_date']) : '-',
+            $slaHtml,
+            !empty($row['valsal_date']) ? $this->html((string) $row['valsal_date']) : '-',
+            '<span class="valsal-stage-cell"><span class="badge badge-' . $this->attr($this->valsalBadgeClass($statusValsalLabel)) . '">' . $this->html($statusValsalLabel) . '</span></span>',
+            $documentHtml,
+            $reviewHtml,
+            '<span class="valsal-stage-cell"><span class="badge badge-' . $this->attr($this->valsalBadgeClass($row['status_current'] ?? 'DRAFT')) . '">' . $this->html((string) ($row['status_current'] ?? 'DRAFT')) . '</span></span>',
+            $actionHtml,
+        ];
+    }
+
+    private function rowMatchesValsalStatusFilter(array $row, $statusFilter)
+    {
+        $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
+        $statusValsal = strtoupper(trim((string) ($row['status_valsal'] ?? '')));
+        $statusCurrent = strtoupper(trim((string) ($row['status_current'] ?? '')));
+        if ($statusFilter === 'waiting_input') {
+            return !$hasValsal;
+        }
+        if ($statusFilter === 'on_review') {
+            return $statusValsal === 'ON REVIEW';
+        }
+        if ($statusFilter === 'rejected') {
+            return $statusValsal === 'REJECTED';
+        }
+        if ($statusFilter === 'done') {
+            return $statusValsal === 'DONE' || $statusValsal === 'APPROVED' || $statusCurrent === 'VALSAL';
+        }
+        return true;
+    }
+
+    private function valsalDocLabel($row)
+    {
+        if ((int) ($row['is_document_not_required'] ?? 0) === 1) {
+            return 'Tidak Dibutuhkan';
+        }
+        $status = strtoupper(trim((string) ($row['status_file'] ?? '')));
+        if ($status === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+        if ($status !== '') {
+            return $status;
+        }
+        return !empty($row['file_name']) ? 'UPLOADED' : 'BELUM UPLOAD';
+    }
+
+    private function valsalSlaInfo(array $row)
+    {
+        $approvedBakDate = trim((string) ($row['bak_approved_at'] ?? ''));
+        if ($approvedBakDate === '') {
+            $approvedBakDate = trim((string) ($row['bak_date'] ?? ''));
+        }
+        if ($approvedBakDate === '' || $approvedBakDate === '0000-00-00') {
+            return ['start_date' => null, 'aging_days' => null];
+        }
+        $valsalDate = trim((string) ($row['valsal_date'] ?? ''));
+        $hasValsalDate = $valsalDate !== '' && $valsalDate !== '0000-00-00';
+        return [
+            'start_date' => substr($approvedBakDate, 0, 10),
+            'aging_days' => $this->countWorkingDays($approvedBakDate, $hasValsalDate ? $valsalDate : date('Y-m-d')),
+        ];
+    }
+
+    private function countWorkingDays($startDateString, $endDateString = null)
+    {
+        try {
+            $start = new DateTimeImmutable(substr((string) $startDateString, 0, 10));
+            $end = new DateTimeImmutable(substr((string) ($endDateString ?: date('Y-m-d')), 0, 10));
+        } catch (Exception $e) {
+            return null;
+        }
+        if ($start > $end) {
+            return 0;
+        }
+        $workingDays = 0;
+        $cursor = $start->modify('+1 day');
+        while ($cursor <= $end) {
+            if ((int) $cursor->format('N') < 6) {
+                $workingDays++;
+            }
+            $cursor = $cursor->modify('+1 day');
+        }
+        return $workingDays;
+    }
+
+    private function valsalBadgeClass($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'DONE':
+            case 'APPROVED':
+            case 'VALSAL':
+                return 'success';
+            case 'WAITING INPUT':
+            case 'BAK':
+                return 'info';
+            case 'REJECTED':
+                return 'danger';
+            case 'ON REVIEW':
+                return 'warning';
+            default:
+                return 'secondary';
+        }
+    }
+
+    private function valsalSlaBadgeClass(array $slaInfo)
+    {
+        return ($slaInfo['aging_days'] ?? null) === null ? 'secondary' : ((int) $slaInfo['aging_days'] > 5 ? 'danger' : 'success');
+    }
+
+    private function valsalAgingBadgeClass($agingDays)
+    {
+        return $agingDays === null ? 'secondary' : ((int) $agingDays > 5 ? 'danger' : 'success');
+    }
+
+    private function formatValsalListQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
+    }
+
+    private function html($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function attr($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     }
 
     private function isAjaxRequest()
