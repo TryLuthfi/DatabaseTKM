@@ -617,6 +617,207 @@ if ($canApprove && $canApprovalAction) {
         border-bottom: 1px solid #dbeafe;
     }
 
+    .batch-info-card .card-header,
+    .batch-doc-card .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .batch-header-title {
+        min-width: 0;
+    }
+
+    .batch-header-eyebrow {
+        display: block;
+        margin-bottom: .2rem;
+        color: #64748b;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .batch-header-title .card-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 900;
+    }
+
+    .batch-header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .65rem;
+        margin-left: auto;
+    }
+
+    .batch-header-action-copy {
+        text-align: right;
+        line-height: 1.25;
+    }
+
+    .batch-header-action-copy span {
+        display: block;
+        color: #0f172a;
+        font-size: .78rem;
+        font-weight: 900;
+    }
+
+    .batch-header-action-copy small {
+        display: block;
+        color: #64748b;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .batch-reject-btn {
+        border-radius: 999px;
+        font-size: .8rem;
+        font-weight: 800;
+        padding: .52rem .9rem;
+    }
+
+    .batch-doc-card {
+        border: 1px solid rgba(148, 163, 184, .22);
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
+    }
+
+    .batch-doc-heading {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: .85rem;
+    }
+
+    .batch-doc-heading__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .batch-doc-heading__title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 850;
+    }
+
+    .batch-doc-heading__subtitle {
+        margin: .18rem 0 0;
+        color: #475569;
+        font-size: .86rem;
+        font-weight: 600;
+    }
+
+    .batch-doc-card .card-body {
+        padding: 1.15rem 1.2rem 1.2rem;
+        background: #fff;
+    }
+
+    .batch-doc-summary-card,
+    .batch-doc-history-panel {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #f8fafc;
+        padding: 1rem;
+    }
+
+    .batch-doc-summary-head,
+    .batch-doc-history-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .8rem;
+        margin-bottom: .9rem;
+    }
+
+    .batch-doc-summary-title,
+    .batch-doc-history-title {
+        color: #0f172a;
+        font-size: .94rem;
+        font-weight: 900;
+    }
+
+    .batch-doc-summary-subtitle,
+    .batch-doc-history-subtitle {
+        color: #64748b;
+        font-size: .8rem;
+        font-weight: 700;
+        margin-top: .1rem;
+    }
+
+    .batch-doc-info-box {
+        display: grid;
+        gap: .6rem;
+        margin-bottom: .9rem;
+    }
+
+    .batch-doc-info-row {
+        padding: .7rem .8rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        color: #334155;
+        font-size: .86rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .batch-doc-info-row strong {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .batch-doc-history-table-wrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        background: #fff;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .batch-doc-history-table {
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    .batch-doc-history-table thead th {
+        padding: .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .batch-doc-history-table tbody td {
+        padding: .65rem .7rem;
+        border-top: 1px solid #e5edf6;
+        vertical-align: middle;
+        overflow-wrap: anywhere;
+    }
+
     .donation-upload-panel {
         border: 1px solid #dbe3ed;
         border-top: 2px solid #0d6efd;
@@ -714,24 +915,26 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .batch-sla-card {
-        border: 1px solid #d6e6f0;
-        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, .22);
+        border-radius: 18px;
         overflow: hidden;
+        background: #fff;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
     }
 
     .batch-sla-card__header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        min-height: 42px;
-        padding: .55rem .85rem;
-        background: linear-gradient(90deg, #93d6c5, #2b8fc3);
-        color: #fff;
-        border-bottom: 0;
+        min-height: 54px;
+        padding: .9rem 1.1rem;
+        background: #fff;
+        color: #0f172a;
+        border-bottom: 1px solid #e5edf6;
     }
 
     .batch-sla-card__header .card-title {
-        color: #082f49;
+        color: #0f172a;
         font-size: .98rem;
         font-weight: 900;
     }
@@ -741,48 +944,60 @@ if ($canApprove && $canApprovalAction) {
         align-items: center;
         min-height: 22px;
         padding: .15rem .55rem;
-        border-radius: 4px;
-        background: rgba(15, 118, 145, .88);
-        color: #fff;
+        border-radius: 999px;
+        background: #eaf4fb;
+        color: #103b5a;
         font-size: .72rem;
         font-weight: 800;
     }
 
     .batch-sla-card__body {
-        padding: .75rem .85rem .9rem;
+        padding: 1rem 1.1rem 1.1rem;
         background: #fff;
     }
 
     .batch-sla-table {
-        border: 1px solid #d7e0e8;
-        font-size: .78rem;
+        min-width: 980px;
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
     }
 
     .batch-sla-table thead th {
-        background: #f5f7fa;
-        border-color: #d7e0e8;
-        color: #111827;
-        font-weight: 800;
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        border-color: #dbe5ef;
+        color: #334155;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
         line-height: 1.15;
         vertical-align: middle;
         white-space: nowrap;
     }
 
     .batch-sla-table tbody td {
-        border-color: #d7e0e8;
-        color: #111827;
-        line-height: 1.2;
-        padding: .35rem .45rem;
+        border-top: 1px solid #e5edf6;
+        border-color: #e5edf6;
+        color: #334155;
+        font-weight: 600;
+        line-height: 1.35;
+        padding: .62rem .7rem;
         vertical-align: middle;
         white-space: nowrap;
     }
 
     .batch-sla-table tbody tr:nth-child(odd) {
-        background: #fbfdff;
+        background: #f8fafc;
     }
 
     .batch-sla-table tbody tr:hover {
-        background: #eef9fb;
+        background: #eff6ff;
     }
 
     .batch-sla-no {
@@ -920,33 +1135,240 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .donation-doc-table {
-        font-size: .86rem;
-        margin-bottom: 0;
+        min-width: 2250px;
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
     }
 
     .donation-doc-table thead th {
-        background: #202529;
-        border-color: #343a40;
-        color: #fff;
-        font-weight: 800;
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        border-color: #dbe5ef;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
         white-space: nowrap;
         vertical-align: middle;
     }
 
     .donation-doc-table tbody td {
-        vertical-align: top;
+        padding: .68rem .7rem;
+        border-top: 1px solid #e5edf6;
+        color: #334155;
+        font-weight: 600;
+        line-height: 1.35;
+        vertical-align: middle;
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+
+    .donation-doc-table th:nth-child(1),
+    .donation-doc-table td:nth-child(1) {
+        width: 48px;
+        min-width: 48px;
+        text-align: center;
+    }
+
+    .donation-doc-table th:nth-child(2),
+    .donation-doc-table td:nth-child(2) {
+        min-width: 330px;
+        max-width: 420px;
+    }
+
+    .donation-doc-table th:nth-child(3),
+    .donation-doc-table td:nth-child(3) {
+        min-width: 125px;
+    }
+
+    .donation-doc-table th:nth-child(4),
+    .donation-doc-table td:nth-child(4),
+    .donation-doc-table th:nth-child(5),
+    .donation-doc-table td:nth-child(5) {
+        min-width: 125px;
+    }
+
+    .donation-doc-table th:nth-child(6),
+    .donation-doc-table td:nth-child(6) {
+        min-width: 280px;
+    }
+
+    .donation-doc-table .donation-file-column {
+        min-width: 300px !important;
+        width: 300px;
+    }
+
+    .donation-doc-table th:nth-child(7),
+    .donation-doc-table td:nth-child(7),
+    .donation-doc-table th:nth-child(8),
+    .donation-doc-table td:nth-child(8),
+    .donation-doc-table th:nth-child(9),
+    .donation-doc-table td:nth-child(9),
+    .donation-doc-table th:nth-child(10),
+    .donation-doc-table td:nth-child(10),
+    .donation-doc-table th:nth-child(11),
+    .donation-doc-table td:nth-child(11),
+    .donation-doc-table th:nth-child(12),
+    .donation-doc-table td:nth-child(12) {
+        min-width: 135px;
+    }
+
+    .donation-doc-table th:nth-last-child(2),
+    .donation-doc-table td:nth-last-child(2) {
+        min-width: 170px;
+        max-width: 230px;
+        overflow-wrap: anywhere;
+    }
+
+    .donation-doc-table th:last-child,
+    .donation-doc-table td:last-child {
+        min-width: 300px;
+    }
+
+    .donation-doc-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .donation-doc-table tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    .donation-doc-table tbody td strong {
+        color: #0f172a;
+        font-weight: 850;
+    }
+
+    .donation-doc-table .text-muted,
+    .donation-doc-table .small {
+        color: #64748b !important;
+        font-weight: 700;
+    }
+
+    .donation-doc-table .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 92px;
+        min-height: 25px;
+        padding: .35rem .58rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: .68rem;
+        font-weight: 850;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .donation-doc-table .badge-success {
+        background: #dcfce7;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .donation-doc-table .badge-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+
+    .donation-doc-table .badge-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .donation-doc-table .badge-info,
+    .donation-doc-table .badge-primary {
+        background: #dbeafe;
+        border-color: #bfdbfe;
+        color: #1e40af;
+    }
+
+    .donation-doc-table .badge-secondary {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
     }
 
     .donation-doc-table .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        font-size: .72rem;
         font-weight: 700;
+        padding: .32rem .62rem;
+        white-space: nowrap;
+    }
+
+    .donation-bulk-table {
+        min-width: 860px;
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    .donation-bulk-table thead th {
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        border-color: #dbe5ef;
+        font-size: .68rem;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .donation-bulk-table tbody td {
+        padding: .68rem .7rem;
+        border-top: 1px solid #e5edf6;
+        color: #334155;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+
+    .donation-bulk-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    .batch-table-wrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        background: #fff;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .batch-table-wrap table,
+    .batch-doc-history-table-wrap table {
+        margin-bottom: 0 !important;
     }
 
     .donation-action-stack {
         display: flex;
         flex-wrap: wrap;
-        gap: .35rem;
+        gap: .45rem;
         position: relative;
         z-index: 3;
+        min-width: 270px;
+    }
+
+    .donation-action-stack .btn {
+        white-space: nowrap;
     }
 
     .js-open-donation-upload-modal {
@@ -1025,12 +1447,6 @@ if ($canApprove && $canApprovalAction) {
         margin-bottom: 0;
     }
 
-    .donation-bulk-table thead th {
-        background: #eaf4f7;
-        border-bottom: 0;
-        color: #0f4c5c;
-    }
-
     .donation-bulk-table td,
     .donation-bulk-table th {
         vertical-align: middle;
@@ -1048,7 +1464,7 @@ if ($canApprove && $canApprovalAction) {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: min(100%, 360px);
+        width: 170px;
         height: 78px;
         max-width: 100%;
         padding: 6px;
@@ -1058,12 +1474,13 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .donation-file-link {
-        display: inline;
-        max-width: 100%;
+        display: block;
+        max-width: 260px;
         color: #007bff;
         font-size: .85rem;
         font-weight: 700;
         line-height: 1.2;
+        overflow-wrap: anywhere;
     }
 
     .donation-file-link:hover {
@@ -1074,8 +1491,14 @@ if ($canApprove && $canApprovalAction) {
     .donation-file-actions {
         display: flex;
         flex-wrap: wrap;
-        gap: .25rem;
-        margin-top: .35rem;
+        gap: .4rem;
+        margin-top: .45rem;
+        min-width: 240px;
+    }
+
+    .donation-file-actions .btn {
+        min-width: 92px;
+        white-space: nowrap;
     }
 
     .donation-file-photo-cell {
@@ -1223,19 +1646,22 @@ if ($canApprove && $canApprovalAction) {
         align-items: center;
         gap: .45rem;
         pointer-events: auto !important;
-        padding: .55rem .95rem;
+        min-height: 38px;
+        padding: .55rem 1rem;
         border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.65);
-        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        border: 1px solid rgba(30, 64, 175, 0.12);
+        background: linear-gradient(135deg, #103b5a, #1f6da1);
         color: #fff;
-        font-weight: 700;
-        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+        font-size: .82rem;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(15, 59, 90, 0.22);
     }
 
     .batch-edit-btn:hover,
     .batch-edit-btn:focus {
         color: #fff;
-        background: linear-gradient(135deg, #1e40af, #1d4ed8);
+        background: linear-gradient(135deg, #0f2f49, #185f90);
+        box-shadow: 0 14px 28px rgba(15, 59, 90, 0.28);
     }
 
     .batch-info-grid strong {
@@ -1619,15 +2045,20 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .doc-history-list {
+        display: grid;
+        gap: .75rem;
         list-style: none;
         margin: 0;
         padding: 0;
     }
 
     .doc-history-item {
-        border-left: 3px solid #d8e3ee;
-        padding-left: 1rem;
-        margin-bottom: 1rem;
+        border: 1px solid #dbe7f3;
+        border-left: 4px solid #1f6da1;
+        border-radius: 12px;
+        padding: .9rem 1rem;
+        background: #fff;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
     }
 
     .doc-history-item:last-child {
@@ -1635,14 +2066,43 @@ if ($canApprove && $canApprovalAction) {
     }
 
     .doc-history-title {
-        font-weight: 700;
-        color: #1f2937;
+        display: inline-flex;
+        align-items: center;
+        padding: .2rem .55rem;
+        border-radius: 999px;
+        background: #eaf4fb;
+        color: #103b5a;
+        font-size: .76rem;
+        font-weight: 900;
+        text-transform: uppercase;
     }
 
     .doc-history-meta {
-        color: #6b7280;
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 700;
+        margin: .55rem 0 .35rem;
+    }
+
+    .doc-history-detail {
+        color: #334155;
         font-size: .86rem;
-        margin-bottom: .2rem;
+        line-height: 1.45;
+    }
+
+    .doc-history-detail strong {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .doc-history-empty {
+        padding: 1rem;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+        color: #64748b;
+        font-weight: 800;
+        text-align: center;
     }
 
     .batch-form-section {
@@ -1677,6 +2137,54 @@ if ($canApprove && $canApprovalAction) {
     .batch-form-section__subtitle {
         color: #6b7280;
         font-size: .9rem;
+    }
+
+    .batch-form-section label {
+        color: #475569;
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .batch-form-section .form-control {
+        min-height: 42px;
+        border: 1px solid #d7e0ea;
+        border-radius: 10px;
+        background-color: #fbfdff;
+        color: #0f172a;
+        font-weight: 600;
+        box-shadow: none;
+        transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+
+    .batch-form-section .form-control:not([readonly]):not(:disabled),
+    .batch-form-section select.form-control:not(:disabled) {
+        background-color: #fff;
+        border-color: #b9d4f2;
+        box-shadow: inset 3px 0 0 #3b82f6;
+    }
+
+    .batch-form-section .form-control:not([readonly]):not(:disabled):focus,
+    .batch-form-section select.form-control:not(:disabled):focus {
+        border-color: #2563eb;
+        background-color: #fff;
+        box-shadow: inset 3px 0 0 #2563eb, 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
+    .batch-form-section .form-control[readonly],
+    .batch-form-section .form-control:disabled,
+    .batch-form-section select.form-control:disabled {
+        background-color: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #64748b;
+        box-shadow: inset 3px 0 0 #cbd5e1;
+        cursor: not-allowed;
+    }
+
+    .batch-form-section textarea.form-control {
+        min-height: 92px;
+        line-height: 1.45;
     }
 
     .batch-pic-list {
@@ -1768,29 +2276,60 @@ if ($canApprove && $canApprovalAction) {
         color: #111827;
     }
 
+    .modal-content.batch-modal,
     .batch-modal .modal-content {
         border: 0;
         border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+        box-shadow: 0 22px 46px rgba(15, 23, 42, 0.18);
     }
 
     .batch-modal .modal-header {
         border-bottom: 0;
     }
 
+    .batch-modal__header {
+        border-bottom: 0;
+        padding: 1.15rem 1.25rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, .18), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1f6da1 58%, #53a9d8 100%);
+        color: #fff;
+    }
+
+    .batch-modal__eyebrow {
+        display: inline-block;
+        margin-bottom: .35rem;
+        color: rgba(255, 255, 255, .76);
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .batch-modal__subtitle {
+        max-width: 720px;
+        color: rgba(255, 255, 255, .84);
+        font-size: .86rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
     .batch-modal .modal-body {
-        background: #f6f8fb;
+        background: #f8fafc;
         padding: 1.25rem;
     }
 
     .batch-modal .modal-footer {
         border-top: 0;
-        background: #eef2f7;
+        background: #f8fafc;
+        gap: .65rem;
     }
 
     .batch-edit-header {
-        background: linear-gradient(135deg, #0f4c81, #1d7ed6);
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, .18), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1f6da1 58%, #53a9d8 100%);
         color: #fff;
     }
 
@@ -1833,6 +2372,23 @@ if ($canApprove && $canApprovalAction) {
     }
 
     @media (max-width: 767.98px) {
+        .batch-info-card .card-header,
+        .batch-doc-card .card-header,
+        .batch-header-actions {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .batch-header-action-copy {
+            text-align: left;
+        }
+
+        .batch-edit-btn,
+        .batch-reject-btn {
+            justify-content: center;
+            width: 100%;
+        }
+
         .batch-form-section__head,
         .batch-pic-card__head,
         .batch-progress-meta {
@@ -1901,17 +2457,26 @@ if ($canApprove && $canApprovalAction) {
             <?php endif; ?>
 
             <div class="card card-primary shadow-sm batch-info-card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Informasi Cluster & Batch</h3>
-                    <div>
+                <div class="card-header">
+                    <div class="batch-header-title">
+                        <span class="batch-header-eyebrow">Detail Pengajuan</span>
+                        <h3 class="card-title mb-0">Informasi Cluster & Batch</h3>
+                    </div>
+                    <div class="batch-header-actions">
+                        <?php if ($canEdit): ?>
+                            <div class="batch-header-action-copy">
+                                <span>Perbarui data batch</span>
+                                <small>Nominal, PIC, rekening, dan staging</small>
+                            </div>
+                        <?php endif; ?>
                         <?php if ($canRejectBatchData): ?>
-                            <button type="button" class="btn btn-sm btn-outline-danger mr-2" data-toggle="modal" data-target="#modal-reject-batch-data" data-role-guard-exempt="1">
+                            <button type="button" class="btn btn-outline-danger batch-reject-btn" data-toggle="modal" data-target="#modal-reject-batch-data" data-role-guard-exempt="1">
                                 <i class="fas fa-exclamation-circle"></i>
                                 Reject Data Batch
                             </button>
                         <?php endif; ?>
                         <?php if ($canEdit): ?>
-                            <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail" data-role-guard-exempt="1">
+                            <button type="button" class="btn batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail" data-role-guard-exempt="1">
                                 <i class="fas fa-pen"></i>
                                 Edit Batch Approval
                             </button>
@@ -2267,7 +2832,7 @@ if ($canApprove && $canApprovalAction) {
                     <span class="batch-sla-total-badge">Total SLA <?= (int) $slaTotalDays ?> Hari Kalender · Total Pekerjaan <?= (int) $slaTotalWorkDays ?> Hari</span>
                 </div>
                 <div class="card-body batch-sla-card__body">
-                    <div class="table-responsive">
+                    <div class="table-responsive batch-table-wrap">
                         <table class="table table-sm batch-sla-table mb-0">
                             <thead>
                                 <tr>
@@ -2477,9 +3042,15 @@ if ($canApprove && $canApprovalAction) {
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
-            <div class="card card-outline card-primary shadow-sm batch-doc-card">
+            <div class="card batch-doc-card">
                 <div class="card-header">
-                    <h3 class="card-title">Dokumen Batch Approval</h3>
+                    <div class="batch-doc-heading">
+                        <span class="batch-doc-heading__icon"><i class="fas fa-folder-open"></i></span>
+                        <div>
+                            <h3 class="batch-doc-heading__title">Dokumen Batch Approval</h3>
+                            <p class="batch-doc-heading__subtitle">Upload, review, dan pantau dokumen utama batch approval.</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <?php if (!$docReady): ?>
@@ -2487,16 +3058,18 @@ if ($canApprove && $canApprovalAction) {
                     <?php else: ?>
                         <div class="row">
                             <div class="col-lg-7 mb-3">
-                                <div class="border rounded p-3 h-100">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="batch-doc-summary-card h-100">
+                                    <div class="batch-doc-summary-head">
                                         <div>
-                                            <strong>RAR</strong>
-                                            <div class="text-muted small">Status dokumen utama batch approval</div>
+                                            <div class="batch-doc-summary-title">RAR</div>
+                                            <div class="batch-doc-summary-subtitle">Status dokumen utama batch approval</div>
                                         </div>
                                         <span class="badge badge-<?= batchDetailBadgeClass($batchDocumentStatus) ?>"><?= htmlspecialchars($batchDocumentStatus) ?></span>
                                     </div>
-                                    <div class="mb-2"><strong>File:</strong> <?= !empty($batchDocument['file_name']) ? htmlspecialchars((string) $batchDocument['file_name']) : '-' ?></div>
-                                    <div class="mb-3"><strong>Remark:</strong> <?= !empty($batchDocument['remark']) ? htmlspecialchars((string) $batchDocument['remark']) : '-' ?></div>
+                                    <div class="batch-doc-info-box">
+                                        <div class="batch-doc-info-row"><strong>File:</strong> <?= !empty($batchDocument['file_name']) ? htmlspecialchars((string) $batchDocument['file_name']) : '-' ?></div>
+                                        <div class="batch-doc-info-row"><strong>Remark:</strong> <?= !empty($batchDocument['remark']) ? htmlspecialchars((string) $batchDocument['remark']) : '-' ?></div>
+                                    </div>
                                     <button
                                         type="button"
                                         class="btn btn-sm <?= $batchDocumentCanUpload ? 'btn-primary' : 'btn-outline-primary' ?> js-open-batch-rar-modal"
@@ -2526,15 +3099,20 @@ if ($canApprove && $canApprovalAction) {
                             </div>
                         </div>
 
-                        <div class="border rounded p-3">
-                            <strong>History Dokumen</strong>
-                            <div class="table-responsive mt-3">
-                                <table class="table table-sm table-bordered mb-0">
+                        <div class="batch-doc-history-panel">
+                            <div class="batch-doc-history-head">
+                                <div>
+                                    <div class="batch-doc-history-title">History Dokumen</div>
+                                    <div class="batch-doc-history-subtitle">Riwayat perubahan file RAR batch approval.</div>
+                                </div>
+                            </div>
+                            <div class="table-responsive batch-doc-history-table-wrap">
+                                <table class="table table-sm batch-doc-history-table">
                                     <thead>
                                         <tr>
                                             <th>Waktu</th>
                                             <th>Aksi</th>
-                                            <th>File</th>
+                                            <th class="donation-file-column">File</th>
                                             <th>Remark</th>
                                             <th>Oleh</th>
                                         </tr>
@@ -2683,7 +3261,7 @@ if ($canApprove && $canApprovalAction) {
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <div class="table-responsive">
+                            <div class="table-responsive batch-table-wrap">
                                 <table class="table table-bordered table-hover donation-doc-table">
                                     <thead>
                                         <tr>
@@ -2738,7 +3316,7 @@ if ($canApprove && $canApprovalAction) {
                                                 <?php if ($requiresFinanceReview): ?>
                                                     <td><span class="badge badge-<?= batchDetailBadgeClass($financeStatusLabel) ?>"><?= htmlspecialchars($financeStatusLabel) ?></span></td>
                                                 <?php endif; ?>
-                                                <td>
+                                                <td class="donation-file-column">
                                                     <?php if (!empty($row['file_name'])): ?>
                                                         <?php if ($isImageDonationDoc): ?>
                                                             <div class="donation-photo-cell">
@@ -2928,7 +3506,7 @@ if ($canApprove && $canApprovalAction) {
                                                         <div class="text-muted">Progress saat ini <?= $approvedCount ?>/<?= $requiredCount ?> dokumen. Isi hanya file yang ingin diupload atau diganti.</div>
                                                     </div>
                                                     <div class="donation-doc-modal-panel">
-                                                        <div class="table-responsive">
+                                                        <div class="table-responsive batch-table-wrap">
                                                             <table class="table table-bordered donation-bulk-table mb-0">
                                                                 <thead>
                                                                     <tr>
@@ -3023,7 +3601,7 @@ if ($canApprove && $canApprovalAction) {
                                                         <div class="text-muted">Isi tanggal submit saat status bukan NY, lalu pilih status review Astri untuk tiap dokumen.</div>
                                                     </div>
                                                     <div class="donation-doc-modal-panel">
-                                                        <div class="table-responsive">
+                                                        <div class="table-responsive batch-table-wrap">
                                                             <table class="table table-bordered donation-bulk-table mb-0">
                                                                 <thead>
                                                                     <tr>
@@ -3167,14 +3745,14 @@ if ($canApprove && $canApprovalAction) {
                     <?php if (!$postDonasiDocReady): ?>
                         <div class="alert alert-warning mb-0">Tabel dokumen post donasi belum tersedia.</div>
                     <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
+                        <div class="table-responsive batch-table-wrap">
+                            <table class="table table-hover donation-doc-table">
                                 <thead>
                                     <tr>
                                         <th>Dokumen</th>
                                         <th>Catatan</th>
                                         <th>Status</th>
-                                        <th>File</th>
+                                        <th class="donation-file-column">File</th>
                                         <th>Upload</th>
                                         <?php if ($canApprove && $canApprovalAction): ?><th>Review</th><?php endif; ?>
                                     </tr>
@@ -3194,7 +3772,7 @@ if ($canApprove && $canApprovalAction) {
                                             <td><strong><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></strong></td>
                                             <td><?= htmlspecialchars((string) ($row['doc_requirement_note'] ?? '-')) ?></td>
                                             <td><span class="badge badge-<?= batchDetailBadgeClass($postStatus) ?>"><?= htmlspecialchars($postStatus) ?></span></td>
-                                            <td>
+                                            <td class="donation-file-column">
                                                 <?php if (!empty($row['file_name'])): ?>
                                                     <a href="<?= base_url('Post_Donasi_MyRep/previewDocument/' . (int) $row['id_doc_file']) ?>" target="_blank" class="donation-file-link">
                                                         <?= htmlspecialchars(batchDetailShortFileName((string) $row['file_name'])) ?>
@@ -3349,7 +3927,11 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                 <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
                 <input type="hidden" name="redirect_to_detail" value="1">
                 <div class="modal-header batch-edit-header">
-                    <h5 class="modal-title">Edit Batch Approval</h5>
+                    <div>
+                        <span class="batch-modal__eyebrow">Batch Approval</span>
+                        <h5 class="modal-title mb-1">Edit Batch Approval</h5>
+                        <p class="batch-modal__subtitle mb-0">Perbarui informasi pengajuan, penerima dana, PIC, dan status staging.</p>
+                    </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
@@ -3477,17 +4059,21 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
 <div class="modal fade" id="modal-doc-history" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content batch-modal">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title">History Dokumen</h5>
+            <div class="modal-header batch-modal__header">
+                <div>
+                    <span class="batch-modal__eyebrow">Audit Dokumen</span>
+                    <h5 class="modal-title mb-1">History Dokumen</h5>
+                    <p class="batch-modal__subtitle mb-0">Riwayat upload, review, dan catatan dokumen batch approval.</p>
+                </div>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <strong>Dokumen:</strong>
-                    <span id="history_doc_label">-</span>
+                <div class="batch-form-section mb-3">
+                    <div class="batch-form-section__title mb-1">Dokumen</div>
+                    <div class="doc-history-detail" id="history_doc_label">-</div>
                 </div>
                 <ul class="doc-history-list" id="history_doc_items">
-                    <li class="text-muted">Belum ada history.</li>
+                    <li class="doc-history-empty">Belum ada history.</li>
                 </ul>
             </div>
         </div>
@@ -5041,7 +5627,7 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                 $('#history_doc_label').text($button.data('doc-name') || '-');
 
                 if (!history.length) {
-                    $('#history_doc_items').html('<li class="text-muted">Belum ada history.</li>');
+                    $('#history_doc_items').html('<li class="doc-history-empty">Belum ada history.</li>');
                     return;
                 }
 
@@ -5050,8 +5636,8 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                     html += '<li class="doc-history-item">' +
                         '<div class="doc-history-title">' + escapeHtml(formatDocHistoryAction(entry)) + '</div>' +
                         '<div class="doc-history-meta">' + escapeHtml(entry.action_at || '-') + ' | ' + escapeHtml(entry.nama_user || 'System') + '</div>' +
-                        '<div><strong>File:</strong> ' + escapeHtml(entry.file_name || '-') + '</div>' +
-                        '<div><strong>Remark:</strong> ' + escapeHtml(entry.remark || '-') + '</div>' +
+                        '<div class="doc-history-detail"><strong>File:</strong> ' + escapeHtml(entry.file_name || '-') + '</div>' +
+                        '<div class="doc-history-detail"><strong>Remark:</strong> ' + escapeHtml(entry.remark || '-') + '</div>' +
                     '</li>';
                 });
 
