@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="<?= isset($meta_description) ? htmlspecialchars((string) $meta_description, ENT_QUOTES, 'UTF-8') : 'Dashboard operasional PT. TKM untuk monitoring data project, approval, dan administrasi internal.' ?>">
 
   <title><?= $title ?></title>
   <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/zeyn-logo.png?v=20260602') ?>">

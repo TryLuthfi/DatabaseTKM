@@ -463,7 +463,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 };
 ?>
 
-<div class="content-wrapper">
+<main class="content-wrapper" role="main">
     <section class="content">
         <div class="container-fluid">
             <?php if (!$isReady): ?>
@@ -516,8 +516,8 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                 <div class="row align-items-end">
                                     <div class="col-lg-4 col-md-6">
                                         <div class="form-group">
-                                            <label class="valsal-field-label">Kota</label>
-                                            <select name="city" class="form-control valsal-input">
+                                            <label class="valsal-field-label" for="valsal_filter_city">Kota</label>
+                                            <select id="valsal_filter_city" name="city" class="form-control valsal-input">
                                                 <option value="">Semua Kota</option>
                                                 <?php foreach ($cityOptions as $cityOption): ?>
                                                     <option value="<?= htmlspecialchars($cityOption) ?>" <?= $selectedCity === strtoupper($cityOption) ? 'selected' : '' ?>>
@@ -529,8 +529,8 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                     </div>
                                     <div class="col-lg-5 col-md-6">
                                         <div class="form-group">
-                                            <label class="valsal-field-label">Status</label>
-                                            <select name="status" class="form-control valsal-input">
+                                            <label class="valsal-field-label" for="valsal_filter_status">Status</label>
+                                            <select id="valsal_filter_status" name="status" class="form-control valsal-input">
                                                 <option value="">Semua Status</option>
                                                 <option value="BAK" <?= $selectedStatus === 'BAK' ? 'selected' : '' ?>>BAK</option>
                                                 <?php foreach ($statusOptions as $statusOption): ?>
@@ -630,7 +630,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                 <div class="valsal-tab-section">
                                     <div class="valsal-tab-section__label">Flow</div>
                                     <ul class="nav nav-tabs valsal-monitor-tabs" id="valsal-monitor-tab" role="tablist">
-                                        <li class="nav-item">
+                                        <li class="nav-item" role="presentation">
                                             <a class="nav-link active" id="valsal-all-tab" data-toggle="tab" href="#valsal-all-pane" role="tab" aria-controls="valsal-all-pane" aria-selected="true">
                                                 ALL VALSAL
                                                 <span class="valsal-monitor-tabs__count"><?= number_format(count($allValsalRows), 0, ',', '.') ?></span>
@@ -699,7 +699,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             </div>
         </div>
     </section>
-</div>
+</main>
 
 <?php if ($isReady): ?>
     <div class="modal fade" id="modal-valsal-import" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1370,7 +1370,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .valsal-section-subtitle {
-        color: #64748b;
+        color: #475569;
         font-size: 0.86rem;
         margin-top: .18rem;
         max-width: 760px;
@@ -1768,6 +1768,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         font-size: .72rem;
         font-weight: 700;
         padding: .32rem .62rem;
+    }
+
+    .valsal-monitor-table .btn-link {
+        color: #075985;
+    }
+
+    .valsal-monitor-table .text-muted {
+        color: #475569 !important;
     }
 
     .valsal-sla-aging-cell .badge {
@@ -2251,7 +2259,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         font-weight: 900;
         letter-spacing: .08em;
         text-transform: uppercase;
-        color: #6b7f90;
+        color: #475569;
     }
 
     .valsal-status-filter-row {
@@ -2267,7 +2275,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .valsal-status-filter-row .valsal-tab-section__label {
         margin-right: .15rem;
-        color: #51697e;
+        color: #475569;
     }
 
     .valsal-status-pillbar {

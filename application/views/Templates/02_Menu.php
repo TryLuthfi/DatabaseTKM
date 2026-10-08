@@ -56,7 +56,9 @@ $forceVisibleControllerMap = [
         <!-- Left navbar links -->
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </a>
             </li>
             <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
                 <a href="<?= base_url('Dashboard') ?>" class="nav-link">Dashboard</a>
@@ -73,8 +75,8 @@ $forceVisibleControllerMap = [
         </ul>
         <ul class="navbar-nav ml-auto">
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="fas fa-sign-out-alt"></i>
+                <a class="nav-link" data-toggle="dropdown" href="#" aria-label="Menu akun">
+                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                 </a>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                     <div class="dropdown-divider"></div>
@@ -90,7 +92,7 @@ $forceVisibleControllerMap = [
         <!-- Brand Logo -->
         <a href="<?= base_url('Dashboard') ?>" class="brand-link premium-brand-link">
             <img src="<?= base_url('assets') ?>/dist/img/solid%20logo%20tkm%20landscape%20transparent.png" alt="Logo PT. TKM"
-                class="brand-image premium-brand-image" style="opacity: .9">
+                class="brand-image premium-brand-image" width="33" height="33" style="opacity: .9">
             <span class="brand-text font-weight-light premium-brand-text">PT. TKM</span>
         </a>
 
@@ -110,7 +112,7 @@ $forceVisibleControllerMap = [
 
             <!-- Sidebar Menu -->
             <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview"
                     data-accordion="false">
                     <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
