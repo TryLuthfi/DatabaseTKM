@@ -52,7 +52,7 @@ $forceVisibleControllerMap = [
 ?>
 <div class="wrapper premium-shell">
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-dark premium-topbar">
+    <nav class="main-header navbar navbar-expand navbar-light premium-topbar">
         <!-- Left navbar links -->
         <ul class="navbar-nav">
             <li class="nav-item">
@@ -95,7 +95,7 @@ $forceVisibleControllerMap = [
         </a>
 
         <!-- Sidebar -->
-        <div class="sidebar" style="padding-top: 20px;">
+        <div class="sidebar">
             <!-- Sidebar user panel (optional) -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex premium-user-panel">
                 <div class="image">
@@ -1298,41 +1298,54 @@ $forceVisibleControllerMap = [
         }
 
         .premium-topbar {
-            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-            background:
-                radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 26%),
-                linear-gradient(135deg, rgba(8, 23, 39, 0.97), rgba(15, 61, 96, 0.95));
-            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14);
-            backdrop-filter: blur(12px);
+            min-height: 58px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.96) !important;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+            backdrop-filter: blur(10px);
         }
 
         .premium-topbar .nav-link {
-            color: rgba(241, 245, 249, 0.88) !important;
+            color: #334155 !important;
             font-weight: 600;
-            letter-spacing: 0.01em;
+            letter-spacing: 0;
+            border-radius: 8px;
+            margin: 0 0.08rem;
+            padding-left: 0.72rem;
+            padding-right: 0.72rem;
         }
 
         .premium-topbar .nav-link:hover,
         .premium-topbar .nav-link:focus {
-            color: #ffffff !important;
+            color: #0f172a !important;
+            background: #f1f5f9;
+        }
+
+        .premium-topbar .nav-link[data-widget="pushmenu"],
+        .premium-topbar .navbar-nav.ml-auto .nav-link {
+            min-width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
         }
 
         .premium-sidebar {
-            border-right: 1px solid rgba(148, 163, 184, 0.14);
-            background:
-                radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 18%),
-                linear-gradient(180deg, #081423 0%, #0d2237 46%, #102d46 100%);
-            box-shadow: 16px 0 36px rgba(15, 23, 42, 0.12);
+            border-right: 1px solid rgba(148, 163, 184, 0.16);
+            background: linear-gradient(180deg, #071527 0%, #0b2139 48%, #0e2b47 100%) !important;
+            box-shadow: 10px 0 28px rgba(15, 23, 42, 0.16) !important;
         }
 
-        .premium-brand-link {
+        .premium-sidebar .brand-link.premium-brand-link {
             display: flex;
             align-items: center;
             gap: 0.9rem;
-            min-height: 72px;
-            padding: 0.85rem 1rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-            background: rgba(255, 255, 255, 0.04);
+            min-height: 68px;
+            padding: 0.82rem 1rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(255, 255, 255, 0.04) !important;
+            box-shadow: none;
         }
 
         .premium-brand-image {
@@ -1345,9 +1358,9 @@ $forceVisibleControllerMap = [
         }
 
         .premium-brand-text {
-            font-size: 1.02rem;
+            font-size: 0.98rem;
             font-weight: 800 !important;
-            letter-spacing: 0.16em;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
             color: #f8fafc !important;
         }
@@ -1364,25 +1377,27 @@ $forceVisibleControllerMap = [
         }
 
         .premium-sidebar .sidebar {
-            padding: 0 0.8rem 1rem;
+            background: transparent !important;
+            padding: 0.8rem 0.7rem 1rem !important;
         }
 
         .premium-user-panel {
-            margin: 1rem 0.25rem 1rem !important;
-            padding: 0.85rem 0.9rem !important;
+            margin: 0 0.15rem 1rem !important;
+            padding: 0.75rem 0.78rem !important;
             align-items: center;
-            gap: 0.78rem;
-            border: 1px solid rgba(148, 163, 184, 0.16);
-            border-radius: 16px;
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035));
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            gap: 0.72rem;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: none;
         }
 
         .premium-user-panel .image img {
             width: 38px;
             height: 38px;
             object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.16);
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.24);
         }
 
         .premium-user-panel .info {
@@ -1396,63 +1411,119 @@ $forceVisibleControllerMap = [
         }
 
         .premium-sidebar .nav-header {
-            padding: 1rem 0.9rem 0.45rem;
-            font-size: 0.7rem;
+            padding: 0.95rem 0.72rem 0.42rem;
+            font-size: 0.66rem;
             font-weight: 800;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: rgba(191, 219, 254, 0.72);
+            color: rgba(191, 219, 254, 0.74) !important;
         }
 
         .premium-sidebar .nav-sidebar .nav-link {
             display: flex;
             align-items: center;
-            min-height: 46px;
-            margin-bottom: 0.18rem;
-            padding: 0.74rem 0.88rem;
-            border-radius: 14px;
-            color: rgba(226, 232, 240, 0.9);
-            font-size: 0.94rem;
+            min-height: 40px;
+            margin-bottom: 0.14rem;
+            padding: 0.62rem 1.08rem 0.62rem 0.78rem;
+            border-left: 3px solid transparent;
+            border-radius: 10px;
+            color: rgba(226, 232, 240, 0.92) !important;
+            font-size: 0.88rem;
             font-weight: 600;
-            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+            background: transparent !important;
+            box-shadow: none !important;
+            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .premium-sidebar .nav-sidebar .nav-link .nav-icon {
-            margin-right: 0.7rem;
-            font-size: 0.98rem !important;
-            color: rgba(147, 197, 253, 0.84);
+            width: 1.25rem;
+            margin-right: 0.58rem;
+            font-size: 0.92rem !important;
+            color: rgba(147, 197, 253, 0.86) !important;
         }
 
         .premium-sidebar .nav-sidebar .nav-link p {
             display: flex;
             align-items: center;
-            width: 100%;
+            flex: 1 1 auto;
+            width: auto;
+            min-width: 0;
             margin: 0;
             line-height: 1.3;
         }
 
         .premium-sidebar .nav-sidebar .nav-link p .right {
+            position: static !important;
+            top: auto !important;
+            right: auto !important;
+            transform: none !important;
+            margin-left: 0.42rem;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p > .right.fas,
+        .premium-sidebar .nav-sidebar .nav-link p > .right.far,
+        .premium-sidebar .nav-sidebar .nav-link p > .right.fa {
+            order: 2;
+            width: 14px;
+            min-width: 14px;
+            margin-right: 0.12rem;
+            text-align: center;
+            color: rgba(226, 232, 240, 0.72);
+            font-size: 0.72rem;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p > .badge.right {
+            order: 1;
             margin-left: auto;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p > .right.fas:last-child,
+        .premium-sidebar .nav-sidebar .nav-link p > .right.far:last-child,
+        .premium-sidebar .nav-sidebar .nav-link p > .right.fa:last-child {
+            margin-left: auto;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p > .badge.right + .right.fas,
+        .premium-sidebar .nav-sidebar .nav-link p > .badge.right + .right.far,
+        .premium-sidebar .nav-sidebar .nav-link p > .badge.right + .right.fa {
+            margin-left: 0.42rem;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p > .right.fas + .badge.right,
+        .premium-sidebar .nav-sidebar .nav-link p > .right.far + .badge.right,
+        .premium-sidebar .nav-sidebar .nav-link p > .right.fa + .badge.right {
+            margin-left: auto;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link:hover p > .right.fas,
+        .premium-sidebar .nav-sidebar .nav-link:hover p > .right.far,
+        .premium-sidebar .nav-sidebar .nav-link:hover p > .right.fa,
+        .premium-sidebar .nav-sidebar .nav-link:focus p > .right.fas,
+        .premium-sidebar .nav-sidebar .nav-link:focus p > .right.far,
+        .premium-sidebar .nav-sidebar .nav-link:focus p > .right.fa,
+        .premium-sidebar .nav-sidebar .nav-link.active p > .right.fas,
+        .premium-sidebar .nav-sidebar .nav-link.active p > .right.far,
+        .premium-sidebar .nav-sidebar .nav-link.active p > .right.fa {
+            color: #ffffff;
         }
 
         .premium-sidebar .nav-sidebar .nav-link:hover,
         .premium-sidebar .nav-sidebar .nav-link:focus {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.075);
-            transform: translateX(2px);
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.08) !important;
         }
 
         .premium-sidebar .nav-sidebar .nav-link:hover .nav-icon,
         .premium-sidebar .nav-sidebar .nav-link:focus .nav-icon {
-            color: #ffffff;
+            color: #ffffff !important;
         }
 
+        .premium-sidebar.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
         .premium-sidebar .nav-sidebar .nav-link.active {
             color: #ffffff !important;
-            background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 34%),
-                linear-gradient(135deg, #2563eb 0%, #3b82f6 45%, #38bdf8 100%);
-            box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24);
+            border-left-color: #60a5fa;
+            background: rgba(59, 130, 246, 0.16) !important;
+            box-shadow: none !important;
         }
 
         .premium-sidebar .nav-sidebar .nav-link.active .nav-icon {
@@ -1460,24 +1531,25 @@ $forceVisibleControllerMap = [
         }
 
         .premium-sidebar .nav-treeview {
-            margin-left: 0.5rem;
-            padding-left: 0.75rem;
-            border-left: 1px solid rgba(148, 163, 184, 0.12);
+            margin-left: 0.38rem;
+            padding-left: 0.62rem;
+            border-left: 1px solid rgba(148, 163, 184, 0.16);
         }
 
         .premium-sidebar .nav-treeview .nav-link {
-            min-height: 42px;
-            padding: 0.64rem 0.8rem;
-            font-size: 0.91rem;
-            border-radius: 12px;
+            min-height: 38px;
+            padding: 0.58rem 0.68rem;
+            font-size: 0.84rem;
+            border-radius: 8px;
+            color: rgba(226, 232, 240, 0.88) !important;
         }
 
         .premium-sidebar .nav-sidebar .badge.badge-info {
             min-width: 24px;
             padding: 0.24rem 0.42rem;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.16);
-            color: #e0f2fe;
+            background: rgba(255, 255, 255, 0.14) !important;
+            color: #e0f2fe !important;
             font-size: 0.68rem;
             font-weight: 700;
         }

@@ -291,6 +291,14 @@ if (!function_exists('valsalAgingBadgeClass')) {
     }
 }
 
+if (!function_exists('valsalTableQty')) {
+    function valsalTableQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
+    }
+}
+
 $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap, $clusterReviewPicMap) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
         $slaInfo = valsalSlaInfo($row);
@@ -327,8 +335,8 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             </td>
             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
-            <td class="text-right"><?= number_format((float) ($row['homepass_valsal'] ?? 0), 0, ',', '.') ?></td>
+            <td class="text-right valsal-table-number"><?= valsalTableQty($row['homepass_bak'] ?? 0) ?></td>
+            <td class="text-right valsal-table-number"><?= valsalTableQty($row['homepass_valsal'] ?? 0) ?></td>
             <td><?= !empty($slaInfo['start_date']) ? htmlspecialchars((string) $slaInfo['start_date']) : '-' ?></td>
             <td>
                 <div class="valsal-sla-aging-cell">
@@ -343,7 +351,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 </div>
             </td>
             <td><?= !empty($row['valsal_date']) ? htmlspecialchars((string) $row['valsal_date']) : '-' ?></td>
-            <td><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
+            <td class="valsal-stage-cell"><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
             <td>
                 <?php if ($hasValsal && !empty($documentDefinitions)): ?>
                     <div class="valsal-doc-status-stack">
@@ -403,7 +411,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                     </div>
                 <?php endif; ?>
             </td>
-            <td><span class="badge badge-<?= valsalBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
+            <td class="valsal-stage-cell"><span class="badge badge-<?= valsalBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
                 <?php if ($hasValsal): ?>
                     <button
@@ -456,16 +464,6 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 ?>
 
 <div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0 text-dark">VALSAL MyRep</h1>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="content">
         <div class="container-fluid">
             <?php if (!$isReady): ?>
@@ -500,16 +498,23 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-outline card-primary shadow-sm valsal-filter-card">
+                    <div class="card shadow-sm valsal-filter-card">
                         <div class="card-header valsal-section-header">
-                            <div>
+                            <div class="valsal-filter-heading">
+                                <span class="valsal-filter-heading__icon"><i class="fas fa-filter"></i></span>
+                                <div>
                                 <h3 class="card-title mb-1">Filter Data VALSAL</h3>
+                                    <p class="valsal-section-subtitle mb-0">Persempit data berdasarkan kota dan status VALSAL.</p>
+                                </div>
+                            </div>
+                            <div class="valsal-filter-state">
+                                <?= (!empty($selectedCity) || !empty($selectedStatus)) ? 'Filter aktif' : 'Semua data' ?>
                             </div>
                         </div>
                         <div class="card-body">
                             <form method="get" action="<?= base_url('VALSAL_MyRep') ?>">
-                                <div class="row">
-                                    <div class="col-md-4">
+                                <div class="row align-items-end">
+                                    <div class="col-lg-4 col-md-6">
                                         <div class="form-group">
                                             <label class="valsal-field-label">Kota</label>
                                             <select name="city" class="form-control valsal-input">
@@ -522,7 +527,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-lg-5 col-md-6">
                                         <div class="form-group">
                                             <label class="valsal-field-label">Status</label>
                                             <select name="status" class="form-control valsal-input">
@@ -536,11 +541,13 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-end">
+                                    <div class="col-lg-3 col-md-12 d-flex align-items-end">
                                         <div class="form-group mb-0 w-100 d-flex justify-content-between valsal-filter-actions">
                                             <a href="<?= base_url('VALSAL_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
-                                                <button type="submit" class="btn budget-btn budget-btn--primary">Terapkan Filter</button>
+                                                <button type="submit" class="btn budget-btn budget-btn--primary">
+                                                    <i class="fas fa-search mr-1"></i> Terapkan
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -605,23 +612,18 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="valsal-toolbar">
-                        <?php if ($isReady && $canTambah): ?>
-                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-valsal-download-report">
-                                <i class="fas fa-download mr-1"></i> Download Report Valsal
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
                     <div class="card card-outline card-primary shadow-sm valsal-table-card">
                         <div class="card-header valsal-section-header d-flex align-items-center justify-content-between">
                             <div>
                                 <h3 class="card-title mb-1">Monitoring VALSAL Cluster</h3>
                             </div>
+                            <?php if ($isReady && $canTambah): ?>
+                                <div class="valsal-table-actions">
+                                    <button type="button" class="btn budget-btn budget-btn--ghost" data-toggle="modal" data-target="#modal-valsal-download-report">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <div class="valsal-tab-stack">
@@ -1312,49 +1314,97 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 <style>
     .valsal-filter-card,
     .valsal-table-card {
-        border: 0;
-        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08);
-        background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+        background: #fff;
+    }
+
+    .valsal-filter-card {
+        margin-top: 1.1rem;
+        margin-bottom: 1.25rem;
     }
 
     .valsal-section-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        background: #ffffff;
         color: #0f172a;
-        border-bottom: 1px solid #dbeafe;
-        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e5edf6;
+        padding: 1rem 1.2rem;
+    }
+
+    .valsal-filter-card .card-body {
+        padding: 1.15rem 1.2rem 1.2rem;
+    }
+
+    .valsal-filter-heading {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: .85rem;
+    }
+
+    .valsal-filter-heading__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
     }
 
     .valsal-section-header .card-title {
         color: #0f172a;
-        font-weight: 700;
+        float: none;
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0;
     }
 
     .valsal-section-subtitle {
         color: #64748b;
-        font-size: 0.92rem;
+        font-size: 0.86rem;
+        margin-top: .18rem;
         max-width: 760px;
+    }
+
+    .valsal-filter-state {
+        flex: 0 0 auto;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        background: #f8fbff;
+        color: #1e3a8a;
+        font-size: .74rem;
+        font-weight: 800;
+        line-height: 1;
+        padding: .5rem .72rem;
     }
 
     .valsal-field-label {
         display: block;
-        margin-bottom: 0.55rem;
-        font-size: 0.83rem;
+        margin-bottom: 0.38rem;
+        font-size: 0.7rem;
         font-weight: 800;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #2f5f84;
+        color: #475569;
     }
 
     .valsal-input {
-        border-radius: 14px;
+        border-radius: 10px;
         border: 1px solid #d7e0ea;
-        min-height: 44px;
+        min-height: 42px;
+        background-color: #fbfdff;
+        color: #0f172a;
+        font-weight: 600;
         box-shadow: none;
     }
 
@@ -1364,7 +1414,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .valsal-filter-actions {
-        gap: 10px;
+        gap: .65rem;
+    }
+
+    .valsal-filter-card .form-group {
+        margin-bottom: 0;
+    }
+
+    .valsal-filter-actions .budget-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        flex: 1 1 0;
+        justify-content: center;
     }
 
     .budget-btn {
@@ -1522,38 +1584,190 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         overflow-wrap: anywhere;
     }
 
-    .valsal-toolbar {
+    .valsal-table-actions {
         display: flex;
+        align-items: center;
         justify-content: flex-end;
-        margin-bottom: 0.85rem;
+        gap: .65rem;
+        margin-left: auto;
     }
 
-    .valsal-monitor-table thead th {
-        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
-        color: #1f5e8a;
-        font-size: 0.8rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        border-top: 0;
+    .valsal-table-actions .budget-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: .58rem 1rem;
+    }
+
+    .valsal-table-card .table-responsive,
+    .valsal-table-card .dataTables_scroll {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .valsal-table-card .dataTables_scrollBody,
+    .valsal-table-card .table-responsive {
+        overflow-x: auto !important;
+    }
+
+    .valsal-table-card .table-responsive::-webkit-scrollbar,
+    .valsal-table-card .dataTables_scrollBody::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+    }
+
+    .valsal-table-card .table-responsive::-webkit-scrollbar-track,
+    .valsal-table-card .dataTables_scrollBody::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 999px;
+    }
+
+    .valsal-table-card .table-responsive::-webkit-scrollbar-thumb,
+    .valsal-table-card .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+        border: 2px solid #f1f5f9;
     }
 
     .valsal-monitor-table {
         min-width: 1660px;
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    .valsal-monitor-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        font-size: .7rem;
+        font-weight: 800;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        vertical-align: middle;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+    }
+
+    .valsal-monitor-table tbody td,
+    .valsal-monitor-table tfoot th {
+        padding: .62rem .7rem;
+        vertical-align: middle;
+        border-color: #e5edf6;
+        line-height: 1.35;
     }
 
     .valsal-monitor-table tbody td {
         white-space: nowrap;
-        vertical-align: top;
     }
 
-    .valsal-table-card .dataTables_scrollBody {
-        overflow-x: auto !important;
+    .valsal-monitor-table tbody tr:nth-child(even) {
+        background: #f8fafc;
     }
 
     .valsal-monitor-table tbody tr:hover {
-        background: rgba(219, 236, 247, 0.22);
+        background: #eff6ff;
+    }
+
+    .valsal-monitor-table tbody td:nth-child(5),
+    .valsal-monitor-table tbody td:nth-child(6),
+    .valsal-table-number,
+    .valsal-monitor-table tfoot th {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .valsal-table-number {
+        min-width: 72px;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    td.valsal-stage-cell {
+        min-width: 128px;
+        padding-top: .72rem !important;
+        padding-bottom: .72rem !important;
+        white-space: normal;
+    }
+
+    .valsal-stage-cell .badge {
+        min-width: 104px;
+        max-width: 170px;
+    }
+
+    .valsal-monitor-table tfoot th {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: .78rem;
+        font-weight: 800;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    .valsal-monitor-table .badge {
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        min-height: 26px;
+        padding: .38rem .62rem;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+        box-shadow: none;
+    }
+
+    .valsal-monitor-table .badge-info,
+    .valsal-monitor-table .badge-primary {
+        background: #dbeafe;
+        border-color: #bfdbfe;
+        color: #1e40af;
+    }
+
+    .valsal-monitor-table .badge-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+
+    .valsal-monitor-table .badge-success {
+        background: #dcfce7;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .valsal-monitor-table .badge-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .valsal-monitor-table .badge-secondary {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .valsal-monitor-table .btn-sm {
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .32rem .62rem;
     }
 
     .valsal-sla-aging-cell .badge {
@@ -2186,6 +2400,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     @media (max-width: 767.98px) {
+        .valsal-filter-card {
+            margin-top: .85rem;
+        }
+
+        .valsal-filter-card .card-header,
+        .valsal-filter-card .card-body {
+            padding: 1rem;
+        }
+
+        .valsal-filter-card .valsal-section-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .valsal-filter-state {
+            align-self: flex-start;
+        }
+
+        .valsal-table-card .valsal-section-header {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .valsal-table-actions {
+            width: 100%;
+            margin-left: 0;
+            margin-top: .75rem;
+        }
+
+        .valsal-table-actions .budget-btn {
+            width: 100%;
+        }
+
         .budget-modal__footer {
             flex-direction: column;
         }
@@ -2497,6 +2744,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 return;
             }
 
+            var formatValsalQty = function (value) {
+                var number = Number(value || 0);
+                return number > 0 ? number.toLocaleString('id-ID') : '-';
+            };
+
             var html = rows.map(function (row) {
                 var badgeClass = String(row.status || '').toLowerCase() === 'valid' ? 'success' : 'danger';
                 return '<tr>' +
@@ -2505,7 +2757,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     '<td>' + escapeHtml(row.city_name || '-') + '</td>' +
                     '<td>' + escapeHtml(row.cluster_name || '-') + '</td>' +
                     '<td>' + escapeHtml(row.cluster_code || '-') + '</td>' +
-                    '<td class="text-right">' + Number(row.homepass_valsal || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td class="text-right">' + formatValsalQty(row.homepass_valsal) + '</td>' +
                     '<td>' + escapeHtml(row.valsal_date || '-') + '</td>' +
                     '<td>' + escapeHtml(row.status_valsal || '-') + '</td>' +
                     '<td><span class="badge badge-' + badgeClass + '">' + escapeHtml(row.status || '-') + '</span></td>' +
@@ -2766,10 +3018,10 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                     }, 0);
 
                                 $(api.column(4).footer()).html(
-                                    totalHpBak.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                                    totalHpBak > 0 ? totalHpBak.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-'
                                 );
                                 $(api.column(5).footer()).html(
-                                    totalHpValsal.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                                    totalHpValsal > 0 ? totalHpValsal.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-'
                                 );
                             },
                             language: {

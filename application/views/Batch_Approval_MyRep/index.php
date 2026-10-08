@@ -316,6 +316,14 @@ if (!function_exists('batchMoneyCompact')) {
     }
 }
 
+if (!function_exists('batchTableQty')) {
+    function batchTableQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
+    }
+}
+
 if (!function_exists('batchAgingBadgeClass')) {
     function batchAgingBadgeClass($slaInfo)
     {
@@ -538,24 +546,23 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             </td>
             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td class="text-right"><?= number_format($hpDonasi, 0, ',', '.') ?></td>
-            <td class="text-right"><?= number_format($displayNominalDonasi, 0, ',', '.') ?></td>
-            <td class="text-right"><?= $displayNominalPerHomepass !== null ? number_format($displayNominalPerHomepass, 0, ',', '.') : '-' ?></td>
+            <td class="text-right batch-table-number"><?= batchTableQty($hpDonasi) ?></td>
+            <td class="text-right batch-table-number"><?= batchTableQty($displayNominalDonasi) ?></td>
+            <td class="text-right batch-table-number"><?= $displayNominalPerHomepass !== null ? batchTableQty($displayNominalPerHomepass) : '-' ?></td>
             <td>
                 <div class="batch-sla-aging-cell">
                     <span class="badge badge-<?= batchSlaBadgeClass($slaInfo) ?>">SLA <?= htmlspecialchars($slaInfo['sla_text']) ?></span>
                     <span class="badge badge-<?= batchAgingBadgeClass($slaInfo) ?>"><?= htmlspecialchars($slaInfo['duration_text']) ?></span>
-                    <small class="text-muted"><?= htmlspecialchars($slaInfo['process_label']) ?></small>
                 </div>
             </td>
-            <td><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
+            <td class="batch-stage-cell"><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
             <td>
                 <div class="batch-pic-summary">
                     <div><strong>Area:</strong> <?= htmlspecialchars($uploadBy !== '' ? $uploadBy : '-') ?></div>
                     <div><strong>TKM:</strong> <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
                 </div>
             </td>
-            <td><span class="badge badge-<?= batchBadgeClass($statusFlowBadgeCode) ?>"><?= htmlspecialchars($statusFlowLabel) ?></span></td>
+            <td class="batch-stage-cell"><span class="badge badge-<?= batchBadgeClass($statusFlowBadgeCode) ?>"><?= htmlspecialchars($statusFlowLabel) ?></span></td>
             <td>
                 <?php if ($hasBatch): ?>
                     <?php if ($canEdit): ?>
@@ -619,16 +626,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
 ?>
 
 <main class="content-wrapper" role="main">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0 text-dark">Batch Approval MyRep</h1>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="content">
         <div class="container-fluid">
             <?php if (!$isReady): ?>
@@ -653,16 +650,23 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-outline card-primary shadow-sm batch-filter-card">
+                    <div class="card shadow-sm batch-filter-card">
                         <div class="card-header batch-section-header">
-                            <div>
+                            <div class="batch-filter-heading">
+                                <span class="batch-filter-heading__icon"><i class="fas fa-filter"></i></span>
+                                <div>
                                 <h3 class="card-title mb-1">Filter Data Batch Approval</h3>
+                                    <p class="batch-section-subtitle mb-0">Persempit data berdasarkan kota dan status staging.</p>
+                                </div>
+                            </div>
+                            <div class="batch-filter-state">
+                                <?= (!empty($selectedCity) || !empty($selectedStatus)) ? 'Filter aktif' : 'Semua data' ?>
                             </div>
                         </div>
                         <div class="card-body">
                             <form method="get" action="<?= base_url('Batch_Approval_MyRep') ?>">
-                                <div class="row">
-                                    <div class="col-md-4">
+                                <div class="row align-items-end">
+                                    <div class="col-lg-4 col-md-6">
                                         <div class="form-group">
                                             <label class="batch-field-label">Kota</label>
                                             <select name="city" class="form-control batch-input">
@@ -675,7 +679,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-lg-5 col-md-6">
                                         <div class="form-group">
                                             <label class="batch-field-label">Status</label>
                                             <select name="status" class="form-control batch-input">
@@ -688,11 +692,13 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-end">
+                                    <div class="col-lg-3 col-md-12 d-flex align-items-end">
                                         <div class="form-group mb-0 w-100 d-flex justify-content-between batch-filter-actions">
                                             <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
-                                                <button type="submit" class="btn budget-btn budget-btn--primary">Terapkan Filter</button>
+                                                <button type="submit" class="btn budget-btn budget-btn--primary">
+                                                    <i class="fas fa-search mr-1"></i> Terapkan
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -704,16 +710,20 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             </div>
 
             <?php if (!empty($orderedDonationStageSummary)): ?>
-                <div class="card card-outline card-info shadow-sm batch-stage-summary-card">
+                <div class="card shadow-sm batch-stage-summary-card">
                     <div class="card-header batch-section-header">
-                        <div>
-                            <h3 class="card-title mb-1">Summary Staging Donasi</h3>
+                        <div class="batch-summary-heading">
+                            <span class="batch-summary-heading__icon"><i class="fas fa-chart-pie"></i></span>
+                            <div>
+                                <h3 class="card-title mb-1">Summary Staging Donasi</h3>
+                                <p class="batch-section-subtitle mb-0">Ringkasan jumlah cluster, HP, dan nominal per tahap donasi.</p>
+                            </div>
                         </div>
                         <div class="batch-stage-summary-card__actions">
-                            <a href="<?= base_url('Batch_Approval_MyRep/downloadStageSummaryReport' . (!empty($selectedCity) || !empty($selectedStatus) ? '?' . http_build_query(array_filter(['city' => $selectedCity, 'status' => $selectedStatus])) : '')) ?>" class="btn btn-sm btn-outline-secondary mr-1">
+                            <a href="<?= base_url('Batch_Approval_MyRep/downloadStageSummaryReport' . (!empty($selectedCity) || !empty($selectedStatus) ? '?' . http_build_query(array_filter(['city' => $selectedCity, 'status' => $selectedStatus])) : '')) ?>" class="btn batch-summary-action">
                                 <i class="fas fa-table mr-1"></i> Summary CSV
                             </a>
-                            <a href="<?= base_url('Batch_Approval_MyRep/downloadReport' . (!empty($selectedCity) || !empty($selectedStatus) ? '?' . http_build_query(array_filter(['city' => $selectedCity, 'status' => $selectedStatus])) : '')) ?>" class="btn btn-sm btn-outline-primary">
+                            <a href="<?= base_url('Batch_Approval_MyRep/downloadReport' . (!empty($selectedCity) || !empty($selectedStatus) ? '?' . http_build_query(array_filter(['city' => $selectedCity, 'status' => $selectedStatus])) : '')) ?>" class="btn batch-summary-action batch-summary-action--primary">
                                 <i class="fas fa-download mr-1"></i> Report Filter
                             </a>
                         </div>
@@ -762,23 +772,18 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="batch-toolbar">
-                        <?php if ($isReady): ?>
-                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-batch-download-report">
-                                <i class="fas fa-download mr-1"></i> Download Report Batch
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
                     <div class="card card-outline card-primary shadow-sm batch-table-card">
                         <div class="card-header batch-section-header">
                             <div>
                                 <h3 class="card-title mb-1">Monitoring Batch Approval</h3>
                             </div>
+                            <?php if ($isReady): ?>
+                                <div class="batch-table-actions">
+                                    <button type="button" class="btn budget-btn budget-btn--ghost" data-toggle="modal" data-target="#modal-batch-download-report">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <ul class="nav nav-tabs batch-monitor-tabs" id="batch-monitor-tab" role="tablist">
@@ -1576,43 +1581,117 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .batch-filter-card,
+    .batch-stage-summary-card,
     .batch-table-card {
         border: 1px solid rgba(148, 163, 184, 0.22);
-        border-radius: 24px;
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
         background: #fff;
     }
 
+    .batch-filter-card {
+        margin-top: 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .batch-stage-summary-card,
+    .batch-table-card {
+        margin-bottom: 1.25rem;
+    }
+
     .batch-filter-card .card-header,
+    .batch-stage-summary-card .card-header,
     .batch-table-card .card-header {
-        background: linear-gradient(135deg, #f8fbff, #eef6ff);
-        border-bottom: 1px solid #dbeafe;
-        padding: 1.15rem 1.35rem;
+        background: #ffffff;
+        border-bottom: 1px solid #e5edf6;
+        padding: 1rem 1.2rem;
     }
 
     .batch-filter-card .card-body,
+    .batch-stage-summary-card .card-body,
     .batch-table-card .card-body {
-        padding: 1.35rem;
+        padding: 1.15rem 1.2rem 1.2rem;
     }
 
     .batch-section-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
     }
 
+    .batch-filter-heading {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: .85rem;
+    }
+
+    .batch-summary-heading {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: .85rem;
+    }
+
+    .batch-filter-heading__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .batch-summary-heading__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+    .batch-filter-card .card-title,
+    .batch-stage-summary-card .card-title,
+    .batch-table-card .card-title {
+        float: none;
+        margin: 0;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
     .batch-section-subtitle {
         color: #64748b;
-        font-size: .92rem;
-        margin-top: .2rem;
+        font-size: .86rem;
+        margin-top: .18rem;
+    }
+
+    .batch-filter-state {
+        flex: 0 0 auto;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        background: #f8fbff;
+        color: #1e3a8a;
+        font-size: .74rem;
+        font-weight: 800;
+        line-height: 1;
+        padding: .5rem .72rem;
     }
 
     .batch-field-label {
         display: block;
-        margin-bottom: .45rem;
-        font-size: .75rem;
+        margin-bottom: .38rem;
+        font-size: .7rem;
         font-weight: 800;
         letter-spacing: .08em;
         text-transform: uppercase;
@@ -1625,11 +1704,33 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     .doc-modal .form-control,
     .doc-modal .form-control-file,
     .doc-modal select.form-control {
-        min-height: 44px;
-        border-radius: 14px;
+        min-height: 42px;
+        border-radius: 10px;
         border: 1px solid #d7e0ea;
         box-shadow: none;
         transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+
+    .batch-filter-card .form-group {
+        margin-bottom: 0;
+    }
+
+    .batch-filter-card .batch-input {
+        background-color: #fbfdff;
+        color: #0f172a;
+        font-weight: 600;
+    }
+
+    .batch-filter-actions {
+        gap: .65rem;
+    }
+
+    .batch-filter-actions .budget-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        flex: 1 1 0;
+        justify-content: center;
     }
 
     .batch-input:focus,
@@ -1653,32 +1754,66 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         cursor: not-allowed;
     }
 
-    .batch-stage-summary-card {
-        border-radius: 12px;
-        overflow: hidden;
+    .batch-stage-summary-card__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .55rem;
+        margin-left: auto;
     }
 
-    .batch-stage-summary-card__actions {
-        margin-left: auto;
+    .batch-summary-action {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d7e0ea;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #334155;
+        font-size: .78rem;
+        font-weight: 800;
+        padding: .48rem .82rem;
+        box-shadow: none;
+    }
+
+    .batch-summary-action:hover,
+    .batch-summary-action:focus {
+        color: #0f172a;
+        background: #f8fafc;
+        text-decoration: none;
+    }
+
+    .batch-summary-action--primary {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .batch-summary-action--primary:hover,
+    .batch-summary-action--primary:focus {
+        background: #dbeafe;
+        color: #1e40af;
     }
 
     .batch-stage-summary-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: .75rem;
+        grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+        gap: .85rem;
     }
 
     .batch-stage-summary-item {
         display: grid;
-        min-height: 128px;
-        padding: .85rem .9rem;
-        border: 1px solid #dbe7f3;
-        border-left: 5px solid #64748b;
-        border-radius: 8px;
-        background: #fff;
+        min-height: 132px;
+        padding: .92rem .95rem;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #64748b;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
         color: #0f172a;
         text-decoration: none;
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.045);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
 
     .batch-stage-summary-item:hover {
@@ -1690,23 +1825,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .batch-stage-summary-item.is-active {
         border-color: #0ea5e9;
-        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18), 0 16px 30px rgba(15, 23, 42, 0.10);
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.16), 0 16px 30px rgba(15, 23, 42, 0.09);
     }
 
     .batch-stage-summary-item--success {
-        border-left-color: #16a34a;
+        border-top-color: #16a34a;
     }
 
     .batch-stage-summary-item--info {
-        border-left-color: #0284c7;
+        border-top-color: #0284c7;
     }
 
     .batch-stage-summary-item--warning {
-        border-left-color: #f59e0b;
+        border-top-color: #f59e0b;
     }
 
     .batch-stage-summary-item--danger {
-        border-left-color: #dc2626;
+        border-top-color: #dc2626;
     }
 
     .batch-stage-summary-item__label {
@@ -1762,25 +1897,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .batch-stage-summary-item__count {
         display: block;
-        margin-top: .15rem;
-        font-size: 1.55rem;
+        margin-top: .2rem;
+        color: #0f172a;
+        font-size: 1.65rem;
         font-weight: 900;
         line-height: 1;
+        font-variant-numeric: tabular-nums;
     }
 
     .batch-stage-summary-item__meta,
     .batch-stage-summary-item__money {
         display: block;
         color: #64748b;
-        font-size: .78rem;
+        font-size: .76rem;
         font-weight: 700;
         overflow-wrap: anywhere;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.35;
     }
 
-    .batch-toolbar {
+    .batch-table-actions {
         display: flex;
+        align-items: center;
         justify-content: flex-end;
-        margin-bottom: 1rem;
+        gap: .65rem;
+        margin-left: auto;
+    }
+
+    .batch-table-actions .budget-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: .58rem 1rem;
     }
 
     .batch-monitor-tabs {
@@ -1867,17 +2016,169 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         box-shadow: none;
     }
 
-    .batch-monitor-table thead th,
-    .batch-table-card .table thead th {
-        background: #eff6ff;
-        color: #1e3a8a;
-        font-weight: 700;
+    .batch-table-card .table-responsive {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: auto;
+        background: #ffffff;
+    }
+
+    .batch-table-card .table-responsive::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+    }
+
+    .batch-table-card .table-responsive::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 999px;
+    }
+
+    .batch-table-card .table-responsive::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+        border: 2px solid #f1f5f9;
+    }
+
+    .batch-monitor-table {
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    .batch-monitor-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        font-size: .7rem;
+        font-weight: 800;
+        letter-spacing: .05em;
+        text-transform: uppercase;
         white-space: nowrap;
-        border-bottom: 1px solid #dbeafe;
+        vertical-align: middle;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+    }
+
+    .batch-monitor-table tbody td,
+    .batch-monitor-table tfoot th {
+        padding: .62rem .7rem;
+        vertical-align: middle;
+        border-color: #e5edf6;
+        line-height: 1.35;
+    }
+
+    .batch-monitor-table tbody tr:nth-child(even) {
+        background: #f8fafc;
     }
 
     .batch-monitor-table tbody tr:hover {
-        background: #f8fbff;
+        background: #eff6ff;
+    }
+
+    .batch-monitor-table tbody td:nth-child(5),
+    .batch-monitor-table tbody td:nth-child(6),
+    .batch-monitor-table tbody td:nth-child(7),
+    .batch-table-number,
+    .batch-monitor-table tfoot th {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .batch-table-number {
+        min-width: 92px;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    td.batch-stage-cell {
+        min-width: 148px;
+        padding-top: .72rem !important;
+        padding-bottom: .72rem !important;
+        white-space: normal;
+    }
+
+    .batch-monitor-table span.batch-stage-cell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 148px;
+        white-space: normal;
+    }
+
+    .batch-monitor-table tfoot th {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: .78rem;
+        font-weight: 800;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    .batch-monitor-table .badge {
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        min-height: 26px;
+        padding: .38rem .62rem;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+        box-shadow: none;
+    }
+
+    .batch-stage-cell .badge {
+        min-width: 118px;
+        max-width: 180px;
+    }
+
+    .batch-monitor-table .badge-info,
+    .batch-monitor-table .badge-primary {
+        background: #dbeafe;
+        border-color: #bfdbfe;
+        color: #1e40af;
+    }
+
+    .batch-monitor-table .badge-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+
+    .batch-monitor-table .badge-success {
+        background: #dcfce7;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .batch-monitor-table .badge-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .batch-monitor-table .badge-secondary {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .batch-monitor-table .btn-sm {
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .32rem .62rem;
     }
 
     .batch-doc-status-stack {
@@ -2146,16 +2447,58 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     @media (max-width: 767.98px) {
+        .batch-filter-card {
+            margin-top: .85rem;
+        }
+
+        .batch-filter-card .card-header,
+        .batch-filter-card .card-body {
+            padding: 1rem;
+        }
+
+        .batch-section-header,
         .batch-form-section__head,
         .batch-pic-card__head {
             flex-direction: column;
+            align-items: stretch;
         }
 
-        .batch-toolbar {
-            justify-content: stretch;
+        .batch-filter-state {
+            align-self: flex-start;
         }
 
-        .batch-toolbar .budget-btn {
+        .batch-filter-actions {
+            margin-top: .2rem;
+        }
+
+        .batch-stage-summary-card__actions {
+            width: 100%;
+            margin-left: 0;
+            margin-top: .75rem;
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .batch-summary-action {
+            width: 100%;
+        }
+
+        .batch-stage-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .batch-table-card .batch-section-header {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .batch-table-actions {
+            width: 100%;
+            margin-left: 0;
+            margin-top: .75rem;
+        }
+
+        .batch-table-actions .budget-btn {
             width: 100%;
         }
 

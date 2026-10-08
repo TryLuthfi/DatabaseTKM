@@ -325,6 +325,14 @@ if (!function_exists('drmBadgeClass')) {
     }
 }
 
+if (!function_exists('drmTableQty')) {
+    function drmTableQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
+    }
+}
+
 if (!function_exists('drmScopeStatusLabel')) {
     function drmScopeStatusLabel($status)
     {
@@ -502,7 +510,7 @@ $renderDrmTableRows = static function (array $rows) {
                 <div class="text-muted small"><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></div>
             </td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td class="text-right"><?= number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.') ?></td>
+            <td class="text-right drm-table-number"><?= drmTableQty($row['homepass_drm'] ?? 0) ?></td>
             <td>
                 <span class="sr-only"><?= htmlspecialchars(implode(' ', $statusSearchTokens), ENT_QUOTES, 'UTF-8') ?></span>
                 <div class="drm-status-scope">
@@ -520,7 +528,7 @@ $renderDrmTableRows = static function (array $rows) {
             </td>
             <td>
                 <span class="sr-only">drm_rab_filter_<?= htmlspecialchars($rabFilterToken, ENT_QUOTES, 'UTF-8') ?></span>
-                <span class="badge badge-<?= drmBadgeClass($rabStatusLabel) ?>"><?= htmlspecialchars($rabStatusLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="drm-stage-cell"><span class="badge badge-<?= drmBadgeClass($rabStatusLabel) ?>"><?= htmlspecialchars($rabStatusLabel, ENT_QUOTES, 'UTF-8') ?></span></span>
             </td>
             <td>
                 <div class="drm-status-scope">
@@ -539,7 +547,7 @@ $renderDrmTableRows = static function (array $rows) {
             </td>
             <td>
                 <span class="sr-only"><?= htmlspecialchars(implode(' ', $stageSearchTokens), ENT_QUOTES, 'UTF-8') ?></span>
-                <span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span>
+                <span class="drm-stage-cell"><span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span></span>
             </td>
             <td>
                 <?php if ($isMainfeeder): ?>
@@ -595,16 +603,6 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
 ?>
 
 <div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0 text-dark">DRM MyRep</h1>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="content">
         <div class="container-fluid">
             <?php if (!$isReady): ?>
@@ -625,15 +623,22 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-outline card-primary shadow-sm drm-filter-card">
+                    <div class="card shadow-sm drm-filter-card">
                         <div class="card-header drm-section-header">
-                            <div>
+                            <div class="drm-filter-heading">
+                                <span class="drm-filter-heading__icon"><i class="fas fa-filter"></i></span>
+                                <div>
                                 <h3 class="card-title mb-1">Filter Data DRM</h3>
+                                    <p class="drm-section-subtitle mb-0">Persempit data berdasarkan tipe project, kota, dan status DRM.</p>
+                                </div>
+                            </div>
+                            <div class="drm-filter-state">
+                                <?= (!empty($selectedProjectType) || !empty($selectedCity) || !empty($selectedStatus)) ? 'Filter aktif' : 'Semua data' ?>
                             </div>
                         </div>
                         <div class="card-body">
                             <form method="get" action="<?= base_url('DRM_MyRep') ?>">
-                                <div class="row">
+                                <div class="row align-items-end">
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label class="drm-field-label" for="drm_project_type">Tipe Project</label>
@@ -671,7 +676,9 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                         <div class="form-group mb-0 w-100 d-flex justify-content-between drm-filter-actions">
                                             <a href="<?= base_url('DRM_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
-                                                <button type="submit" class="btn budget-btn budget-btn--primary">Terapkan Filter</button>
+                                                <button type="submit" class="btn budget-btn budget-btn--primary">
+                                                    <i class="fas fa-search mr-1"></i> Terapkan
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -718,23 +725,18 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="drm-toolbar">
-                        <?php if ($isReady && $canTambah): ?>
-                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-drm-download-report">
-                                <i class="fas fa-download mr-1"></i> Download Report DRM
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
                     <div class="card card-outline card-primary shadow-sm drm-table-card">
                         <div class="card-header drm-section-header">
                             <div>
                                 <h3 class="card-title mb-1">Monitoring DRM</h3>
                             </div>
+                            <?php if ($isReady && $canTambah): ?>
+                                <div class="drm-table-actions">
+                                    <button type="button" class="btn budget-btn budget-btn--ghost" data-toggle="modal" data-target="#modal-drm-download-report">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <div class="drm-tab-stack">
@@ -1061,41 +1063,86 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     .drm-filter-card,
     .drm-table-card {
         border: 1px solid rgba(148, 163, 184, 0.22);
-        border-radius: 24px;
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
         background: #fff;
+    }
+
+    .drm-filter-card {
+        margin-top: 1.1rem;
+        margin-bottom: 1.25rem;
     }
 
     .drm-filter-card .card-header,
     .drm-table-card .card-header {
-        background: linear-gradient(135deg, #f8fbff, #eef6ff);
-        border-bottom: 1px solid #dbeafe;
-        padding: 1.15rem 1.35rem;
+        background: #ffffff;
+        border-bottom: 1px solid #e5edf6;
+        padding: 1rem 1.2rem;
     }
 
     .drm-filter-card .card-body,
     .drm-table-card .card-body {
-        padding: 1.35rem;
+        padding: 1.15rem 1.2rem 1.2rem;
     }
 
     .drm-section-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
     }
 
+    .drm-filter-heading {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: .85rem;
+    }
+
+    .drm-filter-heading__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .drm-filter-card .card-title {
+        float: none;
+        margin: 0;
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
     .drm-section-subtitle {
         color: #64748b;
-        font-size: .92rem;
-        margin-top: .2rem;
+        font-size: .86rem;
+        margin-top: .18rem;
+    }
+
+    .drm-filter-state {
+        flex: 0 0 auto;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        background: #f8fbff;
+        color: #1e3a8a;
+        font-size: .74rem;
+        font-weight: 800;
+        line-height: 1;
+        padding: .5rem .72rem;
     }
 
     .drm-field-label {
         display: block;
-        margin-bottom: .45rem;
-        font-size: .75rem;
+        margin-bottom: .38rem;
+        font-size: .7rem;
         font-weight: 800;
         letter-spacing: .08em;
         text-transform: uppercase;
@@ -1105,11 +1152,33 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     .drm-input,
     .drm-modal-shell .form-control,
     .drm-modal-shell select.form-control {
-        min-height: 44px;
-        border-radius: 14px;
+        min-height: 42px;
+        border-radius: 10px;
         border: 1px solid #d7e0ea;
         box-shadow: none;
         transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+
+    .drm-filter-card .form-group {
+        margin-bottom: 0;
+    }
+
+    .drm-filter-card .drm-input {
+        background-color: #fbfdff;
+        color: #0f172a;
+        font-weight: 600;
+    }
+
+    .drm-filter-actions {
+        gap: .65rem;
+    }
+
+    .drm-filter-actions .budget-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        flex: 1 1 0;
+        justify-content: center;
     }
 
     .drm-input:focus,
@@ -1249,10 +1318,20 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         overflow-wrap: anywhere;
     }
 
-    .drm-toolbar {
+    .drm-table-actions {
         display: flex;
+        align-items: center;
         justify-content: flex-end;
-        margin-bottom: .85rem;
+        gap: .65rem;
+        margin-left: auto;
+    }
+
+    .drm-table-actions .budget-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: .58rem 1rem;
     }
 
     .drm-tab-stack {
@@ -1431,19 +1510,173 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         box-shadow: none;
     }
 
+    .drm-table-card .table-responsive,
+    .drm-table-card .dataTables_scroll {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .drm-table-card .dataTables_scrollBody,
+    .drm-table-card .table-responsive {
+        overflow-x: auto !important;
+    }
+
+    .drm-table-card .table-responsive::-webkit-scrollbar,
+    .drm-table-card .dataTables_scrollBody::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+    }
+
+    .drm-table-card .table-responsive::-webkit-scrollbar-track,
+    .drm-table-card .dataTables_scrollBody::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 999px;
+    }
+
+    .drm-table-card .table-responsive::-webkit-scrollbar-thumb,
+    .drm-table-card .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+        border: 2px solid #f1f5f9;
+    }
+
+    .drm-monitor-table {
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
     .drm-monitor-table thead th {
-        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
-        color: #1f5e8a;
-        font-size: .8rem;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        font-size: .7rem;
         font-weight: 800;
-        letter-spacing: .04em;
+        letter-spacing: .05em;
         text-transform: uppercase;
         white-space: nowrap;
+        vertical-align: middle;
         border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+    }
+
+    .drm-monitor-table tbody td,
+    .drm-monitor-table tfoot th {
+        padding: .62rem .7rem;
+        vertical-align: middle;
+        border-color: #e5edf6;
+        line-height: 1.35;
+    }
+
+    .drm-monitor-table tbody td {
+        white-space: nowrap;
+    }
+
+    .drm-monitor-table tbody tr:nth-child(even) {
+        background: #f8fafc;
     }
 
     .drm-monitor-table tbody tr:hover {
-        background: rgba(219, 236, 247, 0.22);
+        background: #eff6ff;
+    }
+
+    .drm-monitor-table tbody td:nth-child(4),
+    .drm-table-number,
+    .drm-monitor-table tfoot th {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .drm-table-number {
+        min-width: 72px;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .drm-monitor-table span.drm-stage-cell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 116px;
+        white-space: normal;
+    }
+
+    .drm-monitor-table tfoot th {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: .78rem;
+        font-weight: 800;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    .drm-monitor-table .badge {
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        min-height: 26px;
+        padding: .38rem .62rem;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+        box-shadow: none;
+    }
+
+    .drm-stage-cell .badge {
+        min-width: 104px;
+        max-width: 170px;
+    }
+
+    .drm-monitor-table .badge-info,
+    .drm-monitor-table .badge-primary {
+        background: #dbeafe;
+        border-color: #bfdbfe;
+        color: #1e40af;
+    }
+
+    .drm-monitor-table .badge-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+
+    .drm-monitor-table .badge-success {
+        background: #dcfce7;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .drm-monitor-table .badge-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .drm-monitor-table .badge-secondary {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .drm-monitor-table .btn-sm {
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .32rem .62rem;
     }
 
     .drm-status-scope {
@@ -1617,11 +1850,40 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     @media (max-width: 767.98px) {
-        .drm-toolbar {
-            justify-content: stretch;
+        .drm-filter-card {
+            margin-top: .85rem;
         }
 
-        .drm-toolbar .budget-btn {
+        .drm-filter-card .card-header,
+        .drm-filter-card .card-body {
+            padding: 1rem;
+        }
+
+        .drm-filter-card .drm-section-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .drm-filter-state {
+            align-self: flex-start;
+        }
+
+        .drm-filter-actions {
+            margin-top: .2rem;
+        }
+
+        .drm-table-card .drm-section-header {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .drm-table-actions {
+            width: 100%;
+            margin-left: 0;
+            margin-top: .75rem;
+        }
+
+        .drm-table-actions .budget-btn {
             width: 100%;
         }
 
@@ -1894,7 +2156,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     '<td>' + Number(row.row_number || 0) + '</td>' +
                     '<td>' + (row.cluster_name || '-') + '</td>' +
                     '<td>' + (row.city_name || '-') + '</td>' +
-                    '<td class="text-right">' + Number(row.homepass_drm || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td class="text-right">' + (Number(row.homepass_drm || 0) > 0 ? Number(row.homepass_drm || 0).toLocaleString('id-ID') : '-') + '</td>' +
                     '<td>' + (row.drm_date || '-') + '</td>' +
                     '<td><span class="badge badge-' + badgeClass + '">' + (row.status || '-') + '</span></td>' +
                     '<td>' + (row.message || '-') + '</td>' +
@@ -1938,9 +2200,30 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 var drmTableConfigs = {
                     '#table_drm_all': { tab: 'all' }
                 };
+                var drmAdjustTimer = null;
 
                 function getActiveDrmTableSelector() {
                     return '#table_drm_all';
+                }
+
+                function adjustDrmMonitorTables() {
+                    if (drmAdjustTimer) {
+                        clearTimeout(drmAdjustTimer);
+                    }
+
+                    drmAdjustTimer = setTimeout(function () {
+                        Object.keys(drmTables).forEach(function (selector) {
+                            if (drmTables[selector]) {
+                                drmTables[selector].columns.adjust();
+                            }
+                        });
+                    }, 80);
+                }
+
+                function scheduleDrmMonitorAdjust() {
+                    adjustDrmMonitorTables();
+                    setTimeout(adjustDrmMonitorTables, 260);
+                    setTimeout(adjustDrmMonitorTables, 520);
                 }
 
                 function rowMatchesStatus($row, status) {
@@ -2191,6 +2474,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         serverSide: true,
                         responsive: false,
                         scrollX: true,
+                        scrollCollapse: true,
                         autoWidth: false,
                         deferRender: true,
                         order: [[0, 'asc']],
@@ -2229,7 +2513,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                 }, 0);
                             };
                             var hpDrmTotal = sumColumn(3);
-                            $(api.column(3).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                            $(api.column(3).footer()).html(hpDrmTotal > 0 ? hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-');
                         }
                     });
                 });
@@ -2243,11 +2527,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     updateDrmSpkCounts(activeTable, activeTab);
                     syncDrmStageSummaryButtons();
 
-                    Object.keys(drmTables).forEach(function (selector) {
-                        drmTables[selector].columns.adjust();
-                    });
+                    scheduleDrmMonitorAdjust();
                     applyDrmFiltersToTable(activeTable);
                 });
+
+                $(window).on('resize.drmMonitorTable', scheduleDrmMonitorAdjust);
+                $(document).on('collapsed.lte.pushmenu shown.lte.pushmenu expanded.lte.pushmenu', scheduleDrmMonitorAdjust);
+                $('[data-widget="pushmenu"]').on('click.drmMonitorTable', scheduleDrmMonitorAdjust);
+                scheduleDrmMonitorAdjust();
 
                 $(document).on('click', '.js-drm-status-filter', function () {
                     var nextStatus = String($(this).data('drm-status') || '').trim();

@@ -4302,7 +4302,6 @@ class Batch_Approval_MyRep extends CI_Controller
             . '<span class="badge badge-' . $this->getBatchListAgingBadgeClass($slaInfo) . '">'
             . htmlspecialchars($slaInfo['duration_text'], ENT_QUOTES, 'UTF-8')
             . '</span>'
-            . '<small class="text-muted">' . htmlspecialchars($slaInfo['process_label'], ENT_QUOTES, 'UTF-8') . '</small>'
             . '</div>';
 
         $actionHtml = '';
@@ -4322,15 +4321,21 @@ class Batch_Approval_MyRep extends CI_Controller
             $clusterHtml,
             htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
             htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES, 'UTF-8'),
-            number_format($hpDonasi, 0, ',', '.'),
-            number_format($displayNominalDonasi, 0, ',', '.'),
-            $displayNominalPerHomepass !== null ? number_format($displayNominalPerHomepass, 0, ',', '.') : '-',
+            $this->formatBatchListQty($hpDonasi),
+            $this->formatBatchListQty($displayNominalDonasi),
+            $displayNominalPerHomepass !== null ? $this->formatBatchListQty($displayNominalPerHomepass) : '-',
             $slaHtml,
-            '<span class="badge badge-' . $this->getBatchListBadgeClass($stageCode) . '">' . htmlspecialchars($stageLabel, ENT_QUOTES, 'UTF-8') . '</span>',
+            '<span class="batch-stage-cell"><span class="badge badge-' . $this->getBatchListBadgeClass($stageCode) . '">' . htmlspecialchars($stageLabel, ENT_QUOTES, 'UTF-8') . '</span></span>',
             $picHtml,
-            '<span class="badge badge-' . $this->getBatchListBadgeClass($statusFlowBadgeCode) . '">' . htmlspecialchars($statusFlowLabel, ENT_QUOTES, 'UTF-8') . '</span>',
+            '<span class="batch-stage-cell"><span class="badge badge-' . $this->getBatchListBadgeClass($statusFlowBadgeCode) . '">' . htmlspecialchars($statusFlowLabel, ENT_QUOTES, 'UTF-8') . '</span></span>',
             $actionHtml,
         ];
+    }
+
+    private function formatBatchListQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
     }
 
     private function calculateBatchApprovalTableTotals(array $rows)

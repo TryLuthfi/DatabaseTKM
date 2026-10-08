@@ -252,6 +252,14 @@ if (!function_exists('bakAgingBadgeClass')) {
     }
 }
 
+if (!function_exists('bakTableQty')) {
+    function bakTableQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
+    }
+}
+
 $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap, $clusterReviewPicMap) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
         $slaInfo = bakSlaInfo($row);
@@ -284,7 +292,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             </td>
             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
+            <td class="text-right bak-table-number"><?= bakTableQty($row['homepass_bak'] ?? 0) ?></td>
             <td><?= !empty($row['ba_open_date']) ? htmlspecialchars((string) $row['ba_open_date']) : '-' ?></td>
             <td>
                 <div class="bak-sla-aging-cell">
@@ -299,7 +307,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 </div>
             </td>
             <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
-            <td><span class="badge badge-<?= bakBadgeClass($row['status_bak'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT')) ?></span></td>
+            <td class="bak-stage-cell"><span class="badge badge-<?= bakBadgeClass($row['status_bak'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT')) ?></span></td>
             <td>
                 <?php if ($docReady && !empty($documentDefinitions)): ?>
                     <div class="bak-doc-status-stack">
@@ -355,7 +363,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     <div>PIC approval : <?= htmlspecialchars($picApproval) ?></div>
                 </div>
             </td>
-            <td><span class="badge badge-<?= bakBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
+            <td class="bak-stage-cell"><span class="badge badge-<?= bakBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
                 <?php if ($canEdit): ?>
                     <button
@@ -400,16 +408,6 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 ?>
 
 <div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0 text-dark">BAK MyRep</h1>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="content">
         <div class="container-fluid">
             <?php if (!$isReady): ?>
@@ -444,16 +442,23 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-outline card-primary shadow-sm bak-filter-card">
+                    <div class="card shadow-sm bak-filter-card">
                         <div class="card-header bak-section-header">
-                            <div>
+                            <div class="bak-filter-heading">
+                                <span class="bak-filter-heading__icon"><i class="fas fa-filter"></i></span>
+                                <div>
                                 <h3 class="card-title mb-1">Filter Data BAK</h3>
+                                    <p class="bak-section-subtitle mb-0">Persempit data berdasarkan kota dan status BAK.</p>
+                                </div>
+                            </div>
+                            <div class="bak-filter-state">
+                                <?= (!empty($selectedCity) || !empty($selectedStatus)) ? 'Filter aktif' : 'Semua data' ?>
                             </div>
                         </div>
                         <div class="card-body">
                             <form method="get" action="<?= base_url('BAK_MyRep') ?>">
-                                <div class="row">
-                                    <div class="col-md-4">
+                                <div class="row align-items-end">
+                                    <div class="col-lg-4 col-md-6">
                                         <div class="form-group">
                                             <label class="bak-field-label">Kota</label>
                                             <select name="city" class="form-control bak-input">
@@ -466,7 +471,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-lg-5 col-md-6">
                                         <div class="form-group">
                                             <label class="bak-field-label">Status</label>
                                             <select name="status" class="form-control bak-input">
@@ -480,11 +485,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-end">
+                                    <div class="col-lg-3 col-md-12 d-flex align-items-end">
                                         <div class="form-group mb-0 w-100 d-flex justify-content-between bak-filter-actions">
                                             <a href="<?= base_url('BAK_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
-                                                <button type="submit" class="btn budget-btn budget-btn--primary">Terapkan Filter</button>
+                                                <button type="submit" class="btn budget-btn budget-btn--primary">
+                                                    <i class="fas fa-search mr-1"></i> Terapkan
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -549,26 +556,21 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="bak-toolbar">
-                        <?php if ($isReady && $canTambah): ?>
-                            <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-bak-create">
-                                <i class="fas fa-plus mr-1"></i> Input BAK
-                            </button>
-                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-bak-download-report">
-                                <i class="fas fa-download mr-1"></i> Download Report BAK
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
                     <div class="card card-outline card-primary shadow-sm bak-table-card">
                         <div class="card-header bak-section-header d-flex align-items-center justify-content-between">
                             <div>
                                 <h3 class="card-title mb-1">Monitoring BAK Cluster</h3>
                             </div>
+                            <?php if ($isReady && $canTambah): ?>
+                                <div class="bak-table-actions">
+                                    <button type="button" class="btn budget-btn budget-btn--ghost" data-toggle="modal" data-target="#modal-bak-download-report">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </button>
+                                    <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-bak-create">
+                                        <i class="fas fa-plus mr-1"></i> Input BAK
+                                    </button>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <div class="bak-tab-stack">
@@ -1278,49 +1280,97 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 <style>
     .bak-filter-card,
     .bak-table-card {
-        border: 0;
-        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08);
-        background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+        background: #fff;
+    }
+
+    .bak-filter-card {
+        margin-top: 1.1rem;
+        margin-bottom: 1.25rem;
     }
 
     .bak-section-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        background: #ffffff;
         color: #0f172a;
-        border-bottom: 1px solid #dbeafe;
-        padding: 1.15rem 1.35rem;
+        border-bottom: 1px solid #e5edf6;
+        padding: 1rem 1.2rem;
+    }
+
+    .bak-filter-card .card-body {
+        padding: 1.15rem 1.2rem 1.2rem;
+    }
+
+    .bak-filter-heading {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: .85rem;
+    }
+
+    .bak-filter-heading__icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 38px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
     }
 
     .bak-section-header .card-title {
         color: #0f172a;
-        font-weight: 700;
+        float: none;
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0;
     }
 
     .bak-section-subtitle {
         color: #64748b;
-        font-size: 0.92rem;
+        font-size: 0.86rem;
+        margin-top: .18rem;
         max-width: 760px;
+    }
+
+    .bak-filter-state {
+        flex: 0 0 auto;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        background: #f8fbff;
+        color: #1e3a8a;
+        font-size: .74rem;
+        font-weight: 800;
+        line-height: 1;
+        padding: .5rem .72rem;
     }
 
     .bak-field-label {
         display: block;
-        margin-bottom: 0.55rem;
-        font-size: 0.83rem;
+        margin-bottom: 0.38rem;
+        font-size: 0.7rem;
         font-weight: 800;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #2f5f84;
+        color: #475569;
     }
 
     .bak-input {
-        border-radius: 14px;
+        border-radius: 10px;
         border: 1px solid #d7e0ea;
-        min-height: 44px;
+        min-height: 42px;
+        background-color: #fbfdff;
+        color: #0f172a;
+        font-weight: 600;
         box-shadow: none;
     }
 
@@ -1330,7 +1380,19 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     .bak-filter-actions {
-        gap: 10px;
+        gap: .65rem;
+    }
+
+    .bak-filter-card .form-group {
+        margin-bottom: 0;
+    }
+
+    .bak-filter-actions .budget-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        flex: 1 1 0;
+        justify-content: center;
     }
 
     .budget-btn {
@@ -1488,38 +1550,197 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         overflow-wrap: anywhere;
     }
 
-    .bak-toolbar {
+    .bak-table-actions {
         display: flex;
+        align-items: center;
         justify-content: flex-end;
-        margin-bottom: 0.85rem;
+        gap: .65rem;
+        margin-left: auto;
     }
 
-    .bak-monitor-table thead th {
-        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
-        color: #1f5e8a;
-        font-size: 0.8rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        border-top: 0;
+    .bak-table-actions .budget-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: .58rem 1rem;
+    }
+
+    .bak-table-card .table-responsive,
+    .bak-table-card .dataTables_scroll {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .bak-table-card .dataTables_scrollBody,
+    .bak-table-card .table-responsive {
+        overflow-x: auto !important;
+    }
+
+    .bak-table-card .table-responsive::-webkit-scrollbar,
+    .bak-table-card .dataTables_scrollBody::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+    }
+
+    .bak-table-card .table-responsive::-webkit-scrollbar-track,
+    .bak-table-card .dataTables_scrollBody::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 999px;
+    }
+
+    .bak-table-card .table-responsive::-webkit-scrollbar-thumb,
+    .bak-table-card .dataTables_scrollBody::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+        border: 2px solid #f1f5f9;
     }
 
     .bak-monitor-table {
         min-width: 1580px;
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-size: .82rem;
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    .bak-monitor-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: .72rem .7rem;
+        background: linear-gradient(180deg, #f8fbff 0%, #eaf2fb 100%);
+        color: #334155;
+        font-size: .7rem;
+        font-weight: 800;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        vertical-align: middle;
+        border-top: 0;
+        border-bottom: 1px solid #cbd5e1;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+    }
+
+    .bak-monitor-table tbody td,
+    .bak-monitor-table tfoot th {
+        padding: .62rem .7rem;
+        vertical-align: middle;
+        border-color: #e5edf6;
+        line-height: 1.35;
     }
 
     .bak-monitor-table tbody td {
         white-space: nowrap;
-        vertical-align: top;
     }
 
-    .bak-table-card .dataTables_scrollBody {
-        overflow-x: auto !important;
+    .bak-monitor-table tbody tr:nth-child(even) {
+        background: #f8fafc;
     }
 
     .bak-monitor-table tbody tr:hover {
-        background: rgba(219, 236, 247, 0.22);
+        background: #eff6ff;
+    }
+
+    .bak-monitor-table tbody td:nth-child(5),
+    .bak-table-number,
+    .bak-monitor-table tfoot th {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .bak-table-number {
+        min-width: 72px;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    td.bak-stage-cell {
+        min-width: 128px;
+        padding-top: .72rem !important;
+        padding-bottom: .72rem !important;
+        white-space: normal;
+    }
+
+    .bak-monitor-table span.bak-stage-cell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 128px;
+        white-space: normal;
+    }
+
+    .bak-monitor-table tfoot th {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: .78rem;
+        font-weight: 800;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    .bak-monitor-table .badge {
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        min-height: 26px;
+        padding: .38rem .62rem;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+        box-shadow: none;
+    }
+
+    .bak-stage-cell .badge {
+        min-width: 104px;
+        max-width: 160px;
+    }
+
+    .bak-monitor-table .badge-info,
+    .bak-monitor-table .badge-primary {
+        background: #dbeafe;
+        border-color: #bfdbfe;
+        color: #1e40af;
+    }
+
+    .bak-monitor-table .badge-warning {
+        background: #fef3c7;
+        border-color: #fde68a;
+        color: #92400e;
+    }
+
+    .bak-monitor-table .badge-success {
+        background: #dcfce7;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .bak-monitor-table .badge-danger {
+        background: #fee2e2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    .bak-monitor-table .badge-secondary {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .bak-monitor-table .btn-sm {
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .32rem .62rem;
     }
 
     .bak-sla-aging-cell .badge {
@@ -2154,6 +2375,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
     }
 
     @media (max-width: 767.98px) {
+        .bak-filter-card {
+            margin-top: .85rem;
+        }
+
+        .bak-filter-card .card-header,
+        .bak-filter-card .card-body {
+            padding: 1rem;
+        }
+
+        .bak-filter-card .bak-section-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .bak-filter-state {
+            align-self: flex-start;
+        }
+
+        .bak-table-card .bak-section-header {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .bak-table-actions {
+            width: 100%;
+            margin-left: 0;
+            margin-top: .75rem;
+        }
+
+        .bak-table-actions .budget-btn {
+            flex: 1 1 0;
+        }
+
         .budget-modal__footer {
             flex-direction: column;
         }
@@ -2598,6 +2852,11 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 return;
             }
 
+            var formatBakQty = function (value) {
+                var number = Number(value || 0);
+                return number > 0 ? number.toLocaleString('id-ID') : '-';
+            };
+
             var html = rows.map(function (row) {
                 var badgeClass = String(row.status || '').toLowerCase() === 'valid' ? 'success' : 'danger';
                 return '<tr>' +
@@ -2607,7 +2866,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     '<td>' + escapeHtml(row.cluster_code || '-') + '</td>' +
                     '<td>' + escapeHtml(row.district_name || row.district_id || '-') + '</td>' +
                     '<td>' + escapeHtml(row.village_name || row.village_id || '-') + '</td>' +
-                    '<td class="text-right">' + Number(row.homepass_bak || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td class="text-right">' + formatBakQty(row.homepass_bak) + '</td>' +
                     '<td>' + escapeHtml(row.ba_open_date || '-') + '</td>' +
                     '<td>' + escapeHtml(row.bak_date || '-') + '</td>' +
                     '<td>' + escapeHtml(row.status_bak || '-') + '</td>' +
@@ -2777,7 +3036,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             }, 0);
 
                         $(api.column(4).footer()).html(
-                            totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                            totalHp > 0 ? totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-'
                         );
                     },
                     language: {

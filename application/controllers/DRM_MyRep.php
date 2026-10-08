@@ -2666,13 +2666,19 @@ class DRM_MyRep extends CI_Controller
             (int) $no,
             $clusterHtml,
             $this->html((string) ($row['city_name'] ?? '-')),
-            number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.'),
+            $this->formatDrmListQty($row['homepass_drm'] ?? 0),
             $statusHtml,
-            '<span class="sr-only">drm_rab_filter_' . $this->html($rabFilterToken) . '</span><span class="badge badge-' . $this->attr($this->drmBadgeClass($rabStatusLabel)) . '">' . $this->html($rabStatusLabel) . '</span>',
+            '<span class="sr-only">drm_rab_filter_' . $this->html($rabFilterToken) . '</span><span class="drm-stage-cell"><span class="badge badge-' . $this->attr($this->drmBadgeClass($rabStatusLabel)) . '">' . $this->html($rabStatusLabel) . '</span></span>',
             $spkHtml,
-            '<span class="sr-only">' . $this->html(implode(' ', $stageSearchTokens)) . '</span><span class="badge badge-' . $this->attr($this->drmBadgeClass($row['status_current'] ?? 'RELEASED')) . '">' . $this->html((string) ($row['status_current'] ?? 'RELEASED')) . '</span>',
+            '<span class="sr-only">' . $this->html(implode(' ', $stageSearchTokens)) . '</span><span class="drm-stage-cell"><span class="badge badge-' . $this->attr($this->drmBadgeClass($row['status_current'] ?? 'RELEASED')) . '">' . $this->html((string) ($row['status_current'] ?? 'RELEASED')) . '</span></span>',
             $actionHtml,
         ];
+    }
+
+    private function formatDrmListQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
     }
 
     private function drmBadgeClass($status)

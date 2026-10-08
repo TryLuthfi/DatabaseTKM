@@ -251,16 +251,22 @@ class BAK_MyRep extends CI_Controller
             $clusterHtml,
             $this->html($row['regional_name'] ?? '-'),
             $this->html($row['city_name'] ?? '-'),
-            '<span class="d-block text-right">' . number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') . '</span>',
+            '<span class="d-block text-right bak-table-number">' . $this->formatBakListQty($row['homepass_bak'] ?? 0) . '</span>',
             !empty($row['ba_open_date']) ? $this->html($row['ba_open_date']) : '-',
             $this->buildBakSlaHtml($slaInfo),
             !empty($row['bak_date']) ? $this->html($row['bak_date']) : '-',
-            '<span class="badge badge-' . $this->bakBadgeClass($row['status_bak'] ?? 'DRAFT') . '">' . $this->html($row['status_bak'] ?? 'DRAFT') . '</span>',
+            '<span class="bak-stage-cell"><span class="badge badge-' . $this->bakBadgeClass($row['status_bak'] ?? 'DRAFT') . '">' . $this->html($row['status_bak'] ?? 'DRAFT') . '</span></span>',
             $this->buildBakDocStatusHtml($docReady, $documentDefinitions, $clusterDocs),
             $this->buildBakReviewHtml($clusterId, $clusterDocs, $clusterReviewPicMap),
-            '<span class="badge badge-' . $this->bakBadgeClass($row['status_current'] ?? 'DRAFT') . '">' . $this->html($row['status_current'] ?? 'DRAFT') . '</span>',
+            '<span class="bak-stage-cell"><span class="badge badge-' . $this->bakBadgeClass($row['status_current'] ?? 'DRAFT') . '">' . $this->html($row['status_current'] ?? 'DRAFT') . '</span></span>',
             $this->buildBakActionHtml($row, $docReady, $clusterDocs, $permissions),
         ];
+    }
+
+    private function formatBakListQty($value)
+    {
+        $value = (float) $value;
+        return abs($value) > 0 ? number_format($value, 0, ',', '.') : '-';
     }
 
     private function buildBakSlaHtml(array $slaInfo)
