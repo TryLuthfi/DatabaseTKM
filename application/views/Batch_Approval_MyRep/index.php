@@ -114,6 +114,7 @@ $createCityOptions = [];
 $nyDrmRows = [];
 $donationStageSummary = [];
 $donationStageOrder = [
+    'DRAFT' => batchStageLabel('DRAFT'),
     'WAITING_BATCH_APPROVAL' => batchStageLabel('WAITING_BATCH_APPROVAL'),
     'WAITING_PRE_ZEYN_DOC' => batchStageLabel('WAITING_PRE_ZEYN_DOC'),
     'NEED_REVISE' => batchStageLabel('NEED_REVISE'),

@@ -2367,11 +2367,128 @@ if ($canApprove && $canApprovalAction) {
         margin-bottom: .18rem;
     }
 
+    .batch-po-action-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid #dbeafe;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+    }
+
+    .batch-po-action-title {
+        color: #0f172a;
+        font-size: .98rem;
+        font-weight: 900;
+        margin-bottom: .18rem;
+    }
+
+    .batch-po-action-subtitle {
+        color: #64748b;
+        font-size: .84rem;
+        font-weight: 700;
+        line-height: 1.4;
+    }
+
+    .batch-po-action-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .45rem;
+        margin-top: .65rem;
+    }
+
+    .batch-po-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: .2rem .55rem;
+        border-radius: 999px;
+        background: #fff;
+        color: #334155;
+        border: 1px solid #dbe5ef;
+        font-size: .74rem;
+        font-weight: 800;
+    }
+
+    .batch-po-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        min-height: 38px;
+        padding: .55rem 1rem;
+        border-radius: 999px;
+        font-size: .82rem;
+        font-weight: 900;
+        white-space: nowrap;
+        box-shadow: 0 12px 24px rgba(15, 59, 90, .18);
+    }
+
+    .batch-po-form-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #fff;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .batch-po-form-section + .batch-po-form-section {
+        margin-top: 1rem;
+    }
+
+    .batch-po-form-title {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        color: #0f172a;
+        font-size: .96rem;
+        font-weight: 900;
+        margin-bottom: .9rem;
+    }
+
+    .batch-po-form-title i {
+        color: #1f6da1;
+    }
+
+    .batch-po-form-section label {
+        color: #475569;
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    .batch-po-form-section .form-control {
+        min-height: 42px;
+        border: 1px solid #d7e0ea;
+        border-radius: 10px;
+        background-color: #fff;
+        color: #0f172a;
+        font-weight: 600;
+        box-shadow: inset 3px 0 0 #3b82f6;
+    }
+
+    .batch-po-form-section .form-control:focus {
+        border-color: #2563eb;
+        box-shadow: inset 3px 0 0 #2563eb, 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
     .modal-xxl {
         max-width: 78vw;
     }
 
     @media (max-width: 767.98px) {
+        .batch-po-action-card {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .batch-po-action-btn {
+            width: 100%;
+        }
+
         .batch-info-card .card-header,
         .batch-doc-card .card-header,
         .batch-header-actions {
@@ -2928,9 +3045,20 @@ if ($canApprove && $canApprovalAction) {
                                 </div>
                             <?php elseif (in_array($currentDonationStage, ['ASTRI_APPROVED', 'PO_DONASI', 'INVOICE'], true)): ?>
                                 <div class="col-md-12">
-                                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-donation-po-invoice">
-                                        <?= !empty($cluster['po_donasi_number']) ? 'Edit PO/Invoice Donasi' : 'Tambah PO Donasi' ?>
-                                    </button>
+                                    <div class="batch-po-action-card">
+                                        <div>
+                                            <div class="batch-po-action-title">PO/Invoice Donasi</div>
+                                            <div class="batch-po-action-subtitle">Lengkapi nomor PO, nilai PO, invoice, dan status administrasi donasi.</div>
+                                            <div class="batch-po-action-meta">
+                                                <span class="batch-po-chip">PO: <?= !empty($cluster['po_donasi_number']) ? htmlspecialchars((string) $cluster['po_donasi_number']) : '-' ?></span>
+                                                <span class="batch-po-chip">Invoice: <?= !empty($cluster['invoice_donasi_number']) ? htmlspecialchars((string) $cluster['invoice_donasi_number']) : '-' ?></span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-primary batch-po-action-btn" data-toggle="modal" data-target="#modal-donation-po-invoice">
+                                            <i class="fas fa-file-invoice-dollar"></i>
+                                            <?= !empty($cluster['po_donasi_number']) ? 'Edit PO/Invoice' : 'Tambah PO Donasi' ?>
+                                        </button>
+                                    </div>
                                 </div>
                             <?php else: ?>
                                 <div class="col-md-12 text-muted">Tidak ada aksi staging untuk status saat ini.</div>
@@ -3008,33 +3136,103 @@ if ($canApprove && $canApprovalAction) {
                     </div>
                 <?php endif; ?>
                 <?php if (in_array($currentDonationStage, ['ASTRI_APPROVED', 'PO_DONASI', 'INVOICE'], true)): ?>
+                    <?php
+                    $poDonationDateValue = trim((string) ($cluster['po_donasi_date'] ?? ''));
+                    $poDonationDateValue = ($poDonationDateValue !== '' && $poDonationDateValue !== '0000-00-00' && $poDonationDateValue !== '0000-00-00 00:00:00')
+                        ? substr($poDonationDateValue, 0, 10)
+                        : date('Y-m-d');
+                    $invoiceDonationDateValue = trim((string) ($cluster['invoice_donasi_date'] ?? ''));
+                    $invoiceDonationDateValue = ($invoiceDonationDateValue !== '' && $invoiceDonationDateValue !== '0000-00-00' && $invoiceDonationDateValue !== '0000-00-00 00:00:00')
+                        ? substr($invoiceDonationDateValue, 0, 10)
+                        : '';
+                    ?>
                     <div class="modal fade" id="modal-donation-po-invoice" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog modal-lg" role="document">
-                            <div class="modal-content">
+                            <div class="modal-content batch-modal">
                                 <form method="post" action="<?= base_url('Batch_Approval_MyRep/saveDonationPoInvoice') ?>">
                                     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                     <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
                                     <input type="hidden" name="redirect_to_detail" value="1">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title">PO/Invoice Donasi</h5>
+                                    <div class="modal-header batch-modal__header">
+                                        <div>
+                                            <span class="batch-modal__eyebrow">Administrasi Donasi</span>
+                                            <h5 class="modal-title mb-1">PO/Invoice Donasi</h5>
+                                            <p class="batch-modal__subtitle mb-0">Catat dokumen PO dan invoice setelah dokumen Astri selesai approved.</p>
+                                        </div>
                                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                     </div>
                                     <div class="modal-body">
-                                        <div class="row">
-                                            <div class="col-md-4"><label>Nomor PO</label><input type="text" name="po_donasi_number" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_number'] ?? ''), ENT_QUOTES) ?>" required></div>
-                                            <div class="col-md-4"><label>Tanggal PO</label><input type="date" name="po_donasi_date" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_date'] ?? date('Y-m-d'))) ?>" required></div>
-                                            <div class="col-md-4"><label>Nilai PO</label><input type="text" name="po_donasi_value" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_value'] ?? ''), ENT_QUOTES) ?>" required></div>
-                                            <div class="col-md-4"><label>Status PO</label><input type="text" name="po_donasi_status" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['po_donasi_status'] ?? 'ISSUED'), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Nomor Invoice</label><input type="text" name="invoice_donasi_number" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_number'] ?? ''), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Tanggal Invoice</label><input type="date" name="invoice_donasi_date" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_date'] ?? '')) ?>"></div>
-                                            <div class="col-md-4"><label>Nilai Invoice</label><input type="text" name="invoice_donasi_value" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_value'] ?? ''), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Status Invoice</label><input type="text" name="invoice_donasi_status" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_status'] ?? ''), ENT_QUOTES) ?>"></div>
-                                            <div class="col-md-4"><label>Remark Invoice</label><input type="text" name="invoice_donasi_remark" class="form-control mb-2" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_remark'] ?? ''), ENT_QUOTES) ?>"></div>
+                                        <div class="batch-po-form-section">
+                                            <div class="batch-po-form-title"><i class="fas fa-file-contract"></i> Purchase Order</div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Nomor PO</label>
+                                                        <input type="text" name="po_donasi_number" class="form-control" value="<?= htmlspecialchars((string) ($cluster['po_donasi_number'] ?? ''), ENT_QUOTES) ?>" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label>Tanggal PO</label>
+                                                        <input type="date" name="po_donasi_date" class="form-control" value="<?= htmlspecialchars($poDonationDateValue) ?>" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label>Status PO</label>
+                                                        <input type="text" name="po_donasi_status" class="form-control" value="<?= htmlspecialchars((string) ($cluster['po_donasi_status'] ?? 'ISSUED'), ENT_QUOTES) ?>" placeholder="ISSUED">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <div class="form-group mb-0">
+                                                        <label>Nilai PO</label>
+                                                        <input type="text" name="po_donasi_value" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['po_donasi_value'] ?? null) && (string) ($cluster['po_donasi_value'] ?? '') !== '' ? htmlspecialchars(number_format((float) $cluster['po_donasi_value'], 0, ',', '.')) : '' ?>" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="batch-po-form-section">
+                                            <div class="batch-po-form-title"><i class="fas fa-receipt"></i> Invoice</div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label>Nomor Invoice</label>
+                                                        <input type="text" name="invoice_donasi_number" class="form-control" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_number'] ?? ''), ENT_QUOTES) ?>" placeholder="Opsional">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label>Tanggal Invoice</label>
+                                                        <input type="date" name="invoice_donasi_date" class="form-control" value="<?= htmlspecialchars($invoiceDonationDateValue) ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label>Status Invoice</label>
+                                                        <input type="text" name="invoice_donasi_status" class="form-control" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_status'] ?? ''), ENT_QUOTES) ?>" placeholder="BILLED">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group mb-md-0">
+                                                        <label>Nilai Invoice</label>
+                                                        <input type="text" name="invoice_donasi_value" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['invoice_donasi_value'] ?? null) && (string) ($cluster['invoice_donasi_value'] ?? '') !== '' ? htmlspecialchars(number_format((float) $cluster['invoice_donasi_value'], 0, ',', '.')) : '' ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group mb-0">
+                                                        <label>Remark Invoice</label>
+                                                        <input type="text" name="invoice_donasi_remark" class="form-control" value="<?= htmlspecialchars((string) ($cluster['invoice_donasi_remark'] ?? ''), ENT_QUOTES) ?>" placeholder="Catatan invoice">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                                        <button type="submit" class="btn btn-primary">Simpan PO/Invoice Donasi</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save mr-1"></i>
+                                            Simpan PO/Invoice
+                                        </button>
                                     </div>
                                 </form>
                             </div>

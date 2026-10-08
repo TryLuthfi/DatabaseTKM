@@ -339,7 +339,43 @@ class Batch_Approval_MyRep extends CI_Controller
             $summary[$status]['nominal_release'] += (float) ($row['nominal_release_finance'] ?? 0);
         }
 
-        ksort($summary);
+        $stageOrder = [
+            'DRAFT',
+            'WAITING_BATCH_APPROVAL',
+            'WAITING_PRE_ZEYN_DOC',
+            'NEED_REVISE',
+            'PRE_ZEYN_DOC_ON_REVIEW',
+            'PRE_ZEYN_DOC_APPROVED',
+            'PRE_ZEYN_FINANCE_ON_REVIEW',
+            'PRE_ZEYN_FINANCE_APPROVED',
+            'WAITING_SAKU_FINANCE_APPROVAL',
+            'WAITING_FINANCE_RELEASE',
+            'RELEASED',
+            'WAITING_POST_ZEYN_DOC',
+            'POST_ZEYN_DOC_ON_REVIEW',
+            'POST_ZEYN_DOC_APPROVED',
+            'POST_ZEYN_FINANCE_ON_REVIEW',
+            'WAITING_ASTRI_SUBMISSION',
+            'ASTRI_ON_REVIEW',
+            'NEED_REVISE_ASTRI',
+            'ASTRI_APPROVED',
+            'PO_DONASI',
+            'INVOICE',
+            'HOLD',
+            'REJECTED',
+        ];
+        $orderedSummary = [];
+        foreach ($stageOrder as $stageCode) {
+            if (isset($summary[$stageCode])) {
+                $orderedSummary[$stageCode] = $summary[$stageCode];
+            }
+        }
+        foreach ($summary as $stageCode => $row) {
+            if (!isset($orderedSummary[$stageCode])) {
+                $orderedSummary[$stageCode] = $row;
+            }
+        }
+        $summary = $orderedSummary;
 
         $filename = 'summary_staging_donasi_batch_approval_' . date('Ymd_His') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
