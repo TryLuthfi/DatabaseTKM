@@ -2377,7 +2377,13 @@ class DRM_MyRep extends CI_Controller
         }
 
         $needle = strtoupper($searchValue);
-        return array_values(array_filter($rows, static function ($row) use ($needle) {
+        return array_values(array_filter($rows, function ($row) use ($needle) {
+            $stageTokens = array_map(static function ($token) {
+                return 'drm_stage_filter_' . $token;
+            }, $this->getDrmStageTokens($row));
+            $statusTokens = array_map(static function ($token) {
+                return 'drm_filter_' . $token;
+            }, $this->getDrmStatusTokens($row));
             $haystack = implode(' ', [
                 $row['cluster_name'] ?? '',
                 $row['cluster_code'] ?? '',
@@ -2389,6 +2395,8 @@ class DRM_MyRep extends CI_Controller
                 $row['drm_cluster_status'] ?? '',
                 $row['drm_subfeeder_status'] ?? '',
                 $row['project_type'] ?? '',
+                implode(' ', $stageTokens),
+                implode(' ', $statusTokens),
             ]);
 
             return strpos(strtoupper($haystack), $needle) !== false;
@@ -2552,10 +2560,6 @@ class DRM_MyRep extends CI_Controller
 
     private function getDrmSpkToken(array $row)
     {
-        if (!$this->isRabDoneDrmRow($row)) {
-            return '';
-        }
-
         return $this->isSpkCompleteDrmRow($row) ? 'done_spk' : 'ny_spk';
     }
 

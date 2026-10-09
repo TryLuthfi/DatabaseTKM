@@ -273,11 +273,7 @@ $drmActiveRabSummary = $drmRabSummaryByTab['all'];
 $drmBelumRabCount = (int) ($drmActiveRabSummary['belumRabCount'] ?? 0);
 $drmRabDoneCount = (int) ($drmActiveRabSummary['rabDoneCount'] ?? 0);
 
-$getDrmSpkToken = static function (array $row) use ($isRabDoneRow, $isSpkCompleteRow) {
-    if (!$isRabDoneRow($row)) {
-        return '';
-    }
-
+$getDrmSpkToken = static function (array $row) use ($isSpkCompleteRow) {
     return $isSpkCompleteRow($row) ? 'done_spk' : 'ny_spk';
 };
 
@@ -438,10 +434,6 @@ if (!function_exists('drmIsNySpkRow')) {
 if (!function_exists('drmSpkToken')) {
     function drmSpkToken(array $row)
     {
-        if (!drmIsRabDoneRow($row)) {
-            return '';
-        }
-
         return drmIsSpkCompleteRow($row) ? 'done_spk' : 'ny_spk';
     }
 }
@@ -717,6 +709,7 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                     href="#"
                                     class="drm-stage-summary-item drm-stage-summary-item--<?= htmlspecialchars((string) ($stageData['class'] ?? 'info'), ENT_QUOTES, 'UTF-8') ?> js-drm-stage-summary-filter"
                                     data-drm-tab="<?= htmlspecialchars((string) ($stageData['tab'] ?? '#drm-all-tab'), ENT_QUOTES, 'UTF-8') ?>"
+                                    data-drm-table="#table_drm_all"
                                     data-drm-stage="<?= htmlspecialchars((string) ($stageData['filter'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                     data-role-guard-exempt="1">
                                     <span class="drm-stage-summary-item__head">
@@ -758,15 +751,15 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                     <div class="drm-tab-section__label">Flow</div>
                                     <ul class="nav nav-tabs drm-monitor-tabs" id="drm-monitor-tab" role="tablist">
                                         <li class="nav-item" role="presentation">
-                                            <a class="nav-link active" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="true">
+                                            <a class="nav-link active" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="true" data-drm-table="#table_drm_all">
                                                 All DRM
-                                                <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
+                                                <span class="drm-monitor-tabs__count" data-drm-flow-count="all"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
                                         <li class="nav-item" role="presentation">
-                                            <a class="nav-link" id="drm-ny-rfs-tab" data-toggle="tab" href="#drm-ny-rfs-pane" role="tab" aria-controls="drm-ny-rfs-pane" aria-selected="false">
+                                            <a class="nav-link" id="drm-ny-rfs-tab" data-toggle="tab" href="#drm-ny-rfs-pane" role="tab" aria-controls="drm-ny-rfs-pane" aria-selected="false" data-drm-table="#table_drm_ny_rfs">
                                                 NY RFS
-                                                <span class="drm-monitor-tabs__count"><?= number_format(count($nyRfsRows), 0, ',', '.') ?></span>
+                                                <span class="drm-monitor-tabs__count" data-drm-flow-count="ny_rfs"><?= number_format(count($nyRfsRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
                                     </ul>
@@ -2225,9 +2218,25 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     '#table_drm_ny_rfs': { tab: 'ny_rfs' }
                 };
                 var drmAdjustTimer = null;
+                var activeDrmTableSelector = '#table_drm_all';
 
                 function getActiveDrmTableSelector() {
+                    if (activeDrmTableSelector && drmTableConfigs[activeDrmTableSelector]) {
+                        return activeDrmTableSelector;
+                    }
+
                     var $table = $('#drm-monitor-tab-content .tab-pane.active .js-drm-monitor-table').first();
+                    return $table.length ? '#' + $table.attr('id') : '#table_drm_all';
+                }
+
+                function getDrmTableSelectorForTab(tabSelector) {
+                    var explicitTable = String($(tabSelector).data('drm-table') || '').trim();
+                    if (explicitTable && $(explicitTable).length) {
+                        return explicitTable;
+                    }
+
+                    var paneSelector = String($(tabSelector).attr('href') || '').trim();
+                    var $table = paneSelector ? $(paneSelector).find('.js-drm-monitor-table').first() : $();
                     return $table.length ? '#' + $table.attr('id') : '#table_drm_all';
                 }
 
@@ -2450,18 +2459,29 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     });
                 }
 
-                function applyDrmFiltersToTable(table) {
-                    if (!table) {
-                        return;
+                function applyDrmAjaxSummaryForSelector(selector, payload) {
+                    var tab = drmTableConfigs[selector] ? drmTableConfigs[selector].tab : '';
+                    if (tab && payload && typeof payload.recordsFiltered !== 'undefined') {
+                        $('[data-drm-flow-count="' + tab + '"]').text(
+                            Number(payload.recordsFiltered || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                        );
                     }
 
+                    if (activeDrmTableSelector === selector) {
+                        applyDrmAjaxSummary(payload);
+                    }
+                }
+
+                function applyDrmFiltersToTable() {
                     Object.keys(drmTables).forEach(function (selector) {
-                        if (drmTables[selector] && drmTables[selector] !== table) {
-                            drmTables[selector].search('');
+                        var table = drmTables[selector];
+                        if (table) {
+                            table.search('');
+                            table.ajax.reload(null, true);
                         }
                     });
 
-                    table.ajax.reload(null, true);
+                    $('.dataTables_filter input[type="search"]').val('');
                 }
 
                 function syncDrmStatusFilterButtons() {
@@ -2517,9 +2537,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                 data.stage_filter = drmStageFilter;
                             },
                             dataSrc: function (payload) {
-                                if (getActiveDrmTableSelector() === selector) {
-                                    applyDrmAjaxSummary(payload);
-                                }
+                                applyDrmAjaxSummaryForSelector(selector, payload);
                                 return payload && payload.data ? payload.data : [];
                             }
                         },
@@ -2541,10 +2559,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             $(api.column(3).footer()).html(hpDrmTotal > 0 ? hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-');
                         }
                     });
+                    $(this).on('xhr.dt', function (event, settings, payload) {
+                        applyDrmAjaxSummaryForSelector(selector, payload);
+                    });
                 });
 
                 $('a[data-toggle="tab"][href^="#drm-"]').on('shown.bs.tab', function () {
-                    var tableSelector = getActiveDrmTableSelector();
+                    var tableSelector = getDrmTableSelectorForTab(this);
+                    activeDrmTableSelector = tableSelector;
                     var activeTab = drmTableConfigs[tableSelector] ? drmTableConfigs[tableSelector].tab : 'all';
                     var activeTable = drmTables[tableSelector];
                     updateDrmStatusCounts(activeTable, activeTab);
@@ -2553,7 +2575,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     syncDrmStageSummaryButtons();
 
                     scheduleDrmMonitorAdjust();
-                    applyDrmFiltersToTable(activeTable);
+                    applyDrmFiltersToTable();
                 });
 
                 $(window).on('resize.drmMonitorTable', scheduleDrmMonitorAdjust);
@@ -2563,34 +2585,41 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                 $(document).on('click', '.js-drm-status-filter', function () {
                     var nextStatus = String($(this).data('drm-status') || '').trim();
+                    activeDrmTableSelector = getActiveDrmTableSelector();
                     drmStatusFilter = drmStatusFilter === nextStatus ? '' : nextStatus;
                     syncDrmStatusFilterButtons();
                     syncDrmStageSummaryButtons();
-                    applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
+                    applyDrmFiltersToTable();
                 });
 
                 $(document).on('click', '.js-drm-rab-filter', function () {
                     var nextRab = String($(this).data('drm-rab') || '').trim();
+                    activeDrmTableSelector = getActiveDrmTableSelector();
                     drmRabFilter = drmRabFilter === nextRab ? '' : nextRab;
                     syncDrmRabFilterButtons();
                     syncDrmStageSummaryButtons();
-                    applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
+                    applyDrmFiltersToTable();
                 });
 
                 $(document).on('click', '.js-drm-spk-filter', function () {
                     var nextSpk = String($(this).data('drm-spk') || '').trim();
+                    activeDrmTableSelector = getActiveDrmTableSelector();
                     drmSpkFilter = drmSpkFilter === nextSpk ? '' : nextSpk;
                     syncDrmSpkFilterButtons();
                     syncDrmStageSummaryButtons();
-                    applyDrmFiltersToTable(drmTables[getActiveDrmTableSelector()]);
+                    applyDrmFiltersToTable();
                 });
 
                 $(document).on('click', '.js-drm-stage-summary-filter', function (event) {
                     event.preventDefault();
                     var $button = $(this);
                     var targetTab = String($button.data('drm-tab') || '#drm-all-tab').trim();
+                    var targetTableSelector = String($button.data('drm-table') || '').trim();
                     var nextStage = String($button.data('drm-stage') || '').trim();
                     var isSameActive = $button.hasClass('is-active');
+                    if (targetTableSelector && drmTableConfigs[targetTableSelector]) {
+                        activeDrmTableSelector = targetTableSelector;
+                    }
 
                     drmStatusFilter = '';
                     drmRabFilter = '';
@@ -2602,9 +2631,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     syncDrmStageSummaryButtons();
 
                     var applySummaryFilter = function () {
-                        var table = drmTables[getActiveDrmTableSelector()];
                         syncDrmStageSummaryButtons();
-                        applyDrmFiltersToTable(table);
+                        applyDrmFiltersToTable();
                     };
 
                     if ($(targetTab).length && !$(targetTab).hasClass('active')) {
