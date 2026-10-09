@@ -2904,6 +2904,12 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $input.val(bakFormatNumberInputValue(value));
         }
 
+        function bakNormalizeFormattedNumbers($form) {
+            $form.find('.js-homepass-format').each(function () {
+                this.value = bakDigitsOnly(this.value);
+            });
+        }
+
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
             var input = document.querySelector(inputSelector);
@@ -3492,7 +3498,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 if (invalidDocName) {
                     e.preventDefault();
                     alert('File ' + invalidDocName + ' wajib format .pdf.');
+                    return;
                 }
+
+                bakNormalizeFormattedNumbers($(this));
+            });
+
+            $('#modal-bak-edit form').on('submit', function () {
+                bakNormalizeFormattedNumbers($(this));
             });
 
             $('#bak-upload-document-form').on('submit', function (e) {
