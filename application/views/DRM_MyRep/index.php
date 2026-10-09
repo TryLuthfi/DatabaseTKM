@@ -18,6 +18,7 @@ $createCityOptions = [];
 $nyBatchRows = [];
 $nyAtpRows = [];
 $allDrmRows = $clusterRows;
+$nyRfsRows = [];
 $drmStageSummary = [
     'NY_DRM' => ['label' => 'NY DRM', 'pic' => 'AREA', 'pic_class' => 'area', 'pic_icon' => 'map-marker-alt', 'class' => 'info', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'ny_drm'],
     'ON_REVIEW_DRM' => ['label' => 'ON REVIEW DRM', 'pic' => 'HO SND', 'pic_class' => 'sitac', 'pic_icon' => 'users', 'class' => 'primary', 'count' => 0, 'hp' => 0, 'tab' => '#drm-all-tab', 'filter' => 'on_review_drm'],
@@ -119,6 +120,15 @@ $isNyBatchRow = static function (array $row) {
     return !in_array($stage, $postStageOrder, true);
 };
 
+$isNyRfsRow = static function (array $row) {
+    $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+    if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+        return false;
+    }
+
+    return trim((string) ($row['tanggal_rfs'] ?? '')) === '';
+};
+
 foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'RELEASED')));
     $drmStatus = strtoupper(trim((string) ($row['display_status_drm'] ?? $row['status_drm'] ?? 'DRAFT')));
@@ -137,6 +147,10 @@ foreach ($clusterRows as $row) {
 
     if (($clusterBoqStatus === 'APPROVED' || $subfeederBoqStatus === 'APPROVED') && $atpStatus !== 'DONE') {
         $nyAtpRows[] = $row;
+    }
+
+    if ($isNyRfsRow($row)) {
+        $nyRfsRows[] = $row;
     }
 
     if ($isNyBatchRow($row)) {
@@ -749,6 +763,12 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                                                 <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
                                             </a>
                                         </li>
+                                        <li class="nav-item" role="presentation">
+                                            <a class="nav-link" id="drm-ny-rfs-tab" data-toggle="tab" href="#drm-ny-rfs-pane" role="tab" aria-controls="drm-ny-rfs-pane" aria-selected="false">
+                                                NY RFS
+                                                <span class="drm-monitor-tabs__count"><?= number_format(count($nyRfsRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
                                     </ul>
                                 </div>
                                 <div class="drm-status-filter-row">
@@ -802,6 +822,9 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                             <div class="tab-content drm-monitor-tabs__content" id="drm-monitor-tab-content">
                                 <div class="tab-pane fade show active" id="drm-all-pane" role="tabpanel" aria-labelledby="drm-all-tab">
                                     <?php $renderDrmTable('table_drm_all', $allDrmRows); ?>
+                                </div>
+                                <div class="tab-pane fade" id="drm-ny-rfs-pane" role="tabpanel" aria-labelledby="drm-ny-rfs-tab">
+                                    <?php $renderDrmTable('table_drm_ny_rfs', $nyRfsRows); ?>
                                 </div>
                             </div>
                         </div>
@@ -2198,12 +2221,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     project_type: <?= json_encode($selectedProjectType) ?>
                 };
                 var drmTableConfigs = {
-                    '#table_drm_all': { tab: 'all' }
+                    '#table_drm_all': { tab: 'all' },
+                    '#table_drm_ny_rfs': { tab: 'ny_rfs' }
                 };
                 var drmAdjustTimer = null;
 
                 function getActiveDrmTableSelector() {
-                    return '#table_drm_all';
+                    var $table = $('#drm-monitor-tab-content .tab-pane.active .js-drm-monitor-table').first();
+                    return $table.length ? '#' + $table.attr('id') : '#table_drm_all';
                 }
 
                 function adjustDrmMonitorTables() {

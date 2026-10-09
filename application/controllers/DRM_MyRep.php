@@ -82,7 +82,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $tab = strtolower(trim((string) $this->input->post('tab')));
-        if (!in_array($tab, ['all'], true)) {
+        if (!in_array($tab, ['all', 'ny_rfs'], true)) {
             $tab = 'all';
         }
 
@@ -2345,6 +2345,10 @@ class DRM_MyRep extends CI_Controller
     private function filterDrmTableRows(array $rows, $tab, $statusFilter, $rabFilter, $spkFilter, $stageFilter)
     {
         return array_values(array_filter($rows, function ($row) use ($tab, $statusFilter, $rabFilter, $spkFilter, $stageFilter) {
+            if ($tab === 'ny_rfs' && !$this->isNyRfsDrmRow($row)) {
+                return false;
+            }
+
             if ($statusFilter !== '' && !in_array($statusFilter, $this->getDrmStatusTokens($row), true)) {
                 return false;
             }
@@ -2495,6 +2499,16 @@ class DRM_MyRep extends CI_Controller
         $atpStatus = strtoupper(trim((string) ($row['stage_atp_status'] ?? '')));
 
         return ($clusterBoqStatus === 'APPROVED' || $subfeederBoqStatus === 'APPROVED') && $atpStatus !== 'DONE';
+    }
+
+    private function isNyRfsDrmRow(array $row)
+    {
+        $projectType = strtoupper(trim((string) ($row['project_type'] ?? 'CLUSTER')));
+        if (in_array($projectType, ['MAINFEEDER', 'FWA'], true)) {
+            return false;
+        }
+
+        return trim((string) ($row['tanggal_rfs'] ?? '')) === '';
     }
 
     private function getDrmStageTokens(array $row)
