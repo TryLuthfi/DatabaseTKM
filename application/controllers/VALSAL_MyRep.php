@@ -1328,11 +1328,39 @@ class VALSAL_MyRep extends CI_Controller
             return 0;
         }
 
-        if (is_numeric($value)) {
-            return (float) $value;
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return 0;
         }
 
-        $normalized = preg_replace('/[^\d,.\-]/', '', (string) $value);
+        if (preg_match('/^-?\d{1,3}(\.\d{3})+$/', $raw)) {
+            return (float) str_replace('.', '', $raw);
+        }
+
+        if (preg_match('/^-?\d{1,3}(,\d{3})+$/', $raw)) {
+            return (float) str_replace(',', '', $raw);
+        }
+
+        if (preg_match('/^-?\d{1,3}(\.\d{3})+,\d+$/', $raw)) {
+            $normalized = str_replace('.', '', $raw);
+            $normalized = str_replace(',', '.', $normalized);
+            return (float) $normalized;
+        }
+
+        if (preg_match('/^-?\d{1,3}(,\d{3})+\.\d+$/', $raw)) {
+            $normalized = str_replace(',', '', $raw);
+            return (float) $normalized;
+        }
+
+        if (preg_match('/^-?\d+,\d+$/', $raw)) {
+            return (float) str_replace(',', '.', $raw);
+        }
+
+        if (is_numeric($raw)) {
+            return (float) $raw;
+        }
+
+        $normalized = preg_replace('/[^\d,.\-]/', '', $raw);
         $normalized = str_replace('.', '', $normalized);
         $normalized = str_replace(',', '.', $normalized);
 

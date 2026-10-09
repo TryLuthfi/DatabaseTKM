@@ -2651,6 +2651,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $input.val(valsalFormatNumberInputValue(value));
         }
 
+        function valsalNormalizeFormattedNumbers($form) {
+            $form.find('.js-homepass-format').each(function () {
+                if (!this.readOnly && !this.disabled) {
+                    this.value = valsalDigitsOnly(this.value);
+                }
+            });
+        }
+
         function getValsalStatusBadgeClass(statusLabel) {
             var value = String(statusLabel || '').toUpperCase().trim();
             if (value === 'DONE' || value === 'APPROVED' || value === 'VALSAL') return 'success';
@@ -3404,7 +3412,14 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 if (invalidDocName) {
                     e.preventDefault();
                     alert('File ' + invalidDocName + ' wajib format .' + invalidExtension + '.');
+                    return;
                 }
+
+                valsalNormalizeFormattedNumbers($(this));
+            });
+
+            $('#modal-valsal-edit form').on('submit', function () {
+                valsalNormalizeFormattedNumbers($(this));
             });
 
             $('#valsal-upload-document-form').on('submit', function (e) {
