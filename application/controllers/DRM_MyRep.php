@@ -903,9 +903,24 @@ class DRM_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $fileId = (int) $this->input->post('id_doc_file');
         $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        $remark = trim((string) $this->input->post('remark'));
+        if ($remark === '') {
+            $this->session->set_flashdata('error', 'Alasan reject dokumen DRM wajib diisi.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $fileContext = $this->MDRM_MyRep->getDrmFileReviewContext($fileId);
+        $currentStatus = strtoupper(trim((string) ($fileContext['status_file'] ?? '')));
+        if ($currentStatus === 'APPROVED' && !$this->canRejectApprovedDocument()) {
+            $this->session->set_flashdata('error', 'Dokumen approved hanya bisa di-reject oleh Super Admin atau SND HO.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
         $result = $this->MDRM_MyRep->updateDrmFileStatus($fileId, [
             'status_file' => 'REJECTED',
-            'remark' => trim((string) $this->input->post('remark')),
+            'remark' => $remark,
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
 
@@ -1228,7 +1243,6 @@ class DRM_MyRep extends CI_Controller
             redirect('DRM_MyRep/detail/' . $clusterId);
             return;
         }
-
         $userId = (int) $this->session->userdata('id_user');
         $sourceDocFileId = (int) ($docDetail['id_doc_file'] ?? 0);
 
@@ -1965,6 +1979,14 @@ class DRM_MyRep extends CI_Controller
         $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         if (!$this->isApprover()) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject BOQ DRM.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $boqHeader = $this->MDRM_MyRep->getDrmBoqHeader($clusterId, $scopeType);
+        $boqStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? '')));
+        if ($boqStatus === 'APPROVED' && !$this->canRejectApprovedDocument()) {
+            $this->session->set_flashdata('error', 'BOQ approved hanya bisa di-reject oleh Super Admin atau SND HO.');
             redirect('DRM_MyRep/detail/' . $clusterId);
             return;
         }
@@ -2982,6 +3004,19 @@ class DRM_MyRep extends CI_Controller
     {
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function canRejectApprovedDocument()
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        if (!isset($this->myrepAccess) || !method_exists($this->myrepAccess, 'getCurrentRoleKeys')) {
+            return false;
+        }
+
+        return in_array('SND_HO', (array) $this->myrepAccess->getCurrentRoleKeys(), true);
     }
 
     private function canChecklistRabDone()

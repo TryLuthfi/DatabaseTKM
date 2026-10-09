@@ -5,6 +5,8 @@ $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'EDIT') : true;
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'APPROVAL') : true;
+$currentRoleKeys = isset($this->myrepAccess) && method_exists($this->myrepAccess, 'getCurrentRoleKeys') ? (array) $this->myrepAccess->getCurrentRoleKeys() : [];
+$canRejectApprovedDocument = $this->session->userdata('nama_level') === 'Super Admin' || in_array('SND_HO', $currentRoleKeys, true);
 $rabDetail = (array) ($rabDetail ?? []);
 $rabStatus = strtoupper(trim((string) ($rabDetail['rab_status'] ?? $cluster['rab_status'] ?? '')));
 $isRabDone = $rabStatus === 'RAB DONE';
@@ -1899,14 +1901,14 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                     <?php if (($row['doc_name'] ?? '') === 'APD BOQ' && $boqReady): ?>
                                                                         <?php if ($canTambah && !$isBoqLocked && !$isSubfeederWorkflowLocked): ?>
                                                                             <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-apd-boq-package-<?= strtolower($scopeKey) ?>">Kelola APD BOQ & BOQ Manual</button>
-                                                                        <?php else: ?>
+                                                                        <?php elseif ($isBoqLocked): ?>
                                                                             <span class="text-success small font-weight-bold">BOQ sudah approved</span>
                                                                         <?php endif; ?>
                                                                         <div class="small text-muted mt-2">
                                                                             Status BOQ:
                                                                             <span class="badge badge-<?= drmDetailBadgeClass($boqReviewStatus) ?>"><?= htmlspecialchars($boqReviewStatus !== '' ? $boqReviewStatus : 'DRAFT') ?></span>
                                                                         </div>
-                                                                        <?php if ($canApprove && $canApprovalAction && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+                                                                        <?php if ($canApprove && $canApprovalAction && !empty($boqHeader['id_drm_boq']) && (in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true) || ($boqReviewStatus === 'APPROVED' && $canRejectApprovedDocument))): ?>
                                                                             <button type="button" class="btn btn-sm btn-outline-success mt-2" data-toggle="modal" data-target="#modal-boq-review-<?= strtolower($scopeKey) ?>">Review BOQ</button>
                                                                         <?php endif; ?>
                                                                         <?php if (!empty($boqHeader['ho_review_remark'])): ?>
@@ -1964,7 +1966,22 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                                                                 </button>
                                                                             </div>
                                                                         <?php elseif ($docRawStatus === 'APPROVED'): ?>
-                                                                            <span class="text-success small font-weight-bold">Sudah approved</span>
+                                                                            <?php if ($canRejectApprovedDocument): ?>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    class="btn btn-sm btn-outline-danger js-open-drm-review-modal"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#modal-drm-review"
+                                                                                    data-review-action="reject"
+                                                                                    data-doc-file-id="<?= (int) ($row['id_doc_file'] ?? 0) ?>"
+                                                                                    data-scope-type="<?= htmlspecialchars((string) $scopeKey, ENT_QUOTES) ?>"
+                                                                                    data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                                    data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                                    Reject Approved
+                                                                                </button>
+                                                                            <?php else: ?>
+                                                                                <span class="text-success small font-weight-bold">Sudah approved</span>
+                                                                            <?php endif; ?>
                                                                         <?php elseif ($docRawStatus === 'REJECTED'): ?>
                                                                             <span class="text-danger small font-weight-bold">Sudah rejected</span>
                                                                         <?php else: ?>
@@ -2720,7 +2737,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                 <button type="submit" class="btn btn-outline-primary">Simpan Draft</button>
                                 <button type="submit" class="btn btn-primary" name="submit_to_ho" value="1">Submit ke HO</button>
                             <?php else: ?>
-                                <span class="text-muted small">BOQ sudah approved, upload dan edit dinonaktifkan.</span>
+                                <span class="text-muted small">BOQ sudah approved, reject dulu agar bisa upload ulang.</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -2730,7 +2747,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
     </div>
     <?php endif; ?>
 
-    <?php if ($canApprove && $canApprovalAction && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+    <?php if ($canApprove && $canApprovalAction && !empty($boqHeader['id_drm_boq']) && (in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true) || ($boqReviewStatus === 'APPROVED' && $canRejectApprovedDocument))): ?>
         <div class="modal fade" id="modal-boq-review-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content drm-modal">
@@ -2779,6 +2796,7 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                             </div>
                         </div>
                         <div class="row">
+                            <?php if ($boqReviewStatus !== 'APPROVED'): ?>
                             <div class="col-md-6">
                                 <form method="post" action="<?= base_url('DRM_MyRep/approveBoq') ?>">
                                     <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -2793,7 +2811,8 @@ if (!function_exists('drmScopeRequirementBadgeClass')) {
                                     </div>
                                 </form>
                             </div>
-                            <div class="col-md-6">
+                            <?php endif; ?>
+                            <div class="<?= $boqReviewStatus === 'APPROVED' ? 'col-md-12' : 'col-md-6' ?>">
                                 <form method="post" action="<?= base_url('DRM_MyRep/rejectBoq') ?>">
                                     <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                                     <input type="hidden" name="scope_type" value="<?= htmlspecialchars($scopeKey) ?>">

@@ -1743,16 +1743,8 @@ class MDRM_MyRep extends CI_Model
             return false;
         }
 
-        $file = $this->db
-            ->select('f.*, c.city_name')
-            ->from('tb_myrep_flow_doc_file f')
-            ->join('tb_myrep_flow_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
-            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'left')
-            ->where('f.id_doc_file', (int) $fileId)
-            ->limit(1)
-            ->get()
-            ->row_array();
-        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
+        $file = $this->getDrmFileReviewContext($fileId);
+        if (empty($file)) {
             return false;
         }
 
@@ -1779,6 +1771,28 @@ class MDRM_MyRep extends CI_Model
 
         $this->refreshPackageStatus((int) $file['id_doc_package']);
         return $result;
+    }
+
+    public function getDrmFileReviewContext($fileId)
+    {
+        if (!$this->drmDocumentTablesReady()) {
+            return [];
+        }
+
+        $file = $this->db
+            ->select('f.*, c.city_name')
+            ->from('tb_myrep_flow_doc_file f')
+            ->join('tb_myrep_flow_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'left')
+            ->where('f.id_doc_file', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
+            return [];
+        }
+
+        return $file;
     }
 
     public function saveDrmBoqDraft($clusterId, $drmId, $sourceDocFileId, $items, $userId, $submitToHo = false, $scopeType = 'CLUSTER')
@@ -1845,11 +1859,13 @@ class MDRM_MyRep extends CI_Model
             $drmBoqId = (int) $this->db->insert_id();
         }
 
+        $savedBoqItemIds = [];
         foreach ($items as $item) {
             $boqItemId = (int) ($item['id_boq_item'] ?? 0);
             if ($boqItemId <= 0) {
                 continue;
             }
+            $savedBoqItemIds[] = $boqItemId;
 
             $payload = [
                 'qty_boq' => (float) ($item['qty_boq'] ?? 0),
@@ -1874,6 +1890,13 @@ class MDRM_MyRep extends CI_Model
                 $this->db->insert('tb_myrep_drm_boq_item', $payload);
             }
         }
+
+        $savedBoqItemIds = array_values(array_unique($savedBoqItemIds));
+        $this->db->where('id_drm_boq', $drmBoqId);
+        if (!empty($savedBoqItemIds)) {
+            $this->db->where_not_in('id_boq_item', $savedBoqItemIds);
+        }
+        $this->db->delete('tb_myrep_drm_boq_item');
 
         $this->db->trans_complete();
         return $this->db->trans_status();
@@ -2417,7 +2440,7 @@ class MDRM_MyRep extends CI_Model
             $rejectedAt = date('Y-m-d H:i:s');
             foreach ($documentFiles as $file) {
                 $packageIds[(int) $file['id_doc_package']] = true;
-                if (strtoupper((string) ($file['status_file'] ?? '')) !== 'UPLOADED') {
+                if (!in_array(strtoupper((string) ($file['status_file'] ?? '')), ['UPLOADED', 'APPROVED'], true)) {
                     continue;
                 }
 
@@ -2428,6 +2451,7 @@ class MDRM_MyRep extends CI_Model
                         'remark' => $remark !== '' ? $remark : 'Rejected via BOQ review',
                         'approved_by' => (int) $userId,
                         'reviewed_at' => $rejectedAt,
+                        'approved_at' => null,
                     ]);
 
                 $this->createFileLog([
