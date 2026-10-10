@@ -2655,7 +2655,7 @@ class DRM_MyRep extends CI_Controller
             return 'drm_filter_' . $token;
         }, $this->getDrmStatusTokens($row));
         $rabFilterToken = $this->getDrmRabToken($row);
-        $rabStatusLabel = $rabFilterToken === 'rab_done' ? 'RAB DONE' : ($rabFilterToken === 'belum_rab' ? 'BELUM RAB DONE' : '-');
+        $rabStatusLabel = $rabFilterToken === 'rab_done' ? 'RAB DONE' : 'BELUM RAB DONE';
         $stageSearchTokens = array_map(static function ($token) {
             return 'drm_stage_filter_' . $token;
         }, $this->getDrmStageTokens($row));

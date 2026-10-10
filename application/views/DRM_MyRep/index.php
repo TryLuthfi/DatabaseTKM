@@ -492,7 +492,7 @@ $renderDrmTableRows = static function (array $rows) {
         $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? '')));
         $rabDone = $rabStatus === 'RAB DONE' || $currentStatus === 'RAB DONE';
         $rabFilterToken = $rabDone ? 'rab_done' : (in_array('approved', $statusTokens, true) ? 'belum_rab' : '');
-        $rabStatusLabel = $rabDone ? 'RAB DONE' : ($rabFilterToken === 'belum_rab' ? 'BELUM RAB DONE' : '-');
+        $rabStatusLabel = $rabDone ? 'RAB DONE' : 'BELUM RAB DONE';
         $spkClusterDone = strtoupper(trim((string) ($row['spk_cluster_status'] ?? ''))) === 'SPK DONE';
         $spkSubfeederDone = strtoupper(trim((string) ($row['spk_subfeeder_status'] ?? ''))) === 'SPK DONE';
         $subfeederSpkNotRequired = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? ''))) === 'TIDAK DIBUTUHKAN';
