@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MATP_MyRep extends CI_Model
 {
@@ -346,7 +347,7 @@ class MATP_MyRep extends CI_Model
         }
         unset($row);
 
-        return $rows;
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     private function fetchMainfeederRows($city = '', $regional = '', $projectType = '')
@@ -430,7 +431,7 @@ class MATP_MyRep extends CI_Model
         }
         unset($row);
 
-        return $rows;
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     private function getLatestAtpFilesByClusterIds($clusterIds)

@@ -267,7 +267,7 @@ class MVALSAL_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db->get()->result_array();
+        return myrep_apply_city_project_team_rows($this->db, $this->db->get()->result_array());
     }
 
     public function getValsalRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $valsalDateStart = '', $valsalDateEnd = '')
@@ -363,11 +363,13 @@ class MVALSAL_MyRep extends CI_Model
             }
         }
 
-        return $this->db
+        $rows = $this->db
             ->order_by('c.created_at', 'DESC')
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     public function getRegionalOptions()

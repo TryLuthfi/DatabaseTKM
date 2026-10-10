@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MImplementasi_BOQ_MyRep extends CI_Model
 {
@@ -742,7 +743,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        return array_merge($row, $this->getClusterProgressMetaMap([(int) $clusterId])[(int) $clusterId] ?? $this->buildEmptyClusterMeta());
+        return myrep_apply_city_project_team($this->db, array_merge($row, $this->getClusterProgressMetaMap([(int) $clusterId])[(int) $clusterId] ?? $this->buildEmptyClusterMeta()));
     }
 
     private function getFullUploadEligibilityMap($clusterIds)

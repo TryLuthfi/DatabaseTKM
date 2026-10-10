@@ -138,7 +138,7 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db->get()->result_array();
+        return myrep_apply_city_project_team_rows($this->db, $this->db->get()->result_array());
     }
 
     public function getRows($city = '', $status = '')
@@ -181,6 +181,7 @@ class MPO_MyRep extends CI_Model
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+        $rows = myrep_apply_city_project_team_rows($this->db, $rows);
 
         $poMetaMap = $this->getPoMetaMap(array_column($rows, 'id_myrep_cluster'));
         $filtered = [];
@@ -201,7 +202,7 @@ class MPO_MyRep extends CI_Model
             $filtered[] = $mainfeederRow;
         }
 
-        return $filtered;
+        return myrep_apply_city_project_team_rows($this->db, $filtered);
     }
 
     private function getMainfeederMonitorRows($city = '', $status = '')
@@ -563,7 +564,7 @@ class MPO_MyRep extends CI_Model
             }));
         }
 
-        return $rows;
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     public function getMonitorDataTable($city = '', $status = '', $start = 0, $length = 10, $search = '', $orderColumn = 1, $orderDir = 'asc')
@@ -1419,7 +1420,7 @@ class MPO_MyRep extends CI_Model
             $reportRows[] = $row;
         }
 
-        return $reportRows;
+        return myrep_apply_city_project_team_rows($this->db, $reportRows);
     }
 
     public function getEmrTargetPurchaseOrderRefreshRows($city = '', $regional = '')
@@ -1666,6 +1667,8 @@ class MPO_MyRep extends CI_Model
         }
         unset($row);
 
+        $rows = myrep_apply_city_project_team_rows($this->db, $rows);
+
         return [
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
@@ -1711,7 +1714,7 @@ class MPO_MyRep extends CI_Model
             return (float) ($targetRow['po_value'] ?? 0);
         }, $clusterTargetRows));
 
-        return $row;
+        return myrep_apply_city_project_team($this->db, $row);
     }
 
     public function getEmrTargetPoHeadersByClusterId($clusterId, $scope = 'target')
@@ -1830,7 +1833,7 @@ class MPO_MyRep extends CI_Model
             $filtered[] = $row;
         }
 
-        return $filtered;
+        return myrep_apply_city_project_team_rows($this->db, $filtered);
     }
 
     private function normalizeUpperList($value)
@@ -5510,7 +5513,7 @@ class MPO_MyRep extends CI_Model
         }
         unset($row);
 
-        return $rows;
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     private function filterPoRowsByCurrentPic(array $rows, array $picValues, array $nroStatusValues = [])

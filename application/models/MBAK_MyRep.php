@@ -237,7 +237,7 @@ class MBAK_MyRep extends CI_Model
             ->get()
             ->result_array();
 
-        return $this->filterRowsByCurrentUserAllowedCities($rows, 'city_name');
+        return myrep_apply_city_project_team_rows($this->db, $this->filterRowsByCurrentUserAllowedCities($rows, 'city_name'));
     }
 
     public function getCreateTargetOptions()
@@ -448,11 +448,13 @@ class MBAK_MyRep extends CI_Model
             }
         }
 
-        return $this->db
+        $rows = $this->db
             ->order_by('c.created_at', 'DESC')
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     public function getBakRowsPage($city = '', $status = '', $tab = 'all', $approvalStatus = '', $start = 0, $length = 10, $search = '', array $order = [])
@@ -480,6 +482,7 @@ class MBAK_MyRep extends CI_Model
             ->limit($length, $start)
             ->get()
             ->result_array();
+        $rows = myrep_apply_city_project_team_rows($this->db, $rows);
 
         return [
             'recordsTotal' => $recordsTotal,

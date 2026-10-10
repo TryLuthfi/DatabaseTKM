@@ -140,7 +140,7 @@ class Myrep_access_service
             ->row_array();
 
         $nik = trim((string) ($user['nik'] ?? ''));
-        if ($nik === '' || !$this->ci->db->table_exists('tb_myrep_pic_mapping_city')) {
+        if ($nik === '' || !myrep_access_table_exists('tb_myrep_pic_mapping_city')) {
             $this->roleCache[$userId] = [];
             return [];
         }
@@ -163,7 +163,7 @@ class Myrep_access_service
 
         $roles = [];
         foreach ($checks as $roleKey => $columnName) {
-            if (!$this->ci->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+            if (!myrep_access_field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
                 continue;
             }
 

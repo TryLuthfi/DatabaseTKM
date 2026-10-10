@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MMyRepublik_Project extends CI_Model
 {
@@ -171,7 +172,7 @@ class MMyRepublik_Project extends CI_Model
             );
         });
 
-        return $rows;
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     public function getClusterRowsPage($selectedCity = '', $selectedStatus = '', $metricMode = 'HP', $start = 0, $length = 10, $search = '', array $order = [], $selectedProjectType = '')
@@ -541,7 +542,7 @@ class MMyRepublik_Project extends CI_Model
         $row = array_merge($row, $poMeta, $rfsMeta);
         $row['status_current'] = $this->resolveEffectiveStatus($row);
 
-        return $row;
+        return myrep_apply_city_project_team($this->db, $row);
     }
 
     public function getLegacyClusterDetail($rfsClusterId)
@@ -602,7 +603,7 @@ class MMyRepublik_Project extends CI_Model
         }
 
         $bridgeMap = $this->getLegacyBridgeSummaryMap([(int) $rfsClusterId]);
-        return array_merge($row, $bridgeMap[(int) $rfsClusterId] ?? []);
+        return myrep_apply_city_project_team($this->db, array_merge($row, $bridgeMap[(int) $rfsClusterId] ?? []));
     }
 
     public function buildStageTimeline($cluster, $isLegacy = false)

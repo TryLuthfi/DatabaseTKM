@@ -2,6 +2,70 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
+if (!function_exists('myrep_access_table_exists')) {
+    function myrep_access_table_exists($tableName)
+    {
+        $tableName = trim((string) $tableName);
+        if ($tableName === '') {
+            return false;
+        }
+
+        static $cache = [];
+        if (array_key_exists($tableName, $cache)) {
+            return $cache[$tableName];
+        }
+
+        $CI = &get_instance();
+        if (!isset($CI->db)) {
+            $cache[$tableName] = false;
+            return false;
+        }
+
+        $row = (array) $CI->db
+            ->query(
+                'SELECT 1 AS hit FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1',
+                [$tableName]
+            )
+            ->row_array();
+
+        $cache[$tableName] = !empty($row);
+        return $cache[$tableName];
+    }
+}
+
+if (!function_exists('myrep_access_field_exists')) {
+    function myrep_access_field_exists($fieldName, $tableName)
+    {
+        $fieldName = trim((string) $fieldName);
+        $tableName = trim((string) $tableName);
+        if ($fieldName === '' || $tableName === '') {
+            return false;
+        }
+
+        static $cache = [];
+        $cacheKey = $tableName . '.' . $fieldName;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $CI = &get_instance();
+        if (!isset($CI->db)) {
+            $cache[$cacheKey] = false;
+            return false;
+        }
+
+        $row = (array) $CI->db
+            ->query(
+                'SELECT 1 AS hit FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1',
+                [$tableName, $fieldName]
+            )
+            ->row_array();
+
+        $cache[$cacheKey] = !empty($row);
+        return $cache[$cacheKey];
+    }
+}
+
 if (!function_exists('get_validation_user_list')) {
     function get_validation_user_list()
     {
@@ -51,7 +115,7 @@ if (!function_exists('sync_current_user_access_session')) {
             return;
         }
 
-        $hasValidationUserColumn = $CI->db->field_exists('validation_user', 'tb_master_user_new');
+        $hasValidationUserColumn = myrep_access_field_exists('validation_user', 'tb_master_user_new');
         $selectValidation = $hasValidationUserColumn ? ', a.validation_user' : ', NULL AS validation_user';
 
         $akun = (array) $CI->db
@@ -543,9 +607,9 @@ if (!function_exists('has_myrep_role_page_access')) {
         $CI = &get_instance();
         if (
             !isset($CI->db) ||
-            !$CI->db->table_exists('tb_master_user_new') ||
-            !$CI->db->table_exists('tb_myrep_pic_mapping_city') ||
-            !$CI->db->table_exists('tb_myrep_role_permission')
+            !myrep_access_table_exists('tb_master_user_new') ||
+            !myrep_access_table_exists('tb_myrep_pic_mapping_city') ||
+            !myrep_access_table_exists('tb_myrep_role_permission')
         ) {
             $cache[$cacheKey] = false;
             return false;
@@ -582,7 +646,7 @@ if (!function_exists('has_myrep_role_page_access')) {
 
         $roleKeys = [];
         foreach ($roleColumnMap as $roleKey => $columnName) {
-            if (!$CI->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+            if (!myrep_access_field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
                 continue;
             }
 

@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MMainfeeder_MyRep extends CI_Model
 {
@@ -252,11 +253,13 @@ class MMainfeeder_MyRep extends CI_Model
             return [];
         }
 
-        return $query
+        $rows = $query
             ->order_by('mf.updated_at', 'DESC')
             ->order_by('mf.mainfeeder_name', 'ASC')
             ->get()
             ->result_array();
+
+        return myrep_apply_city_project_team_rows($this->db, $rows);
     }
 
     public function getById($mainfeederId)
@@ -267,7 +270,7 @@ class MMainfeeder_MyRep extends CI_Model
         $regionalFallbackSql = $this->cityMappingFallbackSql('regional_name');
         $provinceFallbackSql = $this->cityMappingFallbackSql('province_name');
 
-        return $this->db
+        $row = $this->db
             ->select("
                 mf.*,
                 COALESCE(NULLIF(mf.city_name, ''), mt.city_name) AS city_name,
@@ -295,6 +298,8 @@ class MMainfeeder_MyRep extends CI_Model
             ->where('mf.id_mainfeeder', (int) $mainfeederId)
             ->get()
             ->row_array();
+
+        return empty($row) ? [] : myrep_apply_city_project_team($this->db, (array) $row);
     }
 
     public function getRabByMainfeederId($mainfeederId, $activeOnly = true)

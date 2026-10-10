@@ -8,6 +8,10 @@ class MDRM_MyRep extends CI_Model
     private $currentUserAllowedCitySet = null;
     /** @var array<string,bool>|null */
     private $drmStatusEnumSet = null;
+    /** @var array<string,string> */
+    private $masterUserNameByNikCache = [];
+    /** @var array<string,array> */
+    private $cityProjectTeamMappingCache = [];
 
     public function __construct()
     {
@@ -842,7 +846,120 @@ class MDRM_MyRep extends CI_Model
         $row['spk_subfeeder_status'] = $spkMap[(int) $clusterId]['SUBFEEDER']['spk_status'] ?? '';
         $row['spk_subfeeder_number'] = $spkMap[(int) $clusterId]['SUBFEEDER']['spk_number'] ?? '';
 
+        $row = $this->applyCityMappingProjectTeam($row);
+
         return $row;
+    }
+
+    private function applyCityMappingProjectTeam(array $row)
+    {
+        $mapping = $this->getCityProjectTeamMapping(
+            (string) ($row['city_name'] ?? ''),
+            (string) ($row['province_name'] ?? ''),
+            (string) ($row['regional_name'] ?? '')
+        );
+        if (empty($mapping)) {
+            return $row;
+        }
+
+        $row['team_name'] = (string) ($mapping['team_name'] ?? '');
+        $row['chief'] = (string) ($mapping['chief'] ?? '');
+        $row['rpm'] = $this->resolveCityMappingPicNames($mapping, 'rpm_area');
+        $row['sm'] = $this->resolveCityMappingPicNames($mapping, 'sm_area');
+        $row['spv'] = $this->resolveCityMappingPicNames($mapping, 'spv_area');
+        $row['pic_project'] = $this->resolveCityMappingPicNames($mapping, 'snd_area');
+
+        return $row;
+    }
+
+    private function getCityProjectTeamMapping($cityName, $provinceName = '', $regionalName = '')
+    {
+        $cityName = strtoupper(trim((string) $cityName));
+        $provinceName = strtoupper(trim((string) $provinceName));
+        $regionalName = strtoupper(trim((string) $regionalName));
+        if ($cityName === '' || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $cacheKey = $cityName . '|' . $provinceName . '|' . $regionalName;
+        if (array_key_exists($cacheKey, $this->cityProjectTeamMappingCache)) {
+            return $this->cityProjectTeamMappingCache[$cacheKey];
+        }
+
+        $selectFields = ['team_name', 'chief'];
+        foreach (['rpm_area', 'sm_area', 'spv_area', 'snd_area'] as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $selectFields[] = $columnName;
+            }
+        }
+
+        $this->db
+            ->select(implode(', ', $selectFields))
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(city_name)', $cityName);
+        if ($provinceName !== '') {
+            $this->db->where('UPPER(province_name)', $provinceName);
+        }
+        if ($regionalName !== '') {
+            $this->db->where('UPPER(regional_name)', $regionalName);
+        }
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+
+        $mapping = (array) $this->db->limit(1)->get()->row_array();
+        if (empty($mapping)) {
+            $this->db
+                ->select(implode(', ', $selectFields))
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $cityName);
+            if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+                $this->db->where('is_active', 1);
+            }
+            $mapping = (array) $this->db->limit(1)->get()->row_array();
+        }
+
+        $this->cityProjectTeamMappingCache[$cacheKey] = $mapping;
+        return $mapping;
+    }
+
+    private function resolveCityMappingPicNames(array $mapping, $columnName)
+    {
+        if (!$this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+            return '';
+        }
+
+        $names = [];
+        foreach (myrep_pic_nik_list($mapping[$columnName] ?? '') as $nik) {
+            $mappedName = $this->getMasterUserNameByNik($nik);
+            $names[] = $mappedName !== '' ? $mappedName : $nik;
+        }
+
+        return implode(', ', $names);
+    }
+
+    private function getMasterUserNameByNik($nik)
+    {
+        $nik = trim((string) $nik);
+        if ($nik === '' || !$this->db->table_exists('tb_master_user_new')) {
+            return '';
+        }
+
+        if (array_key_exists($nik, $this->masterUserNameByNikCache)) {
+            return $this->masterUserNameByNikCache[$nik];
+        }
+
+        $row = (array) $this->db
+            ->select('nama_karyawan')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $name = trim((string) ($row['nama_karyawan'] ?? ''));
+        $this->masterUserNameByNikCache[$nik] = $name;
+        return $name;
     }
 
     public function getRabByClusterId($clusterId, $activeOnly = true)

@@ -41,12 +41,33 @@ class MBatch_Approval_MyRep extends CI_Model
     public function __construct()
     {
         parent::__construct();
-        $this->ensureFinanceApprovalSchema();
-        $this->ensureRabSchema();
-        $this->ensureDonationDocumentDefinitions();
+        if ($this->shouldRunSchemaMaintenance()) {
+            $this->ensureFinanceApprovalSchema();
+            $this->ensureRabSchema();
+            $this->ensureDonationDocumentDefinitions();
+        }
         if ($this->shouldRestrictCityByUser()) {
             $this->getCurrentUserAllowedCitySet();
         }
+    }
+
+    private function shouldRunSchemaMaintenance()
+    {
+        if (is_cli()) {
+            return true;
+        }
+
+        $enabled = getenv('MYREP_AUTO_SCHEMA');
+        if ($enabled === false && isset($_ENV['MYREP_AUTO_SCHEMA'])) {
+            $enabled = $_ENV['MYREP_AUTO_SCHEMA'];
+        }
+        if ($enabled === false) {
+            $envPath = APPPATH . '../.env';
+            $env = is_file($envPath) ? parse_ini_file($envPath) : [];
+            $enabled = isset($env['MYREP_AUTO_SCHEMA']) ? $env['MYREP_AUTO_SCHEMA'] : false;
+        }
+
+        return in_array(strtolower(trim((string) $enabled)), ['1', 'true', 'yes', 'on'], true);
     }
 
     private function ensureFinanceApprovalSchema()
@@ -448,7 +469,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
-        return $query->get()->result_array();
+        return myrep_apply_city_project_team_rows($this->db, $query->get()->result_array());
     }
 
     public function getBatchRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $submissionDateStart = '', $submissionDateEnd = '')
@@ -682,6 +703,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+        $rows = myrep_apply_city_project_team_rows($this->db, $rows);
 
         $summaryMap = $this->getPostDonasiSummaryMap(array_column($rows, 'id_myrep_cluster'));
         $donationSummaryMap = $this->getDonationDocumentSummaryMap(array_column($rows, 'id_myrep_cluster'));
@@ -3281,7 +3303,7 @@ class MBatch_Approval_MyRep extends CI_Model
         $stagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? '')));
 
         if ($hasBatch
-            && in_array($stagingStatus, ['', 'WAITING HO', 'WAITING_BATCH_APPROVAL'], true)
+            && in_array($stagingStatus, ['', 'DRAFT', 'WAITING HO', 'WAITING_BATCH_APPROVAL'], true)
             && (trim((string) ($row['astri_batch_number'] ?? '')) !== '' || trim((string) ($row['astri_batch_approved_at'] ?? '')) !== '')) {
             return 'BATCH_APPROVED';
         }

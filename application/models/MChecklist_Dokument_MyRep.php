@@ -2874,7 +2874,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $fileStatusSummary = $this->getFileStatusSummaryByPackageIds($packageIds);
         $result = [];
 
+        $mappingCache = [];
+        $userCache = [];
         foreach ($rows as $row) {
+            $row = myrep_apply_city_project_team($this->db, $row, $mappingCache, $userCache);
             $clusterId = (int) $row['id_cluster'];
             $clusterPackages = isset($packagesByCluster[$clusterId]) ? $packagesByCluster[$clusterId] : [];
             $docSummary = [
