@@ -465,8 +465,6 @@ class Batch_Approval_MyRep extends CI_Controller
             : [];
         $didSyncDonationStage = false;
         if ($data['docReady']) {
-            $didSyncDonationStage = $this->syncDonationUploadReviewStage($clusterId, 'PRE_ZEYN') || $didSyncDonationStage;
-            $didSyncDonationStage = $this->syncDonationUploadReviewStage($clusterId, 'POST_ZEYN') || $didSyncDonationStage;
             $didSyncDonationStage = $this->syncDonationApprovalStage($clusterId, 'PRE_ZEYN') || $didSyncDonationStage;
             $didSyncDonationStage = $this->syncDonationApprovalStage($clusterId, 'POST_ZEYN') || $didSyncDonationStage;
             $didSyncDonationStage = $this->syncDonationFinanceApprovalStage($clusterId, 'PRE_ZEYN') || $didSyncDonationStage;
