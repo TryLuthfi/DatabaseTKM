@@ -3227,7 +3227,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return 'WAITING_ASTRI_SUBMISSION';
         }
 
-        if (in_array($stagingStatus, ['BATCH_APPROVED', 'PRE_ZEYN_DOC_ON_REVIEW'], true)) {
+        if (in_array($stagingStatus, ['BATCH_APPROVED', 'WAITING_PRE_ZEYN_DOC', 'PRE_ZEYN_DOC_ON_REVIEW'], true)) {
             $preRequired = (int) ($pre['required'] ?? 0);
             if ($preRequired > 0) {
                 if ((int) ($pre['approved'] ?? 0) < $preRequired) {

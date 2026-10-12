@@ -3999,7 +3999,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $summary = $this->MBatch_Approval_MyRep->getDonationDocumentSummary($clusterId);
 
         if (in_array($groupKeyOrLabel, ['PRE_ZEYN', 'PRE ZEYN DOCUMENT'], true)
-            && in_array($currentStage, ['BATCH_APPROVED', 'PRE_ZEYN_DOC_APPROVED', 'PRE_ZEYN_FINANCE_ON_REVIEW', 'PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE'], true)) {
+            && in_array($currentStage, ['BATCH_APPROVED', 'WAITING_PRE_ZEYN_DOC', 'PRE_ZEYN_DOC_APPROVED', 'PRE_ZEYN_FINANCE_ON_REVIEW', 'PRE_ZEYN_FINANCE_APPROVED', 'WAITING_FINANCE_RELEASE'], true)) {
             $preSummary = $summary['PRE_ZEYN'] ?? [];
             $required = (int) ($preSummary['required'] ?? 0);
             if ($required > 0
