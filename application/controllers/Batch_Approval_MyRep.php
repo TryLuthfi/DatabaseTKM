@@ -2534,11 +2534,12 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $addedCount = 0;
+        $requiresFinanceApproval = $groupKey !== 'POST_ZEYN';
         foreach ($documentRows as $index => $documentRow) {
             $statusFile = strtoupper(trim((string) ($documentRow['status_file'] ?? '')));
             $financeStatus = strtoupper(trim((string) ($documentRow['finance_status'] ?? 'NY')));
             $filePath = trim((string) ($documentRow['file_path'] ?? ''));
-            if ($statusFile !== 'APPROVED' || $financeStatus !== 'APPROVED' || $filePath === '') {
+            if ($statusFile !== 'APPROVED' || ($requiresFinanceApproval && $financeStatus !== 'APPROVED') || $filePath === '') {
                 continue;
             }
 
@@ -2559,7 +2560,10 @@ class Batch_Approval_MyRep extends CI_Controller
             if (is_file($zipFile)) {
                 @unlink($zipFile);
             }
-            $this->session->set_flashdata('error', 'Tidak ada dokumen yang sudah approved SITAC dan Finance untuk didownload.');
+            $emptyMessage = $requiresFinanceApproval
+                ? 'Tidak ada dokumen yang sudah approved SITAC dan Finance untuk didownload.'
+                : 'Tidak ada dokumen yang sudah approved SITAC untuk didownload.';
+            $this->session->set_flashdata('error', $emptyMessage);
             redirect($this->resolveBatchRedirectPath($clusterId));
             return;
         }
