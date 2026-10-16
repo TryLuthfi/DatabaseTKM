@@ -7,6 +7,7 @@ class Batch_Approval_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MBatch_Approval_MyRep');
+        $this->load->model('MBatch_edit_approval');
         $this->load->model('MPost_Donasi_MyRep');
         $this->load->model('MBAK_MyRep');
         $this->load->library('upload');
@@ -23,6 +24,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 'printChecklistPengajuan' => 'VIEW',
                 'saveImportedBatch' => 'TAMBAH',
                 'updateBatchApproval' => 'VIEW',
+                'reviewBatchEdit' => 'VIEW',
                 'rejectBatchData' => 'APPROVAL',
                 'submitRevisedBatchData' => 'VIEW',
                 'updateStagingProgress' => 'VIEW',
@@ -57,6 +59,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
 
+        $data['batchEditCsrf'] = $this->batchEditCsrf();
         $data['title'] = 'Batch Approval MyRep';
         $data['selectedCity'] = $selectedCity;
         $data['selectedStatus'] = $selectedStatus;
@@ -475,6 +478,14 @@ class Batch_Approval_MyRep extends CI_Controller
             $data['cluster'] = $cluster;
             $data['donationDocumentSummary'] = $this->MBatch_Approval_MyRep->getDonationDocumentSummary($clusterId);
         }
+        $editContext = $this->MBatch_edit_approval->context($clusterId);
+        $data['batchEditReady'] = $this->MBatch_edit_approval->ready();
+        $data['batchEditCsrf'] = $this->batchEditCsrf();
+        $data['batchEditToken'] = $this->MBatch_edit_approval->token($editContext);
+        $data['batchEditProtected'] = $editContext && Batch_edit_policy::protectedStage($editContext['batch']);
+        $data['batchEditSitac'] = $editContext && $this->MBatch_edit_approval->mapped($editContext['cluster'], 'sitac_ho');
+        $data['batchEditFinance'] = $editContext && $this->MBatch_edit_approval->mapped($editContext['cluster'], 'finance_ho');
+        $data['batchEditHistory'] = $this->MBatch_edit_approval->history((int) $cluster['id_batch_approval']);
         $data['postDonasiDocReady'] = $this->MPost_Donasi_MyRep->documentTablesReady();
         $data['postDonasiRows'] = $data['postDonasiDocReady']
             ? $this->MPost_Donasi_MyRep->getDocumentRows($clusterId)
@@ -670,6 +681,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
     public function updateBatchApproval()
     {
+        $this->validateBatchEditPost();
         if (empty($this->session->userdata('id_user'))) {
             redirect('Auth');
             return;
@@ -692,7 +704,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $hpDonasi = (int) $this->normalizeNumber($this->input->post('hp_donasi'));
         $nominalPengajuanArea = $this->normalizeNumber($this->input->post('nominal_pengajuan_area'));
-        $nominalNegoEmr = $nominalPengajuanArea;
+        $nominalNegoEmr = $this->input->post('nominal_nego_emr') === null ? ($existing['nominal_nego_emr'] ?? null) : $this->normalizeNullableNumber($this->input->post('nominal_nego_emr'));
         $nominalReleaseFinance = $this->normalizeNullableNumber($this->input->post('nominal_release_finance'));
         $freeWifiQty = $this->normalizeNullableInt($this->input->post('free_wifi_qty'));
         $freeWifiPeriodMonth = $this->normalizeNullableInt($this->input->post('free_wifi_period_month'));
@@ -706,14 +718,25 @@ class Batch_Approval_MyRep extends CI_Controller
         $districtName = (string) $location['district_name'];
         $villageName = (string) $location['village_name'];
         $submissionDate = $this->normalizeDate($this->input->post('submission_date'));
-        $stagingStatus = strtoupper(trim((string) $this->input->post('staging_status')));
-        $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
-        $astriBatchApprovedAt = $this->normalizeDateTimeInput($this->input->post('astri_batch_approved_at'));
+        // Stage comes from persisted data only. General editing cannot change workflow.
+        $editContext = $this->MBatch_edit_approval->context($clusterId);
+        if (!$editContext || (int) $editContext['batch']['id_batch_approval'] !== $batchId) {
+            $this->session->set_flashdata('error', 'ID batch tidak sesuai cluster.');
+            redirect($this->resolveBatchRedirectPath($clusterId)); return;
+        }
+        $stagingStatus = Batch_edit_policy::effectiveStage($editContext['batch']);
+        $astriBatchNumber = $this->input->post('astri_batch_number') === null ? (string) ($existing['astri_batch_number'] ?? '') : trim((string) $this->input->post('astri_batch_number'));
+        $postedApprovalDate = $this->input->post('astri_batch_approved_at');
+        $existingApprovalAt = $existing['astri_batch_approved_at'] ?? null;
+        // Date-only controls must not erase an existing approval time on an unrelated edit.
+        $sameApprovalDay = is_string($postedApprovalDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $postedApprovalDate)
+            && substr((string) $existingApprovalAt, 0, 10) === $postedApprovalDate;
+        $astriBatchApprovedAt = $postedApprovalDate === null || $sameApprovalDay ? $existingApprovalAt : $this->normalizeDateTimeInput($postedApprovalDate);
         $remark = trim((string) $this->input->post('remark_batch_approval'));
         $pics = $this->collectPicsFromPost();
         $stagingStatus = $this->normalizeStagingStatus($stagingStatus, false);
-        $existingStage = strtoupper(trim((string) ($existing['display_staging_status'] ?? $existing['staging_status'] ?? '')));
-        $isSubmittingRevisedBatchData = $existingStage === 'NEED_REVISE' && $stagingStatus === 'NEED_REVISE';
+        $existingStage = strtoupper(trim((string) ($editContext['batch']['staging_status'] ?? '')));
+        $isSubmittingRevisedBatchData = $existingStage === 'NEED_REVISE' && !Batch_edit_policy::paid($editContext['batch']);
         $batchApprovalRequiredStages = [
             'DRAFT',
             'WAITING_INPUT',
@@ -795,20 +818,13 @@ class Batch_Approval_MyRep extends CI_Controller
             $stagingStatus = 'WAITING_BATCH_APPROVAL';
         }
 
-        $gateError = $this->validateDonationStageGate($clusterId, $stagingStatus);
-        if ($gateError !== '') {
-            $redirectPath = $this->resolveBatchRedirectPath($clusterId);
-            $this->session->set_flashdata('error', $gateError);
-            redirect($redirectPath);
-            return;
-        }
+        // General editing does not transition staging; stage gates remain on transition endpoints.
         $nominalPerHomepass = $hpDonasi > 0 ? round($nominalPengajuanArea / $hpDonasi, 2) : 0;
-        $result = $this->MBatch_Approval_MyRep->updateBatchApproval($clusterId, $batchId, [
+        $result = $this->MBatch_edit_approval->submit($clusterId, $batchId, [
             'submission_date' => $submissionDate,
             'hp_donasi' => $hpDonasi,
             'nominal_pengajuan_area' => $nominalPengajuanArea,
             'nominal_nego_emr' => $nominalNegoEmr,
-            'nominal_release_finance' => $nominalReleaseFinance,
             'nominal_per_homepass' => $nominalPerHomepass,
             'bank_name' => $bankName,
             'bank_account_number' => $bankAccountNumber,
@@ -820,33 +836,41 @@ class Batch_Approval_MyRep extends CI_Controller
             'free_wifi_period_month' => $freeWifiPeriodMonth,
             'astri_batch_number' => $astriBatchNumber,
             'astri_batch_approved_at' => $astriBatchApprovedAt,
-            'staging_status' => $stagingStatus,
-            'submitted_to_ho_at' => $this->resolveStageTimestamp($existing['submitted_to_ho_at'] ?? null, $stagingStatus === 'WAITING_BATCH_APPROVAL'),
-            'submitted_to_astri_at' => $this->resolveStageTimestamp($existing['submitted_to_astri_at'] ?? null, $stagingStatus === 'WAITING MYREP'),
-            'submitted_to_finance_at' => $this->resolveStageTimestamp($existing['submitted_to_finance_at'] ?? null, $stagingStatus === 'WAITING FINANCE'),
-            'released_at' => $this->resolveStageTimestamp($existing['released_at'] ?? null, $stagingStatus === 'RELEASED'),
             'remark_batch_approval' => $remark !== '' ? $remark : null,
             'updated_by' => $userId,
         ], [
-            'status_current' => $this->mapClusterStatusFromStaging($stagingStatus),
             'regency_id' => $location['regency_id'],
             'district_id' => $location['district_id'],
             'district_name' => $districtName,
             'village_id' => $location['village_id'],
             'village_name' => $villageName,
             'updated_by' => $userId,
-        ], $pics);
+        ], $pics, trim((string) $this->input->post('edit_reason')), (string) $this->input->post('edit_token'), $isSubmittingRevisedBatchData);
 
         $redirectPath = $this->resolveBatchRedirectPath($clusterId);
 
-        if (!$result) {
-            $this->session->set_flashdata('error', 'Gagal memperbarui data Batch Approval.');
+        if (!$result['ok']) {
+            $this->session->set_flashdata('error', $result['message']);
             redirect($redirectPath);
             return;
         }
 
-        $this->session->set_flashdata('success', $isSubmittingRevisedBatchData ? 'Revisi data batch berhasil disubmit ulang ke SITAC HO.' : 'Data Batch Approval berhasil diperbarui.');
+        $this->session->set_flashdata('success', $result['message']);
         redirect($redirectPath);
+    }
+
+    public function reviewBatchEdit()
+    {
+        $this->validateBatchEditPost();
+        if (empty($this->session->userdata('id_user'))) { redirect('Auth'); return; }
+        $clusterId = (int) $this->input->post('cluster_id');
+        $existing = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if (!$existing) { show_404(); return; }
+        if (strtoupper((string) $this->input->method()) !== 'POST') { show_error('POST required', 405); return; }
+        $result = $this->MBatch_edit_approval->review($clusterId, (int) $existing['id_batch_approval'],
+            (int) $this->input->post('id_request'), strtoupper(trim((string) $this->input->post('action'))), trim((string) $this->input->post('review_note')));
+        $this->session->set_flashdata($result['ok'] ? 'success' : 'error', $result['message']);
+        redirect('Batch_Approval_MyRep/detail/' . $clusterId);
     }
 
     public function getDistrictOptions()
@@ -4500,6 +4524,7 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $attrs = [
+            'edit_token' => $this->MBatch_edit_approval->token($this->MBatch_edit_approval->context((int) ($row['id_myrep_cluster'] ?? 0))),
             'id_myrep_cluster' => (int) ($row['id_myrep_cluster'] ?? 0),
             'id_batch_approval' => (int) ($row['id_batch_approval'] ?? 0),
             'cluster_name' => (string) ($row['cluster_name'] ?? ''),
@@ -4523,6 +4548,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'free_wifi_qty' => (string) ($row['free_wifi_qty'] ?? ''),
             'free_wifi_period_month' => (string) ($row['free_wifi_period_month'] ?? ''),
             'astri_batch_number' => (string) ($row['astri_batch_number'] ?? ''),
+            'astri_batch_approved_at' => !empty($row['astri_batch_approved_at']) ? substr((string) $row['astri_batch_approved_at'], 0, 10) : '',
             'staging_status' => $editStagingStatus,
             'remark_batch_approval' => (string) ($row['remark_batch_approval'] ?? ''),
         ];
@@ -5031,6 +5057,21 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $roleKeys = (array) $this->myrepAccess->getCurrentRoleKeys();
         return in_array('ADMIN_AREA', $roleKeys, true) || in_array('SITAC_HO', $roleKeys, true);
+    }
+
+    private function batchEditCsrf()
+    {
+        $token = (string) $this->session->userdata('batch_edit_csrf');
+        if (strlen($token) !== 64) { $token = bin2hex(random_bytes(32)); $this->session->set_userdata('batch_edit_csrf', $token); }
+        return $token;
+    }
+
+    private function validateBatchEditPost()
+    {
+        if (strtoupper((string) $this->input->method()) !== 'POST') { show_error('POST required', 405); exit; }
+        $expected = (string) $this->session->userdata('batch_edit_csrf');
+        $given = $this->input->post('batch_edit_csrf');
+        if ($expected === '' || !is_string($given) || !hash_equals($expected, $given)) { show_error('Sesi form tidak valid. Muat ulang halaman.', 403); exit; }
     }
 
     private function canEditBatchApprovalDetail(array $cluster = [])

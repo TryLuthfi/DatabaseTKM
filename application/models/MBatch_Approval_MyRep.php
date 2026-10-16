@@ -1315,12 +1315,23 @@ class MBatch_Approval_MyRep extends CI_Model
             return false;
         }
 
+        // Legacy/import editing must not bypass the protected edit approval workflow.
+        require_once APPPATH . 'libraries/Batch_edit_policy.php';
+        $this->db->trans_begin();
+        $lockedCluster = $this->db->query('SELECT * FROM tb_myrep_cluster WHERE id_myrep_cluster = ? FOR UPDATE', [$clusterId])->row_array();
+        $rawBatch = $this->db->query('SELECT * FROM tb_myrep_batch_approval WHERE id_batch_approval = ? AND id_myrep_cluster = ? FOR UPDATE', [$batchId, $clusterId])->row_array();
+        if (!$lockedCluster || !$rawBatch || Batch_edit_policy::protectedStage($rawBatch)) {
+            $this->db->trans_rollback();
+            $this->setLastError('Batch melewati status awal. Gunakan Edit Batch Approval dan approval perubahan; import tidak dapat menimpa batch ini.');
+            return false;
+        }
+
         $clusterPayload['status_current'] = $this->resolveSafeCurrentStatus(
-            (string) ($existing['status_current'] ?? ''),
+            (string) ($lockedCluster['status_current'] ?? ''),
             (string) ($clusterPayload['status_current'] ?? 'DRAFT')
         );
 
-        $this->db->trans_start();
+
         $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', $clusterPayload);
         $this->db->where('id_batch_approval', $batchId)->update('tb_myrep_batch_approval', $batchPayload);
         $this->db->where('id_batch_approval', $batchId)->delete('tb_myrep_batch_approval_pic');

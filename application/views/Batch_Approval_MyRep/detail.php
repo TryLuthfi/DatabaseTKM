@@ -2593,7 +2593,7 @@ if ($canApprove && $canApprovalAction) {
                         <?php if ($canEdit): ?>
                             <div class="batch-header-action-copy">
                                 <span>Perbarui data batch</span>
-                                <small>Nominal, PIC, rekening, dan staging</small>
+                                <small>Nominal, PIC, rekening, dan pengajuan perubahan</small>
                             </div>
                         <?php endif; ?>
                         <?php if ($canRejectBatchData): ?>
@@ -4076,6 +4076,7 @@ if ($canApprove && $canApprovalAction) {
                 </div>
             </div>
             <?php endif; ?>
+            <?php $this->load->view('Batch_Approval_MyRep/edit_history'); ?>
         </div>
     </section>
 </div>
@@ -4138,11 +4139,16 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                     <div>
                         <span class="batch-modal__eyebrow">Batch Approval</span>
                         <h5 class="modal-title mb-1">Edit Batch Approval</h5>
-                        <p class="batch-modal__subtitle mb-0">Perbarui informasi pengajuan, penerima dana, PIC, dan status staging.</p>
+                        <p class="batch-modal__subtitle mb-0">Perbarui informasi pengajuan, penerima dana dan PIC. Perubahan mengikuti aturan approval.</p>
                     </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" name="batch_edit_csrf" value="<?= htmlspecialchars((string) ($batchEditCsrf ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="edit_token" value="<?= htmlspecialchars((string) ($batchEditToken ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="alert alert-info"><?= !empty($batchEditProtected) ? (!empty($batchEditSitac) ? 'Edit langsung SITAC HO dicatat dalam history. Koreksi pasca bayar menunggu review Finance.' : 'Perubahan diajukan ke SITAC HO; data aktif tetap sampai disetujui.') : 'Edit langsung tanpa history pada status awal / reject data batch.' ?> Staging diproses melalui alur tersendiri.</div>
+                    <div class="form-group"><label for="detail_edit_reason">Alasan perubahan<?= !empty($batchEditProtected) ? ' (wajib)' : '' ?></label><textarea id="detail_edit_reason" name="edit_reason" class="form-control" rows="2" maxlength="4000" <?= !empty($batchEditProtected) ? 'required' : '' ?>></textarea></div>
+
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Informasi Cluster</div>
                         <div class="row">
@@ -4183,8 +4189,9 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                             <div class="col-md-3"><div class="form-group"><label>HP Donasi Astri</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format js-detail-base-required js-revision-required" data-field-label="HP Donasi" data-decimals="0" value="<?= !is_null($cluster['hp_donasi'] ?? null) ? htmlspecialchars(number_format((float) $cluster['hp_donasi'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
                             <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan Astri</label><input type="date" name="submission_date" id="detail_edit_submission_date" class="form-control js-revision-required" data-field-label="Tanggal Pengajuan Astri" value="<?= htmlspecialchars((string) ($cluster['submission_date'] ?? '')) ?>" <?= $canSubmitRevisedBatchData ? 'required' : '' ?>></div></div>
                             <div class="col-md-3"><div class="form-group"><label>No Batch Astri</label><input type="text" name="astri_batch_number" id="detail_edit_astri_batch_number" class="form-control js-revision-required" data-field-label="Nomor Batch Astri" placeholder="Batch 2026-XX" value="<?= htmlspecialchars((string) ($cluster['astri_batch_number'] ?? '')) ?>" <?= $detailEditBatchRequired ? 'required' : '' ?>></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="detail_edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= $detailEditCurrentStage === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format js-detail-base-required js-revision-required" data-field-label="Nominal Donasi" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>><input type="hidden" name="nominal_nego_emr" id="detail_edit_nominal_nego_emr" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars((string) round((float) $cluster['nominal_pengajuan_area'])) : '' ?>"></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>Staging</label><select id="detail_edit_staging_status" class="form-control" disabled aria-label="Staging saat ini (ubah melalui alur staging)"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= $detailEditCurrentStage === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format js-detail-base-required js-revision-required" data-field-label="Nominal Donasi" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" <?= $detailEditBaseDataRequired ? 'required' : '' ?>></div></div>
+                            <div class="col-md-6"><div class="form-group"><label for="detail_edit_nominal_nego_emr">Nominal Approval EMR</label><input type="text" name="nominal_nego_emr" id="detail_edit_nominal_nego_emr" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_nego_emr'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_nego_emr'], 0, ',', '.')) : '' ?>"></div></div>
                             <div class="col-md-3"><div class="form-group"><label>Tanggal Batch Approval</label><input type="date" name="astri_batch_approved_at" id="detail_edit_astri_batch_approved_at" class="form-control js-revision-required" data-field-label="Tanggal Batch Approval" value="<?= htmlspecialchars($detailBatchApprovedDate) ?>" <?= $detailEditBatchRequired ? 'required' : '' ?>></div></div>
                             <div class="col-md-3"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="detail_edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" value="<?= !is_null($cluster['nominal_per_homepass'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_per_homepass'], 2, ',', '.')) : '' ?>" readonly></div></div>
                         </div>
@@ -4213,7 +4220,7 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                     <div class="batch-form-section js-finance-fields" data-stage-scope="detail-edit" style="display:none;">
                         <div class="batch-form-section__title">Release Finance</div>
                         <div class="row">
-                            <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Release Finance</label><input type="text" name="nominal_release_finance" id="detail_edit_nominal_release_finance" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_release_finance'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_release_finance'], 0, ',', '.')) : '' ?>"></div></div>
+                            <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Pembayaran Aktual (riwayat)</label><input type="text" id="detail_edit_nominal_release_finance" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_release_finance'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_release_finance'], 0, ',', '.')) : '' ?>" readonly><small class="form-text text-muted">Pembayaran aktual tetap tersimpan. Koreksi data pengajuan atau rekening diproses melalui approval perubahan.</small></div></div>
                         </div>
                     </div>
 
@@ -4257,7 +4264,7 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                    <button type="submit" class="btn btn-primary"><?= $canSubmitRevisedBatchData ? 'Update & Submit Revisi' : 'Update Batch Approval' ?></button>
+                    <button type="submit" class="btn btn-primary"><?= $canSubmitRevisedBatchData ? 'Update & Submit Revisi' : (!empty($batchEditProtected) && empty($batchEditSitac) ? 'Ajukan Perubahan' : 'Simpan Perubahan') ?></button>
                 </div>
             </form>
         </div>
@@ -5264,7 +5271,7 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
             var nominalDonasi = normalizeFormattedNumber($('#detail_edit_nominal_pengajuan_area').val(), 0);
             var result = hpDonasi > 0 ? (nominalDonasi / hpDonasi) : 0;
             $('#detail_edit_nominal_per_homepass').val(result > 0 ? formatNumberValue(result, 2) : '');
-            $('#detail_edit_nominal_nego_emr').val(nominalDonasi > 0 ? String(Math.round(nominalDonasi)) : '');
+
         }
 
         function toggleStageFields() {

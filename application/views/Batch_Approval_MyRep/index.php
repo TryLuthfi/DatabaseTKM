@@ -1022,6 +1022,11 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                         </button>
                     </div>
                     <div class="modal-body">
+                    <input type="hidden" name="batch_edit_csrf" value="<?= htmlspecialchars((string) ($batchEditCsrf ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="edit_token" id="edit_token">
+                    <div class="alert alert-info">Di atas Draft / Waiting Batch Approval / Reject Data Batch, edit diajukan ke SITAC HO. SITAC HO dapat edit langsung dengan history. Koreksi pasca bayar memerlukan review Finance. Staging diproses melalui alur tersendiri. History dan review tersedia pada halaman detail batch.</div>
+                    <div class="form-group"><label for="edit_reason">Alasan perubahan (wajib pada status yang dilindungi)</label><textarea id="edit_reason" name="edit_reason" class="form-control" rows="2" maxlength="4000"></textarea></div>
+
                         <div class="batch-form-section">
                             <div class="batch-form-section__title">Informasi Cluster</div>
                             <div class="row">
@@ -1041,7 +1046,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                 <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" required></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan Astri</label><input type="date" name="submission_date" id="edit_submission_date" class="form-control"></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>"><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Staging</label><select id="edit_staging_status" class="form-control" disabled aria-label="Staging saat ini (ubah melalui alur staging)"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>"><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
+                                <div class="col-md-6"><div class="form-group"><label for="edit_astri_batch_number">Nomor Batch Astri</label><input type="text" name="astri_batch_number" id="edit_astri_batch_number" class="form-control"></div></div>
+                                <div class="col-md-6"><div class="form-group"><label for="edit_astri_batch_approved_at">Tanggal Batch Approval</label><input type="date" name="astri_batch_approved_at" id="edit_astri_batch_approved_at" class="form-control"></div></div>
                                 <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required></div></div>
                                 <div class="col-md-6"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" readonly></div></div>
                             </div>
@@ -1077,7 +1084,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                         <div class="batch-form-section js-finance-fields" data-stage-scope="edit" style="display:none;">
                             <div class="batch-form-section__title">Release Finance</div>
                             <div class="row">
-                                <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Release Finance</label><input type="text" name="nominal_release_finance" id="edit_nominal_release_finance" inputmode="decimal" class="form-control js-number-format" data-decimals="0"></div></div>
+                                <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Pembayaran Aktual (riwayat)</label><input type="text" id="edit_nominal_release_finance" class="form-control js-number-format" data-decimals="0" readonly><small class="form-text text-muted">Pembayaran aktual tetap tersimpan. Koreksi data pengajuan atau rekening diproses melalui approval perubahan.</small></div></div>
                             </div>
                         </div>
 
@@ -3007,6 +3014,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $(document).on('click', '.js-edit-batch', function () {
                 var $button = $(this);
                 var $modal = $('#modal-batch-edit');
+                $modal.find('#edit_token').val($button.data('edit_token') || '');
+                $modal.find('#edit_reason').val('');
                 var stagingStatus = String($button.data('staging_status') || 'DRAFT');
                 var $stagingSelect = $modal.find('#edit_staging_status');
 
@@ -3032,6 +3041,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 $modal.find('#edit_free_wifi_qty').val($button.data('free_wifi_qty'));
                 $modal.find('#edit_free_wifi_period_month').val($button.data('free_wifi_period_month'));
                 $modal.find('#edit_astri_batch_number').val($button.data('astri_batch_number'));
+                $modal.find('#edit_astri_batch_approved_at').val($button.data('astri_batch_approved_at') || '');
                 var hasStagingOption = $stagingSelect.find('option').filter(function () {
                     return String(this.value) === stagingStatus;
                 }).length > 0;
