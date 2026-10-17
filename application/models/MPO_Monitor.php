@@ -1750,7 +1750,7 @@ class MPO_Monitor extends CI_Model
                 ->result_array();
 
             if (empty($cachedRows)) {
-                return $this->calculateDashboardSummary();
+                return $this->getDashboardSummary(false);
             }
 
             $rows = [];
@@ -1767,6 +1767,7 @@ class MPO_Monitor extends CI_Model
                 'total_outs' => 0
             ];
 
+            $cachedRows = $this->applyImportReportDashboardInvoices($cachedRows);
             foreach ($cachedRows as $row) {
                 $rows[] = [
                     'pic' => $row['pic'],
@@ -1796,7 +1797,15 @@ class MPO_Monitor extends CI_Model
             return ['rows' => $rows, 'totals' => $totals];
         }
 
-        return $this->calculateDashboardSummary();
+        $summary = $this->calculateDashboardSummary();
+        $summary['rows'] = $this->applyImportReportDashboardInvoices($summary['rows']);
+        $summary['totals']['done_inv_2026'] = 0;
+        $summary['totals']['data_count'] = 0;
+        foreach ($summary['rows'] as $row) {
+            $summary['totals']['done_inv_2026'] += $row['done_inv_2026'];
+            $summary['totals']['data_count'] += $row['has_data'];
+        }
+        return $summary;
     }
 
     private function calculateDashboardSummary()
@@ -2079,7 +2088,7 @@ class MPO_Monitor extends CI_Model
             }
             unset($row);
         } else {
-            $summary = $this->calculateDashboardSummary();
+            $summary = $this->getDashboardSummary(false);
             $order = array_keys($this->dashboardBowheerOrder());
             $rows = [];
             foreach ($summary['rows'] as $row) {
@@ -2255,8 +2264,10 @@ class MPO_Monitor extends CI_Model
             ->result_array();
 
         if (empty($rows)) {
-            $summary = $this->calculateDashboardSummary();
+            $summary = $this->getDashboardSummary(false);
             $rows = $summary['rows'] ?? [];
+        } else {
+            $rows = $this->applyImportReportDashboardInvoices($rows);
         }
 
         $result = [];
@@ -7052,9 +7063,22 @@ class MPO_Monitor extends CI_Model
         return $rows;
     }
 
-    private function getAllocatedOnPoImportReportRows()
+    /** Report invoice selection is also the dashboard source of truth. No claim rows are changed. */
+    private function importReportTermSourceSql($allocated, $invoiceOnly = false)
     {
-        $queryRows = $this->db->query("SELECT
+        if ($allocated) {
+            $invoiceDate = "COALESCE(
+                    (SELECT MAX(tc.invoice_date) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation),
+                    (SELECT MAX(tc.invoice_date) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL),
+                    a.invoice_date,
+                    t.invoice_date
+                )";
+            $invoiceAmount = "COALESCE(
+                    (SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation),
+                    (SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL),
+                    0
+                )";
+            $columns = "SELECT
                 p.id_po,
                 COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
                 COALESCE(p.status_po, 'ON PO') AS status_po,
@@ -7077,43 +7101,15 @@ class MPO_Monitor extends CI_Model
                 COALESCE(NULLIF(a.plan_amount, 0), a.allocation_value) AS plan_amount,
                 COALESCE(a.submit_raw, '') AS submit_raw,
                 a.target_status,
-                a.target_week,
-                COALESCE(
-                    (SELECT MAX(tc.invoice_date) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation),
-                    (SELECT MAX(tc.invoice_date) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL),
-                    a.invoice_date,
-                    t.invoice_date
-                ) AS invoice_date,
-                COALESCE(
-                    (SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_allocation = a.id_allocation),
-                    (SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL),
-                    0
-                ) AS invoice_amount
-            FROM tb_po_term_allocation a
+                a.target_week, ";
+            $from = "FROM tb_po_term_allocation a
             JOIN tb_po_term t ON t.id_term = a.id_term
             JOIN tb_po p ON p.id_po = t.id_po
-            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
-            ORDER BY bowheer ASC, p.po_number ASC, a.source_row_no ASC, t.term_index ASC")->result_array();
-
-        $groups = [];
-        foreach ($queryRows as $item) {
-            $groupKey = (int) $item['id_po'] . '|alloc|' . (
-                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
-                    ? (string) $item['source_row_no']
-                    : md5(implode('|', [(string) $item['no_po_sub'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks']]))
-            );
-            if (!isset($groups[$groupKey])) {
-                $groups[$groupKey] = $this->baseOnPoImportReportRow($item);
-            }
-            $this->applyImportReportTerm($groups[$groupKey], $item);
-        }
-
-        return $this->finalizedImportReportRows($groups);
-    }
-
-    private function getStandaloneOnPoImportReportRows()
-    {
-        $queryRows = $this->db->query("SELECT
+            LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer";
+        } else {
+            $invoiceDate = "t.invoice_date";
+            $invoiceAmount = "COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL), 0)";
+            $columns = "SELECT
                 p.id_po,
                 COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') AS bowheer,
                 COALESCE(p.status_po, 'ON PO') AS status_po,
@@ -7136,14 +7132,127 @@ class MPO_Monitor extends CI_Model
                 COALESCE(NULLIF(t.plan_amount, 0), t.value) AS plan_amount,
                 COALESCE(t.submit_raw, '') AS submit_raw,
                 t.target_status,
-                t.target_week,
-                t.invoice_date,
-                COALESCE((SELECT SUM(tc.invoice_amount) FROM tb_po_term_claim tc WHERE tc.id_term = t.id_term AND tc.id_allocation IS NULL), 0) AS invoice_amount
-            FROM tb_po_term t
+                t.target_week, ";
+            $from = "FROM tb_po_term t
             JOIN tb_po p ON p.id_po = t.id_po
             LEFT JOIN tb_bowheer_po bp ON bp.id_bowheer = p.id_bowheer
-            WHERE NOT EXISTS (SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term)
-            ORDER BY bowheer ASC, p.po_number ASC, t.term_index ASC")->result_array();
+            WHERE NOT EXISTS (SELECT 1 FROM tb_po_term_allocation a WHERE a.id_term = t.id_term)";
+        }
+
+        if ($invoiceOnly) {
+            // Legacy installations can mix DATE/VARCHAR date columns and collations.
+            // Normalize every text column before UNION; the two full report queries
+            // remain separate and retain their original projections and values.
+            $columns = "SELECT p.id_po,
+                CONVERT(COALESCE(NULLIF(p.dashboard_bowheer, ''), bp.bowheer, 'Tanpa Bowheer') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS bowheer,
+                CONVERT(p.type_project USING utf8mb4) COLLATE utf8mb4_unicode_ci AS type_project,
+                t.term_index, ";
+            $invoiceDate = "CONVERT($invoiceDate USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+        }
+        return $columns . $invoiceDate . ' AS invoice_date, ' . $invoiceAmount . ' AS invoice_amount' . "\n" . $from;
+    }
+
+    private function getImportReportInvoiceSummary($dashboardNames)
+    {
+        $source = $this->importReportTermSourceSql(true, true)
+            . ' UNION ALL ' . $this->importReportTermSourceSql(false, true);
+        // Use the dashboard's database collation for identity, including VGREEN splits.
+        // PHP array keys alone are case-sensitive and could split the same bowheer.
+        $bowheer = "CONVERT(bowheer USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+        $category = "CASE
+            WHEN $bowheer = CONVERT('PT VGREEN' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                AND (UPPER(TRIM(COALESCE(type_project, ''))) = 'EVCS' OR UPPER(TRIM(COALESCE(type_project, ''))) LIKE 'DC%')
+                THEN CONVERT('PT VGREEN ( EVCS )' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            WHEN $bowheer = CONVERT('PT VGREEN' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                AND (UPPER(TRIM(COALESCE(type_project, ''))) = 'BSS' OR UPPER(TRIM(COALESCE(type_project, ''))) REGEXP '^[0-9]+S[0-9]+P$')
+                THEN CONVERT('PT VGREEN ( BSS )' USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            ELSE $bowheer END";
+        // Keep existing row labels exactly. SQL comparisons also handle case/accent/
+        // trailing-space equivalence; no extra rows are created for spelling variants.
+        $identity = 'CASE';
+        foreach (array_unique($dashboardNames) as $name) {
+            $literal = $this->db->escape($name);
+            $identity .= " WHEN dashboard_bowheer = CONVERT($literal USING utf8mb4) COLLATE utf8mb4_unicode_ci THEN $literal";
+        }
+        $identity .= ' ELSE dashboard_bowheer END';
+        // Same term/year/positive-amount rule as applyImportReportTerm(), all PO statuses.
+        $rows = $this->db->query("SELECT $identity AS resolved_bowheer, SUM(invoice_amount) AS done_inv_2026
+            FROM (SELECT $category AS dashboard_bowheer, invoice_amount
+                FROM (" . $source . ") report_terms
+                WHERE term_index BETWEEN 1 AND 5 AND invoice_amount > 0 AND YEAR(invoice_date) = 2026
+            ) categorized_terms
+            GROUP BY resolved_bowheer")->result_array();
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['resolved_bowheer']] = (float) $row['done_inv_2026'];
+        }
+        return $map;
+    }
+
+    /** Overlay invoice-only rows too (e.g. cancelled POs), without changing other metrics. */
+    private function applyImportReportDashboardInvoices($rows)
+    {
+        $names = array_merge(array_column($rows, 'bowheer'), array_keys($this->dashboardBowheerOrder()));
+        $invoices = $this->getImportReportInvoiceSummary($names);
+        $map = [];
+        foreach ($rows as $row) {
+            $name = (string) $row['bowheer'];
+            $row['done_inv_2026'] = (float) ($invoices[$name] ?? 0);
+            $map[$name] = $row;
+        }
+        foreach ($invoices as $name => $invoice) {
+            if (!isset($map[$name])) {
+                $map[$name] = array_fill_keys(['all_po', 'all_invoice', 'outs_2026_on_target', 'ny_po_on_target_2026',
+                    'grandtotal_target', 'ny_po_total', 'co_to_2027', 'total_outs'], 0);
+                $map[$name]['pic'] = $this->dashboardPic($name);
+                $map[$name]['bowheer'] = $name;
+                $map[$name]['done_inv_2026'] = $invoice;
+            }
+        }
+        $order = array_keys($this->dashboardBowheerOrder());
+        foreach ($map as $name => &$row) {
+            $index = array_search($name, $order, true);
+            $row['sort_order'] = $index === false ? 1000 : $index + 1;
+            $row['has_data'] = 0;
+            foreach (['all_po', 'done_inv_2026', 'outs_2026_on_target', 'ny_po_on_target_2026', 'co_to_2027'] as $key) {
+                if ((float) ($row[$key] ?? 0) != 0.0) {
+                    $row['has_data'] = 1;
+                    break;
+                }
+            }
+        }
+        unset($row);
+        uasort($map, function ($a, $b) {
+            return $a['sort_order'] <=> $b['sort_order'] ?: strcmp($a['bowheer'], $b['bowheer']);
+        });
+        return array_values($map);
+    }
+
+    private function getAllocatedOnPoImportReportRows()
+    {
+        $queryRows = $this->db->query($this->importReportTermSourceSql(true)
+            . " ORDER BY bowheer ASC, p.po_number ASC, a.source_row_no ASC, t.term_index ASC")->result_array();
+
+        $groups = [];
+        foreach ($queryRows as $item) {
+            $groupKey = (int) $item['id_po'] . '|alloc|' . (
+                $item['source_row_no'] !== null && $item['source_row_no'] !== ''
+                    ? (string) $item['source_row_no']
+                    : md5(implode('|', [(string) $item['no_po_sub'], (string) $item['regional'], (string) $item['kota_po'], (string) $item['detail_po'], (string) $item['remarks']]))
+            );
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = $this->baseOnPoImportReportRow($item);
+            }
+            $this->applyImportReportTerm($groups[$groupKey], $item);
+        }
+
+        return $this->finalizedImportReportRows($groups);
+    }
+
+    private function getStandaloneOnPoImportReportRows()
+    {
+        $queryRows = $this->db->query($this->importReportTermSourceSql(false)
+            . " ORDER BY bowheer ASC, p.po_number ASC, t.term_index ASC")->result_array();
 
         $groups = [];
         foreach ($queryRows as $item) {
