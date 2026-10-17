@@ -3158,11 +3158,19 @@ class MPO_Monitor extends CI_Model
                 AND DATE(tc.invoice_date) BETWEEN ? AND ?", [$startDate, $endDate])->result_array();
 
         $rows = array_merge($targetRows, $claimRows);
+        // Repeated rows share dates; reuse exact calendar results only in this request.
+        $periodValues = [];
         foreach ($rows as &$row) {
             $start = $row['period_start'] ?: $row['period_end'];
             $end = $row['period_end'] ?: $row['period_start'];
-            $monthKey = $start ? $this->majorityMonthKey($start, $end) : '';
-            $weekKey = $start ? $this->weekKey((int) date('Y', strtotime($start)), (int) $this->weekNumberFromPeriod($start, $end)) : '';
+            $periodKey = json_encode([$start, $end]);
+            if (!isset($periodValues[$periodKey])) {
+                $periodValues[$periodKey] = [
+                    $start ? $this->majorityMonthKey($start, $end) : '',
+                    $start ? $this->weekKey((int) date('Y', strtotime($start)), (int) $this->weekNumberFromPeriod($start, $end)) : ''
+                ];
+            }
+            [$monthKey, $weekKey] = $periodValues[$periodKey];
 
             $row['id_bowheer'] = (int) ($row['id_bowheer'] ?? 0);
             $row['project'] = trim((string) ($row['project'] ?? 'Tanpa Bowheer'));
@@ -3855,20 +3863,18 @@ class MPO_Monitor extends CI_Model
                 FROM tb_po_term_allocation
                 GROUP BY id_term
             ) aa ON aa.id_term = t.id_term
-            LEFT JOIN tb_myrep_po_header myrep_header
-                ON myrep_header.id_po_header = (
-                    SELECT mh.id_po_header
-                    FROM tb_myrep_po_header mh
-                    WHERE CONVERT(TRIM(mh.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(TRIM(p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
-                    ORDER BY
-                        CASE
-                            WHEN mh.po_category = 'FINAL' THEN 0
-                            WHEN mh.po_category = 'AMANDMENT' THEN 1
-                            ELSE 2
-                        END ASC,
-                        mh.id_po_header DESC
-                    LIMIT 1
-                )
+            LEFT JOIN (
+                SELECT
+                    CONVERT(TRIM(mh.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS normalized_po_number,
+                    COALESCE(
+                        MAX(CASE WHEN mh.po_category = 'FINAL' THEN mh.id_po_header END),
+                        MAX(CASE WHEN mh.po_category = 'AMANDMENT' THEN mh.id_po_header END),
+                        MAX(mh.id_po_header)
+                    ) AS id_po_header
+                FROM tb_myrep_po_header mh
+                GROUP BY CONVERT(TRIM(mh.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            ) myrep_selected ON myrep_selected.normalized_po_number = CONVERT(TRIM(p.po_number) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+            LEFT JOIN tb_myrep_po_header myrep_header ON myrep_header.id_po_header = myrep_selected.id_po_header
             LEFT JOIN tb_myrep_cluster myrep_cluster ON myrep_cluster.id_myrep_cluster = myrep_header.id_myrep_cluster
             LEFT JOIN tb_rfs_myrep_mainfeeder myrep_mainfeeder ON myrep_mainfeeder.id_mainfeeder = myrep_header.id_mainfeeder
             WHERE tc.invoice_date IS NOT NULL

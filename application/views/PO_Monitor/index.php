@@ -2791,6 +2791,7 @@ if (!function_exists('po_monitor_term_amount_link')) {
                                 </button>
                             </div>
                             <div class="modal-body">
+                                <div id="po_breakdown_filter_status" class="small text-muted mb-2" role="status" aria-live="polite" hidden></div>
                                 <div class="po-breakdown-filter-grid">
                                     <div class="po-monitor-field">
                                         <label>Project</label>
@@ -3684,7 +3685,11 @@ if (!function_exists('po_monitor_term_amount_link')) {
 
             var poBreakdownState = {
                 mode: 'project',
-                tables: {}
+                tables: {},
+                dirty: {},
+                optionsRequest: null,
+                optionsSequence: 0,
+                optionsLoading: false
             };
             var poBreakdownUrls = {
                 datatable: '<?= site_url('PO_Monitor/breakdown_datatable') ?>',
@@ -3852,26 +3857,45 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 });
 
                 poBreakdownState.tables[mode] = table;
+                poBreakdownState.dirty[mode] = false;
                 return table;
             }
 
-            function poBreakdownReload(activeOnly) {
-                poBreakdownRenderActiveFilters();
-                var limit = poBreakdownFilters().limit;
-                if (activeOnly) {
-                    poBreakdownTable(poBreakdownState.mode).page.len(limit).draw();
-                    return;
+            function poBreakdownShowTable(mode) {
+                var existing = poBreakdownState.tables[mode];
+                var table = poBreakdownTable(mode);
+                if (existing) {
+                    var resetPaging = !!poBreakdownState.dirty[mode];
+                    poBreakdownState.dirty[mode] = false;
+                    table.page.len(poBreakdownFilters().limit).ajax.reload(null, resetPaging);
                 }
+                table.columns.adjust();
+            }
 
+            function poBreakdownReload() {
+                window.clearTimeout(poBreakdownSearchTimer);
+                poBreakdownRenderActiveFilters();
                 Object.keys(poBreakdownState.tables).forEach(function(mode) {
-                    poBreakdownState.tables[mode].page.len(limit).ajax.reload(null, true);
+                    poBreakdownState.dirty[mode] = true;
                 });
-                if (!poBreakdownState.tables[poBreakdownState.mode]) {
-                    poBreakdownTable(poBreakdownState.mode);
-                }
+                poBreakdownShowTable(poBreakdownState.mode);
+            }
+
+            function poBreakdownOptionsStatus(loading, message, failed) {
+                poBreakdownState.optionsLoading = loading;
+                $('#po_breakdown_apply').prop('disabled', loading || !!failed);
+                $('#po_breakdown_filter_status')
+                    .prop('hidden', !message)
+                    .toggleClass('text-danger', !!failed)
+                    .toggleClass('text-muted', !failed)
+                    .text(message || '');
             }
 
             function poBreakdownUpdateOptions(activeSelector) {
+                var sequence = ++poBreakdownState.optionsSequence;
+                if (poBreakdownState.optionsRequest) {
+                    poBreakdownState.optionsRequest.abort();
+                }
                 var except = '';
                 poBreakdownFilterConfig.some(function(config) {
                     if (config.selector === activeSelector) {
@@ -3881,13 +3905,25 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     return false;
                 });
 
-                $.ajax({
+                var requestData = poBreakdownRequestData({ except: except });
+                var fingerprint = JSON.stringify(requestData);
+                poBreakdownOptionsStatus(true, 'Memuat pilihan filter...', false);
+                poBreakdownState.optionsRequest = $.ajax({
                     url: poBreakdownUrls.options,
                     type: 'POST',
                     dataType: 'json',
-                    data: poBreakdownRequestData({ except: except }),
+                    data: requestData,
                     success: function(response) {
-                        var options = response && response.options ? response.options : {};
+                        if (sequence !== poBreakdownState.optionsSequence) return;
+                        if (fingerprint !== JSON.stringify(poBreakdownRequestData({ except: except }))) {
+                            poBreakdownUpdateOptions(activeSelector);
+                            return;
+                        }
+                        if (!response || !response.options || typeof response.options !== 'object') {
+                            poBreakdownOptionsStatus(false, 'Gagal memuat pilihan filter. Tutup dan buka kembali Filter untuk mencoba lagi.', true);
+                            return;
+                        }
+                        var options = response.options;
                         poBreakdownFilterConfig.forEach(function(config) {
                             if (activeSelector && config.selector === activeSelector) {
                                 return;
@@ -3904,6 +3940,17 @@ if (!function_exists('po_monitor_term_amount_link')) {
                             });
                             $select.html(html).val(validSelected).trigger('change.select2');
                         });
+                        poBreakdownRenderActiveFilters();
+                        poBreakdownOptionsStatus(false, '', false);
+                    },
+                    error: function(xhr, status) {
+                        if (sequence !== poBreakdownState.optionsSequence || status === 'abort') return;
+                        poBreakdownOptionsStatus(false, 'Gagal memuat pilihan filter. Tutup dan buka kembali Filter untuk mencoba lagi.', true);
+                    },
+                    complete: function() {
+                        if (sequence === poBreakdownState.optionsSequence) {
+                            poBreakdownState.optionsRequest = null;
+                        }
                     }
                 });
             }
@@ -3939,7 +3986,8 @@ if (!function_exists('po_monitor_term_amount_link')) {
             });
 
             $('#po_breakdown_apply').off('click.poBreakdown').on('click.poBreakdown', function() {
-                poBreakdownReload(false);
+                if (poBreakdownState.optionsLoading || $(this).prop('disabled')) return;
+                poBreakdownReload();
                 $('#po_breakdown_filter_modal').modal('hide');
             });
             $('#po_breakdown_reset').off('click.poBreakdown').on('click.poBreakdown', function() {
@@ -3950,26 +3998,26 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $('#po_breakdown_invoiced_only').prop('checked', false);
                 $('#po_breakdown_limit').val('10');
                 poBreakdownUpdateOptions('');
-                poBreakdownReload(false);
+                poBreakdownReload();
             });
             $('#po_breakdown_filter_project, #po_breakdown_filter_pic, #po_breakdown_filter_regional, #po_breakdown_filter_area, #po_breakdown_filter_month, #po_breakdown_filter_week').off('change.poBreakdown').on('change.poBreakdown', function(event) {
                 poBreakdownRenderActiveFilters();
                 poBreakdownUpdateOptions('#' + event.currentTarget.id);
             });
             $('#po_breakdown_limit, #po_breakdown_invoiced_only').off('change.poBreakdown').on('change.poBreakdown', function() {
-                poBreakdownReload(false);
+                poBreakdownReload();
             });
             var poBreakdownSearchTimer = null;
             $('#po_breakdown_search').off('input.poBreakdown').on('input.poBreakdown', function() {
                 poBreakdownRenderActiveFilters();
                 window.clearTimeout(poBreakdownSearchTimer);
                 poBreakdownSearchTimer = window.setTimeout(function() {
-                    poBreakdownReload(false);
+                    poBreakdownReload();
                 }, 250);
             });
             $('.po-breakdown-tabs .nav-link').off('shown.bs.tab.poBreakdown').on('shown.bs.tab.poBreakdown', function() {
                 poBreakdownState.mode = $(this).data('breakdown-mode') || 'project';
-                poBreakdownTable(poBreakdownState.mode).columns.adjust().draw(false);
+                poBreakdownShowTable(poBreakdownState.mode);
             });
             $(document).off('click.poBreakdownDetail', '.js-po-breakdown-detail').on('click.poBreakdownDetail', '.js-po-breakdown-detail', function() {
                 poBreakdownRenderDetail($(this).data('breakdown-mode'), $(this).data('breakdown-key'));
@@ -3977,7 +4025,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
             $('#po_breakdown_filter_modal').off('shown.bs.modal.poBreakdown').on('shown.bs.modal.poBreakdown', function() {
                 poBreakdownUpdateOptions('');
             });
-            poBreakdownUpdateOptions('');
             poBreakdownRenderActiveFilters();
             poBreakdownTable('project');
 
