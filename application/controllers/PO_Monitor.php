@@ -1560,8 +1560,9 @@ class PO_Monitor extends CI_Controller
         $comparisonCumulative = $cumulativeInput === null
             ? true
             : in_array(strtolower((string) $cumulativeInput), ['1', 'true', 'yes'], true);
-        $matrix = $this->MPO_Monitor->getComparisonMatrix($fromMonth, $toMonth, 'week', false);
-        $monthMatrix = $this->MPO_Monitor->getComparisonMatrix($fromMonth, $toMonth, 'month', false);
+        $matrices = $this->MPO_Monitor->getComparisonWeekMatrices($fromMonth, $toMonth);
+        $matrix = $matrices['week'];
+        $monthMatrix = $matrices['month'];
         $html = $this->load->view('PO_Monitor/_comparison_table', [
             'matrix' => $matrix,
             'monthMatrix' => $monthMatrix,

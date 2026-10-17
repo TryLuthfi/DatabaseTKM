@@ -3,6 +3,34 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MPO_Monitor extends CI_Model
 {
+    // Reuse only during the lazy Weeks Column request; no persistent cache.
+    private $comparisonWeekRequest = null;
+
+    public function getComparisonWeekMatrices($fromMonth = null, $toMonth = null)
+    {
+        $previous = $this->comparisonWeekRequest;
+        $this->comparisonWeekRequest = [];
+        try {
+            return [
+                'week' => $this->getComparisonMatrix($fromMonth, $toMonth, 'week', false),
+                'month' => $this->getComparisonMatrix($fromMonth, $toMonth, 'month', false)
+            ];
+        } finally {
+            $this->comparisonWeekRequest = $previous;
+        }
+    }
+
+    private function comparisonRequestRows($key, callable $load)
+    {
+        if ($this->comparisonWeekRequest === null) {
+            return $load();
+        }
+        if (!array_key_exists($key, $this->comparisonWeekRequest)) {
+            $this->comparisonWeekRequest[$key] = $load();
+        }
+        return $this->comparisonWeekRequest[$key];
+    }
+
     public function ensureStandaloneSchema()
     {
         $this->db->query("CREATE TABLE IF NOT EXISTS `tb_bowheer_po` (
@@ -2498,12 +2526,14 @@ class MPO_Monitor extends CI_Model
             ? $this->buildWeekList($bounds['from'], $bounds['to'])
             : $this->buildMonthList($bounds['from'], $bounds['to']);
 
-        $projects = $this->db
+        $projects = $this->comparisonRequestRows('projects', function () {
+            return $this->db
             ->select('id_bowheer, no_urut, pic, bowheer')
             ->order_by('no_urut', 'ASC')
             ->order_by('bowheer', 'ASC')
             ->get('tb_bowheer_po')
             ->result_array();
+        });
 
         $projectMap = [];
         foreach ($projects as $project) {
@@ -2541,7 +2571,8 @@ class MPO_Monitor extends CI_Model
             }
         }
 
-        $targetRows = $this->db->query("SELECT
+        $targetRows = $this->comparisonRequestRows('targetRows', function () {
+            return $this->db->query("SELECT
                 p.id_bowheer,
                 a.target_week_start,
                 a.target_week_end,
@@ -2599,6 +2630,7 @@ class MPO_Monitor extends CI_Model
                 AND pl.linked_id_po IS NULL
                 AND pl.target_week_start IS NOT NULL
                 AND pl.target_week_end IS NOT NULL")->result_array();
+        });
 
         foreach ($targetRows as $row) {
             $id = (int) $row['id_bowheer'];
@@ -2634,7 +2666,8 @@ class MPO_Monitor extends CI_Model
             $projectMap[$id]['deviasi_by_po'] += $targetOutstanding;
         }
 
-        $claimRows = $this->db->query("SELECT
+        $claimRows = $this->comparisonRequestRows('claimRows', function () {
+            return $this->db->query("SELECT
                 p.id_bowheer,
                 tc.invoice_date,
                 tc.invoice_amount
@@ -2642,6 +2675,7 @@ class MPO_Monitor extends CI_Model
             JOIN tb_po_term t ON t.id_term = tc.id_term
             JOIN tb_po p ON p.id_po = t.id_po
             WHERE tc.invoice_date IS NOT NULL")->result_array();
+        });
 
         foreach ($claimRows as $row) {
             $id = (int) $row['id_bowheer'];
@@ -3426,7 +3460,8 @@ class MPO_Monitor extends CI_Model
 
     private function getComparisonTargetDetail($idBowheer, $periodKey, $groupBy, $fromMonth = null, $toMonth = null, $filterInvoicedForActivePeriod = true)
     {
-        $rows = $this->db->query("SELECT *
+        $rows = $this->comparisonRequestRows('detail|' . (int) $idBowheer, function () use ($idBowheer) {
+            return $this->db->query("SELECT *
             FROM (
                 SELECT
                     p.id_bowheer,
@@ -3531,8 +3566,26 @@ class MPO_Monitor extends CI_Model
                     AND pl.target_week_end IS NOT NULL
             ) x
             ORDER BY target_week_start ASC, po_number ASC, term_index ASC", [$idBowheer, $idBowheer, $idBowheer])->result_array();
+        });
 
         $totalPeriodKeys = $this->comparisonTotalPeriodKeys($periodKey, $groupBy, $fromMonth, $toMonth);
+        if ($this->comparisonWeekRequest !== null && (string) $periodKey !== '__total__') {
+            $periodIndexes = $this->comparisonRequestRows('detail-periods|' . (int) $idBowheer . '|' . $groupBy, function () use ($rows, $groupBy) {
+                $indexes = [];
+                foreach ($rows as $index => $row) {
+                    $key = $groupBy === 'week'
+                        ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
+                        : $this->majorityMonthKey($row['target_week_start'], $row['target_week_end']);
+                    $indexes[$key][] = $index;
+                }
+                return $indexes;
+            });
+            $periodRows = [];
+            foreach ($periodIndexes[(string) $periodKey] ?? [] as $index) {
+                $periodRows[] = $rows[$index];
+            }
+            $rows = $periodRows;
+        }
         return array_values(array_filter($rows, function ($row) use ($periodKey, $groupBy, $totalPeriodKeys, $filterInvoicedForActivePeriod) {
             $rowPeriod = $groupBy === 'week'
                 ? $this->weekKey((int) date('Y', strtotime($row['target_week_start'])), (int) $this->weekNumberFromPeriod($row['target_week_start'], $row['target_week_end']))
