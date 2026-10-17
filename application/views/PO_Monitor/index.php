@@ -4693,9 +4693,6 @@ if (!function_exists('po_monitor_term_amount_link')) {
                     if (response && response.status && response.html) {
                         $panel.html(response.html).data('loaded', 1);
                         compareTables.week = initCompareTable('#table_po_target_invoice_compare_week');
-                        if (compareTables.week) {
-                            compareTables.week.draw();
-                        }
                         if (typeof callback === 'function') {
                             callback(true);
                         }
@@ -4717,20 +4714,42 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 });
             }
 
+            var compareAdjustFrame = null;
+            var compareAdjustSettleTimer = null;
+            var compareAdjustedTable = null;
+            var compareAdjustedWidth = 0;
+
             function adjustCompareTables() {
                 var weekMode = $('#po_compare_week_mode').is(':checked');
                 var activeTable = weekMode ? compareTables.week : compareTables.month;
-                if (!activeTable) {
+                var host = document.getElementById('po-monitor-compare-body');
+                var width = host ? host.clientWidth : 0;
+                if (!activeTable || width <= 0) {
                     return;
                 }
 
-                activeTable.columns.adjust().draw(false);
+                if (activeTable === compareAdjustedTable && width === compareAdjustedWidth) {
+                    return;
+                }
+                compareAdjustedTable = activeTable;
+                compareAdjustedWidth = width;
+                // DataTables adjusts its scroll header/footer here; a data redraw is unnecessary.
+                activeTable.columns.adjust();
             }
 
             function scheduleCompareTableAdjust() {
-                [0, 80, 180, 360].forEach(function(delay) {
-                    window.setTimeout(adjustCompareTables, delay);
-                });
+                if (compareAdjustFrame === null) {
+                    var nextFrame = window.requestAnimationFrame || function(callback) {
+                        return window.setTimeout(callback, 16);
+                    };
+                    compareAdjustFrame = nextFrame(function() {
+                        compareAdjustFrame = null;
+                        adjustCompareTables();
+                    });
+                }
+                window.clearTimeout(compareAdjustSettleTimer);
+                // A final width check handles the end of the sidebar transition.
+                compareAdjustSettleTimer = window.setTimeout(adjustCompareTables, 360);
             }
 
             $(window)
@@ -5503,27 +5522,16 @@ if (!function_exists('po_monitor_term_amount_link')) {
                 $('#po_compare_month_panel').toggleClass('po-compare-panel-hidden', weekMode);
                 $('#po_compare_week_panel').toggleClass('po-compare-panel-hidden', !weekMode);
 
-                if (compareTables.month) {
-                    compareTables.month.draw();
-                    if (!weekMode) {
-                        window.setTimeout(function() {
-                            compareTables.month.columns.adjust().draw(false);
-                        }, 80);
-                    }
-                }
-
                 if (weekMode && !compareTables.week) {
                     loadWeekCompareTable(function(loaded) {
-                        if (loaded && compareTables.week) {
-                            compareTables.week.columns.adjust().draw(false);
+                        if (loaded) {
+                            scheduleCompareTableAdjust();
                         }
                     });
-                } else if (compareTables.week) {
-                    compareTables.week.draw();
-                    if (weekMode) {
-                        window.setTimeout(function() {
-                            compareTables.week.columns.adjust().draw(false);
-                        }, 80);
+                } else {
+                    var activeTable = weekMode ? compareTables.week : compareTables.month;
+                    if (activeTable) {
+                        activeTable.draw();
                     }
                 }
 

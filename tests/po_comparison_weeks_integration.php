@@ -16,11 +16,12 @@ if (!preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $config['hostname'])) { e
 $conn = DB($config, true);
 if ($conn->query('SELECT DATABASE() AS name')->row_array()['name'] !== 'zeyn_po_invoice_test_20261017') { exit('Wrong schema'); }
 class WeeksFixtureDb {
-    public $db, $writes = [], $missing = false;
+    public $db, $writes = [], $missing = false, $detailReads = 0;
     function __construct($db) { $this->db = $db; }
     function __call($method, $args) { $result = $this->db->$method(...$args); return $result === $this->db ? $this : $result; }
     function table_exists($table) { return $this->missing && $table === 'tb_po_comparison_target_lock' ? false : $this->db->table_exists($table); }
     function query($sql, $binds = false, $return = null) {
+        if (strpos($sql, 'ORDER BY target_week_start ASC, po_number ASC, term_index ASC') !== false) { $this->detailReads++; }
         if (preg_match('/^\s*INSERT IGNORE INTO tb_po_comparison_target_lock/i', $sql)) { $binds[6] = '[clock]'; $this->writes[] = $binds; return true; }
         return $this->db->query($sql, $binds, $return);
     }
@@ -69,9 +70,11 @@ try {
         $proxy->writes = [];
         $expected = ['week' => $before->getComparisonMatrix($bounds[0], $bounds[1], 'week', false), 'month' => $before->getComparisonMatrix($bounds[0], $bounds[1], 'month', false)];
         $expectedWrites = $proxy->writes; $proxy->writes = [];
+        $proxy->detailReads = 0;
         $actual = $after->getComparisonWeekMatrices(...$bounds);
         verify($actual === $expected, 'full matrix exact: ' . implode('..', $bounds));
         verify($proxy->writes === $expectedWrites, 'lock write arguments and order exact: ' . implode('..', $bounds));
+        verify($proxy->detailReads <= 1, 'week and month share one project source: ' . implode('..', $bounds));
         $property = new ReflectionProperty(MPO_Monitor::class, 'comparisonWeekRequest'); $property->setAccessible(true);
         verify($property->getValue($after) === null, 'temporary source reuse cleared');
     }

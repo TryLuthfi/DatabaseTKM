@@ -3,8 +3,9 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MPO_Monitor extends CI_Model
 {
-    // Reuse only during the lazy Weeks Column request; no persistent cache.
+    // Reuse within one lazy comparison operation; never across HTTP requests.
     private $comparisonWeekRequest = null;
+    private $importReportMetaRequest = null;
 
     public function getComparisonWeekMatrices($fromMonth = null, $toMonth = null)
     {
@@ -295,6 +296,13 @@ class MPO_Monitor extends CI_Model
             [22, 'Bp Wendy', 'PT VGREEN ( BSS )']
         ];
 
+        $existingRows = $this->db->where_in('id_bowheer', array_column($rows, 0))
+            ->get('tb_bowheer_po')->result_array();
+        $existingById = [];
+        foreach ($existingRows as $existing) {
+            $existingById[(int) $existing['id_bowheer']] = $existing;
+        }
+
         foreach ($rows as $row) {
             $payload = [
                 'id_bowheer' => $row[0],
@@ -304,9 +312,18 @@ class MPO_Monitor extends CI_Model
                 'bowheer_key' => $this->normalizeBowheerKey($row[2])
             ];
 
-            $exists = $this->db->get_where('tb_bowheer_po', ['id_bowheer' => $row[0]])->row_array();
+            $exists = $existingById[$row[0]] ?? null;
             if ($exists) {
-                $this->db->where('id_bowheer', $row[0])->update('tb_bowheer_po', $payload);
+                $changed = false;
+                foreach ($payload as $key => $value) {
+                    if ((string) ($exists[$key] ?? '') !== (string) $value) {
+                        $changed = true;
+                        break;
+                    }
+                }
+                if ($changed) {
+                    $this->db->where('id_bowheer', $row[0])->update('tb_bowheer_po', $payload);
+                }
             } else {
                 $this->db->insert('tb_bowheer_po', $payload);
             }
@@ -2520,6 +2537,21 @@ class MPO_Monitor extends CI_Model
 
     public function getComparisonMatrix($fromMonth = null, $toMonth = null, $groupBy = 'month', $invoiceOnly = false)
     {
+        $ownsRequest = $this->comparisonWeekRequest === null;
+        if ($ownsRequest) {
+            $this->comparisonWeekRequest = [];
+        }
+        try {
+            return $this->loadComparisonMatrix($fromMonth, $toMonth, $groupBy, $invoiceOnly);
+        } finally {
+            if ($ownsRequest) {
+                $this->comparisonWeekRequest = null;
+            }
+        }
+    }
+
+    private function loadComparisonMatrix($fromMonth = null, $toMonth = null, $groupBy = 'month', $invoiceOnly = false)
+    {
         $bounds = $this->resolveComparisonBounds($fromMonth, $toMonth);
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
         $periods = $groupBy === 'week'
@@ -3250,6 +3282,21 @@ class MPO_Monitor extends CI_Model
     }
 
     public function getComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth = null, $toMonth = null)
+    {
+        $ownsRequest = $this->comparisonWeekRequest === null;
+        if ($ownsRequest) {
+            $this->comparisonWeekRequest = [];
+        }
+        try {
+            return $this->loadComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth, $toMonth);
+        } finally {
+            if ($ownsRequest) {
+                $this->comparisonWeekRequest = null;
+            }
+        }
+    }
+
+    private function loadComparisonDetail($idBowheer, $periodKey, $groupBy, $type, $fromMonth = null, $toMonth = null)
     {
         $idBowheer = (int) $idBowheer;
         $groupBy = $groupBy === 'week' ? 'week' : 'month';
@@ -7099,6 +7146,17 @@ class MPO_Monitor extends CI_Model
 
     public function getImportReportRows()
     {
+        $previous = $this->importReportMetaRequest;
+        $this->importReportMetaRequest = [];
+        try {
+            return $this->loadImportReportRows();
+        } finally {
+            $this->importReportMetaRequest = $previous;
+        }
+    }
+
+    private function loadImportReportRows()
+    {
         $rows = array_merge($this->getOnPoImportReportRows(), $this->getNyPoImportReportRows());
         usort($rows, function ($a, $b) {
             $bowheerCompare = strcmp((string) ($a['BOWHEER'] ?? ''), (string) ($b['BOWHEER'] ?? ''));
@@ -7292,6 +7350,8 @@ class MPO_Monitor extends CI_Model
         $queryRows = $this->db->query($this->importReportTermSourceSql(true)
             . " ORDER BY bowheer ASC, p.po_number ASC, a.source_row_no ASC, t.term_index ASC")->result_array();
 
+        $this->preloadImportReportMetadata($queryRows);
+
         $groups = [];
         foreach ($queryRows as $item) {
             $groupKey = (int) $item['id_po'] . '|alloc|' . (
@@ -7312,6 +7372,8 @@ class MPO_Monitor extends CI_Model
     {
         $queryRows = $this->db->query($this->importReportTermSourceSql(false)
             . " ORDER BY bowheer ASC, p.po_number ASC, t.term_index ASC")->result_array();
+
+        $this->preloadImportReportMetadata($queryRows);
 
         $groups = [];
         foreach ($queryRows as $item) {
@@ -7506,6 +7568,86 @@ class MPO_Monitor extends CI_Model
         }
     }
 
+    private function preloadImportReportMetadata(array $items)
+    {
+        if ($this->importReportMetaRequest === null) {
+            return;
+        }
+        $numbers = [];
+        foreach ($items as $item) {
+            if (trim((string) ($item['regional'] ?? '')) !== ''
+                && trim((string) ($item['kota_po'] ?? '')) !== ''
+                && trim((string) ($item['detail_po'] ?? '')) !== '') {
+                continue;
+            }
+            $number = trim((string) ($item['po_number'] ?? ''));
+            $key = strtoupper($number);
+            if ($key !== '' && !array_key_exists($key, $this->importReportMetaRequest) && !isset($numbers[$key])) {
+                $numbers[$key] = $number;
+            }
+        }
+        if (!$numbers) {
+            return;
+        }
+        foreach ($numbers as $key => $number) {
+            $this->importReportMetaRequest[$key] = [];
+        }
+        if (!$this->db->table_exists('tb_myrep_po_header') || !$this->db->table_exists('tb_myrep_cluster')) {
+            return;
+        }
+        $hasFeeder = $this->db->table_exists('tb_rfs_myrep_mainfeeder');
+        // Keep each original normalized comparison in SQL (including accent/case collation).
+        // A bounded batch avoids one metadata round trip for every incomplete PO.
+        foreach (array_chunk($numbers, 100, true) as $chunk) {
+            $requested = []; $params = []; $keys = array_keys($chunk);
+            foreach (array_values($chunk) as $index => $number) {
+                $requested[] = 'SELECT ' . $index . ' AS lookup_index, CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci AS po_number';
+                $params[] = $number;
+            }
+            $lookup = '(' . implode(' UNION ALL ', $requested) . ') requested';
+            $match = 'UPPER(TRIM(CONVERT(p.po_number USING utf8mb4) COLLATE utf8mb4_unicode_ci)) = UPPER(TRIM(requested.po_number))';
+            $parts = ["SELECT requested.lookup_index, 0 AS source_order, p.id_po_header AS source_id,
+                CONVERT(COALESCE(c.regional_name, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                CONVERT(COALESCE(c.city_name, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS city,
+                CONVERT(CONCAT(COALESCE(NULLIF(p.po_type, ''), 'CLUSTER'), ' - ', c.cluster_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail
+                FROM tb_myrep_po_header p JOIN tb_myrep_cluster c ON c.id_myrep_cluster = p.id_myrep_cluster
+                JOIN " . $lookup . " ON " . $match];
+            if ($hasFeeder) {
+                $parts[] = "SELECT requested.lookup_index, 1 AS source_order, p.id_po_header AS source_id,
+                    CONVERT(COALESCE(NULLIF(mf.regional_name, ''), '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS regional,
+                    CONVERT(COALESCE(mf.city_name, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS city,
+                    CONVERT(CONCAT(COALESCE(NULLIF(p.po_type, ''), 'MAINFEEDER'), ' - ', mf.mainfeeder_name) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS detail
+                    FROM tb_myrep_po_header p JOIN tb_rfs_myrep_mainfeeder mf ON mf.id_mainfeeder = p.id_mainfeeder
+                    JOIN " . $lookup . " ON " . $match;
+            }
+            $rows = $this->db->query(implode(' UNION ALL ', $parts)
+                . ' ORDER BY lookup_index, source_order, source_id', $hasFeeder ? array_merge($params, $params) : $params)->result_array();
+            $groups = [];
+            foreach ($rows as $row) {
+                $groups[(int) $row['lookup_index']][] = $row;
+            }
+            foreach ($groups as $index => $metaRows) {
+                $valuesBySource = [];
+                $ambiguousOrder = false;
+                foreach ($metaRows as $metaRow) {
+                    foreach (['regional', 'city', 'detail'] as $field) {
+                        $value = trim((string) ($metaRow[$field] ?? ''));
+                        if ($value !== '') {
+                            $valuesBySource[$metaRow['source_order']][$field][$value] = true;
+                            if (count($valuesBySource[$metaRow['source_order']][$field]) > 1) {
+                                $ambiguousOrder = true;
+                            }
+                        }
+                    }
+                }
+                // Legacy queries have no ORDER BY. Keep their exact access order when
+                // multiple distinct values from one source could affect concatenation.
+                $this->importReportMetaRequest[$keys[$index]] = $ambiguousOrder
+                    ? null : $this->combineImportReportMetadata($metaRows);
+            }
+        }
+    }
+
     private function getMyRepImportReportMetaByPoNumber($poNumber)
     {
         static $cache = [];
@@ -7514,7 +7656,10 @@ class MPO_Monitor extends CI_Model
         if ($cacheKey === '') {
             return [];
         }
-        if (array_key_exists($cacheKey, $cache)) {
+        if ($this->importReportMetaRequest !== null && isset($this->importReportMetaRequest[$cacheKey])) {
+            return $this->importReportMetaRequest[$cacheKey];
+        }
+        if ($this->importReportMetaRequest === null && array_key_exists($cacheKey, $cache)) {
             return $cache[$cacheKey];
         }
 
@@ -7546,6 +7691,15 @@ class MPO_Monitor extends CI_Model
         }
 
         $rows = $this->db->query(implode(' UNION ALL ', $sqlParts), $params)->result_array();
+        $cache[$cacheKey] = $this->combineImportReportMetadata($rows);
+        if ($this->importReportMetaRequest !== null) {
+            $this->importReportMetaRequest[$cacheKey] = $cache[$cacheKey];
+        }
+        return $cache[$cacheKey];
+    }
+
+    private function combineImportReportMetadata(array $rows)
+    {
         $regional = [];
         $city = [];
         $detail = [];
@@ -7560,13 +7714,12 @@ class MPO_Monitor extends CI_Model
             unset($bucket);
         }
 
-        $cache[$cacheKey] = [
+        return [
             'regional' => implode(', ', array_values($regional)),
             'city' => implode(', ', array_values($city)),
             'detail' => implode(', ', array_values($detail)),
         ];
 
-        return $cache[$cacheKey];
     }
 
     private function applyImportReportTerm(&$row, $item)

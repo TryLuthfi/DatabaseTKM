@@ -87,6 +87,21 @@ try {
     fixture('tb_myrep_po_header',['po_number'=>'   ','po_category'=>'FINAL','po_type'=>'CLUSTER','id_myrep_cluster'=>$cluster]);
     fixture('tb_po_target_pipeline',['id_bowheer'=>$project,'target_status'=>'TARGET_WEEK','target_week_start'=>'2026-10-11','target_week_end'=>'2026-10-17','plan_amount'=>-12,'detail_po'=>'Pipeline','regional'=>'Regional 3']);
     $before=new MPO_Monitor_LazyDataBaseline(); $after=new MPO_Monitor();
+    foreach (['target','actual_target','deviasi_by_po','cumulative','effective_target','effective_deviasi_by_po'] as $type) {
+        foreach ([['month','2026-01'],['month','2026-10'],['week','2026-W42'],['week','2027-W01'],['month','__total__']] as $case) {
+            $proxy->writes=[];
+            $a=$before->getComparisonDetail($project,$case[1],$case[0],$type,'2025-12','2027-01');
+            $expectedWrites=$proxy->writes; $proxy->writes=[];
+            $b=$after->getComparisonDetail($project,$case[1],$case[0],$type,'2025-12','2027-01');
+            verify($a===$b,'target/cumulative exact rows '.$type.' '.implode(':',$case));
+            verify($expectedWrites===$proxy->writes,'target/cumulative lock writes '.$type.' '.implode(':',$case));
+        }
+    }
+    $cacheProperty=new ReflectionProperty(MPO_Monitor::class,'comparisonWeekRequest'); $cacheProperty->setAccessible(true);
+    verify($cacheProperty->getValue($after)===null,'detail cache discarded after operation');
+    $termToRefresh=$conn->query('SELECT id_term FROM tb_po_term ORDER BY id_term LIMIT 1')->row_array()['id_term'];
+    $conn->where('id_term',$termToRefresh)->update('tb_po_term',['plan_amount'=>123456]);
+    verify($before->getComparisonDetail($project,'__total__','month','target','2025-12','2027-01')===$after->getComparisonDetail($project,'__total__','month','target','2025-12','2027-01'),'next detail reads updated source');
     foreach ([['month','2026-01'],['month','2026-10'],['month','2026-12'],['month','__total__'],['week','2026-W40'],['week','2026-W41'],['week','2026-W42'],['week','2027-W01'],['week','__total__']] as $case) {
         $a=$before->getComparisonDetail($project,$case[1],$case[0],'achieved','2025-12','2027-01');
         $b=$after->getComparisonDetail($project,$case[1],$case[0],'achieved','2025-12','2027-01');
