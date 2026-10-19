@@ -475,22 +475,13 @@ class MPO_MyRep extends CI_Model
                 'resolved_terms' => [],
             ];
 
+            $groupTerms = [];
             foreach ($groupHeaderIds as $groupHeaderId) {
                 foreach (($terminByHeader[$groupHeaderId] ?? []) as $terminRow) {
-                    $terminNo = (int) ($terminRow['termin_no'] ?? 0);
-                    if ($terminNo < 1 || $terminNo > 5) {
-                        continue;
-                    }
-
-                    $hasInvoiceDate = $this->normalizeEmrTargetDateValue((string) ($terminRow['invoice_date'] ?? '')) !== '';
-                    if (
-                        !isset($groupMeta['resolved_terms'][$terminNo])
-                        || $this->isTerminRowPreferredForPoListGroup($terminRow, $groupMeta['resolved_terms'][$terminNo], $headerMetaMap)
-                    ) {
-                        $groupMeta['resolved_terms'][$terminNo] = $terminRow;
-                    }
+                    $groupTerms[] = $terminRow;
                 }
             }
+            $groupMeta['resolved_terms'] = $this->resolvePoGroupTerminRows($groupTerms, $headerMetaMap);
 
             foreach ($groupMeta['resolved_terms'] as $terminNo => $terminRow) {
                 $terminValue = $this->resolveDoneInvoiceValue($terminRow);
@@ -4221,6 +4212,46 @@ class MPO_MyRep extends CI_Model
             ->result_array();
     }
 
+    /**
+     * Display the same term sources as List PO without copying invoice history.
+     * Keep each source term ID intact so Update edits the displayed record.
+     * Raw per-header reads remain available for estimate sync and write workflows.
+     */
+    public function getResolvedTerminRowsByPoHeader(array $header)
+    {
+        $clusterId = (int) ($header['id_myrep_cluster'] ?? 0);
+        if (!$this->tablesReady() || $clusterId <= 0 || empty($this->getClusterById($clusterId))) {
+            return [];
+        }
+
+        $groupKey = $this->buildPoHeaderGroupKey($header);
+        $headers = $this->db
+            ->select('*')
+            ->from('tb_myrep_po_header')
+            ->where('id_myrep_cluster', $clusterId)
+            ->get()
+            ->result_array();
+        $headerMetaMap = [];
+        foreach ($headers as $sourceHeader) {
+            if ($this->buildPoHeaderGroupKey($sourceHeader) === $groupKey) {
+                $headerMetaMap[(int) $sourceHeader['id_po_header']] = $sourceHeader;
+            }
+        }
+        if (empty($headerMetaMap)) {
+            return [];
+        }
+
+        $terms = $this->db
+            ->select('*')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', array_keys($headerMetaMap))
+            ->order_by('termin_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        return array_values($this->resolvePoGroupTerminRows($terms, $headerMetaMap));
+    }
+
     public function getTerminById($terminId)
     {
         if (!$this->tablesReady()) {
@@ -4659,6 +4690,22 @@ class MPO_MyRep extends CI_Model
         }
 
         return $active;
+    }
+
+    private function resolvePoGroupTerminRows(array $terms, array $headerMetaMap)
+    {
+        $resolved = [];
+        foreach ($terms as $term) {
+            $termNo = (int) ($term['termin_no'] ?? 0);
+            if ($termNo < 1 || $termNo > 5 || !isset($headerMetaMap[(int) ($term['id_po_header'] ?? 0)])) {
+                continue;
+            }
+            if (!isset($resolved[$termNo]) || $this->isTerminRowPreferredForPoListGroup($term, $resolved[$termNo], $headerMetaMap)) {
+                $resolved[$termNo] = $term;
+            }
+        }
+        ksort($resolved, SORT_NUMERIC);
+        return $resolved;
     }
 
     private function isTerminRowPreferredForPoListGroup(array $candidate, array $current, array $headerMetaMap)

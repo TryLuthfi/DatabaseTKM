@@ -343,7 +343,7 @@ class PO_MyRep extends CI_Controller
         ];
 
         foreach ($poHeaders as $header) {
-            $header['termin_rows'] = $this->MPO_MyRep->getTerminRowsByPoId((int) ($header['id_po_header'] ?? 0));
+            $header['termin_rows'] = $this->MPO_MyRep->getResolvedTerminRowsByPoHeader($header);
             $groupKey = strtoupper(trim((string) ($header['po_type'] ?? 'CLUSTER')));
             if (!isset($poGroups[$groupKey])) {
                 $poGroups[$groupKey] = [];
