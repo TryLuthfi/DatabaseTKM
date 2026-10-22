@@ -33,7 +33,10 @@ if (!function_exists('myrep_pic_column_contains_sql')) {
             return '0 = 1';
         }
 
-        return 'FIND_IN_SET(' . $db->escape($nik) . ", REPLACE(COALESCE({$columnSql}, ''), ' ', '')) > 0";
+        // Trim CSV separators without changing spaces inside an identifier/name.
+        // Removing every space makes legacy NIKs such as names fail to match.
+        $nikListSql = "REGEXP_REPLACE(TRIM(COALESCE({$columnSql}, '')), '[[:space:]]*,[[:space:]]*', ',')";
+        return 'FIND_IN_SET(' . $db->escape($nik) . ', ' . $nikListSql . ') > 0';
     }
 }
 
