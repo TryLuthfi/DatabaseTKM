@@ -25,6 +25,7 @@ class Batch_Approval_MyRep extends CI_Controller
                 'saveImportedBatch' => 'TAMBAH',
                 'updateBatchApproval' => 'VIEW',
                 'reviewBatchEdit' => 'VIEW',
+                'correctWorkflow' => 'VIEW',
                 'rejectBatchData' => 'APPROVAL',
                 'submitRevisedBatchData' => 'VIEW',
                 'updateStagingProgress' => 'VIEW',
@@ -482,6 +483,13 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['batchEditReady'] = $this->MBatch_edit_approval->ready();
         $data['batchEditCsrf'] = $this->batchEditCsrf();
         $data['batchEditToken'] = $this->MBatch_edit_approval->token($editContext);
+        $data['batchWorkflowBaselineHash'] = $data['batchEditToken'];
+        $data['canCorrectBatchWorkflow'] = $this->isWorkflowSuperAdmin();
+        $data['batchWorkflowStages'] = [];
+        foreach (Batch_workflow_policy::STAGES as $stage) {
+            $data['batchWorkflowStages'][$stage] = $this->getIndonesianStagingLabel($stage);
+        }
+        $data['batchSakuPresentation'] = Batch_workflow_policy::sakuPresentation($cluster, $cluster['display_staging_status'] ?? null);
         $data['batchEditProtected'] = $editContext && Batch_edit_policy::protectedStage($editContext['batch']);
         $data['batchEditSitac'] = $editContext && $this->MBatch_edit_approval->mapped($editContext['cluster'], 'sitac_ho');
         $data['batchEditFinance'] = $editContext && $this->MBatch_edit_approval->mapped($editContext['cluster'], 'finance_ho');
@@ -1420,6 +1428,100 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? $successMessage : 'Gagal memperbarui staging Batch Approval.');
         redirect($redirectPath);
+    }
+
+    /** An explicit, audited correction; ordinary batch edits cannot change workflow. */
+    public function correctWorkflow()
+    {
+        if (empty($this->session->userdata('id_user'))) { redirect('Auth'); return; }
+        if (!$this->isWorkflowSuperAdmin()) { show_error('Koreksi workflow hanya untuk Super Admin.', 403); return; }
+        $this->validateBatchEditPost();
+        $values = [];
+        foreach (['cluster_id', 'id_batch_approval', 'target_stage', 'saku_action', 'correction_reason', 'correction_evidence', 'baseline_hash'] as $field) {
+            $value = $this->input->post($field);
+            if ($value !== null && !is_string($value)) { show_error('Format koreksi workflow tidak valid.', 400); return; }
+            $values[$field] = $value ?? '';
+        }
+        $clusterId = ctype_digit($values['cluster_id']) ? (int) $values['cluster_id'] : 0;
+        $batchId = ctype_digit($values['id_batch_approval']) ? (int) $values['id_batch_approval'] : 0;
+        if ($clusterId <= 0 || $batchId <= 0) { show_error('ID batch dan cluster tidak valid.', 400); return; }
+        $action = strtoupper(trim($values['saku_action']));
+        $result = $this->MBatch_edit_approval->correctWorkflow(
+            $clusterId, $batchId, $values['target_stage'], $action,
+            $values['correction_reason'], $values['correction_evidence'], $values['baseline_hash'],
+            function (array $context, array $candidate) use ($action) {
+                return $this->validateWorkflowCorrection($context, $candidate, $action);
+            }
+        );
+        $this->session->set_flashdata(!empty($result['ok']) ? 'success' : 'error', $result['message']);
+        redirect('Batch_Approval_MyRep/detail/' . $clusterId);
+    }
+
+    private function validateWorkflowCorrection(array $context, array $candidate, $action)
+    {
+        $clusterId = (int) $context['cluster']['id_myrep_cluster'];
+        $target = strtoupper(trim((string) ($candidate['staging_status'] ?? '')));
+        if ($target !== Batch_edit_policy::effectiveStage($candidate)) {
+            return 'Target tahap awal bertentangan dengan nomor/tanggal Batch Approval yang tersimpan. Bukti approval tidak dihapus oleh koreksi staging.';
+        }
+        $initial = ['DRAFT', 'WAITING HO', 'WAITING_BATCH_APPROVAL', 'NEED_REVISE', 'HOLD', 'REJECTED'];
+        if (!in_array($target, $initial, true) || in_array($action, ['REQUEST', 'APPROVE'], true)) {
+            if (trim((string) ($candidate['astri_batch_number'] ?? '')) === ''
+                || !$this->validWorkflowDate($candidate['astri_batch_approved_at'] ?? '')
+                || (float) ($candidate['nominal_nego_emr'] ?? 0) <= 0) {
+                return 'Nomor/tanggal Batch Approval dan nominal Approval EMR positif wajib tersedia untuk staging ini.';
+            }
+        }
+        $financeStages = array_merge(['PRE_ZEYN_FINANCE_APPROVED', 'WAITING_SAKU_FINANCE_APPROVAL', 'WAITING_FINANCE_RELEASE', 'WAITING FINANCE'], Batch_workflow_policy::PAID_STAGES);
+        if (in_array($action, ['REQUEST', 'APPROVE'], true) || in_array($target, $financeStages, true)) {
+            if (!$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsFinanceApproved($clusterId, 'PRE_ZEYN')) {
+                return 'Dokumen pra-finance wajib lengkap dan disetujui Finance sebelum koreksi ke tahap ini atau approval Saku.';
+            }
+        }
+        if (in_array($target, ['PRE_ZEYN_DOC_APPROVED', 'PRE_ZEYN_FINANCE_ON_REVIEW'], true)
+            && !$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsApproved($clusterId, 'PRE_ZEYN')) {
+            return 'Dokumen tahap 1 wajib lengkap dan disetujui SITAC.';
+        }
+        if (in_array($target, Batch_workflow_policy::PAID_STAGES, true)
+            && !$this->validWorkflowDate($candidate['released_at'] ?? '')) {
+            return 'Tanggal pembayaran aktual yang valid wajib tersedia. Gunakan alur pencairan untuk merekam pembayaran.';
+        }
+        $gate = $this->validateDonationStageGate($clusterId, $target);
+        if ($gate !== '') { return $gate; }
+        if (in_array($target, ['POST_ZEYN_DOC_APPROVED', 'POST_ZEYN_FINANCE_ON_REVIEW', 'WAITING_ASTRI_SUBMISSION', 'ASTRI_ON_REVIEW', 'NEED_REVISE_ASTRI', 'ASTRI_APPROVED', 'PO_DONASI', 'INVOICE', 'DONE BATCH APPROVAL', 'COMPLETED'], true)
+            && !$this->MBatch_Approval_MyRep->areDonationRequiredDocumentsApproved($clusterId, 'POST_ZEYN')) {
+            return 'Dokumen tahap 2 wajib lengkap dan disetujui SITAC.';
+        }
+        if (in_array($target, ['DONE BATCH APPROVAL', 'COMPLETED'], true)
+            && !$this->MBatch_Approval_MyRep->areAllDonationDocumentsAstriApproved($clusterId)) {
+            return 'Dokumen Astri wajib lengkap dan disetujui sebelum menyelesaikan workflow.';
+        }
+        if (in_array($target, ['PO_DONASI', 'INVOICE'], true)) {
+            if (trim((string) ($candidate['po_donasi_number'] ?? '')) === ''
+                || !$this->validWorkflowDate($candidate['po_donasi_date'] ?? '')
+                || (float) ($candidate['po_donasi_value'] ?? 0) <= 0) {
+                return 'Nomor, tanggal dan nilai PO Donasi positif wajib tersedia.';
+            }
+        }
+        if ($target === 'INVOICE' && (trim((string) ($candidate['invoice_donasi_number'] ?? '')) === ''
+            || !$this->validWorkflowDate($candidate['invoice_donasi_date'] ?? '')
+            || (float) ($candidate['invoice_donasi_value'] ?? 0) <= 0)) {
+            return 'Nomor, tanggal dan nilai invoice positif wajib tersedia.';
+        }
+        return '';
+    }
+
+    private function validWorkflowDate($value)
+    {
+        $value = trim((string) $value);
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/', $value, $date)) { return false; }
+        return (int) $date[1] >= 1900 && checkdate((int) $date[2], (int) $date[3], (int) $date[1])
+            && (!isset($date[4]) || ((int) $date[4] <= 23 && (int) $date[5] <= 59 && (int) ($date[6] ?? 0) <= 59));
+    }
+
+    private function isWorkflowSuperAdmin()
+    {
+        return strtoupper(trim((string) $this->session->userdata('nama_level'))) === 'SUPER ADMIN';
     }
 
     public function reviewSakuFinanceApproval()

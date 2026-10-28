@@ -1,6 +1,7 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 require_once APPPATH . 'libraries/Batch_edit_policy.php';
+require_once APPPATH . 'libraries/Batch_workflow_policy.php';
 require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MBatch_edit_approval extends CI_Model
@@ -177,6 +178,58 @@ class MBatch_edit_approval extends CI_Model
             $this->db->trans_rollback();
             log_message('error', 'Batch edit review failed: ' . get_class($e));
             return ['ok' => false, 'message' => $e instanceof RuntimeException ? $e->getMessage() : 'Gagal mereview perubahan batch.'];
+        }
+    }
+
+    /** Dedicated correction, separate from ordinary data edit and Saku review. */
+    public function correctWorkflow($clusterId, $batchId, $targetStage, $sakuAction, $reason, $evidence, $token, callable $validate)
+    {
+        $actor = (int) $this->session->userdata('id_user');
+        $role = strtoupper(trim((string) $this->session->userdata('nama_level')));
+        if ($actor <= 0 || $role !== 'SUPER ADMIN') { return ['ok' => false, 'message' => 'Koreksi workflow hanya untuk Super Admin yang login.']; }
+        $reason = trim((string) $reason); $evidence = trim((string) $evidence);
+        $action = strtoupper(trim((string) $sakuAction));
+        if ($reason === '' || strlen($reason) > 4000) { return ['ok' => false, 'message' => 'Alasan koreksi wajib diisi, maksimal 4000 byte.']; }
+        if (strlen($evidence) > 4000 || ($action !== 'KEEP' && $evidence === '')) { return ['ok' => false, 'message' => 'Referensi bukti wajib diisi untuk koreksi Saku, maksimal 4000 byte.']; }
+        if (!$this->ready()) { return ['ok' => false, 'message' => 'Tabel history approval belum siap. Hubungi administrator.']; }
+        if (!$this->db->trans_begin()) { return ['ok' => false, 'message' => 'Tidak dapat memulai transaksi koreksi workflow.']; }
+        try {
+            $context = $this->locked($clusterId, $batchId);
+            if (!hash_equals($this->token($context), (string) $token)) { throw new RuntimeException('Data atau staging telah berubah. Muat ulang halaman sebelum melakukan koreksi.'); }
+            if ($this->db->get_where('tb_myrep_batch_edit_request', ['pending_batch_id' => (int) $batchId])->row_array()) { throw new RuntimeException('Masih ada pengajuan perubahan pending. Selesaikan pengajuan tersebut sebelum koreksi workflow.'); }
+            $now = date('Y-m-d H:i:s');
+            $payload = Batch_workflow_policy::plan($context['batch'], $targetStage, $action, $actor, $now);
+            $note = $reason . ($evidence !== '' ? "\nReferensi bukti: " . $evidence : '');
+            if ($action === 'REQUEST') { $payload['saku_finance_request_remark'] = $note; }
+            elseif (in_array($action, ['APPROVE', 'REJECT'], true)) { $payload['saku_finance_review_remark'] = $note; }
+            $candidate = array_replace($context['batch'], $payload);
+            $error = $validate($context, $candidate);
+            if (!is_string($error)) { throw new RuntimeException('Validasi workflow tidak memberikan hasil yang valid.'); }
+            if ($error !== '') { throw new RuntimeException($error); }
+            $before = Batch_edit_policy::snapshot($context['batch'], $context['cluster'], $context['pics']);
+            $before['workflow'] = Batch_workflow_policy::snapshot($context['batch']);
+            $after = Batch_edit_policy::snapshot($candidate, $context['cluster'], $context['pics']);
+            $after['workflow'] = Batch_workflow_policy::snapshot($candidate);
+            $this->db->insert('tb_myrep_batch_edit_request', [
+                'id_batch_approval' => (int) $batchId, 'id_myrep_cluster' => (int) $clusterId,
+                'pending_batch_id' => null, 'status' => 'APPLIED', 'reason' => $note,
+                'before_json' => json_encode($before, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+                'after_json' => json_encode($after, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+                'baseline_hash' => $this->token($context), 'staging_at_submit' => Batch_edit_policy::effectiveStage($context['batch']),
+                'finance_required' => 0, 'submitted_by' => $actor, 'submitted_at' => $now, 'reviewed_at' => $now,
+            ]);
+            $requestId = (int) $this->db->insert_id();
+            if ($requestId <= 0) { throw new RuntimeException('Gagal membuat history koreksi workflow.'); }
+            $payload['updated_by'] = $actor;
+            // Preserve cluster status, recipients, PICs and actual payment evidence in full.
+            $this->db->where('id_batch_approval', (int) $batchId)->update('tb_myrep_batch_approval', $payload);
+            $this->event($requestId, 'WORKFLOW_CORRECTED', $candidate, $note);
+            $this->finish();
+            return ['ok' => true, 'message' => 'Koreksi workflow disimpan beserta alasan, referensi bukti dan history.'];
+        } catch (Throwable $e) {
+            $this->db->trans_rollback();
+            log_message('error', 'Batch workflow correction failed: ' . get_class($e));
+            return ['ok' => false, 'message' => $e instanceof RuntimeException ? $e->getMessage() : 'Gagal menyimpan koreksi workflow.'];
         }
     }
 

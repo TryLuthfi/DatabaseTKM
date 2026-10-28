@@ -267,6 +267,9 @@ if (!function_exists('batchDetailSlaStatus')) {
         $targetTimestamp = strtotime((string) $targetDate);
         $actualTimestamp = strtotime((string) $actualDate);
         if (!$startTimestamp) {
+            if ($actualTimestamp) {
+                return ['label' => 'Tercatat — SLA belum dapat dihitung', 'class' => 'info', 'icon' => 'info-circle'];
+            }
             return ['label' => 'Belum Mulai', 'class' => 'secondary', 'icon' => 'clock'];
         }
         if (!$actualTimestamp) {
@@ -528,12 +531,7 @@ $sakuRequestedAt = trim((string) ($cluster['saku_finance_requested_at'] ?? ''));
 $sakuReviewedAt = trim((string) ($cluster['saku_finance_reviewed_at'] ?? ''));
 $financeSubmittedAt = trim((string) ($cluster['submitted_to_finance_at'] ?? $cluster['finance_submitted_at'] ?? ''));
 $releasedAt = trim((string) ($cluster['released_at'] ?? ''));
-if ($sakuRequestedAt === '') {
-    $sakuRequestedAt = $sakuReviewedAt ?: ($financeSubmittedAt ?: $releasedAt);
-}
-if ($sakuReviewedAt === '') {
-    $sakuReviewedAt = $financeSubmittedAt ?: $releasedAt;
-}
+// Saku milestones use their own recorded timestamps; later staging is not proof of approval.
 $slaRows = [];
 $slaDefinitions = [
     ['Pengajuan Donasi', 'AREA', 1, $cluster['submission_date'] ?? $cluster['astri_initial_submitted_at'] ?? '', $slaStartDate],
@@ -562,7 +560,6 @@ foreach ($slaDefinitions as $slaDefinition) {
     $actualDate = trim((string) $slaDefinition[3]);
     if ($startDate === '') {
         $targetDate = '';
-        $actualDate = '';
     }
     $workDays = batchDetailCalendarDayDiff($startDate, $actualDate);
     if ($workDays !== '-') {
@@ -2624,6 +2621,14 @@ if ($canApprove && $canApprovalAction) {
                             </div>
                         </div>
                         <div class="batch-progress-caption mb-2"><?= htmlspecialchars($stageMeta['label']) ?></div>
+                        <?php if (!empty($canCorrectBatchWorkflow) && !empty($batchEditReady)): ?>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-warning" data-toggle="modal" data-target="#modal-correct-batch-workflow" data-role-guard-exempt="1">
+                                    <i class="fas fa-history" aria-hidden="true"></i> Edit Staging / Koreksi Saku (Super Admin)
+                                </button>
+                                <small class="d-block text-muted mt-1">Koreksi dengan alasan dan history, terpisah dari approval perubahan data batch.</small>
+                            </div>
+                        <?php endif; ?>
                         <div class="progress batch-progress">
                             <div class="progress-bar <?= htmlspecialchars($stageMeta['class']) ?>" role="progressbar" style="width: <?= (int) $stageMeta['percent'] ?>%;" aria-valuenow="<?= (int) $stageMeta['percent'] ?>" aria-valuemin="0" aria-valuemax="100"><?= (int) $stageMeta['percent'] ?>%</div>
                         </div>
@@ -2797,31 +2802,10 @@ if ($canApprove && $canApprovalAction) {
 
             <?php
             $currentDonationStage = strtoupper(trim((string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? '')));
-            $sakuFinanceStatus = strtoupper(trim((string) ($cluster['saku_finance_approval_status'] ?? 'NY')));
-            $sakuVisibleStages = [
-                'WAITING_SAKU_FINANCE_APPROVAL',
-                'WAITING_FINANCE_RELEASE',
-                'RELEASED',
-                'WAITING_POST_ZEYN_DOC',
-                'POST_ZEYN_DOC_ON_REVIEW',
-                'POST_ZEYN_DOC_APPROVED',
-                'POST_ZEYN_FINANCE_ON_REVIEW',
-                'WAITING_ASTRI_SUBMISSION',
-                'ASTRI_ON_REVIEW',
-                'ASTRI_APPROVED',
-                'PO_DONASI',
-                'INVOICE',
-            ];
-            $isSakuFlowVisible = in_array($currentDonationStage, $sakuVisibleStages, true);
-            if (!$isSakuFlowVisible) {
-                $sakuFinanceStatus = 'NY';
-            }
-            $sakuFinanceLabel = $sakuFinanceStatus === 'ON REVIEW'
-                ? 'Menunggu Approval'
-                : ($sakuFinanceStatus === 'APPROVED' ? 'Approved' : ($sakuFinanceStatus === 'REJECTED' ? 'Rejected' : 'Belum Diajukan'));
-            $sakuFinanceBadgeClass = $sakuFinanceStatus === 'APPROVED'
-                ? 'success'
-                : ($sakuFinanceStatus === 'REJECTED' ? 'danger' : ($sakuFinanceStatus === 'ON REVIEW' ? 'warning' : 'secondary'));
+            $sakuFinanceStatus = (string) ($batchSakuPresentation['status'] ?? 'NY');
+            $isSakuFlowVisible = !empty($batchSakuPresentation['visible']);
+            $sakuFinanceLabel = (string) ($batchSakuPresentation['label'] ?? 'Belum Diajukan');
+            $sakuFinanceBadgeClass = in_array($batchSakuPresentation['badge'] ?? '', ['success', 'danger', 'warning', 'secondary', 'info'], true) ? $batchSakuPresentation['badge'] : 'secondary';
             $isSakuWaitingFinanceApproval = $isSakuFlowVisible && ($currentDonationStage === 'WAITING_SAKU_FINANCE_APPROVAL' || $sakuFinanceStatus === 'ON REVIEW');
             ?>
             <div class="card card-outline card-success shadow-sm batch-disbursement-card">
@@ -2896,6 +2880,10 @@ if ($canApprove && $canApprovalAction) {
                     <h3 class="card-title mb-0">Approval Saku Finance</h3>
                 </div>
                 <div class="card-body">
+                    <p class="text-muted">Approval Saku adalah persetujuan pengajuan dana. Approval perubahan data batch dan approval dokumen dicatat pada alur masing-masing.</p>
+                    <?php if (!empty($batchSakuPresentation['warning'])): ?>
+                        <div class="alert alert-warning" role="status"><?= htmlspecialchars((string) $batchSakuPresentation['warning'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <?php endif; ?>
                     <div class="row batch-info-grid">
                         <div class="col-md-2 mb-3">
                             <strong>Status Approval</strong>
@@ -4112,6 +4100,63 @@ if ($canApprove && $canApprovalAction) {
 </div>
 <?php endif; ?>
 
+<?php if (!empty($canCorrectBatchWorkflow) && !empty($batchEditReady)): ?>
+<div class="modal fade" id="modal-correct-batch-workflow" tabindex="-1" role="dialog" aria-labelledby="batch-workflow-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/correctWorkflow') ?>" data-role-guard-exempt="1" id="batch-workflow-form">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <input type="hidden" name="id_batch_approval" value="<?= (int) ($cluster['id_batch_approval'] ?? 0) ?>">
+                <input type="hidden" name="batch_edit_csrf" value="<?= htmlspecialchars((string) ($batchEditCsrf ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="baseline_hash" value="<?= htmlspecialchars((string) ($batchWorkflowBaselineHash ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="batch-workflow-title">Koreksi Staging / Approval Saku</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" id="batch-workflow-help">Khusus Super Admin. Semua koreksi dicatat dengan alasan, pelaku dan waktu saat disimpan. Staging tidak menjadi bukti approval Saku. Approval perubahan data batch dan approval dokumen tetap terpisah.</div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="batch-workflow-stage">Staging tujuan</label>
+                            <select name="target_stage" id="batch-workflow-stage" class="form-control" required aria-describedby="batch-workflow-stage-help">
+                                <?php foreach ((array) ($batchWorkflowStages ?? []) as $workflowStage => $workflowLabel): ?>
+                                    <option value="<?= htmlspecialchars((string) $workflowStage, ENT_QUOTES, 'UTF-8') ?>" <?= $currentStage === $workflowStage ? 'selected' : '' ?>><?= htmlspecialchars((string) $workflowLabel, ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small id="batch-workflow-stage-help" class="form-text text-muted">Staging sekarang: <?= htmlspecialchars(batchDetailStatusLabel($currentStage), ENT_QUOTES, 'UTF-8') ?>. Staging pembayaran memerlukan tanggal, nominal dan bukti transfer aktual yang sudah tersimpan; gunakan alur pembayaran untuk mencatat pembayaran baru. Nomor/tanggal Batch Approval yang sudah tercatat tetap berlaku; pilihan tahap awal yang bertentangan akan ditolak.</small>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="batch-workflow-saku">Tindakan Approval Saku</label>
+                            <select name="saku_action" id="batch-workflow-saku" class="form-control" aria-describedby="batch-workflow-saku-help">
+                                <option value="KEEP">Pertahankan status Saku</option>
+                                <option value="REQUEST">Catat pengajuan Saku saat ini</option>
+                                <option value="APPROVE">Catat persetujuan Saku berdasarkan bukti</option>
+                                <option value="REJECT">Catat penolakan Saku berdasarkan bukti</option>
+                                <option value="RESET">Reset Saku ke Belum Diajukan</option>
+                            </select>
+                            <small id="batch-workflow-saku-help" class="form-text text-muted">Persetujuan memerlukan dokumen wajib yang disetujui Finance. Tanggal pengajuan/review baru memakai waktu koreksi saat ini, tanpa mengisi tanggal historis yang tidak tercatat. Reset tersimpan dalam history.</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="batch-workflow-reason">Alasan koreksi (wajib)</label>
+                        <textarea name="correction_reason" id="batch-workflow-reason" class="form-control" rows="3" maxlength="4000" required aria-describedby="batch-workflow-help"></textarea>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="batch-workflow-evidence">Referensi bukti <span id="batch-workflow-evidence-required">(wajib jika status Saku diubah)</span></label>
+                        <textarea name="correction_evidence" id="batch-workflow-evidence" class="form-control" rows="3" maxlength="4000" aria-describedby="batch-workflow-evidence-help"></textarea>
+                        <small id="batch-workflow-evidence-help" class="form-text text-muted">Tuliskan nomor dokumen, tanggal persetujuan yang dibuktikan, atau referensi pemeriksaan. Referensi ini dicatat dalam history; tidak mengubah tanggal approval menjadi tanggal lampau.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning">Simpan Koreksi &amp; History</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if ($canEdit): ?>
 <?php
 $detailEditCurrentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? '')));
@@ -4889,6 +4934,16 @@ $detailVillageName = trim((string) ($cluster['village_name'] ?? ''));
 
 <script>
     (function () {
+        var workflowSaku = document.getElementById('batch-workflow-saku');
+        var workflowEvidence = document.getElementById('batch-workflow-evidence');
+        if (workflowSaku && workflowEvidence) {
+            var updateWorkflowEvidence = function () {
+                workflowEvidence.required = workflowSaku.value !== 'KEEP';
+                workflowEvidence.setAttribute('aria-required', workflowEvidence.required ? 'true' : 'false');
+            };
+            workflowSaku.addEventListener('change', updateWorkflowEvidence);
+            updateWorkflowEvidence();
+        }
         var MAX_PIC_ROWS = 5;
         var donationPhotoLightbox = document.getElementById('donation-photo-lightbox');
         var donationPhotoImage = document.getElementById('donation-photo-lightbox-image');
