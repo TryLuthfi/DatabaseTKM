@@ -36,6 +36,7 @@ class PO_Monitor extends CI_Controller
         $data['title'] = 'PO Monitoring';
         $data['poList'] = $filteredPoList;
         $data['bowheerSummary'] = $bowheerSummary;
+        $data['bowheerMasterOptions'] = $this->MPO_Monitor->getBowheerOptionsForHeaderEdit();
         $data['batchInvoiceRows'] = [];
         $data['dashboardSummary'] = $this->MPO_Monitor->getDashboardSummary();
         $data['dashboardInitialTotals'] = $this->MPO_Monitor->getDashboardInitialTotals();

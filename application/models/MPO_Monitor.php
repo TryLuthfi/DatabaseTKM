@@ -2132,6 +2132,7 @@ class MPO_Monitor extends CI_Model
                 $row['total_outs'] = (float) $row['grandtotal_target'] + (float) $row['co_to_2027'];
             }
             unset($row);
+            $rows = $this->appendMissingMasterBowheerRows($rows);
         } else {
             $summary = $this->getDashboardSummary(false);
             $order = array_keys($this->dashboardBowheerOrder());
@@ -7309,6 +7310,7 @@ class MPO_Monitor extends CI_Model
     /** Overlay invoice-only rows too (e.g. cancelled POs), without changing other metrics. */
     private function applyImportReportDashboardInvoices($rows)
     {
+        $rows = $this->appendMissingMasterBowheerRows($rows);
         $names = array_merge(array_column($rows, 'bowheer'), array_keys($this->dashboardBowheerOrder()));
         $invoices = $this->getImportReportInvoiceSummary($names);
         $map = [];
@@ -7343,6 +7345,27 @@ class MPO_Monitor extends CI_Model
             return $a['sort_order'] <=> $b['sort_order'] ?: strcmp($a['bowheer'], $b['bowheer']);
         });
         return array_values($map);
+    }
+
+    /** Append master-only entries; preserve every existing row and financial value. */
+    private function appendMissingMasterBowheerRows(array $rows)
+    {
+        $seen = array_fill_keys(array_column($rows, 'bowheer'), true);
+        foreach ($this->getBowheerOptionsForHeaderEdit() as $master) {
+            $name = trim((string) ($master['bowheer'] ?? ''));
+            if ($name === '' || isset($seen[$name])) {
+                continue;
+            }
+            $row = array_fill_keys(['all_po', 'all_invoice', 'done_inv_2026', 'outs_2026_on_target',
+                'ny_po_on_target_2026', 'grandtotal_target', 'ny_po_total', 'co_to_2027', 'total_outs'], 0);
+            $row['pic'] = trim((string) ($master['pic'] ?? '')) ?: '-';
+            $row['bowheer'] = $name;
+            $row['sort_order'] = 1000;
+            $row['has_data'] = 0;
+            $rows[] = $row;
+            $seen[$name] = true;
+        }
+        return $rows;
     }
 
     private function getAllocatedOnPoImportReportRows()

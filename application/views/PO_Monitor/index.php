@@ -2259,6 +2259,12 @@ if (!function_exists('po_monitor_term_amount_link')) {
                         }
                     }
                 }
+                foreach (($bowheerMasterOptions ?? []) as $bowheerMaster) {
+                    $bowheerName = trim((string) ($bowheerMaster['bowheer'] ?? ''));
+                    if ($bowheerName !== '') {
+                        $uniqueBowheer[$bowheerName] = $bowheerName;
+                    }
+                }
                 ksort($uniqueBowheer);
 
                 $dashboardTotals = $dashboardSummary['totals'];
