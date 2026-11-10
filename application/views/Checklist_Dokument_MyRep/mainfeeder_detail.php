@@ -92,9 +92,6 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                             <?php if (empty($eligibleItems)): ?>
                                 <div class="text-muted">Belum ada dokumen yang bisa diupdate ASTRI.</div>
                             <?php else: ?>
-                                <?php if ($showEditAll): ?>
-                                    <p class="bulk-astri-save-message text-muted small mb-0" role="status"></p>
-                                <?php endif; ?>
                                 <div class="table-responsive">
                                     <table class="table table-bordered mb-0">
                                         <thead class="thead-light">
@@ -139,7 +136,8 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                         </div>
                         <div class="modal-footer">
                             <?php if ($showEditAll): ?>
-                                <button type="button" class="btn btn-outline-dark mr-auto bulk-astri-open-edit-all" aria-haspopup="dialog" aria-controls="<?= $editAllModalId ?>">Edit Status All</button>
+                                <p id="<?= $modalId ?>-save-message" class="bulk-astri-save-message w-100 text-muted small my-0" role="status"></p>
+                                <button type="button" class="btn btn-outline-dark mr-auto bulk-astri-open-edit-all" aria-haspopup="dialog" aria-controls="<?= $editAllModalId ?>" aria-describedby="<?= $modalId ?>-save-message">Edit Status All</button>
                             <?php endif; ?>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
                             <button type="submit" class="btn btn-dark" <?= empty($eligibleItems) ? 'disabled' : '' ?>>Simpan Bulk ASTRI</button>

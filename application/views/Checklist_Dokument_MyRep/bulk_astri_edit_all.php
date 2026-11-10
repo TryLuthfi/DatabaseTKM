@@ -57,6 +57,7 @@ function checklist_doc_render_astri_edit_all_script()
                 return;
             }
             var scrollTop = bulk.scrollTop();
+            var pageOpener = document.querySelector('[data-toggle="modal"][data-target="#' + bulk.attr('id') + '"]');
             function openChild() {
                 child.data('astri-bulk-modal', bulk);
                 child.find('.bulk-astri-all-status').val('').trigger('change');
@@ -69,6 +70,11 @@ function checklist_doc_render_astri_edit_all_script()
                         bulk.scrollTop(scrollTop);
                         opener.focus({ preventScroll: true });
                     }).modal('show');
+                    if (pageOpener) {
+                        bulk.one('hidden.bs.modal', function() {
+                            pageOpener.focus({ preventScroll: true });
+                        });
+                    }
                 }).modal('show');
             }
             // Bootstrap 4 manages one active modal and backdrop at a time.
@@ -96,7 +102,11 @@ function checklist_doc_render_astri_edit_all_script()
 
         $(document).on('click', '.bulk-astri-apply-all', function() {
             var panel = $(this).closest('.bulk-astri-edit-all-modal');
-            var form = panel.data('astri-bulk-modal').find('form');
+            var bulk = panel.data('astri-bulk-modal');
+            if (!bulk) {
+                return;
+            }
+            var form = bulk.find('form');
             var statusInput = panel.find('.bulk-astri-all-status');
             var dateInput = panel.find('.bulk-astri-all-date');
             var error = panel.find('.bulk-astri-all-error').empty();
