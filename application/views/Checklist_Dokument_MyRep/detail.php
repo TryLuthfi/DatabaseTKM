@@ -85,12 +85,25 @@ if (!function_exists('checklist_doc_input_date')) {
     }
 }
 
+if (!function_exists('checklist_doc_astri_key')) {
+    function checklist_doc_astri_key(array $item)
+    {
+        if (!empty($item['linked_source_file_id'])) {
+            $packageId = (int) ($item['id_doc_package'] ?? 0);
+            $itemId = (int) ($item['id_doc_item'] ?? 0);
+            return $packageId > 0 && $itemId > 0 ? "linked:$packageId:$itemId" : '';
+        }
+
+        $fileId = (int) ($item['id_doc_file'] ?? 0);
+        return $fileId > 0 ? (string) $fileId : '';
+    }
+}
+
 if (!function_exists('checklist_doc_can_show_astri_action')) {
     function checklist_doc_can_show_astri_action(array $item, $canTambah)
     {
         return (bool) $canTambah
-            && empty($item['linked_source_file_id'])
-            && (int) ($item['id_doc_file'] ?? 0) > 0
+            && checklist_doc_astri_key($item) !== ''
             && (string) ($item['status_file'] ?? '') === 'APPROVED';
     }
 }
@@ -151,14 +164,14 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                             <?php $bulkAstriNo = 1; ?>
                                             <?php foreach ($eligibleItems as $item): ?>
                                                 <?php
-                                                $fileId = (int) $item['id_doc_file'];
+                                                $astriKey = checklist_doc_astri_key($item);
                                                 $currentAstriStatus = strtoupper(trim((string) ($item['astri_status'] ?? 'NY')));
                                                 $currentAstriStatus = $currentAstriStatus !== '' ? $currentAstriStatus : 'NY';
                                                 $astriOptions = checklist_doc_astri_options($item['is_special_project_opname'] ?? 0);
                                                 if (!in_array($currentAstriStatus, $astriOptions, true)) {
                                                     $astriOptions[] = $currentAstriStatus;
                                                 }
-                                                $dateInputId = 'bulk-astri-date-' . (int) $group['id_doc_package'] . '-' . $fileId;
+                                                $dateInputId = 'bulk-astri-date-' . (int) $group['id_doc_package'] . '-' . str_replace(':', '-', $astriKey);
                                                 ?>
                                                 <tr>
                                                     <td><?= $bulkAstriNo++ ?></td>
@@ -170,18 +183,18 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                                 <span class="badge badge-info">Project Opname</span>
                                                             <?php endif; ?>
                                                         </div>
-                                                        <input type="hidden" name="id_doc_file[]" value="<?= $fileId ?>">
+                                                        <input type="hidden" name="id_doc_file[]" value="<?= $astriKey ?>">
                                                     </td>
                                                     <td>
                                                         <input type="date"
-                                                            name="astri_submitted_date[<?= $fileId ?>]"
+                                                            name="astri_submitted_date[<?= $astriKey ?>]"
                                                             id="<?= $dateInputId ?>"
                                                             class="form-control"
                                                             value="<?= htmlspecialchars(checklist_doc_input_date($item['astri_submitted_date'] ?? ''), ENT_QUOTES) ?>"
                                                             <?= $currentAstriStatus !== 'NY' ? 'required' : '' ?>>
                                                     </td>
                                                     <td>
-                                                        <select name="astri_status[<?= $fileId ?>]"
+                                                        <select name="astri_status[<?= $astriKey ?>]"
                                                             class="form-control bulk-astri-status"
                                                             data-date-input="#<?= $dateInputId ?>">
                                                             <?php foreach ($astriOptions as $option): ?>
@@ -192,7 +205,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                         </select>
                                                     </td>
                                                     <td>
-                                                        <textarea name="astri_remark[<?= $fileId ?>]" class="form-control" rows="2" placeholder="Catatan submit / review ASTRI jika diperlukan"><?= htmlspecialchars((string) ($item['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea>
+                                                        <textarea name="astri_remark[<?= $astriKey ?>]" class="form-control" rows="2" placeholder="Catatan submit / review ASTRI jika diperlukan"><?= htmlspecialchars((string) ($item['astri_remark'] ?? ''), ENT_QUOTES) ?></textarea>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -1000,7 +1013,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-toggle="modal"
                                                                             data-target="#modalAstriDocument"
                                                                             data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-file-id="<?= checklist_doc_astri_key($item) ?>"
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
                                                                             data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
@@ -1367,7 +1380,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-toggle="modal"
                                                                             data-target="#modalAstriDocument"
                                                                             data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-file-id="<?= checklist_doc_astri_key($item) ?>"
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
                                                                             data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"

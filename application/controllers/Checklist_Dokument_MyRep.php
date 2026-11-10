@@ -3035,7 +3035,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $fileId = (int) $this->input->post('id_doc_file');
+        $targetKey = $this->input->post('id_doc_file');
         $astriStatus = trim((string) $this->input->post('astri_status'));
         $astriSubmittedDate = $this->normalizeDateInput($this->input->post('astri_submitted_date'));
         $astriRemark = trim((string) $this->input->post('astri_remark'));
@@ -3045,7 +3045,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        if ($clusterId <= 0 || $fileId <= 0) {
+        if ($clusterId <= 0 || !is_string($targetKey) || $targetKey === '') {
             $this->respondDetailAction(false, 'Data ASTRI tidak valid.', 0, 'Checklist_Dokument_MyRep');
             return;
         }
@@ -3065,7 +3065,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
+        $file = $this->MChecklist_Dokument_MyRep->getAstriUpdateTarget($clusterId, $targetKey);
         if (empty($file)) {
             $this->respondDetailAction(false, 'Dokumen tidak ditemukan.', $clusterId);
             return;
@@ -3092,13 +3092,17 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        $this->MChecklist_Dokument_MyRep->updateAstriStatus($fileId, [
+        $updated = $this->MChecklist_Dokument_MyRep->saveAstriUpdateTarget($file, [
             'astri_submitted_date' => $astriStatus === 'NY' ? null : $astriSubmittedDate,
             'astri_status' => $astriStatus,
             'astri_remark' => $astriRemark,
         ]);
 
-        $this->respondDetailAction(true, 'Status ASTRI berhasil diperbarui.', $clusterId);
+        $this->respondDetailAction(
+            (bool) $updated,
+            $updated ? 'Status ASTRI berhasil diperbarui.' : 'Status ASTRI gagal disimpan.',
+            $clusterId
+        );
     }
 
     public function bulkEditAstriStatus()
@@ -3113,7 +3117,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $fileIds = array_values(array_unique(array_map('intval', (array) $this->input->post('id_doc_file'))));
+        $targetKeys = array_unique(array_filter((array) $this->input->post('id_doc_file'), 'is_string'));
         $astriSubmittedDates = (array) $this->input->post('astri_submitted_date');
         $astriStatuses = (array) $this->input->post('astri_status');
         $astriRemarks = (array) $this->input->post('astri_remark');
@@ -3123,7 +3127,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        if ($clusterId <= 0 || empty($fileIds)) {
+        if ($clusterId <= 0 || empty($targetKeys)) {
             $this->respondDetailAction(false, 'Data bulk ASTRI tidak valid.', $clusterId, 'Checklist_Dokument_MyRep');
             return;
         }
@@ -3142,19 +3146,15 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $updatedCount = 0;
         $skippedMessages = [];
-        foreach ($fileIds as $fileId) {
-            if ($fileId <= 0) {
-                continue;
-            }
-
-            $astriStatus = strtoupper(trim((string) ($astriStatuses[$fileId] ?? 'NY')));
+        foreach ($targetKeys as $targetKey) {
+            $astriStatus = strtoupper(trim((string) ($astriStatuses[$targetKey] ?? 'NY')));
             $astriStatus = $astriStatus !== '' ? $astriStatus : 'NY';
-            $astriSubmittedDate = $this->normalizeDateInput($astriSubmittedDates[$fileId] ?? null);
-            $astriRemark = trim((string) ($astriRemarks[$fileId] ?? ''));
+            $astriSubmittedDate = $this->normalizeDateInput($astriSubmittedDates[$targetKey] ?? null);
+            $astriRemark = trim((string) ($astriRemarks[$targetKey] ?? ''));
 
-            $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
-            $docName = !empty($file['doc_name']) ? trim((string) $file['doc_name']) : ('Dokumen #' . $fileId);
-            if (empty($file) || (int) ($file['cluster_id'] ?? 0) !== $clusterId) {
+            $file = $this->MChecklist_Dokument_MyRep->getAstriUpdateTarget($clusterId, $targetKey);
+            $docName = !empty($file['doc_name']) ? trim((string) $file['doc_name']) : 'Dokumen';
+            if (empty($file)) {
                 $skippedMessages[] = $docName . ' tidak ditemukan.';
                 continue;
             }
@@ -3184,7 +3184,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 continue;
             }
 
-            $updated = $this->MChecklist_Dokument_MyRep->updateAstriStatus($fileId, [
+            $updated = $this->MChecklist_Dokument_MyRep->saveAstriUpdateTarget($file, [
                 'astri_submitted_date' => $astriStatus === 'NY' ? null : $astriSubmittedDate,
                 'astri_status' => $astriStatus,
                 'astri_remark' => $astriRemark,

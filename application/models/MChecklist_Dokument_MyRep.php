@@ -1922,6 +1922,71 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $result;
     }
 
+    public function getAstriUpdateTarget($clusterId, $targetKey)
+    {
+        if (preg_match('/^[1-9][0-9]*$/D', $targetKey)) {
+            $file = $this->getFileById((int) $targetKey);
+            return (int) ($file['cluster_id'] ?? 0) === (int) $clusterId ? $file : [];
+        }
+
+        if (!preg_match('/^linked:([1-9][0-9]*):([1-9][0-9]*)$/D', $targetKey, $matches)) {
+            return [];
+        }
+
+        $target = $this->db
+            ->select('p.id_doc_package, i.id_doc_item, i.doc_name, mc.id_myrep_cluster, mt.city_name')
+            ->from('tb_rfs_myrep_doc_package p')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group AND g.is_active = 1', 'inner')
+            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = p.cluster_id', 'inner')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
+            ->where('p.cluster_id', (int) $clusterId)
+            ->where('p.id_doc_package', (int) $matches[1])
+            ->where('i.id_doc_item', (int) $matches[2])
+            ->where($this->collatedUpperInSql('TRIM(g.scope_type)', ['CLUSTER']), null, false)
+            ->where($this->collatedUpperInSql('TRIM(g.sow_type)', ['CW ATP']), null, false)
+            ->get()
+            ->row_array();
+        if (!$target || !$this->isCityAllowedForCurrentUser((string) $target['city_name'])) {
+            return [];
+        }
+
+        $links = $this->getChecklistLinkedDocumentMap((int) $target['id_myrep_cluster'], $clusterId);
+        $source = $links[strtoupper(trim($target['doc_name']))] ?? [];
+        if (empty($source['linked_source_file_id'])) {
+            return [];
+        }
+
+        $target['linked_source_file_id'] = $source['linked_source_file_id'];
+        $target['status_file'] = $source['linked_source_status'];
+        return $target;
+    }
+
+    public function saveAstriUpdateTarget(array $target, array $data)
+    {
+        if (empty($target['linked_source_file_id'])) {
+            return $this->updateAstriStatus((int) $target['id_doc_file'], $data);
+        }
+        if ($target['status_file'] !== 'APPROVED') {
+            return false;
+        }
+
+        // The Checklist row stores ASTRI metadata. The actual file stays in its source flow.
+        $fields = $this->astriStatusFields($data);
+        return $this->db->query(
+            "INSERT INTO tb_rfs_myrep_doc_file
+                (id_doc_package, id_doc_item, status_file, astri_submitted_date, astri_status, astri_status_updated_at, astri_remark)
+             VALUES (?, ?, 'NOT UPLOADED', ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                astri_submitted_date = VALUES(astri_submitted_date),
+                astri_status = VALUES(astri_status),
+                astri_status_updated_at = VALUES(astri_status_updated_at),
+                astri_remark = VALUES(astri_remark)",
+            array_merge([(int) $target['id_doc_package'], (int) $target['id_doc_item']], array_values($fields))
+        );
+    }
+
     public function updateAstriStatus($fileId, $data)
     {
         $file = $this->db
@@ -1939,18 +2004,20 @@ class MChecklist_Dokument_MyRep extends CI_Model
             return false;
         }
 
-        $status = (string) $data['astri_status'];
-        $submittedDate = !empty($data['astri_submitted_date']) ? $data['astri_submitted_date'] : null;
-        $updatedAt = $status === 'NY' ? null : date('Y-m-d H:i:s');
-
         return $this->db
             ->where('id_doc_file', (int) $fileId)
-            ->update('tb_rfs_myrep_doc_file', [
-                'astri_submitted_date' => $submittedDate,
-                'astri_status' => $status,
-                'astri_status_updated_at' => $updatedAt,
-                'astri_remark' => (string) $data['astri_remark'],
-            ]);
+            ->update('tb_rfs_myrep_doc_file', $this->astriStatusFields($data));
+    }
+
+    private function astriStatusFields(array $data)
+    {
+        $status = (string) $data['astri_status'];
+        return [
+            'astri_submitted_date' => !empty($data['astri_submitted_date']) ? $data['astri_submitted_date'] : null,
+            'astri_status' => $status,
+            'astri_status_updated_at' => $status === 'NY' ? null : date('Y-m-d H:i:s'),
+            'astri_remark' => (string) $data['astri_remark'],
+        ];
     }
 
     public function getFileById($fileId)
