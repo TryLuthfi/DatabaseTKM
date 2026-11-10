@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/bulk_astri_edit_all.php';
+
 if (!function_exists('checklist_doc_detail_date')) {
     function checklist_doc_detail_date($date)
     {
@@ -65,7 +67,7 @@ if (!function_exists('checklist_doc_can_show_mf_astri_action')) {
 }
 
 if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
-    function checklist_doc_render_mf_bulk_astri_modal(array $mainfeeder, array $group, $canTambah)
+    function checklist_doc_render_mf_bulk_astri_modal(array $mainfeeder, array $group, $canTambah, $canApprove)
     {
         $eligibleItems = [];
         foreach (($group['items'] ?? []) as $item) {
@@ -87,6 +89,7 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                             <?php if (empty($eligibleItems)): ?>
                                 <div class="text-muted">Belum ada dokumen yang bisa diupdate ASTRI.</div>
                             <?php else: ?>
+                                <?php if ($canApprove) checklist_doc_render_astri_edit_all('mf-bulk-astri-all-' . (int) $group['id_doc_package_mainfeeder']); ?>
                                 <div class="table-responsive">
                                     <table class="table table-bordered mb-0">
                                         <thead class="thead-light">
@@ -109,6 +112,7 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                                                     <td><?= $bulkAstriNo++ ?></td>
                                                     <td>
                                                         <strong><?= htmlspecialchars((string) $item['doc_name'], ENT_QUOTES) ?></strong>
+                                                        <?php if ($canApprove) checklist_doc_render_astri_edit_all_checkbox($item['doc_name'], $currentAstriStatus); ?>
                                                         <input type="hidden" name="id_doc_file_mainfeeder[]" value="<?= $fileId ?>">
                                                     </td>
                                                     <td>
@@ -453,7 +457,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
                         </div>
                     </div>
                 </div>
-                <?php checklist_doc_render_mf_bulk_astri_modal($mainfeeder, $group, $canTambah); ?>
+                <?php checklist_doc_render_mf_bulk_astri_modal($mainfeeder, $group, $canTambah, $canApprove); ?>
                 <div class="modal fade" id="modalBulkUploadMainfeeder-<?= (int) $group['id_doc_package_mainfeeder'] ?>">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
@@ -631,6 +635,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
     </form></div></div>
 </div>
 
+<?php checklist_doc_render_astri_edit_all_script(); ?>
 <script>
     $(document).on('click', '.btn-mf-upload', function() {
         $('#mf-upload-mainfeeder-id').val($(this).data('mainfeeder-id'));
@@ -832,6 +837,10 @@ $mainfeederProgressPercent = checklist_doc_percent(
     $(document).on('submit', '#modalApproveMainfeeder form, #modalRejectMainfeeder form, #modalAstriMainfeeder form, .mf-ajax-action-form', function(e) {
         e.preventDefault();
         var form = $(this);
+        var payload = checklistBulkAstriPayload(form);
+        if (payload === null) {
+            return;
+        }
         var submitButton = form.find('button[type="submit"]');
         var originalText = submitButton.text();
         submitButton.prop('disabled', true).text('Menyimpan...');
@@ -839,7 +848,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
         $.ajax({
             url: form.attr('action'),
             type: 'POST',
-            data: form.serialize(),
+            data: payload,
             dataType: 'json',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         }).done(function(response) {

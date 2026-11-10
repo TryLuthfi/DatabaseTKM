@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/bulk_astri_edit_all.php';
+
 if (!function_exists('checklist_doc_detail_date')) {
     function checklist_doc_detail_date($date)
     {
@@ -120,14 +122,19 @@ if (!function_exists('checklist_doc_astri_options')) {
 }
 
 if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
-    function checklist_doc_render_bulk_astri_modal(array $cluster, array $group, $canTambah)
+    function checklist_doc_render_bulk_astri_modal(array $cluster, array $group, $canTambah, $canApprove)
     {
         $eligibleItems = [];
+        $massItemCount = 0;
         foreach (($group['items'] ?? []) as $item) {
             if (checklist_doc_can_show_astri_action($item, $canTambah)) {
                 $eligibleItems[] = $item;
+                if (empty($item['is_special_project_opname'])) {
+                    $massItemCount++;
+                }
             }
         }
+        $showEditAll = $canApprove && $massItemCount > 0;
         ?>
         <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkAstri-<?= (int) $group['id_doc_package'] ?>">
             <div class="modal-dialog modal-xl">
@@ -149,6 +156,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                     <div class="doc-modal-title">Sinkronisasi Submit ke ASTRI</div>
                                     <p class="doc-modal-subtitle mb-0">Isi tanggal submit saat status bukan NY, lalu pilih status review ASTRI untuk tiap dokumen.</p>
                                 </div>
+                                <?php if ($showEditAll) checklist_doc_render_astri_edit_all('bulk-astri-all-' . (int) $group['id_doc_package'], $massItemCount < count($eligibleItems)); ?>
                                 <div class="table-responsive doc-modal-panel mb-0">
                                     <table class="table table-bordered doc-bulk-table mb-0">
                                         <thead>
@@ -183,6 +191,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                                 <span class="badge badge-info">Project Opname</span>
                                                             <?php endif; ?>
                                                         </div>
+                                                        <?php if ($showEditAll && empty($item['is_special_project_opname'])) checklist_doc_render_astri_edit_all_checkbox($item['doc_name'], $currentAstriStatus); ?>
                                                         <input type="hidden" name="id_doc_file[]" value="<?= $astriKey ?>">
                                                     </td>
                                                     <td>
@@ -1053,7 +1062,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                         </div>
                                     </div>
                                 </div>
-                                <?php if ($groupHasAstriItems) checklist_doc_render_bulk_astri_modal($cluster, $group, $canTambah); ?>
+                                <?php if ($groupHasAstriItems) checklist_doc_render_bulk_astri_modal($cluster, $group, $canTambah, $canApprove); ?>
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -1420,7 +1429,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                         </div>
                                     </div>
                                 </div>
-                                <?php if ($groupHasAstriItems) checklist_doc_render_bulk_astri_modal($cluster, $group, $canTambah); ?>
+                                <?php if ($groupHasAstriItems) checklist_doc_render_bulk_astri_modal($cluster, $group, $canTambah, $canApprove); ?>
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -1861,6 +1870,7 @@ $clusterProgressPercent = checklist_doc_percent(
     </div>
 </div>
 
+<?php checklist_doc_render_astri_edit_all_script(); ?>
 <script>
     var checklistApproveAllUrl = "<?= base_url('Checklist_Dokument_MyRep/approveAllDocuments') ?>";
 
@@ -2312,6 +2322,10 @@ $clusterProgressPercent = checklist_doc_percent(
         e.preventDefault();
 
         var formEl = $(this);
+        var payload = checklistBulkAstriPayload(formEl);
+        if (payload === null) {
+            return;
+        }
         var submitButton = formEl.find('button[type="submit"]');
         var originalText = submitButton.text();
         var scrollTop = currentDetailScrollTop();
@@ -2321,7 +2335,7 @@ $clusterProgressPercent = checklist_doc_percent(
             url: formEl.attr('action'),
             type: 'POST',
             dataType: 'json',
-            data: formEl.serialize(),
+            data: payload,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             },
