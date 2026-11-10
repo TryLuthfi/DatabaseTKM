@@ -1,48 +1,47 @@
 <?php
-function checklist_doc_render_astri_edit_all($panelId, $hasProjectOpname = false)
+function checklist_doc_render_astri_edit_all($modalId, $groupLabel, $itemCount, $hasProjectOpname = false)
 {
     ?>
-    <details class="bulk-astri-edit-all border rounded p-3 mb-3">
-        <summary class="font-weight-bold">Edit Status All</summary>
-        <p class="text-muted small mt-2 mb-3">
-            Centang dokumen yang ingin diubah. APPROVED dan REJECTED tidak dicentang otomatis.
-            Pilih APPROVED hanya untuk dokumen yang sudah disetujui di ASTRI.
-            <?= $hasProjectOpname ? 'Status khusus Project Opname diatur per dokumen.' : '' ?>
-        </p>
-        <div class="form-row align-items-end">
-            <div class="form-group col-sm-4">
-                <label for="<?= $panelId ?>-status">Status ASTRI</label>
-                <select id="<?= $panelId ?>-status" class="form-control bulk-astri-all-status">
-                    <option value="">Pilih status</option>
-                    <option value="NY">NY</option>
-                    <option value="ON REVIEW">ON REVIEW</option>
-                    <option value="APPROVED">APPROVED</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-4">
-                <label for="<?= $panelId ?>-date">Tanggal Submit ASTRI</label>
-                <input id="<?= $panelId ?>-date" type="date" class="form-control bulk-astri-all-date" disabled>
-            </div>
-            <div class="form-group col-sm-auto">
-                <button type="button" class="btn btn-outline-dark bulk-astri-apply-all">Terapkan ke Semua</button>
+    <div class="modal fade bulk-astri-edit-all-modal" id="<?= $modalId ?>" tabindex="-1" role="dialog"
+        aria-labelledby="<?= $modalId ?>-title" aria-describedby="<?= $modalId ?>-scope" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-dark">
+                    <div>
+                        <h4 class="modal-title mb-1" id="<?= $modalId ?>-title">Edit Status All ASTRI</h4>
+                        <p class="mb-0"><?= htmlspecialchars((string) $groupLabel, ENT_QUOTES) ?></p>
+                    </div>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p id="<?= $modalId ?>-scope">
+                        Status akan diterapkan ke <?= (int) $itemCount ?> dokumen yang memenuhi syarat, termasuk yang sudah APPROVED atau REJECTED.
+                        <?= $hasProjectOpname ? 'Project Opname tetap diatur per dokumen.' : '' ?>
+                    </p>
+                    <div class="form-group">
+                        <label for="<?= $modalId ?>-status">Status ASTRI</label>
+                        <select id="<?= $modalId ?>-status" class="form-control bulk-astri-all-status">
+                            <option value="">Pilih status</option>
+                            <option value="NY">NY</option>
+                            <option value="ON REVIEW">ON REVIEW</option>
+                            <option value="APPROVED">APPROVED</option>
+                        </select>
+                        <small class="form-text text-muted">Pilih APPROVED jika dokumen sudah disetujui di ASTRI. Gunakan REJECTED per dokumen.</small>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="<?= $modalId ?>-date">Tanggal Submit ASTRI</label>
+                        <input id="<?= $modalId ?>-date" type="date" class="form-control bulk-astri-all-date" disabled>
+                        <small class="form-text text-muted">Tanggal ini mengisi baris yang masih kosong. Pilihan NY mengosongkan tanggal submit.</small>
+                    </div>
+                    <p class="bulk-astri-all-error text-danger small mb-0" role="alert"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-dark bulk-astri-apply-all">Terapkan ke Semua</button>
+                </div>
             </div>
         </div>
-        <p class="text-muted small mb-0">Tanggal ini mengisi baris yang masih kosong. Pilihan NY mengosongkan tanggal pada baris yang dicentang.</p>
-        <p class="bulk-astri-all-error text-danger small mb-0" role="alert"></p>
-        <p class="bulk-astri-all-result text-success small mb-0" role="status"></p>
-    </details>
-    <?php
-}
-
-function checklist_doc_render_astri_edit_all_checkbox($docName, $currentStatus)
-{
-    ?>
-    <label class="form-check small mt-1 mb-0 font-weight-normal">
-        <input type="checkbox" class="form-check-input bulk-astri-select-row"
-            aria-label="Ikut Edit Status All: <?= htmlspecialchars((string) $docName, ENT_QUOTES) ?>"
-            <?= !in_array($currentStatus, ['APPROVED', 'REJECTED'], true) ? 'checked' : '' ?>>
-        Ikut Edit Status All
-    </label>
+    </div>
     <?php
 }
 
@@ -50,8 +49,45 @@ function checklist_doc_render_astri_edit_all_script()
 {
     ?>
     <script>
+        $(document).on('click', '.bulk-astri-open-edit-all', function() {
+            var opener = this;
+            var bulk = $(opener).closest('.modal');
+            var child = $(document.getElementById(opener.getAttribute('aria-controls')));
+            if (!bulk.hasClass('show') || !child.length) {
+                return;
+            }
+            var scrollTop = bulk.scrollTop();
+            function openChild() {
+                child.data('astri-bulk-modal', bulk);
+                child.find('.bulk-astri-all-status').val('').trigger('change');
+                child.find('.bulk-astri-all-date').val('');
+                child.one('shown.bs.modal', function() {
+                    child.find('.bulk-astri-all-status').trigger('focus');
+                }).one('hidden.bs.modal', function() {
+                    child.removeData('astri-bulk-modal');
+                    bulk.one('shown.bs.modal', function() {
+                        bulk.scrollTop(scrollTop);
+                        opener.focus({ preventScroll: true });
+                    }).modal('show');
+                }).modal('show');
+            }
+            // Bootstrap 4 manages one active modal and backdrop at a time.
+            opener.blur();
+            bulk.one('hidden.bs.modal', openChild).modal('hide');
+            if (bulk.hasClass('show')) {
+                bulk.off('hidden.bs.modal', openChild);
+                opener.focus({ preventScroll: true });
+            }
+        });
+
+        $(document).on('hide.bs.modal', '.bulk-astri-edit-all-modal', function() {
+            if (this.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+        });
+
         $(document).on('change', '.bulk-astri-all-status', function() {
-            var panel = $(this).closest('.bulk-astri-edit-all');
+            var panel = $(this).closest('.bulk-astri-edit-all-modal');
             var status = this.value;
             var date = panel.find('.bulk-astri-all-date');
             date.prop('disabled', status === '' || status === 'NY');
@@ -59,15 +95,14 @@ function checklist_doc_render_astri_edit_all_script()
         });
 
         $(document).on('click', '.bulk-astri-apply-all', function() {
-            var form = $(this).closest('form');
-            var panel = $(this).closest('.bulk-astri-edit-all');
+            var panel = $(this).closest('.bulk-astri-edit-all-modal');
+            var form = panel.data('astri-bulk-modal').find('form');
             var statusInput = panel.find('.bulk-astri-all-status');
             var dateInput = panel.find('.bulk-astri-all-date');
             var error = panel.find('.bulk-astri-all-error').empty();
-            var result = panel.find('.bulk-astri-all-result').empty();
             var status = statusInput.val();
             var date = dateInput.val();
-            var rows = form.find('.bulk-astri-select-row:checked').closest('tr');
+            var rows = form.find('.bulk-astri-edit-all-row');
 
             if (!status) {
                 error.text('Pilih status ASTRI terlebih dahulu.');
@@ -75,7 +110,7 @@ function checklist_doc_render_astri_edit_all_script()
                 return;
             }
             if (!rows.length) {
-                error.text('Centang minimal satu dokumen yang ingin diubah.');
+                error.text('Belum ada dokumen yang bisa diupdate melalui Edit Status All.');
                 return;
             }
             var dates = rows.find('input[type="date"]');
@@ -96,7 +131,8 @@ function checklist_doc_render_astri_edit_all_script()
             form.data('astri-edit-all-applied', true);
             // Validasi saat simpan dibatasi pada baris yang berubah.
             form.prop('noValidate', true);
-            result.text('Status diterapkan ke ' + rows.length + ' dokumen yang dicentang. Klik Simpan Bulk ASTRI untuk menyimpan perubahan.');
+            form.find('.bulk-astri-save-message').text('Status diterapkan ke ' + rows.length + ' dokumen. Klik Simpan Bulk ASTRI untuk menyimpan perubahan.');
+            panel.modal('hide');
         });
 
         function checklistBulkAstriPayload(form) {
@@ -104,7 +140,6 @@ function checklist_doc_render_astri_edit_all_script()
                 return form.serialize();
             }
 
-            var error = form.find('.bulk-astri-all-error').empty();
             var changedRows = form.find('.bulk-astri-status').filter(function() {
                 var status = this;
                 var initial = Array.from(status.options).find(function(option) { return option.defaultSelected; }) || status.options[0];
@@ -115,9 +150,7 @@ function checklist_doc_render_astri_edit_all_script()
             }).closest('tr');
 
             if (!changedRows.length) {
-                form.find('.bulk-astri-edit-all').prop('open', true);
-                form.find('.bulk-astri-all-result').empty();
-                error.text('Belum ada perubahan untuk disimpan.');
+                form.find('.bulk-astri-save-message').text('Belum ada perubahan untuk disimpan.');
                 return null;
             }
 

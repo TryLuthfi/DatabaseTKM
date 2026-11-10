@@ -135,14 +135,16 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
             }
         }
         $showEditAll = $canApprove && $massItemCount > 0;
+        $modalId = 'modalBulkAstri-' . (int) $group['id_doc_package'];
+        $editAllModalId = $modalId . '-edit-all';
         ?>
-        <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkAstri-<?= (int) $group['id_doc_package'] ?>">
+        <div class="modal fade doc-modal doc-modal-bulk" id="<?= $modalId ?>" tabindex="-1" role="dialog" aria-labelledby="<?= $modalId ?>-title" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkEditAstriStatus') ?>">
                         <div class="modal-header" style="background: linear-gradient(135deg, #374151, #111827);">
                             <div>
-                                <h4 class="modal-title mb-1">Bulk ASTRI <?= htmlspecialchars((string) $group['group_label'], ENT_QUOTES) ?></h4>
+                                <h4 class="modal-title mb-1" id="<?= $modalId ?>-title">Bulk ASTRI <?= htmlspecialchars((string) $group['group_label'], ENT_QUOTES) ?></h4>
                                 <p class="mb-0" style="opacity:.9;">Update status ASTRI untuk dokumen yang sudah APPROVED.</p>
                             </div>
                             <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
@@ -156,7 +158,9 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                     <div class="doc-modal-title">Sinkronisasi Submit ke ASTRI</div>
                                     <p class="doc-modal-subtitle mb-0">Isi tanggal submit saat status bukan NY, lalu pilih status review ASTRI untuk tiap dokumen.</p>
                                 </div>
-                                <?php if ($showEditAll) checklist_doc_render_astri_edit_all('bulk-astri-all-' . (int) $group['id_doc_package'], $massItemCount < count($eligibleItems)); ?>
+                                <?php if ($showEditAll): ?>
+                                    <p class="bulk-astri-save-message text-muted small mb-0" role="status"></p>
+                                <?php endif; ?>
                                 <div class="table-responsive doc-modal-panel mb-0">
                                     <table class="table table-bordered doc-bulk-table mb-0">
                                         <thead>
@@ -181,7 +185,7 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                 }
                                                 $dateInputId = 'bulk-astri-date-' . (int) $group['id_doc_package'] . '-' . str_replace(':', '-', $astriKey);
                                                 ?>
-                                                <tr>
+                                                <tr<?= empty($item['is_special_project_opname']) ? ' class="bulk-astri-edit-all-row"' : '' ?>>
                                                     <td><?= $bulkAstriNo++ ?></td>
                                                     <td>
                                                         <div class="doc-bulk-name"><?= htmlspecialchars((string) $item['doc_name'], ENT_QUOTES) ?></div>
@@ -191,7 +195,6 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                                                                 <span class="badge badge-info">Project Opname</span>
                                                             <?php endif; ?>
                                                         </div>
-                                                        <?php if ($showEditAll && empty($item['is_special_project_opname'])) checklist_doc_render_astri_edit_all_checkbox($item['doc_name'], $currentAstriStatus); ?>
                                                         <input type="hidden" name="id_doc_file[]" value="<?= $astriKey ?>">
                                                     </td>
                                                     <td>
@@ -224,6 +227,9 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
                             <?php endif; ?>
                         </div>
                         <div class="modal-footer">
+                            <?php if ($showEditAll): ?>
+                                <button type="button" class="btn btn-outline-dark mr-auto bulk-astri-open-edit-all" aria-haspopup="dialog" aria-controls="<?= $editAllModalId ?>">Edit Status All</button>
+                            <?php endif; ?>
                             <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
                             <button type="submit" class="btn btn-dark" <?= empty($eligibleItems) ? 'disabled' : '' ?>>Simpan Bulk ASTRI</button>
                         </div>
@@ -232,6 +238,9 @@ if (!function_exists('checklist_doc_render_bulk_astri_modal')) {
             </div>
         </div>
         <?php
+        if ($showEditAll) {
+            checklist_doc_render_astri_edit_all($editAllModalId, $group['group_label'], $massItemCount, $massItemCount < count($eligibleItems));
+        }
     }
 }
 

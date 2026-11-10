@@ -75,13 +75,16 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                 $eligibleItems[] = $item;
             }
         }
+        $showEditAll = $canApprove && !empty($eligibleItems);
+        $modalId = 'modalBulkAstriMainfeeder-' . (int) $group['id_doc_package_mainfeeder'];
+        $editAllModalId = $modalId . '-edit-all';
         ?>
-        <div class="modal fade" id="modalBulkAstriMainfeeder-<?= (int) $group['id_doc_package_mainfeeder'] ?>">
+        <div class="modal fade" id="<?= $modalId ?>" tabindex="-1" role="dialog" aria-labelledby="<?= $modalId ?>-title" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkEditMainfeederAstriStatus') ?>" class="mf-ajax-action-form">
                         <div class="modal-header bg-dark">
-                            <h4 class="modal-title">Bulk ASTRI <?= htmlspecialchars((string) $group['group_label'], ENT_QUOTES) ?></h4>
+                            <h4 class="modal-title" id="<?= $modalId ?>-title">Bulk ASTRI <?= htmlspecialchars((string) $group['group_label'], ENT_QUOTES) ?></h4>
                             <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                         </div>
                         <div class="modal-body">
@@ -89,7 +92,9 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                             <?php if (empty($eligibleItems)): ?>
                                 <div class="text-muted">Belum ada dokumen yang bisa diupdate ASTRI.</div>
                             <?php else: ?>
-                                <?php if ($canApprove) checklist_doc_render_astri_edit_all('mf-bulk-astri-all-' . (int) $group['id_doc_package_mainfeeder']); ?>
+                                <?php if ($showEditAll): ?>
+                                    <p class="bulk-astri-save-message text-muted small mb-0" role="status"></p>
+                                <?php endif; ?>
                                 <div class="table-responsive">
                                     <table class="table table-bordered mb-0">
                                         <thead class="thead-light">
@@ -108,11 +113,10 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                                                 $currentAstriStatus = strtoupper(trim((string) ($item['astri_status'] ?? 'NY'))) ?: 'NY';
                                                 $dateInputId = 'mf-bulk-astri-date-' . (int) $group['id_doc_package_mainfeeder'] . '-' . $fileId;
                                                 ?>
-                                                <tr>
+                                                <tr class="bulk-astri-edit-all-row">
                                                     <td><?= $bulkAstriNo++ ?></td>
                                                     <td>
                                                         <strong><?= htmlspecialchars((string) $item['doc_name'], ENT_QUOTES) ?></strong>
-                                                        <?php if ($canApprove) checklist_doc_render_astri_edit_all_checkbox($item['doc_name'], $currentAstriStatus); ?>
                                                         <input type="hidden" name="id_doc_file_mainfeeder[]" value="<?= $fileId ?>">
                                                     </td>
                                                     <td>
@@ -134,6 +138,9 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
                             <?php endif; ?>
                         </div>
                         <div class="modal-footer">
+                            <?php if ($showEditAll): ?>
+                                <button type="button" class="btn btn-outline-dark mr-auto bulk-astri-open-edit-all" aria-haspopup="dialog" aria-controls="<?= $editAllModalId ?>">Edit Status All</button>
+                            <?php endif; ?>
                             <button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
                             <button type="submit" class="btn btn-dark" <?= empty($eligibleItems) ? 'disabled' : '' ?>>Simpan Bulk ASTRI</button>
                         </div>
@@ -142,6 +149,9 @@ if (!function_exists('checklist_doc_render_mf_bulk_astri_modal')) {
             </div>
         </div>
         <?php
+        if ($showEditAll) {
+            checklist_doc_render_astri_edit_all($editAllModalId, $group['group_label'], count($eligibleItems));
+        }
     }
 }
 
