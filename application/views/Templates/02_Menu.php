@@ -25,6 +25,11 @@ if (function_exists('get_user_page_access_controller_map') && function_exists('h
 $canAccessTargetInvoicePage = function_exists('has_user_page_access')
     ? has_user_page_access('TargetInvoice', 'TargetInvoice', 'VIEW', $currentUserId)
     : true;
+$pageAccessControllerMap['AKSELERASI_2026'] = $pageAccessControllerMap['PO_MONITOR'] ?? (
+    function_exists('has_user_page_access')
+        ? has_user_page_access('Database All PO', 'PO_Monitor', 'VIEW', $currentUserId)
+        : $canAccessDatabaseAllPo
+);
 $canAccessRincianInvoicePage = function_exists('has_user_page_access')
     ? has_user_page_access('RincianInvoice', 'RincianInvoice', 'VIEW', $currentUserId)
     : true;
@@ -1110,6 +1115,12 @@ $forceVisibleControllerMap = [
                         </a>
                     </li>
 
+                    <li class="nav-item">
+                        <a href="<?= base_url('Akselerasi_2026') ?>" class="nav-link<?= $disabledDatabaseAllPoLinkClass ?><?= $id_menu === 'Akselerasi_2026' ? ' active' : '' ?>"<?= $disabledDatabaseAllPoLinkAttr ?>>
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>AKSELERASI 2026</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
