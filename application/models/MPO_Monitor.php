@@ -7178,6 +7178,57 @@ class MPO_Monitor extends CI_Model
         $rows = [];
         $rows = array_merge($rows, $this->getAllocatedOnPoImportReportRows());
         $rows = array_merge($rows, $this->getStandaloneOnPoImportReportRows());
+        return $this->applyImportReportReleaseValues($rows);
+    }
+
+    /** Reconcile detail-row PO values to the same latest release used by PO Breakdown.
+     * Allocated and standalone terms can belong to the same PO. Reconcile them
+     * together so a full release is not repeated for each allocation/report row.
+     * PLAN/NILAI and all invoice amounts remain the original report projection.
+     */
+    private function applyImportReportReleaseValues($rows)
+    {
+        $groups = [];
+        foreach ($rows as $index => $row) {
+            $idPo = (int) ($row['_PO_ID'] ?? 0);
+            if ($idPo <= 0 || !array_key_exists('_PO_RELEASE_VALUE', $row)) {
+                continue;
+            }
+            $groups[$idPo][] = $index;
+        }
+        foreach ($groups as $indexes) {
+            $releaseCents = (int) round((float) $rows[$indexes[0]]['_PO_RELEASE_VALUE'] * 100);
+            $weights = [];
+            $weightTotal = 0;
+            foreach ($indexes as $index) {
+                $weights[$index] = max(0, (int) round($this->parseImportReportAmount($rows[$index]['PO VALUE']) * 100));
+                $weightTotal += $weights[$index];
+            }
+            if ($weightTotal === 0) {
+                // An unplanned PO still has its released value. Equal shares are
+                // deterministic and avoid silently dropping that release.
+                foreach ($indexes as $index) {
+                    $weights[$index] = 1;
+                }
+                $weightTotal = count($indexes);
+            }
+            $cumulativeWeight = 0;
+            $allocatedCents = 0;
+            foreach ($indexes as $index) {
+                $cumulativeWeight += $weights[$index];
+                $cumulativeCents = $cumulativeWeight === $weightTotal ? $releaseCents
+                    : (int) round($releaseCents * ($cumulativeWeight / $weightTotal));
+                $shareCents = $cumulativeCents - $allocatedCents;
+                $allocatedCents = $cumulativeCents;
+                $rows[$index]['PO VALUE'] = $this->formatImportReportAmount($shareCents / 100);
+                $invoice = $this->parseImportReportAmount($rows[$index]['INVOICE ALL']);
+                $rows[$index]['OUTSTANDING TOTAL'] = $this->formatImportReportAmount(max($shareCents / 100 - $invoice, 0));
+            }
+        }
+        foreach ($rows as &$row) {
+            unset($row['_PO_ID'], $row['_PO_RELEASE_VALUE']);
+        }
+        unset($row);
         return $rows;
     }
 
@@ -7540,6 +7591,8 @@ class MPO_Monitor extends CI_Model
     private function baseOnPoImportReportRow($item)
     {
         $row = $this->getEmptyImportReportRow();
+        $row['_PO_ID'] = (int) ($item['id_po'] ?? 0);
+        $row['_PO_RELEASE_VALUE'] = (float) ($item['current_release_value'] ?? $item['total_value'] ?? 0);
         $row['NY PO REF'] = (string) ($item['ny_po_ref'] ?? '');
         $row['BOWHEER'] = (string) ($item['bowheer'] ?? '');
         $row['STATUS PO'] = (string) ($item['status_po'] ?: 'ON PO');
