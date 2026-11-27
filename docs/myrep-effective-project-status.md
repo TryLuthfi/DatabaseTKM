@@ -1,0 +1,11 @@
+# Consistent project status in PO_MyRep certificate updates
+
+`getPoListRows()` supplies the PO lookup used by bulk certificate status/date validation and bulk invoices. Its `status_current` now uses the same effective/display workflow as the MyRepublik Project list for every returned PO, rather than exposing an older stored cluster status.
+
+The pure `Myrep_project_status` library owns the existing Project ordering, date normalization, effective resolution and display rules. Project's private wrappers delegate to it without changing existing behavior. The PO projection reads only already city-authorized cluster IDs, in batches of at most 500. Inputs match the Project list: stored cluster status, RFS status, ATP status, maximum actual ATP package date, and DRM display status. Package RFS/claim-date fallbacks available to Project Detail are not added to PO list inputs, preserving list parity.
+
+ATP DONE with a valid actual ATP date displays CHECKLIST DOKUMENT. Later/protected stored states are not downgraded. DONE plus the existing IMPLEMENTASI display convention remains consistent. Mainfeeder/FWA use their own stored workflow and map CHECKLIST to CHECKLIST DOKUMENT; they never inherit a linked cluster's state.
+
+There are no database writes, migrations, certificate releases, changes to invoice values, or manual exceptions for individual POs. Stored `tb_myrep_cluster.status_current` may continue to contain an older stage; the effective UI projection is authoritative for this display. Reload PO_MyRep after deployment to refresh its embedded lookup. A green certificate validation row still means input/readiness validation, not persistence of the draft certificate date.
+
+Tests: `php tests/myrep_effective_status_qc.php` compares extraction parity against the frozen dccfc8f Project resolver, exercises mainfeeder isolation, batching, schema fallbacks, public PO list/datatable city restrictions, field preservation and the two reported cases. `php tests/po_myrep_detail_termin_regression.php` protects terminology/invoice/certificate source-row behavior. Additional read-only full-dataset checks compare old/new financial fields and Project output, match PO/Project visible statuses and fingerprint source tables.

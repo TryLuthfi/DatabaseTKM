@@ -1,30 +1,11 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 require_once APPPATH . 'helpers/myrep_pic_helper.php';
+require_once APPPATH . 'libraries/Myrep_project_status.php';
 
 class MMyRepublik_Project extends CI_Model
 {
-    private $statusOrder = [
-        'DRAFT',
-        'NTP',
-        'BA OPEN',
-        'BAK',
-        'VALSAL',
-        'WAITING HO',
-        'WAITING MYREP',
-        'WAITING FINANCE',
-        'RELEASED',
-        'DONE BATCH APPROVAL',
-        'DRM',
-        'RFS',
-        'ATP',
-        'CHECKLIST',
-        'CHECKLIST DOKUMENT',
-        'DONE',
-        'IMPLEMENTASI',
-        'REJECTED',
-        'HOLD',
-    ];
+    private $statusOrder = Myrep_project_status::ORDER;
 
     public function tablesReady()
     {
@@ -411,18 +392,7 @@ class MMyRepublik_Project extends CI_Model
 
     private function resolveDisplayStatus($row)
     {
-        if (in_array(strtoupper(trim((string) ($row['project_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
-            return strtoupper(trim((string) ($row['status_current'] ?? 'DRM'))) ?: 'DRM';
-        }
-
-        $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
-        $statusDrm = strtoupper(trim((string) ($row['status_drm'] ?? '')));
-
-        if ($status === 'DONE' && strpos($statusDrm, 'IMPLEMENTASI') !== false) {
-            return 'IMPLEMENTASI';
-        }
-
-        return $status;
+        return Myrep_project_status::display($row);
     }
 
     public function getOverview($rows)
@@ -1143,53 +1113,17 @@ class MMyRepublik_Project extends CI_Model
 
     private function resolveEffectiveStatus($row)
     {
-        $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
-        $status = $status !== '' ? $status : 'DRAFT';
-        if ($status === 'CHECKLIST') {
-            $status = 'CHECKLIST DOKUMENT';
-        }
-
-        if ($status === 'DONE') {
-            return 'DONE';
-        }
-
-        $derived = $status;
-        $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
-        $statusRfs = strtoupper(trim((string) ($row['status_rfs'] ?? '')));
-        $actualAtpDate = $this->normalizeEffectiveDate($row['actual_atp_date'] ?? null);
-        $tanggalRfs = $this->normalizeEffectiveDate($row['tanggal_rfs'] ?? $row['latest_claim_date'] ?? null);
-
-        if ($statusAtp === 'DONE' && $actualAtpDate !== null) {
-            $derived = 'CHECKLIST DOKUMENT';
-        } elseif ($statusAtp === 'PUNCLIST' || $actualAtpDate !== null) {
-            $derived = 'ATP';
-        } elseif (in_array($statusRfs, ['PARTIAL', 'PARTIAL RFS', 'FULL RFS'], true) || $tanggalRfs !== null) {
-            $derived = 'RFS';
-        }
-
-        return $this->statusRank($derived) > $this->statusRank($status) ? $derived : $status;
+        return Myrep_project_status::resolve($row);
     }
 
     private function statusRank($status)
     {
-        $status = strtoupper(trim((string) $status));
-        if ($status === 'CHECKLIST') {
-            $status = 'CHECKLIST DOKUMENT';
-        }
-
-        $index = array_search($status, $this->statusOrder, true);
-        return $index === false ? -1 : (int) $index;
+        return Myrep_project_status::rank($status);
     }
 
     private function normalizeEffectiveDate($value)
     {
-        $value = trim((string) $value);
-        if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
-            return null;
-        }
-
-        $timestamp = strtotime($value);
-        return $timestamp ? date('Y-m-d', $timestamp) : null;
+        return Myrep_project_status::normalizeDate($value);
     }
 
     private function buildClusterKey($cityName, $clusterName)

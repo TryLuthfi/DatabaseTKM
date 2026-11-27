@@ -1,6 +1,7 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 require_once APPPATH . 'helpers/myrep_pic_helper.php';
+require_once APPPATH . 'libraries/Myrep_project_status.php';
 
 class MPO_MyRep extends CI_Model
 {
@@ -298,6 +299,56 @@ class MPO_MyRep extends CI_Model
         return array_values($grouped);
     }
 
+    /** Project-list status for the PO lookup shared by bulk invoice/certificate.
+     * Query only the already authorized city-scoped cluster IDs, in bounded batches.
+     * Keep financial values, certificate metadata and stored workflow state intact.
+     */
+    private function applyEffectiveProjectStatuses(array $rows)
+    {
+        $ids = [];
+        foreach ($rows as $row) {
+            if (in_array(strtoupper(trim((string) ($row['po_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
+                continue;
+            }
+            $id = (int) ($row['id_myrep_cluster'] ?? 0);
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        $metadata = [];
+        if ($ids && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
+            && $this->db->table_exists('tb_rfs_myrep_cluster')) {
+            $hasPackage = $this->db->table_exists('tb_rfs_myrep_doc_package');
+            $hasDrm = $this->db->table_exists('tb_myrep_drm');
+            $actualAtp = $hasPackage
+                ? '(SELECT MAX(dp.actual_atp_date) FROM tb_rfs_myrep_doc_package dp WHERE dp.cluster_id = c.rfs_cluster_id)'
+                : 'NULL';
+            foreach (array_chunk(array_values($ids), 500) as $chunk) {
+                $sql = 'SELECT c.id_myrep_cluster, c.status_current, r.status_rfs, r.status_atp, '
+                    . ($hasDrm ? 'd.status_drm' : 'NULL AS status_drm') . ', ' . $actualAtp . ' AS actual_atp_date '
+                    . 'FROM tb_myrep_cluster c LEFT JOIN tb_rfs_myrep_cluster r ON r.id_cluster = c.rfs_cluster_id '
+                    . ($hasDrm ? 'LEFT JOIN tb_myrep_drm d ON d.id_myrep_cluster = c.id_myrep_cluster ' : '')
+                    . 'WHERE c.id_myrep_cluster IN (' . implode(',', array_fill(0, count($chunk), '?')) . ')';
+                foreach ($this->db->query($sql, $chunk)->result_array() as $meta) {
+                    $metadata[(int) $meta['id_myrep_cluster']] = $meta;
+                }
+            }
+        }
+        foreach ($rows as &$row) {
+            if (in_array(strtoupper(trim((string) ($row['po_type'] ?? ''))), ['MAINFEEDER', 'FWA'], true)) {
+                // Project's mainfeeder list uses its own stored workflow, not a linked cluster.
+                $value = strtoupper(trim((string) ($row['status_current'] ?? 'DRM'))) ?: 'DRM';
+                $row['status_current'] = $value === 'CHECKLIST' ? 'CHECKLIST DOKUMENT' : $value;
+                continue;
+            }
+            $context = array_merge($row, $metadata[(int) ($row['id_myrep_cluster'] ?? 0)] ?? []);
+            $context['status_current'] = Myrep_project_status::resolve($context);
+            $row['status_current'] = Myrep_project_status::display($context);
+        }
+        unset($row);
+        return $rows;
+    }
+
     public function getPoListRows($city = '', $status = '')
     {
         if (!$this->tablesReady()) {
@@ -379,6 +430,7 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
+        $rows = $this->applyEffectiveProjectStatuses($rows);
         $allRows = $rows;
         $groupHeaderMap = [];
         foreach ($allRows as $sourceRow) {
